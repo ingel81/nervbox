@@ -1,0 +1,69 @@
+@import '../../../../@theme/styles/themes';
+@import '~bootstrap/scss/mixins/breakpoints';
+@import '~@nebular/theme/styles/global/breakpoints';
+
+@include nb-install-component() {
+
+  @include media-breakpoint-down(sm) {
+  }
+
+  @include media-breakpoint-down(is) {
+    /deep/ nb-card.large-card {
+      height: nb-theme(card-height-medium);
+    }
+  }
+
+  .chart-container {
+    flex: 1;
+    height: 100%;
+    background-image: nb-theme(radial-gradient);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .chart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.75rem 1rem 1rem;
+  }
+
+  .header-stats {
+    display: flex;
+    align-items: center;
+  }
+
+  .stats-block {
+    display: flex;
+    flex-direction: column;
+    align-items: normal;
+    color: nb-theme(color-fg);
+    // padding: 0 1.5rem;
+    border-right: 1px solid nb-theme(separator);
+
+    .subtitle {
+      font-size: 1rem;
+      font-weight: nb-theme(font-weight-light);
+    }
+
+    .value {
+      font-family: nb-theme(font-secondary);
+      font-size: 1.5rem;
+      font-weight: nb-theme(font-weight-bold);
+      color: nb-theme(color-fg-heading);
+    }
+
+    .unit {
+      font-family: nb-theme(font-secondary);
+      font-size: 1.25rem;
+      font-weight: nb-theme(font-weight-light);
+    }
+  }
+
+  .dropdown {
+    min-width: 130px;
+  }
+
+}
+
