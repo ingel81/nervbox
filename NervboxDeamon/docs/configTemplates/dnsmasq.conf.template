@@ -1,6 +1,0 @@
-﻿#nervboxtemplate_start_wlan0_ap
-#interface=wlan0
-#dhcp-range={RANGESTART},{RANGEEND},{MASK},{LEASEHOURS}h
-#nervboxtemplate_end_wlan0_ap
-
-#nervboxtemplate_target=/etc/dnsmasq.conf
