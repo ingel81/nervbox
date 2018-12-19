@@ -1,0 +1,25 @@
+@import '../../../../@theme/styles/themes.scss';
+@import '~bootstrap/scss/mixins/breakpoints';
+@import '~@nebular/theme/styles/global/breakpoints';
+
+@include nb-install-component() {
+
+    /deep/ .form {
+        display: flex;
+        flex-direction: column;
+
+        .text-label {
+            margin-top: 1.5rem;
+        }
+    }
+
+    button {
+        margin: 3rem;
+    }
+}
+
+span.wifi-network-details {
+    padding-left: 5px;
+    color: #888;
+    font-size: 0.8rem;
+}

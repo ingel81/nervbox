@@ -1,0 +1,17 @@
+<nb-card [ngClass]="{'off': !on}">
+    <div class="icon-container">
+        <div class="icon {{ type }}">
+            <ng-content></ng-content>
+        </div>
+    </div>
+
+    <div class="details">
+        <div class="title">{{ title }}</div>
+
+        <div *ngIf="message"
+             class="message">{{ message }}</div>
+
+        <div *ngIf="!message"
+             class="status">{{ on ? 'Aktiv' : 'Inaktiv' }}</div>
+    </div>
+</nb-card>

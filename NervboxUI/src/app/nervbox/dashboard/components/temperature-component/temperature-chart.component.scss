@@ -1,0 +1,30 @@
+@import '../../../../@theme/styles/themes';
+@import '~bootstrap/scss/mixins/breakpoints';
+@import '~@nebular/theme/styles/global/breakpoints';
+
+@include nb-install-component() {
+
+    .temperature-chart-wrapper {
+        position: relative;
+
+        .loading-overlay {
+            position: absolute;
+            background: radial-gradient(circle at 50% 50%, #303030cc, #222222cc);
+            z-index: 50000;
+            width: 100%;
+            height: 100%;
+
+            .loading-text {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                font-size: 50px;
+                color: white;
+                transform: translate(-50%, -50%);
+                -ms-transform: translate(-50%, -50%);
+            }
+
+        }
+    }
+
+}
