@@ -15,24 +15,24 @@ export interface IValueMode {
 export class TemperatureComponent implements OnDestroy {
 
     mode = 'last hour';
-    modes = ['last hour', 'last 24h', 'last 7 days', 'last 30 days', 'last 365 days'];
+    modes = ['last 5 minutes', 'last 15 minutes', 'last 30 minutes', 'last hour', 'last 24h', 'last 7 days', 'last 30 days', 'last 365 days'];
 
     valueModes: IValueMode[] = [
         {
-            displayName: "Temperature 1 AVG [°C]",
-            aggregationType: "avg",
-            metric: "temp_1"
+            displayName: "Anzahl (Sounds)",
+            aggregationType: "count",
+            metric: "soundhash"
         },
-        {
-            displayName: "Temperature 1 MAX [°C]",
-            aggregationType: "max",
-            metric: "temp_1"
-        },
-        {
-            displayName: "Temperature 1 MIN [°C]",
-            aggregationType: "min",
-            metric: "temp_1"
-        },
+        // {
+        //     displayName: "Temperature 1 MAX [°C]",
+        //     aggregationType: "max",
+        //     metric: "temp_1"
+        // },
+        // {
+        //     displayName: "Temperature 1 MIN [°C]",
+        //     aggregationType: "min",
+        //     metric: "temp_1"
+        // },
     ];
 
     valueMode: IValueMode = this.valueModes[0];

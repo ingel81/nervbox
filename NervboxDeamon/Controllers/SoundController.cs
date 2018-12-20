@@ -19,11 +19,13 @@ namespace NervboxDeamon.Controllers
     //injected
     private IHostingEnvironment Environment { get; }
     private ISoundService SoundService { get; }
+    private IHttpContextAccessor Accessor { get; }
 
-    public SoundController(ISoundService soundService, IHostingEnvironment environment)
+    public SoundController(ISoundService soundService, IHostingEnvironment environment, IHttpContextAccessor accessor)
     {
       this.SoundService = soundService;
       this.Environment = environment;
+      this.Accessor = accessor;
     }
 
     [HttpGet]
@@ -36,10 +38,11 @@ namespace NervboxDeamon.Controllers
     [HttpGet]
     [Route("{soundId}/play")]
     public IActionResult PlaySound(string soundId)
-    {
+    {      
+
       try
       {
-        this.SoundService.PlaySound(soundId);
+        this.SoundService.PlaySound(soundId, Accessor.HttpContext.Connection.RemoteIpAddress.ToString());
 
         return Ok();
       }

@@ -13,13 +13,15 @@ using NervboxDeamon.Hubs;
 using NervboxDeamon.Helpers;
 using System.IO;
 using System.Security.Cryptography;
+using System.Collections.Concurrent;
+using System.Threading;
 
 namespace NervboxDeamon.Services
 {
   public interface ISoundService
   {
     void Init();
-    void PlaySound(string soundId);
+    void PlaySound(string soundId, string initiator);
   }
 
   public class SoundService : ISoundService
@@ -33,6 +35,9 @@ namespace NervboxDeamon.Services
     //member
     private Dictionary<string, Sound> Sounds { get; set; }
     private DirectoryInfo SoundDirectory { get; set; }
+    private ConcurrentQueue<SoundUsage> Usages { get; set; } = new ConcurrentQueue<SoundUsage>();
+    private Thread LoggingThread = null;
+    private bool keepRunning = true;
 
     public SoundService(
       IServiceProvider serviceProvider,
@@ -45,6 +50,35 @@ namespace NervboxDeamon.Services
       this.Logger = logger;
       this.Configuration = configuration;
       this.SshService = sshService;
+
+      LoggingThread = new Thread(() =>
+      {
+        while (keepRunning)
+        {
+          if (!Usages.IsEmpty)
+          {
+            List<SoundUsage> tempsForSave = new List<SoundUsage>();
+            while (!Usages.IsEmpty)
+            {
+              if (Usages.TryDequeue(out SoundUsage item))
+              {
+                tempsForSave.Add(item);
+              }
+            }
+
+            using (var scope = serviceProvider.CreateScope())
+            {
+              var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+              db.SoundUsages.AddRange(tempsForSave);
+              db.SaveChanges();
+            }
+          }
+
+          Thread.Sleep(10000);
+        }
+      });
+
+      LoggingThread.Start();
     }
 
     public void Init()
@@ -121,11 +155,20 @@ namespace NervboxDeamon.Services
       }
     }
 
-    public void PlaySound(string soundId)
+    public void PlaySound(string soundId, string initiator)
     {
-      var sound = this.Sounds[soundId];
-      //var affe = this.SshService.SendReadCmd($"sudo omxplayer --no-keys -o local {Path.Combine(SoundDirectory.FullName, sound.FileName)} &", out string error, out int exitStatus);
-      this.SshService.SendCmd($"omxplayer -o local --no-keys {Path.Combine(SoundDirectory.FullName, sound.FileName.Replace("!", "\\!").Replace(" ", "\\ "))} &");
+      new Task(() =>
+      {
+        var sound = this.Sounds[soundId];
+        this.SshService.SendCmd($"omxplayer -o local --no-keys {Path.Combine(SoundDirectory.FullName, sound.FileName.Replace("!", "\\!").Replace(" ", "\\ "))} &");
+        this.Usages.Enqueue(new SoundUsage()
+        {
+          Initiator = initiator,
+          Time = DateTime.UtcNow,
+          SoundHash = sound.Hash
+        });
+
+      }).Start();
     }
 
   }

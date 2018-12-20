@@ -111,6 +111,7 @@ namespace NervboxDeamon
       });
 
       // configure DI for application services
+      services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
       services.AddScoped<IUserService, UserService>();
       services.AddSingleton<ISettingsService, SettingsService>();
       services.AddSingleton<ISshService, SSHService>();
@@ -135,15 +136,15 @@ namespace NervboxDeamon
             DbConnection con = db.GetDbConnection();
             con.Open();
             DbCommand cmd = con.CreateCommand();
-            cmd.CommandText = @"SELECT COUNT(1) FROM _timescaledb_catalog.hypertable WHERE table_name = 'records' LIMIT 1";
+            cmd.CommandText = @"SELECT COUNT(1) FROM _timescaledb_catalog.hypertable WHERE table_name = 'soundusage' LIMIT 1";
             Int64 hyperTable = (Int64)cmd.ExecuteScalar();
             con.Close();
 
             if (hyperTable == 0)
             {
               //try setting hypertable mode for our records table
-              var result = db.ExecuteSqlCommand((new RawSqlString("SELECT create_hypertable('records', 'time');"))); //defaults to partion size: 1 week
-              //var result = db.ExecuteSqlCommand((new RawSqlString("SELECT create_hypertable('records', 'time', chunk_time_interval => interval '1 day');"))); //1 day
+              //var result = db.ExecuteSqlCommand((new RawSqlString("SELECT create_hypertable('soundUsage', 'time');"))); //defaults to partion size: 1 week
+              var result = db.ExecuteSqlCommand((new RawSqlString("SELECT create_hypertable('soundusage', 'time', chunk_time_interval => interval '1 day');"))); //1 day
             }
             else
             {

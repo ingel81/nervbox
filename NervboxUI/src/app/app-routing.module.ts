@@ -14,12 +14,10 @@ import {
 const routes: Routes = [
   {
     path: 'nervbox',
-    canActivate: [AuthGuard],
     loadChildren: 'app/nervbox/nervbox.module#NervboxModule'
   },
   {
     path: 'pages',
-    canActivate: [AuthGuard],
     loadChildren: 'app/pages/pages.module#PagesModule'
   },
   {

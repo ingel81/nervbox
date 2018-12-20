@@ -25,7 +25,7 @@ namespace NervboxDeamon.Controllers
     public int Limit { get; set; }
   }
 
-  [Authorize]
+  [AllowAnonymous]
   [Route("api/[controller]")]
   [ApiController]
   public class TimescaleController : NervboxBaseController<TimescaleController>
@@ -45,7 +45,7 @@ namespace NervboxDeamon.Controllers
       using (var cmd = conn.CreateCommand())
       {
         var bucketSizeString = string.Format("{0} {1}", model.BucketSize, model.BucketType.ToString().ToLowerInvariant());
-        cmd.CommandText = string.Format(@"SELECT time_bucket('{0}', time) AS ke, {1}({2}) AS va FROM records GROUP BY ke ORDER BY ke DESC LIMIT @limit;", bucketSizeString, model.Aggregation.ToString().ToLowerInvariant(), model.Metric);
+        cmd.CommandText = string.Format(@"SELECT time_bucket('{0}', time) AS ke, {1}({2}) AS va FROM soundusage GROUP BY ke ORDER BY ke DESC LIMIT @limit;", bucketSizeString, model.Aggregation.ToString().ToLowerInvariant(), model.Metric);
         cmd.CommandType = System.Data.CommandType.Text;
         cmd.Parameters.AddWithValue("@limit", model.Limit);
 

@@ -19,37 +19,6 @@ namespace NervboxDeamon.Migrations
                 .HasAnnotation("ProductVersion", "2.2.0-rtm-35687")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            modelBuilder.Entity("NervboxDeamon.DbModels.Record", b =>
-                {
-                    b.Property<DateTime>("Time")
-                        .HasColumnName("time");
-
-                    b.Property<double>("Acceleration")
-                        .HasColumnName("acc");
-
-                    b.Property<double>("Current")
-                        .HasColumnName("cur");
-
-                    b.Property<long>("Cycles")
-                        .HasColumnName("cycl");
-
-                    b.Property<double>("Temperature1")
-                        .HasColumnName("temp_1");
-
-                    b.Property<double>("Temperature2")
-                        .HasColumnName("temp_2");
-
-                    b.Property<double>("Temperature3")
-                        .HasColumnName("temp_3");
-
-                    b.Property<double>("TemperatureB")
-                        .HasColumnName("temp_b");
-
-                    b.HasKey("Time");
-
-                    b.ToTable("records");
-                });
-
             modelBuilder.Entity("NervboxDeamon.DbModels.Setting", b =>
                 {
                     b.Property<string>("Key")
@@ -93,6 +62,31 @@ namespace NervboxDeamon.Migrations
                     b.HasKey("Hash");
 
                     b.ToTable("Sounds");
+                });
+
+            modelBuilder.Entity("NervboxDeamon.DbModels.SoundUsage", b =>
+                {
+                    b.Property<DateTime>("Time")
+                        .HasColumnName("time");
+
+                    b.Property<string>("Initiator")
+                        .HasColumnName("initiator");
+
+                    b.Property<string>("SoundHash")
+                        .HasColumnName("soundhash");
+
+                    b.HasKey("Time");
+
+                    b.HasIndex("SoundHash");
+
+                    b.ToTable("soundusage");
+                });
+
+            modelBuilder.Entity("NervboxDeamon.DbModels.SoundUsage", b =>
+                {
+                    b.HasOne("NervboxDeamon.DbModels.Sound", "Sound")
+                        .WithMany("Usages")
+                        .HasForeignKey("SoundHash");
                 });
 #pragma warning restore 612, 618
         }

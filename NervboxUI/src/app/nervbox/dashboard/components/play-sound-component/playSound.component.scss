@@ -4,7 +4,11 @@
 
     .sound-item {
         margin: 5px;
-        width: 136px;
+        overflow: hidden;
+        font-weight: bold;
+        text-transform: none;
+        font-size: 0.9em;
+        box-shadow: #ccc 1px 1px 1px;
     }
 
 }

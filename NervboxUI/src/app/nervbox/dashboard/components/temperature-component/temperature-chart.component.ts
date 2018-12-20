@@ -45,6 +45,18 @@ export class TemperatureChartComponent implements AfterViewInit, OnDestroy, OnIn
     var query: ITimescaleQueryParameters = null;
     switch (this.mode) {
 
+      case "last 5 minutes":
+        query = { metric: this.valueMode.metric, aggregation: this.valueMode.aggregationType, bucketSize: 1, bucketType: 'second', limit: 5*60 };
+        break;
+
+      case "last 15 minutes":
+        query = { metric: this.valueMode.metric, aggregation: this.valueMode.aggregationType, bucketSize: 3, bucketType: 'second', limit: 300 };
+        break;
+
+      case "last 30 minutes":
+        query = { metric: this.valueMode.metric, aggregation: this.valueMode.aggregationType, bucketSize: 6, bucketType: 'second', limit: 300 };
+        break;
+
       case "last hour":
         query = { metric: this.valueMode.metric, aggregation: this.valueMode.aggregationType, bucketSize: 1, bucketType: 'minute', limit: 60 };
         break;
@@ -141,6 +153,35 @@ export class TemperatureChartComponent implements AfterViewInit, OnDestroy, OnIn
                 var label: string = "";
 
                 switch (this.mode) {
+
+                  case "last 5 minutes":
+                    label = date.format('HH:mm:ss');
+
+                    if (index === 0) {
+                      label = date.format('YYYY-MM-DD') + " " + label;
+                    }
+
+                    break;
+
+                  case "last 15 minutes":
+                    label = date.format('HH:mm:ss');
+
+                    if (index === 0) {
+                      label = date.format('YYYY-MM-DD') + " " + label;
+                    }
+
+                    break;
+
+                  case "last 30 minutes":
+                    label = date.format('HH:mm:ss');
+
+                    if (index === 0) {
+                      label = date.format('YYYY-MM-DD') + " " + label;
+                    }
+
+                    break;
+
+
                   case "last hour":
                     label = date.format('HH:mm');
 
@@ -194,40 +235,14 @@ export class TemperatureChartComponent implements AfterViewInit, OnDestroy, OnIn
               label: {
                 formatter: params => {
                   return (
-                    'Temperatur  ' + moment(params.value).format('YYYY-MM-DD HH:mm') + (params.seriesData.length ? '：' + params.seriesData[0].data : '')
+                    'Wiedergaben  ' + moment(params.value).format('YYYY-MM-DD HH:mm') + (params.seriesData.length ? '：' + params.seriesData[0].data : '')
                   );
                 },
               },
             },
             data: this.data.keys,
           },
-          {
-            type: 'category',
-            axisTick: {
-              alignWithLabel: true,
-            },
-            axisLine: {
-              onZero: false,
-              lineStyle: {
-                color: colors.success,
-              },
-            },
-            axisLabel: {
-              textStyle: {
-                color: echarts.textColor,
-              },
-            },
-            axisPointer: {
-              label: {
-                formatter: params => {
-                  return (
-                    'Precipitation  ' + params.value + (params.seriesData.length ? '：' + params.seriesData[0].data : '')
-                  );
-                },
-              },
-            },
-            data: this.data.keys,
-          },
+
         ],
         yAxis: [
           {
@@ -250,13 +265,6 @@ export class TemperatureChartComponent implements AfterViewInit, OnDestroy, OnIn
           },
         ],
         series: [
-          {
-            name: '2015 Precipitation',
-            type: 'line',
-            xAxisIndex: 1,
-            smooth: true,
-            data: this.data.values,
-          },
           {
             name: '2016 Precipitation',
             type: 'line',
