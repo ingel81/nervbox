@@ -10,6 +10,10 @@ import { SensorComponent } from './components/sensor-component/sensor.component'
 import { SensorCardFrontComponent } from './components/sensor-component/front-side/sensor-card-front.component';
 import { SensorCardBackComponent } from './components/sensor-component/back-side/sensor-card-back.component';
 import { StatusWidgetComponent } from './components/status-widget-component/statusWidget.component';
+import { PlaySoundComponent} from './components/play-sound-component/playSound.component';
+
+import { SearchFilterPipe } from './components/search-filter/searchFilter.pipe';
+
 
 @NgModule({
   imports: [
@@ -25,6 +29,8 @@ import { StatusWidgetComponent } from './components/status-widget-component/stat
     SensorCardFrontComponent,
     SensorCardBackComponent,
     StatusWidgetComponent,
+    PlaySoundComponent,
+    SearchFilterPipe,
   ],
 })
 export class DashboardModule { }

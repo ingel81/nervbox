@@ -14,12 +14,14 @@ import { NervboxDataService } from './services/nervboxdata.service';
 import { NervboxSettingsService } from './services/nervboxsettings.service';
 import { SshService } from './services/ssh.service';
 import { SystemService } from './services/system.service';
+import { SoundService } from './services/sound.service';
 
 const SERVICES = [
   NervboxDataService,
   NervboxSettingsService,
   SshService,
-  SystemService
+  SystemService,
+  SoundService,
 ];
 
 const NERVBOX_COMPONENTS = [

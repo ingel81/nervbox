@@ -115,6 +115,7 @@ namespace NervboxDeamon
       services.AddSingleton<ISettingsService, SettingsService>();
       services.AddSingleton<ISshService, SSHService>();
       services.AddSingleton<ISystemService, SystemService>();
+      services.AddSingleton<ISoundService, SoundService>();
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -156,7 +157,7 @@ namespace NervboxDeamon
         }
       }
       catch (Exception ex)
-      {        
+      {
         Logger.LogCritical(ex, "Failed to migrate or seed database");
       }
 
@@ -184,14 +185,17 @@ namespace NervboxDeamon
         await context.Response.SendFileAsync(Path.Combine(env.WebRootPath, "index.html"));
       });
 
-      //configure/start ISettingsService
+      // configure/start ISettingsService
       var settingsService = app.ApplicationServices.GetRequiredService<ISettingsService>();
       settingsService.CheckSettingConsistency();
 
-      //configure/start ISSHService
+      // configure/start ISSHService
       var sshService = app.ApplicationServices.GetRequiredService<ISshService>();
       sshService.Init();
 
+      // configure/start ISoundService
+      var soundService = app.ApplicationServices.GetRequiredService<ISoundService>();
+      soundService.Init();
     }
   }
 }

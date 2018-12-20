@@ -29,5 +29,6 @@ namespace NervboxDeamon
 
     public DbSet<Record> Records { get; set; }
     public DbSet<Setting> Settings { get; set; }
+    public DbSet<Sound> Sounds { get; set; }
   }
 }

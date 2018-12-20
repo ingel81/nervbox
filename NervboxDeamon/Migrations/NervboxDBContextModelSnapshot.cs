@@ -74,6 +74,26 @@ namespace NervboxDeamon.Migrations
 
                     b.ToTable("settings");
                 });
+
+            modelBuilder.Entity("NervboxDeamon.DbModels.Sound", b =>
+                {
+                    b.Property<string>("Hash")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnName("hash");
+
+                    b.Property<bool>("Allowed")
+                        .HasColumnName("allowed");
+
+                    b.Property<string>("FileName")
+                        .HasColumnName("fileName");
+
+                    b.Property<bool>("Valid")
+                        .HasColumnName("valid");
+
+                    b.HasKey("Hash");
+
+                    b.ToTable("Sounds");
+                });
 #pragma warning restore 612, 618
         }
     }

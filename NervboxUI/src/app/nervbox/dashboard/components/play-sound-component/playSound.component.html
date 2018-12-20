@@ -1,0 +1,39 @@
+<nb-card size="large">
+        <nb-card-header>
+    
+    
+            <form #searchForm="ngForm"
+                  class="form">
+    
+                <div class="form-group">
+                    <input ngControl="soundSearch"
+                           id="soundSearch"
+                           type="text"
+                           placeholder="suchen..."
+                           class="form-control"
+                           required
+                           minlength="1"
+                           name="soundSearch"
+                           [(ngModel)]="filterargs.fileName" />
+    
+                </div>
+            </form>
+    
+        </nb-card-header>
+    
+        <nb-card-body>
+    
+            <button nbButton status="primary" size="xsmall" (click)="playSound(s)"
+                 class="sound-item"
+                 *ngFor="let s of sounds | searchfilter:filterargs">
+                {{s.fileName}}
+            </button>
+    
+            <pre>{{sounds | json}}</pre>
+        </nb-card-body>
+    
+        <nb-card-footer>
+    
+        </nb-card-footer>
+    
+    </nb-card>

@@ -10,6 +10,7 @@ namespace NervboxDeamon.Helpers
   {
     public string Secret { get; set; }
     public string LogPath { get; set; }
+    public string SoundPath { get; set; }
     public SSHSettings SSH { get; set; }
   }
 
