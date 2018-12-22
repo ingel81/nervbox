@@ -31,4 +31,13 @@ export class SoundService {
     playSound(soundId: string): Observable<any> {
         return this.http.get<any>(environment.apiUrl + '/sound/' + soundId+ '/play');
     }
+
+    getTopUsers(): Observable<any> {
+        return this.http.get(environment.apiUrl + '/sound/statistics/topusers');
+    }
+
+    getTopSounds(): Observable<any> {
+        return this.http.get(environment.apiUrl + '/sound/statistics/topsounds');
+    }
+
 }

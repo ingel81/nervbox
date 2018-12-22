@@ -61,7 +61,7 @@ namespace NervboxDeamon.Migrations
 
                     b.HasKey("Hash");
 
-                    b.ToTable("Sounds");
+                    b.ToTable("sound");
                 });
 
             modelBuilder.Entity("NervboxDeamon.DbModels.SoundUsage", b =>

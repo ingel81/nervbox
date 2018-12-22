@@ -26,7 +26,7 @@
             <button nbButton status="primary" size="xsmall" (click)="playSound(s)"
                  class="sound-item"
                  *ngFor="let s of sounds | searchfilter:filterargs">
-                 <i class="far far fa-play-circle"></i> {{s.fileName}}
+                 <i class="far far fa-play-circle"></i> {{s.fileName | slice:0:30}}
             </button>
     
             <!-- <pre>{{sounds | json}}</pre> -->

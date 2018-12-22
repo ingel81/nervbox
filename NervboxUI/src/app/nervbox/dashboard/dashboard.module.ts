@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 
-import { NbListModule } from '@nebular/theme';
+import { NbListModule, NbBadgeModule } from '@nebular/theme';
 import { NgxEchartsModule } from 'ngx-echarts';
 import { ThemeModule } from '../../@theme/theme.module';
 import { DashboardComponent } from './dashboard.component';
@@ -13,13 +13,14 @@ import { StatusWidgetComponent } from './components/status-widget-component/stat
 import { PlaySoundComponent} from './components/play-sound-component/playSound.component';
 
 import { SearchFilterPipe } from './components/search-filter/searchFilter.pipe';
-
+import { StatisticsComponent} from './components/statistics-component/statistics.component';
 
 @NgModule({
   imports: [
     ThemeModule,
     NgxEchartsModule,
     NbListModule,
+    NbBadgeModule,
   ],
   declarations: [
     DashboardComponent,
@@ -31,6 +32,7 @@ import { SearchFilterPipe } from './components/search-filter/searchFilter.pipe';
     StatusWidgetComponent,
     PlaySoundComponent,
     SearchFilterPipe,
+    StatisticsComponent,
   ],
 })
 export class DashboardModule { }

@@ -10,7 +10,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NervboxDeamon.Migrations
 {
     [DbContext(typeof(NervboxDBContext))]
-    [Migration("20181220213519_Initial")]
+    [Migration("20181222200634_Initial")]
     partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -63,7 +63,7 @@ namespace NervboxDeamon.Migrations
 
                     b.HasKey("Hash");
 
-                    b.ToTable("Sounds");
+                    b.ToTable("sound");
                 });
 
             modelBuilder.Entity("NervboxDeamon.DbModels.SoundUsage", b =>

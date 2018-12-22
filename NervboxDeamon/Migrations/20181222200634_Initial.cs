@@ -23,7 +23,7 @@ namespace NervboxDeamon.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Sounds",
+                name: "sound",
                 columns: table => new
                 {
                     hash = table.Column<string>(nullable: false),
@@ -33,7 +33,7 @@ namespace NervboxDeamon.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Sounds", x => x.hash);
+                    table.PrimaryKey("PK_sound", x => x.hash);
                 });
 
             migrationBuilder.CreateTable(
@@ -48,9 +48,9 @@ namespace NervboxDeamon.Migrations
                 {
                     table.PrimaryKey("PK_soundusage", x => x.time);
                     table.ForeignKey(
-                        name: "FK_soundusage_Sounds_soundhash",
+                        name: "FK_soundusage_sound_soundhash",
                         column: x => x.soundhash,
-                        principalTable: "Sounds",
+                        principalTable: "sound",
                         principalColumn: "hash",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -70,7 +70,7 @@ namespace NervboxDeamon.Migrations
                 name: "soundusage");
 
             migrationBuilder.DropTable(
-                name: "Sounds");
+                name: "sound");
         }
     }
 }
