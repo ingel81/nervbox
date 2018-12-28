@@ -15,6 +15,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Collections.Concurrent;
 using System.Threading;
+using System.Net;
 
 namespace NervboxDeamon.Services
 {
@@ -22,6 +23,7 @@ namespace NervboxDeamon.Services
   {
     void Init();
     void PlaySound(string soundId, string initiator);
+    void KillAll();
   }
 
   public class SoundService : ISoundService
@@ -31,6 +33,8 @@ namespace NervboxDeamon.Services
     private readonly IConfiguration Configuration;
     private readonly IServiceProvider serviceProvider;
     private ISshService SshService { get; }
+    private readonly IHubContext<SoundHub> SoundHub;
+
 
     //member
     private Dictionary<string, Sound> Sounds { get; set; }
@@ -43,13 +47,15 @@ namespace NervboxDeamon.Services
       IServiceProvider serviceProvider,
       ILogger<ISoundService> logger,
       IConfiguration configuration,
-      ISshService sshService
+      ISshService sshService,
+      IHubContext<SoundHub> soundHub
       )
     {
       this.serviceProvider = serviceProvider;
       this.Logger = logger;
       this.Configuration = configuration;
       this.SshService = sshService;
+      this.SoundHub = soundHub;
 
       LoggingThread = new Thread(() =>
       {
@@ -104,7 +110,7 @@ namespace NervboxDeamon.Services
           }
         }
 
-        found.Add(new { Name = name, Hash = hash });
+        found.Add(new { Name = name, Hash = hash, Size = fi.Length });
       }
 
       using (var scope = serviceProvider.CreateScope())
@@ -129,11 +135,11 @@ namespace NervboxDeamon.Services
         foreach (var newSound in newSounds)
         {
 
-          db.Sounds.Add(new Sound() { Allowed = true, Hash = newSound.Hash, FileName = newSound.Name, Valid = true });
+          db.Sounds.Add(new Sound() { Allowed = true, Hash = newSound.Hash, FileName = newSound.Name, Valid = true, Size = newSound.Size });
           soundsChanged = true;
         }
 
-        // 3) für die validen soduns den Namen Updaten falls geändert
+        //3) für die validen soduns den Namen Updaten falls geändert
         foreach (var sound in validSounds)
         {
           var foundSound = found.Where(f => f.Hash.Equals(sound.Hash)).Single();
@@ -161,14 +167,39 @@ namespace NervboxDeamon.Services
       {
         var sound = this.Sounds[soundId];
         this.SshService.SendCmd($"omxplayer -o local --no-keys {Path.Combine(SoundDirectory.FullName, sound.FileName.Replace("!", "\\!").Replace(" ", "\\ "))} &");
-        this.Usages.Enqueue(new SoundUsage()
+
+        //try
+        //{
+        //  IPHostEntry e = Dns.GetHostEntry(initiator);
+        //  if (e != null)
+        //  {
+        //    initiator = $"{e.HostName} ({initiator})";
+        //  }
+        //}
+        //catch { }
+
+        var usage = new SoundUsage()
         {
           Initiator = initiator,
           Time = DateTime.UtcNow,
           SoundHash = sound.Hash
+        };
+
+        this.Usages.Enqueue(usage);
+        this.SoundHub.Clients.All.SendAsync("soundPlayed", new
+        {
+          Initiator = initiator,
+          Time = DateTime.UtcNow,
+          SoundHash = sound.Hash,
+          FileName =  sound.FileName
         });
 
       }).Start();
+    }
+
+    public void KillAll()
+    {
+      this.SshService.SendCmd($"sudo pkill -f omxplayer");
     }
 
   }

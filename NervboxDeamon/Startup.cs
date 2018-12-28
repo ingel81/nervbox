@@ -173,6 +173,7 @@ namespace NervboxDeamon
       app.UseSignalR(routes =>
       {
         routes.MapHub<SshHub>("/sshHub");
+        routes.MapHub<SoundHub>("/soundHub");
       });
 
       app.UseAuthentication();

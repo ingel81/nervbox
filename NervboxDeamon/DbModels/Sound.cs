@@ -24,6 +24,9 @@ namespace NervboxDeamon.DbModels
     [Column("valid")]
     public bool Valid { get; set; }
 
+    [Column("Size")]
+    public long Size { get; set; }
+
     public virtual IEnumerable<SoundUsage> Usages { get; set; }
   }
 }

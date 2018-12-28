@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace NervboxDeamon.Migrations
 {
-    public partial class Initial : Migration
+    public partial class initial : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -29,7 +29,8 @@ namespace NervboxDeamon.Migrations
                     hash = table.Column<string>(nullable: false),
                     fileName = table.Column<string>(nullable: true),
                     allowed = table.Column<bool>(nullable: false),
-                    valid = table.Column<bool>(nullable: false)
+                    valid = table.Column<bool>(nullable: false),
+                    Size = table.Column<long>(nullable: false)
                 },
                 constraints: table =>
                 {

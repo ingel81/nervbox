@@ -15,12 +15,15 @@ import { PlaySoundComponent} from './components/play-sound-component/playSound.c
 import { SearchFilterPipe } from './components/search-filter/searchFilter.pipe';
 import { StatisticsComponent} from './components/statistics-component/statistics.component';
 
+import { OrderModule } from 'ngx-order-pipe';
+
 @NgModule({
   imports: [
     ThemeModule,
     NgxEchartsModule,
     NbListModule,
     NbBadgeModule,
+    OrderModule
   ],
   declarations: [
     DashboardComponent,

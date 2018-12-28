@@ -10,8 +10,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NervboxDeamon.Migrations
 {
     [DbContext(typeof(NervboxDBContext))]
-    [Migration("20181222200634_Initial")]
-    partial class Initial
+    [Migration("20181223161225_initial")]
+    partial class initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -57,6 +57,9 @@ namespace NervboxDeamon.Migrations
 
                     b.Property<string>("FileName")
                         .HasColumnName("fileName");
+
+                    b.Property<long>("Size")
+                        .HasColumnName("Size");
 
                     b.Property<bool>("Valid")
                         .HasColumnName("valid");

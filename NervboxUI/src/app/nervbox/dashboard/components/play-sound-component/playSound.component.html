@@ -1,39 +1,61 @@
 <nb-card size="large">
-        <nb-card-header>
-    
-    
-            <form #searchForm="ngForm"
-                  class="form">
-    
-                <div class="form-group">
-                    <input ngControl="soundSearch"
-                           id="soundSearch"
-                           type="text"
-                           placeholder="suchen..."
-                           class="form-control"
-                           required
-                           minlength="1"
-                           name="soundSearch"
-                           [(ngModel)]="filterargs.fileName" />
-    
-                </div>
-            </form>
-    
-        </nb-card-header>
-    
-        <nb-card-body>
-    
-            <button nbButton status="primary" size="xsmall" (click)="playSound(s)"
-                 class="sound-item"
-                 *ngFor="let s of sounds | searchfilter:filterargs">
-                 <i class="far far fa-play-circle"></i> {{s.fileName | slice:0:30}}
+    <nb-card-header>
+
+
+        <form #searchForm="ngForm"
+              class="form">
+
+            <div class="form-group">
+                <input ngControl="soundSearch"
+                       id="soundSearch"
+                       type="text"
+                       placeholder="suchen..."
+                       class="form-control"
+                       required
+                       minlength="1"
+                       name="soundSearch"
+                       [(ngModel)]="filterargs.fileName" />
+
+            </div>
+        </form>
+
+    </nb-card-header>
+
+    <nb-card-body>
+
+        <button nbButton
+                status="primary"
+                size="xsmall"
+                (click)="playSound(s)"
+                class="sound-item"
+                [ngClass]="{'active': s.active === true }"
+                *ngFor="let s of sounds | searchfilter:filterargs | orderBy: order.mode : order.reverse : true">
+            <i class="far far fa-play-circle"></i> {{s.fileName | slice:0:30}}
+        </button>
+
+        <!-- <pre>{{sounds | json}}</pre> -->
+    </nb-card-body>
+
+    <nb-card-footer>
+        <div class="dropdown"
+             [ngClass]="{ 'ghost-dropdown': currentTheme === 'nervbox' }"
+             ngbDropdown>
+            <button type="button"
+                    ngbDropdownToggle
+                    class="btn"
+                    [ngClass]="{ 'btn-outline-success': currentTheme == 'default', 'btn-primary': currentTheme != 'default'}">
+                {{ order.displayName }}
             </button>
-    
-            <!-- <pre>{{sounds | json}}</pre> -->
-        </nb-card-body>
-    
-        <nb-card-footer>
-    
-        </nb-card-footer>
-    
-    </nb-card>
+            <ul class="dropdown-menu"
+                ngbDropdownMenu>
+                <li class="dropdown-item"
+                    *ngFor="let m of orderModes"
+                    (click)="order = m">{{ m.displayName }}</li>
+            </ul>
+        </div>
+
+        <span class="kill-all" (click)="killAllSounds()">Kill</span>
+
+    </nb-card-footer>
+
+</nb-card>

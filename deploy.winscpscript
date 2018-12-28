@@ -1,4 +1,4 @@
-open sftp://pi:***REMOVED***@192.168.2.222/ -hostkey="ssh-ed25519 256 9dq0Ni57UNIFouknAaXyRs3zheS5ndNi+Hjw0HavNX4="
+open sftp://pi:***REMOVED***@192.168.100.74/ -hostkey="ssh-ed25519 256 9dq0Ni57UNIFouknAaXyRs3zheS5ndNi+Hjw0HavNX4="
 
 call sudo systemctl stop nervbox
 

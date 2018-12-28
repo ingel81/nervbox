@@ -7,5 +7,6 @@ export const environment = {
   production: true,
   apiUrl: "/api",
   signalrSerialUrl: "/serialComHub",
-  signalrSshUrl: "/sshHub"  
+  signalrSshUrl: "/sshHub",
+  signalrSoundUrl: "/soundHub"
 };

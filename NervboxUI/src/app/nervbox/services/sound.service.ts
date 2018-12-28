@@ -16,6 +16,7 @@ export interface ISound{
     fileName: string;
     allowed: boolean;
     valid: boolean;
+    active: boolean;
 }
 
 @Injectable()
@@ -39,5 +40,10 @@ export class SoundService {
     getTopSounds(): Observable<any> {
         return this.http.get(environment.apiUrl + '/sound/statistics/topsounds');
     }
+
+    killAllSounds(): Observable<any> {
+        return this.http.get(environment.apiUrl + '/sound/killAll');
+    }
+
 
 }

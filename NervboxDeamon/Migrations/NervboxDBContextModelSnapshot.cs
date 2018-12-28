@@ -56,6 +56,9 @@ namespace NervboxDeamon.Migrations
                     b.Property<string>("FileName")
                         .HasColumnName("fileName");
 
+                    b.Property<long>("Size")
+                        .HasColumnName("Size");
+
                     b.Property<bool>("Valid")
                         .HasColumnName("valid");
 

@@ -12,5 +12,6 @@ export const environment = {
   production: false,
   apiUrl: "http://localhost:62155/api",
   signalrSerialUrl: "http://localhost:62155/serialComHub",
-  signalrSshUrl: "http://localhost:62155/sshHub"
+  signalrSshUrl: "http://localhost:62155/sshHub",
+  signalrSoundUrl: "http://localhost:62155/soundHub",
 };

@@ -31,14 +31,22 @@ namespace NervboxDeamon.Controllers
     [HttpGet]
     public IActionResult GetAllValidSounds()
     {
-      return Ok(this.DbContext.Sounds.Where(s => s.Allowed == true && s.Valid == true).ToList());
+      return Ok(this.DbContext.Sounds.Where(s => s.Allowed == true && s.Valid == true).Select(s => new
+      {
+        Hash = s.Hash,
+        FileName = s.FileName,
+        Allowed = s.Allowed,
+        Valid = s.Valid,
+        Size = s.Size,
+        Played = s.Usages.Count()
+      }).ToList());
     }
 
     [AllowAnonymous]
     [HttpGet]
     [Route("{soundId}/play")]
     public IActionResult PlaySound(string soundId)
-    {      
+    {
 
       try
       {
@@ -83,7 +91,8 @@ namespace NervboxDeamon.Controllers
     {
       try
       {
-        var affe = this.DbContext.SoundUsages.Join(this.DbContext.Sounds, outer => outer.SoundHash, inner => inner.Hash, (usages, sounds) => new { usages, sounds }).GroupBy(a => a.usages.SoundHash).Select(a => new {
+        var affe = this.DbContext.SoundUsages.Join(this.DbContext.Sounds, outer => outer.SoundHash, inner => inner.Hash, (usages, sounds) => new { usages, sounds }).GroupBy(a => a.usages.SoundHash).Select(a => new
+        {
           Hash = a.Key,
           Name = a.First().sounds.FileName,
           Count = a.Count()
@@ -101,5 +110,13 @@ namespace NervboxDeamon.Controllers
       }
     }
 
+    [AllowAnonymous]
+    [HttpGet]
+    [Route("killAll")]
+    public IActionResult KillAll()
+    {
+      this.SoundService.KillAll();
+      return Ok();
+    }
   }
 }
