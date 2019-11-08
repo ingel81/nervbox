@@ -9,6 +9,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
+using Serilog.Formatting.Compact;
+using Serilog.Formatting.Json;
+using Serilog.Sinks.SystemConsole.Themes;
+using NervboxDeamon.Helpers;
+using NervboxDeamon.Models.Settings;
 
 namespace NervboxDeamon
 {
@@ -16,7 +21,7 @@ namespace NervboxDeamon
   {
     public static void Main(string[] args)
     {
-      CreateWebHostBuilder(args).Build().Run();  
+      CreateWebHostBuilder(args).Build().Run();
     }
 
     public static IWebHostBuilder CreateWebHostBuilder(string[] args)
@@ -27,16 +32,23 @@ namespace NervboxDeamon
             {
               Serilog.Debugging.SelfLog.Enable(msg => Console.WriteLine(msg));
 
-              var logPath = ctx.Configuration.GetSection("AppSettings")["LogPath"];
+              var logPath = ctx.Configuration.GetSection("AppSettings").Get<AppSettings>().LogPath;
 
               Console.WriteLine(string.Format("logs are written to: {0}", logPath));
 
               cfg.ReadFrom.Configuration(ctx.Configuration)
-              .WriteTo.RollingFile(logPath, outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} {Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}")
+              //.WriteTo.RollingFile(logPath, outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} {Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}")              
+              //.WriteTo.RollingFile(new CompactJsonFormatter(), logPath)
+              .WriteTo.RollingFile(new CompactJsonFormatter(), logPath)
               .Enrich.FromLogContext()
-              .WriteTo.Console();
+              .WriteTo.Console(outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} {Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}");
             }
-          ).UseStartup<Startup>().UseUrls("http://0.0.0.0:8080");
+          )
+          .UseStartup<Startup>().UseUrls("http://0.0.0.0:8080")
+          .ConfigureKestrel((context, options) =>
+          {
+            options.AllowSynchronousIO = true;
+          });
     }
   }
 }

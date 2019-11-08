@@ -11,6 +11,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -22,7 +24,11 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using NervboxDeamon.Helpers;
 using NervboxDeamon.Hubs;
+using NervboxDeamon.Models.Settings;
 using NervboxDeamon.Services;
+using Newtonsoft.Json.Converters;
+using NervboxDeamon.Services.Interfaces;
+using Microsoft.AspNetCore.HttpOverrides;
 
 namespace NervboxDeamon
 {
@@ -30,6 +36,7 @@ namespace NervboxDeamon
   {
     private readonly ILogger<Startup> Logger;
     public IConfiguration Configuration { get; }
+    public INervboxModuleService ModuleService { get; }
 
     public Startup(ILogger<Startup> logger, IConfiguration configuration)
     {
@@ -74,12 +81,15 @@ namespace NervboxDeamon
             .AllowCredentials();
       }));
 
-      services.AddSignalR().AddJsonProtocol(options =>
+      services.AddSignalR().AddNewtonsoftJsonProtocol(options =>
       {
-        options.PayloadSerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+        options.PayloadSerializerSettings.Converters.Add(new StringEnumConverter());
       });
 
-      services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1).AddJsonOptions(options =>
+      services.AddMvc(o =>
+      {
+        //o.EnableEndpointRouting = false;
+      }).AddNewtonsoftJson(options =>
       {
         options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
         options.SerializerSettings.NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore;
@@ -92,6 +102,7 @@ namespace NervboxDeamon
       // configure jwt authentication
       var appSettings = appSettingsSection.Get<AppSettings>();
       var key = Encoding.ASCII.GetBytes(appSettings.Secret);
+
       services.AddAuthentication(x =>
       {
         x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -99,6 +110,7 @@ namespace NervboxDeamon
       })
       .AddJwtBearer(x =>
       {
+
         x.RequireHttpsMetadata = false;
         x.SaveToken = true;
         x.TokenValidationParameters = new TokenValidationParameters
@@ -111,17 +123,33 @@ namespace NervboxDeamon
       });
 
       // configure DI for application services
-      services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
       services.AddScoped<IUserService, UserService>();
       services.AddSingleton<ISettingsService, SettingsService>();
+      services.AddSingleton<INervboxModuleService, NervboxModuleService>();
       services.AddSingleton<ISshService, SSHService>();
       services.AddSingleton<ISystemService, SystemService>();
-      services.AddSingleton<ISoundService, SoundService>();
+      services.AddSingleton<IRecordingService, RecordingService>();
+      services.AddSingleton<IRecordingService, RecordingService>();
+      services.AddSingleton<ISocketAPIService, SocketAPIService>();
+
+      services.Configure<IISServerOptions>(options =>
+      {
+        options.AllowSynchronousIO = true;
+      });
+
     }
 
-    // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-    public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+    // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.    
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
+      app.UseForwardedHeaders(new ForwardedHeadersOptions
+      {
+        ForwardedHeaders = ForwardedHeaders.All
+      });
+
+      //auto migration db
+      UpdateDatabase(app);
+
       try
       {
         using (var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope())
@@ -136,15 +164,14 @@ namespace NervboxDeamon
             DbConnection con = db.GetDbConnection();
             con.Open();
             DbCommand cmd = con.CreateCommand();
-            cmd.CommandText = @"SELECT COUNT(1) FROM _timescaledb_catalog.hypertable WHERE table_name = 'soundusage' LIMIT 1";
+            cmd.CommandText = @"SELECT COUNT(1) FROM _timescaledb_catalog.hypertable WHERE table_name = 'records' LIMIT 1";
             Int64 hyperTable = (Int64)cmd.ExecuteScalar();
             con.Close();
 
             if (hyperTable == 0)
             {
               //try setting hypertable mode for our records table
-              //var result = db.ExecuteSqlCommand((new RawSqlString("SELECT create_hypertable('soundUsage', 'time');"))); //defaults to partion size: 1 week
-              var result = db.ExecuteSqlCommand((new RawSqlString("SELECT create_hypertable('soundusage', 'time', chunk_time_interval => interval '1 day');"))); //1 day
+              var result = db.ExecuteSqlRaw("SELECT create_hypertable('records', 'time');"); //defaults to partion size: 1 week              
             }
             else
             {
@@ -162,7 +189,7 @@ namespace NervboxDeamon
         Logger.LogCritical(ex, "Failed to migrate or seed database");
       }
 
-      if (env.IsDevelopment())
+      if (env.EnvironmentName == "Development")
       {
         app.UseDeveloperExceptionPage();
       }
@@ -170,14 +197,28 @@ namespace NervboxDeamon
       // global cors policy
       app.UseCors("CorsPolicy");
 
-      app.UseSignalR(routes =>
-      {
-        routes.MapHub<SshHub>("/sshHub");
-        routes.MapHub<SoundHub>("/soundHub");
-      });
+      //app.UseSignalR(routes =>
+      //{
+      //  routes.MapHub<SerialComHub>("/serialComHub");
+      //  routes.MapHub<SshHub>("/sshHub");
+      //  routes.MapHub<InfoModuleHub>("/moduleHub");
+      //});
+
+      app.UseRouting();
 
       app.UseAuthentication();
-      app.UseMvc();
+      app.UseAuthorization();
+
+      app.UseEndpoints(endpoints =>
+      {
+        endpoints.MapHub<SerialComHub>("/ws/serialComHub");
+        endpoints.MapHub<SshHub>("/ws/sshHub");
+        endpoints.MapHub<InfoModuleHub>("/ws/moduleHub");
+        endpoints.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
+      });
+
+
+      //app.UseMvc();
       app.UseStaticFiles();
       app.UseDefaultFiles();
 
@@ -187,17 +228,52 @@ namespace NervboxDeamon
         await context.Response.SendFileAsync(Path.Combine(env.WebRootPath, "index.html"));
       });
 
-      // configure/start ISettingsService
+      //### start own services ###
+
+      //configure/start ISettingsService
       var settingsService = app.ApplicationServices.GetRequiredService<ISettingsService>();
       settingsService.CheckSettingConsistency();
 
-      // configure/start ISSHService
+      //var userService = app.ApplicationServices.GetRequiredService<IUserService>();
+      //userService.CheckUsers();
+      CheckUsers(app);
+
+      //configure/start IRecordingService
+      var recordingService = app.ApplicationServices.GetRequiredService<IRecordingService>();
+      recordingService.Init();
+
+      //configure/start INervboxModuleService
+      var nervboxModuleService = app.ApplicationServices.GetRequiredService<INervboxModuleService>();
+      nervboxModuleService.Init();
+
+      //configure/start ISSHService
       var sshService = app.ApplicationServices.GetRequiredService<ISshService>();
       sshService.Init();
 
-      // configure/start ISoundService
-      var soundService = app.ApplicationServices.GetRequiredService<ISoundService>();
-      soundService.Init();
+      //configure/start ISocketAPIService
+      var socketAPIService = app.ApplicationServices.GetRequiredService<ISocketAPIService>();
+
+      socketAPIService.Init();
     }
+    
+    private static void UpdateDatabase(IApplicationBuilder app)
+    {
+      using (var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope())
+      {
+        using (var context = serviceScope.ServiceProvider.GetService<NervboxDBContext>())
+        {
+          context.Database.Migrate();
+        }
+      }
+    }
+
+    private static void CheckUsers(IApplicationBuilder app)
+    {
+      using (var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope())
+      {
+        serviceScope.ServiceProvider.GetService<IUserService>().CheckUsers();        
+      }
+    }
+
   }
 }

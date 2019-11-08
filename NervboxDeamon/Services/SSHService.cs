@@ -12,6 +12,7 @@ using System.IO;
 using Microsoft.AspNetCore.SignalR;
 using NervboxDeamon.Hubs;
 using System.Threading;
+using NervboxDeamon.Models.Settings;
 
 namespace NervboxDeamon.Services
 {
@@ -22,10 +23,13 @@ namespace NervboxDeamon.Services
     string SendReadCmd(string cmdText, out string error, out int existStatus, double timeoutMs = 5000d);
   }
 
+  /// <summary>
+  /// Stell div. Möglichkeit bereit via SSH mit dem System zu kommunizieren
+  /// </summary>
   public class SSHService : ISshService
   {
     //injected
-    private readonly ILogger<ISshService> Logger;
+    private readonly ILogger<NervboxModuleService> Logger;
     private readonly IConfiguration Configuration;
     private readonly IHubContext<SshHub> SshHub;
 
@@ -37,7 +41,7 @@ namespace NervboxDeamon.Services
     private bool keepRunning = true;
 
     public SSHService(
-      ILogger<ISshService> logger,
+      ILogger<NervboxModuleService> logger,
       IConfiguration configuration,
       IHubContext<SshHub> sshHub
       )
@@ -45,20 +49,28 @@ namespace NervboxDeamon.Services
       this.Logger = logger;
       this.Configuration = configuration;
       this.SshHub = sshHub;
+
+      keepRunning = true;
     }
 
     public void Init()
     {
-      var appSettingsSection = Configuration.GetSection("AppSettings");
-      var appSettings = appSettingsSection.Get<AppSettings>();
+      var appSettings = Configuration.GetSection("AppSettings").Get<AppSettings>();
 
-      client = new SshClient(appSettings.SSH.Host, appSettings.SSH.Port, "pi", "***REMOVED***");
+      if (!appSettings.SSH.Enabled)
+      {
+        this.Logger.LogInformation($"SSH connection disabled in config.");
+        return;
+      }
+
+      client = new SshClient(appSettings.SSH.Host, appSettings.SSH.Port, "pi", "Pw4t3k0nPi!");
       client.Connect();
 
       shell = client.CreateShellStream("", 80, 80, 80, 40, 1024);
       shell.DataReceived += Shell_DataReceived;
       sshThread = new Thread(() =>
       {
+        this.Logger.LogInformation($"SSH connection to {appSettings.SSH.Host}:{appSettings.SSH.Port} established.");
         while (keepRunning)
         {
           Thread.Sleep(500);

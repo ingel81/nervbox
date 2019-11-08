@@ -16,6 +16,7 @@ namespace NervboxDeamon.Models.Settings
     public WifiMode WifiMode { get; set; }
     public WifiSettings WifiSettings { get; set; }
     public AccessPointSettings AccessPointSettings { get; set; }
+    public NtpSettings NtpSettings { get; set; }
   }
 
   public class LanSettings
@@ -42,6 +43,11 @@ namespace NervboxDeamon.Models.Settings
     public string RangeEnd { get; set; }
     public int LeaseHours { get; set; }
     public int Channel { get; set; }
+  }
+
+  public class NtpSettings
+  {
+    public string Ntp { get; set; }
   }
 
 }

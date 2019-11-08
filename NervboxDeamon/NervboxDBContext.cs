@@ -28,7 +28,6 @@ namespace NervboxDeamon
     public NervboxDBContext(DbContextOptions<NervboxDBContext> options) : base(options) { }
 
     public DbSet<Setting> Settings { get; set; }
-    public DbSet<Sound> Sounds { get; set; }
-    public DbSet<SoundUsage> SoundUsages { get; set; }
+    public DbSet<User> Users { get; set; }
   }
 }

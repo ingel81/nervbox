@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,5 +16,15 @@ namespace NervboxDeamon.Controllers.Base
 
     private NervboxDBContext _dbContext;
     protected NervboxDBContext DbContext => _dbContext ?? (_dbContext = HttpContext.RequestServices.GetService<NervboxDBContext>());
+
+    protected string UserName
+    {
+      get => this.User.Claims.Where(a => a.Type.Equals("userName")).First().Value;
+    }
+
+    protected int UserId
+    {
+      get => int.Parse(this.User.Claims.Where(a => a.Type.Equals(ClaimTypes.Name)).First().Value);
+    }
   }
 }
