@@ -6,12 +6,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Entities\**" />
     <Compile Remove="logs\**" />
     <Compile Remove="publish\**" />
+    <Content Remove="Entities\**" />
     <Content Remove="logs\**" />
     <Content Remove="publish\**" />
+    <EmbeddedResource Remove="Entities\**" />
     <EmbeddedResource Remove="logs\**" />
     <EmbeddedResource Remove="publish\**" />
+    <None Remove="Entities\**" />
     <None Remove="logs\**" />
     <None Remove="publish\**" />
   </ItemGroup>
@@ -43,7 +47,6 @@
 
   <ItemGroup>
     <Folder Include="docs\newConfig\" />
-    <Folder Include="Entities\" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">

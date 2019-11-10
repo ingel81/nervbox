@@ -39,20 +39,17 @@ namespace NervboxDeamon.Controllers
     private ISystemService SystemService { get; }
     private IWebHostEnvironment Environment { get; }
     private IConfiguration Configuration { get; }
-    private INervboxModuleService ModuleService { get; }
 
     public SystemController(
       ISystemService systemService,
       IWebHostEnvironment environment,
-      IConfiguration configuration,
-      INervboxModuleService moduleService
+      IConfiguration configuration
 
       )
     {
       this.SystemService = systemService;
       this.Environment = environment;
       this.Configuration = configuration;
-      this.ModuleService = moduleService;
     }
 
     // POST api/<controller>
@@ -257,22 +254,6 @@ namespace NervboxDeamon.Controllers
       var dateUtc = DateTime.UtcNow;
       var date = DateTime.Now;
       return Ok(new { date = date, dateUtc = dateUtc });
-    }
-
-    [AllowAnonymous]
-    [HttpPut]
-    [Route("date")]
-    public IActionResult SetCurrentDate(DateUpdateModel model)
-    {
-      this.SystemService.SetSystemDate(model.NewDate);
-
-      try
-      {
-        this.ModuleService.Action_SetTime(model.NewDate);
-      }
-      catch { }
-
-      return Ok();
     }
 
   }

@@ -36,7 +36,6 @@ namespace NervboxDeamon
   {
     private readonly ILogger<Startup> Logger;
     public IConfiguration Configuration { get; }
-    public INervboxModuleService ModuleService { get; }
 
     public Startup(ILogger<Startup> logger, IConfiguration configuration)
     {
@@ -125,12 +124,8 @@ namespace NervboxDeamon
       // configure DI for application services
       services.AddScoped<IUserService, UserService>();
       services.AddSingleton<ISettingsService, SettingsService>();
-      services.AddSingleton<INervboxModuleService, NervboxModuleService>();
       services.AddSingleton<ISshService, SSHService>();
       services.AddSingleton<ISystemService, SystemService>();
-      services.AddSingleton<IRecordingService, RecordingService>();
-      services.AddSingleton<IRecordingService, RecordingService>();
-      services.AddSingleton<ISocketAPIService, SocketAPIService>();
 
       services.Configure<IISServerOptions>(options =>
       {
@@ -213,7 +208,6 @@ namespace NervboxDeamon
       {
         endpoints.MapHub<SerialComHub>("/ws/serialComHub");
         endpoints.MapHub<SshHub>("/ws/sshHub");
-        endpoints.MapHub<InfoModuleHub>("/ws/moduleHub");
         endpoints.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
       });
 
@@ -238,22 +232,9 @@ namespace NervboxDeamon
       //userService.CheckUsers();
       CheckUsers(app);
 
-      //configure/start IRecordingService
-      var recordingService = app.ApplicationServices.GetRequiredService<IRecordingService>();
-      recordingService.Init();
-
-      //configure/start INervboxModuleService
-      var nervboxModuleService = app.ApplicationServices.GetRequiredService<INervboxModuleService>();
-      nervboxModuleService.Init();
-
       //configure/start ISSHService
       var sshService = app.ApplicationServices.GetRequiredService<ISshService>();
-      sshService.Init();
-
-      //configure/start ISocketAPIService
-      var socketAPIService = app.ApplicationServices.GetRequiredService<ISocketAPIService>();
-
-      socketAPIService.Init();
+      sshService.Init();      
     }
     
     private static void UpdateDatabase(IApplicationBuilder app)

@@ -29,7 +29,7 @@ namespace NervboxDeamon.Services
   public class SSHService : ISshService
   {
     //injected
-    private readonly ILogger<NervboxModuleService> Logger;
+    private readonly ILogger<SSHService> Logger;
     private readonly IConfiguration Configuration;
     private readonly IHubContext<SshHub> SshHub;
 
@@ -41,7 +41,7 @@ namespace NervboxDeamon.Services
     private bool keepRunning = true;
 
     public SSHService(
-      ILogger<NervboxModuleService> logger,
+      ILogger<SSHService> logger,
       IConfiguration configuration,
       IHubContext<SshHub> sshHub
       )

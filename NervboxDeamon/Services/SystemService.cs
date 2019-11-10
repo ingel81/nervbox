@@ -41,7 +41,7 @@ namespace NervboxDeamon.Services
     public const string SvnAuthor = "$Author: jingel $";
 
     //injected
-    private readonly ILogger<NervboxModuleService> Logger;
+    private readonly ILogger<SystemService> Logger;
     private readonly IConfiguration Configuration;
     private readonly IServiceProvider ServiceProvider;
 
@@ -56,7 +56,7 @@ namespace NervboxDeamon.Services
     string ISystemService.SvnAuthor => SvnAuthor;
 
     public SystemService(
-      ILogger<NervboxModuleService> logger,
+      ILogger<SystemService> logger,
       IConfiguration configuration,
       IServiceProvider serviceProvider,
       IWebHostEnvironment hostingEnvironment,
