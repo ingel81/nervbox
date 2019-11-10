@@ -152,12 +152,12 @@ namespace NervboxDeamon.Services
       {
         return new List<User>()
         {
-          new User(){Username = "k1", Id = -1, LastName = "Kunde", FirstName = "k1", Token = null, Email = null, Password ="k1ikh88", Role = "customer_low" },
-          new User(){Username = "k2", Id = -1, LastName = "Kunde", FirstName = "k2", Token = null, Email = null, Password ="k2k6aor", Role = "customer_medium"},
-          new User(){Username = "k3", Id = -1, LastName = "Kunde", FirstName = "k3", Token = null, Email = null, Password ="k35swaa", Role = "customer_high"},
-          new User(){Username = "t1", Id = -1, LastName = "Nervbox", FirstName = "t1", Token = null, Email = null, Password ="t1qowk2gds", Role = "nervbox_low" },
-          new User(){Username = "t2", Id = -1, LastName = "Nervbox", FirstName = "t2", Token = null, Email = null, Password ="t2vn04qb12", Role = "nervbox_medium"  },
-          new User(){Username = "t3", Id = -1, LastName = "Nervbox", FirstName = "t3", Token = null, Email = null, Password ="t34fgsj3ad", Role = "nervbox_high"  },
+          new User(){Username = "u1", Id = -1, LastName = "User", FirstName = "u1", Token = null, Email = null, Password ="test", Role = "user_low" },
+          new User(){Username = "u2", Id = -1, LastName = "User", FirstName = "k2", Token = null, Email = null, Password ="test", Role = "user_medium"},
+          new User(){Username = "u3", Id = -1, LastName = "User", FirstName = "k3", Token = null, Email = null, Password ="test", Role = "user_high"},
+          new User(){Username = "a1", Id = -1, LastName = "Admin", FirstName = "a1", Token = null, Email = null, Password ="affeaffe", Role = "admin_low" },
+          new User(){Username = "a2", Id = -1, LastName = "Admin", FirstName = "a2", Token = null, Email = null, Password ="affeaffe", Role = "admin_medium"  },
+          new User(){Username = "a3", Id = -1, LastName = "Admin", FirstName = "a3", Token = null, Email = null, Password ="affeaffe", Role = "admin_high"  },
         };
       }
     }

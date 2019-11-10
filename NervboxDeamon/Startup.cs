@@ -122,10 +122,12 @@ namespace NervboxDeamon
             });
 
             // configure DI for application services
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddScoped<IUserService, UserService>();
             services.AddSingleton<ISettingsService, SettingsService>();
             services.AddSingleton<ISshService, SSHService>();
             services.AddSingleton<ISystemService, SystemService>();
+            services.AddSingleton<ISoundService, SoundService>();
 
             services.Configure<IISServerOptions>(options =>
             {
@@ -207,7 +209,7 @@ namespace NervboxDeamon
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapHub<SerialComHub>("/ws/serialComHub");
+                endpoints.MapHub<SoundHub>("/ws/soundHub");
                 endpoints.MapHub<SshHub>("/ws/sshHub");
                 endpoints.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
             });
@@ -236,6 +238,10 @@ namespace NervboxDeamon
             //configure/start ISSHService
             var sshService = app.ApplicationServices.GetRequiredService<ISshService>();
             sshService.Init();
+
+            // configure/start ISoundService
+            var soundService = app.ApplicationServices.GetRequiredService<ISoundService>();
+            soundService.Init();
         }
 
         private static void UpdateDatabase(IApplicationBuilder app)
