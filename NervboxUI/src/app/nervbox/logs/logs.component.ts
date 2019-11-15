@@ -9,11 +9,14 @@ import { takeWhile } from 'rxjs/operators/takeWhile';
 })
 export class LogsComponent implements OnDestroy {
 
-  constructor(private themeService: NbThemeService) {
+  public tabs = [
+    {
+      title: 'System',
+      route: '/nervbox/logs/system',
+    },
+  ];
 
-  }
+  constructor(private themeService: NbThemeService) { }
 
-  ngOnDestroy() {
-
-  }
+  ngOnDestroy() { }
 }

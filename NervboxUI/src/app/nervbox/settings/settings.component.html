@@ -5,51 +5,62 @@
 
     <div class="col-xxxl-12 col-xxl-12 col-lg-12 col-md-12">
 
-        <nb-tabset>
+        <nb-route-tabset [tabs]="tabs"></nb-route-tabset>
+
+
+        <!-- <nb-tabset (changeTab)="tabChanged($event)">
             <nb-tab tabTitle="Netzwerk">
-                <lan-settings></lan-settings>
+                <lan-settings *ngIf="networkTab"></lan-settings>
+            </nb-tab>
+
+            <nb-tab tabTitle="Datenaufzeichnung">
+                <recording-settings *ngIf="recordingTab"></recording-settings>
             </nb-tab>
 
             <nb-tab tabTitle="Modul">
-                <br />
-
-                <br />
+                <module-settings *ngIf="moduleTab"></module-settings>
             </nb-tab>
 
-            <nb-tab tabTitle="Test">
-
-                <br><br>
-
-                <div class="row"
-                     style="margin-left:0px; margin-right: 0px;">
+            <nb-tab tabTitle="Update">
+                <update *ngIf="updateTab"></update>
+            </nb-tab> -->
 
 
-
-                    <div class="col-xxxl-12 col-xxl-12 col-lg-12 col-md-12">
-                        <div class="row settings-columns">
-                            <div class="col-xxxl-3 col-xxl-3 col-lg-3 col-md-3 col-sm-3">
-                                Key
-                            </div>
-
-                            <div class="col-xxxl-3 col-xxl-3 col-lg-3 col-md-3 col-sm-3">
-                                Type
-                            </div>
-
-                            <div class="col-xxxl-3 col-xxl-3 col-lg-3 col-md-3 col-sm-3">
-                                Value
+            <!--
+                <nb-tab tabTitle="Debug">
+    
+                    <br><br>
+    
+                    <div class="row"
+                         style="margin-left:0px; margin-right: 0px;">
+    
+                        <div class="col-xxxl-12 col-xxl-12 col-lg-12 col-md-12">
+                            <div class="row settings-columns">
+                                <div class="col-xxxl-3 col-xxl-3 col-lg-3 col-md-3 col-sm-3">
+                                    Key
+                                </div>
+    
+                                <div class="col-xxxl-3 col-xxl-3 col-lg-3 col-md-3 col-sm-3">
+                                    Type
+                                </div>
+    
+                                <div class="col-xxxl-3 col-xxl-3 col-lg-3 col-md-3 col-sm-3">
+                                    Value
+                                </div>
                             </div>
                         </div>
+    
+                        <div class="col-xxxl-12 col-xxl-12 col-lg-12 col-md-12">
+                            <setting *ngFor="let m of settings"
+                                     [setting]=m></setting>
+                        </div>
                     </div>
+                </nb-tab>
+                -->
 
-                    <div class="col-xxxl-12 col-xxl-12 col-lg-12 col-md-12">
-                        <setting *ngFor="let m of settings"
-                                 [setting]=m></setting>
-                    </div>
-                </div>
-            </nb-tab>
-
-
-        </nb-tabset>
+        <!-- </nb-tabset> -->
     </div>
 
 </div>
+
+<br><br>

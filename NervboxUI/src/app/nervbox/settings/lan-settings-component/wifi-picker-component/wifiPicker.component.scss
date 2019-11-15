@@ -4,7 +4,7 @@
 
 @include nb-install-component() {
 
-    /deep/ .form {
+    ::ng-deep .form {
         display: flex;
         flex-direction: column;
 
@@ -16,6 +16,22 @@
     button {
         margin: 3rem;
     }
+
+    ::ng-deep nb-card-header {
+        border-top-left-radius: 0px;
+        border-top-right-radius: 0px;
+        background-color: #EAF0F4;
+    }
+
+    ::ng-deep nb-card-body {
+        background-color: #EAF0F4;
+    }
+
+
+    ::ng-deep nb-card-footer {
+        background-color: #EAF0F4;
+    }
+
 }
 
 span.wifi-network-details {

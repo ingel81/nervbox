@@ -1,12 +1,15 @@
-import { Component, OnInit, Input, ViewChild, AfterViewChecked, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { NgForm } from '@angular/forms';
-import { NervboxSettingsService, SettingScope, SettingType, ISetting } from './../../services/nervboxsettings.service';
+import { NervboxSettingsService, ISetting } from './../../services/nervboxsettings.service';
 import { SystemService } from './../../services/system.service';
-import { NbDialogService } from '@nebular/theme';
+import { NbDialogService, NbToastrService, NbGlobalPhysicalPosition } from '@nebular/theme';
 import { WifiPickerComponent } from './wifi-picker-component/wifiPicker.component';
+import { RebootWaitComponent } from '../../components/rebootWait-component/rebootWait.component';
+import { environment } from '../../../../environments/environment';
+import { ConfirmationComponent } from '../../components/confirmation-component/confirmation.component';
 
-export enum LanMode { On = "On", Off = "Off" }
-export enum WifiMode { Off = "Off", Client = "Client", AccessPoint = "Accesspoint" }
+export enum LanMode { On = 'On', Off = 'Off' }
+export enum WifiMode { Off = 'Off', Client = 'Client', AccessPoint = 'Accesspoint' }
 
 export interface INetworkSettings {
     lanMode: LanMode;
@@ -14,15 +17,16 @@ export interface INetworkSettings {
     wifiMode: WifiMode;
     wifiSettings: IWifiSettings;
     accessPointSettings: IAccessPointSettings;
+    ntpSettings: INtpSettings;
 }
 
 export interface ILanSettings {
     dhcp: boolean;
     ip: string;
-    subnetMask: string,
+    subnetMask: string;
     gateway: string;
     dns0: string;
-    dns1: string
+    dns1: string;
 }
 
 export interface IWifiSettings extends ILanSettings {
@@ -39,7 +43,9 @@ export interface IAccessPointSettings extends ILanSettings {
     channel: number;
 }
 
-
+export interface INtpSettings {
+    ntp: string;
+}
 
 @Component({
     selector: 'lan-settings',
@@ -48,56 +54,96 @@ export interface IAccessPointSettings extends ILanSettings {
 })
 export class LanSettingsComponent implements OnInit {
 
-    @ViewChild('lanSettingsForm') public lanSettingsForm: NgForm;
+    @ViewChild('lanSettingsForm', { static: false }) public lanSettingsForm: NgForm;
 
+    public originalSettings: INetworkSettings = null;
     public networkSettings: INetworkSettings = null;
+
     private setting: ISetting = null;
-    constructor(private settingsService: NervboxSettingsService, private systemService: SystemService, private dialogService: NbDialogService) {
+    constructor(
+        private settingsService: NervboxSettingsService,
+        private systemService: SystemService,
+        private dialogService: NbDialogService,
+        private toastrService: NbToastrService,
+    ) {
 
     }
 
     ngOnInit() {
-        this.settingsService.getSingleSettingByKey("networkConfig").subscribe(res => {
+        this.settingsService.getSingleSettingByKey('networkConfig').subscribe(res => {
+
             this.setting = res;
             this.networkSettings = JSON.parse(res.value);
-        }, err => {
+            this.originalSettings = JSON.parse(res.value);
 
+            if (!this.networkSettings.ntpSettings) {
+                this.networkSettings.ntpSettings = {
+                    ntp: null,
+                };
+            }
+
+        }, err => {
+            // TODO: toasting
         });
     }
 
-    ngAfterViewChecked() {
-
-    }
-
     saveAndApplyNetworkSettings(): void {
-        debugger;
+
         this.settingsService.updateSingleSetting({
             key: this.setting.key,
             value: JSON.stringify(this.networkSettings),
             description: this.setting.description,
             settingType: this.setting.settingType,
-            settingScope: this.setting.settingScope
+            settingScope: this.setting.settingScope,
         }).subscribe(res => {
-            debugger;
             this.systemService.configureNetwork().subscribe(res => {
-                debugger;
+
+                // reboot waiting dialog
+                this.dialogService.open(RebootWaitComponent, {
+                    closeOnBackdropClick: false,
+                    closeOnEsc: false,
+                    hasBackdrop: true,
+                    context: {
+                        doPing: true,
+                        title: 'Netzwerkeinstellungen werden angewendet. Gerät startet jetzt neu.',
+                        message: 'Bitte warten...',
+                        hint: 'Falls die IP-Adresse geändert wurde, ändern Sie bitte nun manuell die URL im Browser entsprechend ab und warten bis das Gerät wieder erreichbar ist.',
+                        testUrl: environment.apiUrl.replace('/api', ''),
+                    },
+                },
+                ).onClose.subscribe(res => {
+
+                }, cancel => {
+
+                });
+
             }, err => {
-                debugger;
+                this.toastrService.show(err.message, 'Error applying new network settings', {
+                    status: 'danger',
+                    duration: 0,
+                    position: NbGlobalPhysicalPosition.BOTTOM_RIGHT,
+                });
             });
 
         }, err => {
-            debugger;
+            this.toastrService.show(err.message, 'Error updating network settings', {
+                status: 'danger',
+                duration: 0,
+                position: NbGlobalPhysicalPosition.BOTTOM_RIGHT,
+            });
         });
     }
 
     pickWifi(): void {
-        var affe = this.dialogService.open(WifiPickerComponent, {
+        const affe = this.dialogService.open(WifiPickerComponent, {
             closeOnBackdropClick: false,
             closeOnEsc: true,
-            hasBackdrop: true
-        }
+            hasBackdrop: true,
+        },
         ).onClose.subscribe(res => {
             this.networkSettings.wifiSettings.ssid = res.essid;
+        }, cancel => {
+
         });
     }
 }

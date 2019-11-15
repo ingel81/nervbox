@@ -2,7 +2,7 @@ import { Pipe, PipeTransform } from '@angular/core';
 
 @Pipe({
     name: 'searchfilter',
-    pure: false
+    pure: false,
 })
 export class SearchFilterPipe implements PipeTransform {
     transform(items: any[], filter: any): any {

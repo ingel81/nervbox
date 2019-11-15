@@ -7,22 +7,27 @@ using System.Threading.Tasks;
 
 namespace NervboxDeamon.DbModels
 {
-  [Table("soundusage")]
-  public class SoundUsage
-  {
-    [Key]
-    [Required]
-    [Column("time")]
-    public DateTime Time { get; set; }
+    [Table("soundusage")]
+    public class SoundUsage
+    {
+        [Key]
+        [Required]
+        [Column("time")]
+        public DateTime Time { get; set; }
 
-    [Column("soundhash")]
-    public string SoundHash { get; set; }
+        [Column("soundhash")]
+        public string SoundHash { get; set; }
 
-    [ForeignKey("SoundHash")]
-    public virtual Sound Sound { get; set; }
+        [ForeignKey("SoundHash")]
+        public virtual Sound Sound { get; set; }
 
-    [Column("initiator")]
-    public string Initiator { get; set; }
-  }
+        [Column("playedByUserId")]
+        public int PlayedByUserId { get; set; }
+
+        [ForeignKey("PlayedByUserId")]
+        public virtual User User { get; set; }
+
+
+    }
 }
 

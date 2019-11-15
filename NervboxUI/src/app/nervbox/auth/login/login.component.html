@@ -1,6 +1,6 @@
 <nb-auth-block>
-    <h2 class="title">Sign In</h2>
-    <small class="form-text sub-title">Hello! Sign in with your username</small>
+    <h2 class="title">Login</h2>
+    <small class="form-text sub-title">Bitte melden Sie sich mit Ihrem Benutzernamen an</small>
 
     <form (ngSubmit)="login()"
           #form="ngForm"
@@ -8,50 +8,50 @@
 
         <nb-alert *ngIf="showMessages.error && errors?.length && !submitted"
                   outline="danger">
-            <div><strong>Oh snap!</strong></div>
+            <div><strong>Failed!</strong></div>
             <div *ngFor="let error of errors">{{ error }}</div>
         </nb-alert>
 
         <nb-alert *ngIf="showMessages.success && messages?.length && !submitted"
                   outline="success">
-            <div><strong>Hooray!</strong></div>
-            <div *ngFor="let message of messages">{{ message }}</div>
+            <div><strong>Anmeldung erfolgreich!</strong></div>
+            <!-- <div *ngFor="let message of messages">{{ message }}</div> -->
         </nb-alert>
 
         <div class="form-group">
 
-            <label for="input-email"
-                   class="sr-only">Username</label>
+            <label for="input-username"
+                   class="sr-only">Benutzername</label>
             <input nbInput
-                   [(ngModel)]="user.email"
-                   #email="ngModel"
-                   name="email"
-                   id="input-email"
-                   placeholder="Username"
+                   [(ngModel)]="user.username"
+                   #username="ngModel"
+                   name="username"
+                   id="input-username"
+                   placeholder="Benutzername"
                    autofocus
                    fullWidth
-                   [status]="email.dirty ? (email.invalid  ? 'danger' : 'success') : ''"
+                   [status]="username.dirty ? (username.invalid  ? 'danger' : 'success') : ''"
                    [required]="getConfigValue('forms.validation.email.required')">
             <small class="form-text error"
-                   *ngIf="email.invalid && email.touched && email.hasError('required')">
-                Username is required!
+                   *ngIf="username.invalid && username.touched && username.hasError('required')">
+                Benutzername wird benötigt!
             </small>
             <small class="form-text error"
-                   *ngIf="email.invalid && email.touched && email.hasError('pattern')">
-                Email should be the real one!
+                   *ngIf="username.invalid && username.touched && username.hasError('pattern')">
+                Username should be the real one!
             </small>
         </div>
 
         <div class="form-group">
             <label for="input-password"
-                   class="sr-only">Password</label>
+                   class="sr-only">Passwort</label>
             <input nbInput
                    [(ngModel)]="user.password"
                    #password="ngModel"
                    name="password"
                    type="password"
                    id="input-password"
-                   placeholder="Password"
+                   placeholder="Passwort"
                    fullWidth
                    [status]="password.dirty ? (password.invalid  ? 'danger' : 'success') : ''"
                    [required]="getConfigValue('forms.validation.password.required')"
@@ -59,7 +59,7 @@
                    [maxlength]="getConfigValue('forms.validation.password.maxLength')">
             <small class="form-text error"
                    *ngIf="password.invalid && password.touched && password.hasError('required')">
-                Password is required!
+                Passwort wird benötigt!
             </small>
             <small class="form-text error"
                    *ngIf="password.invalid && password.touched && (password?.errors.minlength || password.hasError('maxlength'))">
@@ -80,35 +80,43 @@
                 fullWidth
                 [disabled]="submitted || !form.valid"
                 [class.btn-pulse]="submitted">
-            Sign In
+            Anmelden
         </button>
     </form>
 
-    <!--
-  <div class="links">
 
-    <ng-container *ngIf="socialLinks && socialLinks.length > 0">
-      <small class="form-text">Or connect with:</small>
+    <div *ngIf="delta && delta.abs > 30">
 
-      <div class="socials">
-        <ng-container *ngFor="let socialLink of socialLinks">
-          <a *ngIf="socialLink.link"
-             [routerLink]="socialLink.link"
-             [attr.target]="socialLink.target"
-             [attr.class]="socialLink.icon"
-             [class.with-icon]="socialLink.icon">{{ socialLink.title }}</a>
-          <a *ngIf="socialLink.url"
-             [attr.href]="socialLink.url"
-             [attr.target]="socialLink.target"
-             [attr.class]="socialLink.icon"
-             [class.with-icon]="socialLink.icon">{{ socialLink.title }}</a>
-        </ng-container>
-      </div>
-    </ng-container>
+        <br><br><br>
 
-    <small class="form-text">
-      Don't have an account? <a routerLink="../register"><strong>Sign Up</strong></a>
-    </small>
-  </div>
-  -->
+        <nb-alert [closable]="false"
+                  status="warning">
+
+            <div class="alert-content">
+                <div class="icon">
+                    <i class="fas fa-exclamation-circle fa-2x"></i>
+                </div>
+                <div class="message">
+                    <span class="header">Achtung</span><br><span class="text"> Das Datum des PI-Systems weicht von Ihrem Browserdatum um {{delta.unix}} Sekunden ab.</span>
+
+                    &nbsp;<button nbButton
+                            size="tiny"
+                            (click)="fixDate()">Jetzt korrigieren</button>
+                </div>
+            </div>
+
+        </nb-alert>
+
+        <!--
+        Raspi:<br>
+        <pre> {{datesRaspian | json}} </pre>
+
+        Browser:<br>
+        <pre> {{datesBrowser | json}} </pre>
+
+        Delta:<br>
+        <pre> {{delta | json}} </pre>
+        -->
+    </div>
+
 </nb-auth-block>

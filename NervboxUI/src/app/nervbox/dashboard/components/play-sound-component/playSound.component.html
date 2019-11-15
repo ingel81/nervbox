@@ -1,7 +1,6 @@
 <nb-card size="large">
     <nb-card-header>
 
-
         <form #searchForm="ngForm"
               class="form">
 
@@ -25,34 +24,22 @@
 
         <button nbButton
                 status="primary"
-                size="xsmall"
+                size="small"
                 (click)="playSound(s)"
                 class="sound-item"
                 [ngClass]="{'active': s.active === true }"
                 *ngFor="let s of sounds | searchfilter:filterargs | orderBy: order.mode : order.reverse : true">
-            <i class="far far fa-play-circle"></i> {{s.fileName | slice:0:30}}
+            <i class="far far fa-play-circle"></i>&nbsp;{{s.fileName | slice:0:30}}
         </button>
 
         <!-- <pre>{{sounds | json}}</pre> -->
     </nb-card-body>
 
     <nb-card-footer>
-        <div class="dropdown"
-             [ngClass]="{ 'ghost-dropdown': currentTheme === 'nervbox' }"
-             ngbDropdown>
-            <button type="button"
-                    ngbDropdownToggle
-                    class="btn"
-                    [ngClass]="{ 'btn-outline-success': currentTheme == 'default', 'btn-primary': currentTheme != 'default'}">
-                {{ order.displayName }}
-            </button>
-            <ul class="dropdown-menu"
-                ngbDropdownMenu>
-                <li class="dropdown-item"
-                    *ngFor="let m of orderModes"
-                    (click)="order = m">{{ m.displayName }}</li>
-            </ul>
-        </div>
+
+        <nb-select placeholder="Select Showcase" size="tiny" shape="round" [(selected)]="order" style="width: 33%;">
+            <nb-option  *ngFor="let m of orderModes" [value]="m">{{m.displayName}}</nb-option>
+          </nb-select>
 
         <span class="kill-all" (click)="killAllSounds()">Kill</span>
 

@@ -5,6 +5,7 @@
                   [nbSpinnerStatus]="'success'">
 
         <nb-select *ngIf="networks"
+                   [fullWidth]="true"
                    placeholder="Netzwerk wählen"
                    [(ngModel)]="selected">
             <nb-option class="wifi-network"

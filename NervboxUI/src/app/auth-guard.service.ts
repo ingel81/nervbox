@@ -20,3 +20,14 @@ export class AuthGuard implements CanActivate {
       );
   }
 }
+
+@Injectable()
+export class AuthGuard2 implements CanActivate {
+
+  constructor(private authService: NbAuthService, private router: Router) {
+  }
+
+  canActivate() {
+    return false;
+  }
+}

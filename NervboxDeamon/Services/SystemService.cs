@@ -19,26 +19,49 @@ namespace NervboxDeamon.Services
   {
     void Reboot();
     void ApplyNetworkConfig();
-    List<WifiNetworkScanResult> ScanWifiNetworks(string wifiDeviceName);    
+    List<WifiNetworkScanResult> ScanWifiNetworks(string wifiDeviceName);
+
+    string DaemonVersion { get; }
+    string SvnRevision { get; }
+    string SvnDate { get; }
+    string SvnAuthor { get; }
+
+    void SetSystemDate(DateTime newDate);
+    public bool CheckNTPStatus();
   }
 
+  /// <summary>
+  /// Behandelt alle das System (Host) betreffendn Aktionen
+  /// </summary>
   public class SystemService : ISystemService
   {
+    public const string DeamonVersion = "1.0.17";
+    public const string SvnRevision = "$Revision: 164 $";
+    public const string SvnDate = "$Date: 2019-11-08 13:37:46 +0100 (Fr, 08 Nov 2019) $";
+    public const string SvnAuthor = "$Author: jingel $";
+
     //injected
-    private readonly ILogger<ISystemService> Logger;
+    private readonly ILogger<SystemService> Logger;
     private readonly IConfiguration Configuration;
     private readonly IServiceProvider ServiceProvider;
-    private readonly IHostingEnvironment HostingEnvironment;
+
+    private readonly IWebHostEnvironment HostingEnvironment;
     private readonly ISshService SSHService;
+    private readonly ISettingsService SettingsService;
 
     //member
+    string ISystemService.DaemonVersion => DeamonVersion;
+    string ISystemService.SvnRevision => SvnRevision;
+    string ISystemService.SvnDate => SvnDate;
+    string ISystemService.SvnAuthor => SvnAuthor;
 
     public SystemService(
-      ILogger<ISystemService> logger,
+      ILogger<SystemService> logger,
       IConfiguration configuration,
       IServiceProvider serviceProvider,
-      IHostingEnvironment hostingEnvironment,
-      ISshService sshService
+      IWebHostEnvironment hostingEnvironment,
+      ISshService sshService,
+      ISettingsService settingsService
       )
     {
       this.Logger = logger;
@@ -46,20 +69,17 @@ namespace NervboxDeamon.Services
       this.ServiceProvider = serviceProvider;
       this.HostingEnvironment = hostingEnvironment;
       this.SSHService = sshService;
+      this.SettingsService = settingsService;
     }
 
+    /// <summary>
+    /// Wendet die Netzwerkeinstellungen aus den Settings an und erstellt anhand der Konfigurationstemplates neue Konfigurationsfiles und ersetzt alte Files durch die neuen.
+    /// Rebootet im Anschluss das System!
+    /// </summary>
     public void ApplyNetworkConfig()
     {
-      NetworkSettings settings = null;
-
-      using (var scope = this.ServiceProvider.CreateScope())
-      {
-        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
-        var networkSetting = db.Settings.Find("networkConfig");
-        settings = JsonConvert.DeserializeObject<NetworkSettings>(networkSetting.Value);
-      }
-
-      if (settings == null)
+      NetworkSettings networkSetting = JsonConvert.DeserializeObject<NetworkSettings>(this.SettingsService.GetSingleSettingByKey("networkConfig").Value);
+      if (networkSetting == null)
       {
         throw new Exception($"NetworkConfig not found");
       }
@@ -69,10 +89,11 @@ namespace NervboxDeamon.Services
       string wpa_supplicant = System.IO.File.ReadAllText(Path.Combine(this.HostingEnvironment.ContentRootPath, "docs", "configTemplates", "wpa_supplicant.conf.template"));
       string dnsmasq = System.IO.File.ReadAllText(Path.Combine(this.HostingEnvironment.ContentRootPath, "docs", "configTemplates", "dnsmasq.conf.template"));
       string hostapd = System.IO.File.ReadAllText(Path.Combine(this.HostingEnvironment.ContentRootPath, "docs", "configTemplates", "hostapd.conf.template"));
+      string timesyncd = System.IO.File.ReadAllText(Path.Combine(this.HostingEnvironment.ContentRootPath, "docs", "configTemplates", "timesyncd.conf.template"));
 
-      if (settings.LanMode == LanMode.On)
+      if (networkSetting.LanMode == LanMode.On)
       {
-        if (settings.LanSettings.Dhcp)
+        if (networkSetting.LanSettings.Dhcp)
         {
           //default, do nothing
         }
@@ -83,17 +104,17 @@ namespace NervboxDeamon.Services
           int startIndex = dhcpcdLines.IndexOf("#nervboxtemplate_start_eth0_static");
           int endIndex = dhcpcdLines.IndexOf("#nervboxtemplate_end_eth0_static");
 
-          byte[] maskBytes = IPAddress.Parse(settings.LanSettings.SubnetMask).GetAddressBytes();
+          byte[] maskBytes = IPAddress.Parse(networkSetting.LanSettings.SubnetMask).GetAddressBytes();
           int cidr = MaskToCIDR(maskBytes);
 
           for (int i = startIndex + 1; i < endIndex; i++)
           {
             dhcpcdLines[i] = dhcpcdLines[i].Replace("#", "")
-                               .Replace("{IP}", settings.LanSettings.Ip)
+                               .Replace("{IP}", networkSetting.LanSettings.Ip)
                                .Replace("{MASK}", cidr.ToString())
-                               .Replace("{GATEWAY}", settings.LanSettings.Gateway)
-                               .Replace("{DNS1}", settings.LanSettings.Dns0)
-                               .Replace("{DNS2}", settings.LanSettings.Dns1);
+                               .Replace("{GATEWAY}", networkSetting.LanSettings.Gateway)
+                               .Replace("{DNS1}", networkSetting.LanSettings.Dns0)
+                               .Replace("{DNS2}", networkSetting.LanSettings.Dns1);
           }
 
           dhcpcd = string.Join("\n", dhcpcdLines);
@@ -101,14 +122,14 @@ namespace NervboxDeamon.Services
       }
       else
       {
-        //TODO: kein lan?
+        // no lan --> default to dhcp
       }
 
-      if (settings.WifiMode == WifiMode.Off)
+      if (networkSetting.WifiMode == WifiMode.Off)
       {
 
       }
-      else if (settings.WifiMode == WifiMode.Client)
+      else if (networkSetting.WifiMode == WifiMode.Client)
       {
         //wifi credentials
         var wpaSupplicantLines = wpa_supplicant.Split("\n", StringSplitOptions.None).ToList();
@@ -118,35 +139,35 @@ namespace NervboxDeamon.Services
         for (int i = wpaStartIndex + 1; i < wpaEndIndex; i++)
         {
           wpaSupplicantLines[i] = wpaSupplicantLines[i].Replace("#", "")
-                             .Replace("{SSID}", settings.WifiSettings.SSID)
-                             .Replace("{PSK}", settings.WifiSettings.PSK);
+                             .Replace("{SSID}", networkSetting.WifiSettings.SSID)
+                             .Replace("{PSK}", networkSetting.WifiSettings.PSK);
         }
 
         wpa_supplicant = string.Join("\n", wpaSupplicantLines);
 
-        if (settings.WifiSettings.Dhcp == false)
+        if (networkSetting.WifiSettings.Dhcp == false)
         {
           var wifiLines = dhcpcd.Split("\n", StringSplitOptions.None).ToList();
           int wifiStartIndex = wifiLines.IndexOf("#nervboxtemplate_start_wlan0_static");
           int wifiEndIndex = wifiLines.IndexOf("#nervboxtemplate_end_wlan0_static");
 
-          byte[] maskBytes = IPAddress.Parse(settings.WifiSettings.SubnetMask).GetAddressBytes();
+          byte[] maskBytes = IPAddress.Parse(networkSetting.WifiSettings.SubnetMask).GetAddressBytes();
           int cidr = MaskToCIDR(maskBytes);
 
           for (int i = wifiStartIndex + 1; i < wifiEndIndex; i++)
           {
             wifiLines[i] = wifiLines[i].Replace("#", "")
-                               .Replace("{IP}", settings.WifiSettings.Ip)
+                               .Replace("{IP}", networkSetting.WifiSettings.Ip)
                                .Replace("{MASK}", cidr.ToString())
-                               .Replace("{GATEWAY}", settings.WifiSettings.Gateway)
-                               .Replace("{DNS1}", settings.WifiSettings.Dns0)
-                               .Replace("{DNS2}", settings.WifiSettings.Dns1);
+                               .Replace("{GATEWAY}", networkSetting.WifiSettings.Gateway)
+                               .Replace("{DNS1}", networkSetting.WifiSettings.Dns0)
+                               .Replace("{DNS2}", networkSetting.WifiSettings.Dns1);
           }
 
           dhcpcd = string.Join("\n", wifiLines);
         }
       }
-      else if (settings.WifiMode == WifiMode.AccessPoint)
+      else if (networkSetting.WifiMode == WifiMode.AccessPoint)
       {
         {
           //ap mode: static ip config
@@ -154,13 +175,13 @@ namespace NervboxDeamon.Services
           int apStartIndex = apLines.IndexOf("#nervboxtemplate_start_wlan0_ap");
           int apEndIndex = apLines.IndexOf("#nervboxtemplate_end_wlan0_ap");
 
-          byte[] maskBytes = IPAddress.Parse(settings.AccessPointSettings.SubnetMask).GetAddressBytes();
+          byte[] maskBytes = IPAddress.Parse(networkSetting.AccessPointSettings.SubnetMask).GetAddressBytes();
           int cidr = MaskToCIDR(maskBytes);
 
           for (int i = apStartIndex + 1; i < apEndIndex; i++)
           {
             apLines[i] = apLines[i].Replace("#", "")
-                               .Replace("{IP}", settings.AccessPointSettings.Ip)
+                               .Replace("{IP}", networkSetting.AccessPointSettings.Ip)
                                .Replace("{MASK}", cidr.ToString());
           }
 
@@ -176,10 +197,10 @@ namespace NervboxDeamon.Services
           for (int i = apStartIndex + 1; i < apEndIndex; i++)
           {
             dnsLines[i] = dnsLines[i].Replace("#", "")
-                               .Replace("{RANGESTART}", settings.AccessPointSettings.RangeStart)
-                               .Replace("{RANGEEND}", settings.AccessPointSettings.RangeEnd)
-                               .Replace("{MASK}", settings.AccessPointSettings.SubnetMask)
-                               .Replace("{LEASEHOURS}", settings.AccessPointSettings.LeaseHours.ToString());
+                               .Replace("{RANGESTART}", networkSetting.AccessPointSettings.RangeStart)
+                               .Replace("{RANGEEND}", networkSetting.AccessPointSettings.RangeEnd)
+                               .Replace("{MASK}", networkSetting.AccessPointSettings.SubnetMask)
+                               .Replace("{LEASEHOURS}", networkSetting.AccessPointSettings.LeaseHours.ToString());
           }
 
           dnsmasq = string.Join("\n", dnsLines);
@@ -194,14 +215,29 @@ namespace NervboxDeamon.Services
           for (int i = apStartIndex + 1; i < apEndIndex; i++)
           {
             hostapdLines[i] = hostapdLines[i].Replace("#", "")
-                               .Replace("{SSID}", settings.AccessPointSettings.SSID)
-                               .Replace("{CHANNEL}", settings.AccessPointSettings.Channel.ToString())
-                               .Replace("{PSK}", settings.AccessPointSettings.PSK);
+                               .Replace("{SSID}", networkSetting.AccessPointSettings.SSID)
+                               .Replace("{CHANNEL}", networkSetting.AccessPointSettings.Channel.ToString())
+                               .Replace("{PSK}", networkSetting.AccessPointSettings.PSK);
           }
 
           hostapd = string.Join("\n", hostapdLines);
         }
+      }
 
+      if (!string.IsNullOrWhiteSpace(networkSetting.NtpSettings.Ntp))
+      {
+        //timesyncd NTP settings
+        var timesyncdLines = timesyncd.Split("\n", StringSplitOptions.None).ToList();
+        var tsStartIndex = timesyncdLines.IndexOf("#nervboxtemplate_start_ntp");
+        var tsEndIndex = timesyncdLines.IndexOf("#nervboxtemplate_end_ntp");
+
+        for (int i = tsStartIndex + 1; i < tsEndIndex; i++)
+        {
+          timesyncdLines[i] = timesyncdLines[i].Replace("#", "")
+                             .Replace("{NTP}", networkSetting.NtpSettings.Ntp);
+        }
+
+        timesyncd = string.Join("\n", timesyncdLines);
       }
 
       //create newConfig path
@@ -219,6 +255,7 @@ namespace NervboxDeamon.Services
       System.IO.File.WriteAllText(Path.Combine(newConfigPath, "wpa_supplicant.conf"), wpa_supplicant);
       System.IO.File.WriteAllText(Path.Combine(newConfigPath, "dnsmasq.conf"), dnsmasq);
       System.IO.File.WriteAllText(Path.Combine(newConfigPath, "hostapd.conf"), hostapd);
+      System.IO.File.WriteAllText(Path.Combine(newConfigPath, "timesyncd.conf"), timesyncd);
 
       //copy dhcpcd.conf to target
       SSHService.SendCmd("sudo cp /home/pi/nervbox/docs/newConfig/dhcpcd.conf /etc/dhcpcd.conf");
@@ -232,7 +269,11 @@ namespace NervboxDeamon.Services
       //copy hostapd.conf to target
       SSHService.SendCmd("sudo cp /home/pi/nervbox/docs/newConfig/hostapd.conf /etc/hostapd/hostapd.conf");
 
-      if (settings.WifiMode == WifiMode.AccessPoint)
+      //copy timesyncd.conf to target
+      SSHService.SendCmd("sudo cp /home/pi/nervbox/docs/newConfig/timesyncd.conf /etc/systemd/timesyncd.conf");
+
+
+      if (networkSetting.WifiMode == WifiMode.AccessPoint)
       {
         SSHService.SendCmd("sudo systemctl enable dnsmasq");
         SSHService.SendCmd("sudo systemctl enable hostapd");
@@ -252,6 +293,11 @@ namespace NervboxDeamon.Services
       SSHService.SendCmd("sudo reboot");
     }
 
+    /// <summary>
+    /// Scann mit Hilfe des übergebenen Wifi Device nach sichtbaren Wifi-Netzwerken
+    /// </summary>
+    /// <param name="wifiDeviceName"></param>
+    /// <returns></returns>
     public List<WifiNetworkScanResult> ScanWifiNetworks(string wifiDeviceName)
     {
       List<WifiNetworkScanResult> results = new List<WifiNetworkScanResult>();
@@ -284,14 +330,58 @@ namespace NervboxDeamon.Services
         });
       }
 
-
       return results;
-      //TODO: parse;
     }
 
+    /// <summary>
+    /// Rebootet das System
+    /// </summary>
     public void Reboot()
     {
       this.SSHService.SendCmd("sudo reboot");
+    }
+
+    /// <summary>
+    /// Setzt das Datum auf dem UNIX System
+    /// </summary>
+    public void SetSystemDate(DateTime newDate)
+    {
+      //string dateString = newDate.ToString("MMddHHmmyy");
+
+      string dateString = newDate.ToString("yyyyMMdd");
+      this.SSHService.SendCmd($"sudo date +%Y%m%d -s {dateString}");
+
+      string timeString = newDate.ToString("HH:mm:ss");
+      this.SSHService.SendCmd($"sudo date +%T -s {timeString}");
+    }
+
+    public bool CheckNTPStatus()
+    {
+      bool result = false;
+
+      try
+      {
+        string response = this.SSHService.SendReadCmd("sudo timedatectl", out string error, out int exitCode, timeoutMs: 2000);
+        if (exitCode != 0)
+        {
+          throw new Exception($"timedatectl failed with code: {exitCode} and message {error}");
+        }
+
+        var statusLine = response.Split("\n", StringSplitOptions.RemoveEmptyEntries).Where(l => l.ToLowerInvariant().Contains("ntp synchronized:")).Single();
+        var value = statusLine.Split(':', StringSplitOptions.RemoveEmptyEntries).Last();
+        if (value.ToLowerInvariant().Contains("yes"))
+        {
+          return true;
+        }
+
+        return false;
+      }
+      catch (Exception ex)
+      {
+        Logger.LogError($"Error checking NTP status: Error was : {ex}");
+      }
+
+      return result;
     }
 
     #region Helper

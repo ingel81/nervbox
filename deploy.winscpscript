@@ -1,9 +1,12 @@
-open sftp://pi:***REMOVED***@192.168.100.74/ -hostkey="ssh-ed25519 256 9dq0Ni57UNIFouknAaXyRs3zheS5ndNi+Hjw0HavNX4="
+open sftp://pi:***REMOVED***@192.168.1.161/ -hostkey="ssh-ed25519 256 bwdd9iOXgAe7e14jWx31wLLjPDRvwJZGAUNqyaodg04="
 
 call sudo systemctl stop nervbox
 
 #rmdir /home/pi/nervbox
 #mkdir /home/pi/nervbox
+
+# Ihr Befehl 1
+# Ihr Befehl 2
 
 synchronize remote -delete .\release /home/pi/nervbox
 chmod 755 /home/pi/nervbox/NervboxDeamon 

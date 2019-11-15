@@ -4,7 +4,7 @@
 
     <br><br>
 
-    <div class="row network-settings-component">
+    <div class="row no-margins">
 
         <!--Lan Options-->
         <div class="col-xxxl-4 col-xxl-4 col-lg-4 col-md-12">
@@ -19,26 +19,14 @@
                 <div class="form-group">
 
                     <label for="lan_dhcp">Dynamische IP Adresse beziehen (DHCP)</label>
-                    <div class="btn-group-toggle">
-                        <label class="btn-primary"
-                               ngbButtonLabel>
-                            <span>
-                                <i *ngIf="networkSettings.lanSettings.dhcp===false"
-                                   class="fa fa-2x fa-square"></i>
-                                <i *ngIf="networkSettings.lanSettings.dhcp===true"
-                                   class="fa fa-2x fa-check-square"></i>
-                            </span>
-                            <input ngControl="value"
-                                   type="checkbox"
-                                   id="lan_dhcp"
-                                   name="lan_dhcp"
-                                   ngbButton
-                                   [(ngModel)]="networkSettings.lanSettings.dhcp">
-                        </label>
-                    </div>
-
+                    <select class="form-control"
+                            [(ngModel)]="networkSettings.lanSettings.dhcp"
+                            id="lan_dhcp"
+                            name="lan_dhcp">
+                        <option [ngValue]="true">Ja (DHCP)</option>
+                        <option [ngValue]="false">Nein (Statisch)</option>
+                    </select>
                 </div>
-
 
                 <!-- static ip options -->
                 <div *ngIf="networkSettings.lanSettings.dhcp===false">
@@ -97,11 +85,24 @@
                                [(ngModel)]="networkSettings.lanSettings.dns1">
                     </div>
                 </div>
-
-
-
             </div>
 
+            <h5>Zeitserver (NTP)</h5>
+
+            <div class="form-group">
+                <label for="ntp">NTP Server für Zeitsynchronisation</label>
+                <input type="text"
+                       class="form-control"
+                       id="ntp"
+                       name="ntp"
+                       placeholder="Enter IP(s) or DNS name(s) of reachable NTP servers"
+                       [(ngModel)]="networkSettings.ntpSettings.ntp">
+
+                <div style="margin-left: 50px; margin-top: 10px; color: #888; font-size: 0.9rem">
+                    Mehrere Zeitserver können mit Leerzeichen getrennt angegeben werden.<br>
+                    [Default] = Leer --> Verwende System-Defaults (benötigt Internetverbindung)
+                </div>
+            </div>
         </div>
 
         <!--Wifi Options-->
@@ -161,24 +162,15 @@
                 </div>
 
                 <div class="form-group">
+
                     <label for="wifi_dhcp">Dynamische IP Adresse beziehen (DHCP)</label>
-                    <div class="btn-group-toggle">
-                        <label class="btn-primary"
-                               ngbButtonLabel>
-                            <span>
-                                <i *ngIf="networkSettings.wifiSettings.dhcp===false"
-                                   class="fa fa-2x fa-square"></i>
-                                <i *ngIf="networkSettings.wifiSettings.dhcp===true"
-                                   class="fa fa-2x fa-check-square"></i>
-                            </span>
-                            <input ngControl="value"
-                                   type="checkbox"
-                                   id="wifi_dhcp"
-                                   name="wifi_dhcp"
-                                   ngbButton
-                                   [(ngModel)]="networkSettings.wifiSettings.dhcp">
-                        </label>
-                    </div>
+                    <select class="form-control"
+                            [(ngModel)]="networkSettings.wifiSettings.dhcp"
+                            id="wifi_dhcp"
+                            name="wifi_dhcp">
+                        <option [ngValue]="true">Ja (DHCP)</option>
+                        <option [ngValue]="false">Nein (Statisch)</option>
+                    </select>
                 </div>
 
                 <!-- static ip options -->
@@ -309,7 +301,7 @@
 
                 <h5>DHCP Server Einstellungen</h5>
 
-                <div class="form-group">
+                <!-- <div class="form-group">
                     <label for="ap_dhcp">DHCP Server</label>
                     <div class="btn-group-toggle">
                         <label class="btn-primary"
@@ -329,6 +321,18 @@
                                    [(ngModel)]="networkSettings.accessPointSettings.dhcp">
                         </label>
                     </div>
+                </div> -->
+
+                <div class="form-group">
+
+                    <label for="ap_dhcp">DHCP Server</label>
+                    <select class="form-control"
+                            [(ngModel)]="networkSettings.accessPointSettings.dhcp"
+                            id="ap_dhcp"
+                            name="ap_dhcp">
+                        <option [ngValue]="true">Ja</option>
+                        <option [ngValue]="false">Nein</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
@@ -369,7 +373,7 @@
     </div>
 
     <!-- Save Button -->
-    <div class="row network-settings-component">
+    <div class="row no-margins">
         <div class="col-xxxl-12 col-xxl-12 col-lg-12 col-md-12">
 
             <button [disabled]="!(lanSettingsForm.dirty && lanSettingsForm.valid)"
@@ -381,5 +385,6 @@
 
 </form>
 
-<br><br>
-<pre>{{networkSettings | json}}</pre>
+
+<!-- <br><br>
+ <pre>{{networkSettings | json}}</pre> -->

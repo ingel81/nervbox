@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 namespace NervboxDeamon.Hubs
 {
   public class SshHub : Hub
-  {
+  {    
+
   }
 }

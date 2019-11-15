@@ -1,41 +1,58 @@
 import { NgModule } from '@angular/core';
 
-import { NbListModule, NbBadgeModule } from '@nebular/theme';
+import { NbListModule, NbAlertModule, NbSelectModule, NbCardModule, NbTooltipModule, NbButtonModule, NbTabsetModule, NbPopoverModule } from '@nebular/theme';
 import { NgxEchartsModule } from 'ngx-echarts';
 import { ThemeModule } from '../../@theme/theme.module';
 import { DashboardComponent } from './dashboard.component';
-import { TemperatureChartComponent } from './components/temperature-component/temperature-chart.component';
-import { TemperatureComponent } from './components/temperature-component/temperature.component';
-import { SensorComponent } from './components/sensor-component/sensor.component';
-import { SensorCardFrontComponent } from './components/sensor-component/front-side/sensor-card-front.component';
-import { SensorCardBackComponent } from './components/sensor-component/back-side/sensor-card-back.component';
-import { StatusWidgetComponent } from './components/status-widget-component/statusWidget.component';
-import { PlaySoundComponent} from './components/play-sound-component/playSound.component';
-
+import { ConfirmationComponent } from '../components/confirmation-component/confirmation.component';
+import { NbDialogModule } from '@nebular/theme';
+import { AlertComponent } from './components/alert-component/alert.component';
+import { RouterModule } from '@angular/router';
+import { ResetDialogComponent } from '../components/resetDialog-component/resetDialog.component';
+import { CallbackPipe } from '../components/callback-pipe/callback.pipe';
+import { NbSecurityModule } from '@nebular/security';
+import { NbAuthModule } from '@nebular/auth';
+import { FormsModule } from '@angular/forms';
+import { DecimalPipe } from '@angular/common';
+import { PlaySoundComponent } from './components/play-sound-component/playSound.component';
 import { SearchFilterPipe } from './components/search-filter/searchFilter.pipe';
-import { StatisticsComponent} from './components/statistics-component/statistics.component';
-
 import { OrderModule } from 'ngx-order-pipe';
+import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
+import { StatisticsComponent } from './components/statistics-component/statistics.component';
 
 @NgModule({
   imports: [
     ThemeModule,
+    FormsModule,
     NgxEchartsModule,
     NbListModule,
-    NbBadgeModule,
-    OrderModule
+    NbAlertModule,
+    NbSelectModule,
+    NbTooltipModule,
+    NbPopoverModule,
+    NbButtonModule,
+    NbSecurityModule,
+    NbCardModule,
+    NbTabsetModule,
+    RouterModule,
+    OrderModule,
+    NbDialogModule.forChild(),
+    NgbDropdownModule,
   ],
   declarations: [
     DashboardComponent,
-    TemperatureChartComponent,
-    TemperatureComponent,
-    SensorComponent,
-    SensorCardFrontComponent,
-    SensorCardBackComponent,
-    StatusWidgetComponent,
+    AlertComponent,
+    CallbackPipe,
     PlaySoundComponent,
     SearchFilterPipe,
-    StatisticsComponent,
+    StatisticsComponent
+  ],
+  entryComponents: [
+    ConfirmationComponent,
+    ResetDialogComponent,
+  ],
+  providers: [
+    DecimalPipe,
   ],
 })
 export class DashboardModule { }

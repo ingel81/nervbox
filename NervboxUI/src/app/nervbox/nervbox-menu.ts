@@ -1,28 +1,44 @@
 import { NbMenuItem } from '@nebular/theme';
 
-export const MENU_ITEMS: NbMenuItem[] = [
+export class NbMenuItemWithPermission extends NbMenuItem {
+  permissionKey: string;
+}
+
+export const MENU_ITEMS: NbMenuItemWithPermission[] = [
   {
     title: 'Dashboard',
-    icon: 'ion-home',
+    icon: 'home',
     link: '/nervbox/dashboard',
     home: true,
+    hidden: false,
+    permissionKey: 'dashboard',
+    pathMatch: 'nervbox/dashboard',
+  },
+  {
+    title: 'Einstellungen',
+    icon: 'settings',
+    link: '/nervbox/settings/network',
+    home: false,
+    hidden: true,
+    permissionKey: 'settings',
+    pathMatch: 'nervbox/settings',
   },
   {
     title: 'Logs',
-    icon: 'nb-bar-chart',
-    link: '/nervbox/logs',
+    icon: 'file-text',
+    link: '/nervbox/logs/system',
     home: false,
-  },  
-  {
-    title: 'Einstellungen',
-    icon: 'ion-settings',
-    link: '/nervbox/settings',
-    home: false,
+    hidden: true,
+    permissionKey: 'logs',
+    pathMatch: 'nervbox/logs',
   },
   {
     title: 'Debug',
-    icon: 'ion-bug',
-    link: '/nervbox/debug',
+    icon: 'hash',
+    link: '/nervbox/debug/ssh',
     home: false,
-  },  
+    hidden: true,
+    permissionKey: 'debug',
+    pathMatch: 'nervbox/debug',
+  },
 ];

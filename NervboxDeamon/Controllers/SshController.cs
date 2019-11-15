@@ -11,6 +11,9 @@ using NervboxDeamon.Services;
 
 namespace NervboxDeamon.Controllers
 {
+  /// <summary>
+  /// Controller für das Absetzen von SSH-Commands
+  /// </summary>
   [Authorize]
   [Route("api/[controller]")]
   [ApiController]
@@ -18,8 +21,10 @@ namespace NervboxDeamon.Controllers
   {
     //injected
     private ISshService SshService { get; }
+    [Obsolete]
     private IHostingEnvironment Environment { get; }
 
+    [Obsolete]
     public SshController(ISshService SshService, IHostingEnvironment environment)
     {
       this.SshService = SshService;

@@ -1,12 +1,9 @@
-/**
- * @license
- * Copyright Akveo. All Rights Reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- */
+import { version } from '../version';
+
 export const environment = {
+  ...version,
   production: true,
-  apiUrl: "/api",
-  signalrSerialUrl: "/serialComHub",
-  signalrSshUrl: "/sshHub",
-  signalrSoundUrl: "/soundHub"
+  apiUrl: '/api',
+  signalrSshUrl: '/ws/sshHub',
+  signalrSoundUrl: '/ws/soundHub',
 };

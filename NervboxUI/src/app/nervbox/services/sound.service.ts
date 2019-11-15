@@ -1,17 +1,28 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, BehaviorSubject, Subject } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
+import { HubConnection, HubConnectionBuilder, LogLevel, HttpTransportType } from '@aspnet/signalr';
 
 import { environment } from '../../../environments/environment';
 
 const httpOptions = {
     headers: new HttpHeaders({
-        'Content-Type': 'application/json'
-    })
+        'Content-Type': 'application/json',
+    }),
 };
 
-export interface ISound{
+export interface ISoundPlayed {
+    initiator: {
+        name: string;
+        id: number;
+    };
+    time: Date;
+    soundHash: string;
+    fileName: string;
+}
+
+export interface ISound {
     hash: string;
     fileName: string;
     allowed: boolean;
@@ -21,8 +32,19 @@ export interface ISound{
 
 @Injectable()
 export class SoundService {
-    constructor(private http: HttpClient) {
 
+
+    public OnSoundPlayed : Observable<ISoundPlayed>;
+    private _onSoundPlayed : Subject<ISoundPlayed>;
+
+    private hubConnection: HubConnection;
+
+
+    constructor(private http: HttpClient) {
+        this.initWebSocket();
+
+        this._onSoundPlayed = new Subject<ISoundPlayed>();
+        this.OnSoundPlayed = this._onSoundPlayed.asObservable()
     }
 
     getSounds(): Observable<Array<ISound>> {
@@ -30,7 +52,7 @@ export class SoundService {
     }
 
     playSound(soundId: string): Observable<any> {
-        return this.http.get<any>(environment.apiUrl + '/sound/' + soundId+ '/play');
+        return this.http.get<any>(environment.apiUrl + '/sound/' + soundId + '/play');
     }
 
     getTopUsers(): Observable<any> {
@@ -44,6 +66,28 @@ export class SoundService {
     killAllSounds(): Observable<any> {
         return this.http.get(environment.apiUrl + '/sound/killAll');
     }
+
+    initWebSocket(): void {
+        this.hubConnection = new HubConnectionBuilder()
+            .withUrl(environment.signalrSoundUrl, HttpTransportType.WebSockets)
+            .configureLogging(LogLevel.Trace)
+            .build();
+
+        this.hubConnection.serverTimeoutInMilliseconds = 5000000;
+
+        this.hubConnection.on('soundPlayed', (sound: ISoundPlayed) => {            
+            this._onSoundPlayed.next(sound);
+        });
+
+        this.hubConnection.onclose(error => {
+            setTimeout(() => { this.initWebSocket(); }, 5000);
+        });
+
+        this.hubConnection.start().then(() => {
+        }).catch(error => {
+            setTimeout(() => { this.initWebSocket(); }, 5000);
+        });
+    }    
 
 
 }

@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -11,8 +12,8 @@ using System.Threading.Tasks;
 namespace NervboxDeamon.DbModels
 {
 
-  public enum SettingType { Boolean, String, Int, Double, JSON }
-  public enum SettingScope { None, General, System, Module, Network }
+  public enum SettingType { Boolean, String, Int, Int64, Double, JSON }
+  public enum SettingScope { None, General, System, Module, Recording, Network, ModuleFeatures, HealthScore }
 
   [Table("settings")]
   public class Setting
@@ -65,21 +66,29 @@ namespace NervboxDeamon.DbModels
 
     public string Value { get; set; }
 
-    //[JsonIgnore]
-    //[NotMapped]
-    //public bool ValueBool { get { return Convert.ToBoolean(Value, CultureInfo.InvariantCulture); } }
+    public bool AsBoolValue()
+    {
+      return Convert.ToBoolean(Value, CultureInfo.InvariantCulture);
+    }
 
-    //[JsonIgnore]
-    //[NotMapped]
-    //public int ValueInt { get { return Convert.ToInt32(Value, CultureInfo.InvariantCulture); } }
+    public int AsInt()
+    {
+      return Convert.ToInt32(Value, CultureInfo.InvariantCulture);
+    }
 
-    //[JsonIgnore]
-    //[NotMapped]
-    //public double ValueDouble { get { return Convert.ToDouble(Value, CultureInfo.InvariantCulture); } }
+    public double AsDouble()
+    {
+      return Convert.ToDouble(Value, CultureInfo.InvariantCulture);
+    }
 
-    //[JsonIgnore]
-    //[NotMapped]
-    //public JObject ValueJSON { get { return new JObject(Value); } }
+    public Int64 AsInt64()
+    {
+      return Convert.ToInt64(Value, CultureInfo.InvariantCulture);
+    }
 
+    public JObject AsJobject()
+    {
+      return new JObject(Value);
+    }
   }
 }
