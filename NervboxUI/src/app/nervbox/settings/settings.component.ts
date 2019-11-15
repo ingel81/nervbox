@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NbThemeService } from '@nebular/theme';
 import { takeWhile } from 'rxjs/operators/takeWhile';
-import { NervboxSettingsService, ISetting, SettingScope } from '../services/nervboxsettings.service';
+import { NervboxSettingsService, ISetting } from '../services/nervboxsettings.service';
 
 @Component({
   selector: 'nervbox-settings',
@@ -14,12 +14,12 @@ export class SettingsComponent implements OnDestroy, OnInit {
   public tabs = [
     {
       title: 'Netzwerk',
-      route: '/nervbox/settings/network'
+      route: '/nervbox/settings/network',
     },
     {
       title: 'Softwareupdate',
       route: '/nervbox/settings/update',
-    }
+    },
   ];
 
 

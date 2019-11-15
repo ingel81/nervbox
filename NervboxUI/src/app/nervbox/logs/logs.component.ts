@@ -13,7 +13,7 @@ export class LogsComponent implements OnDestroy {
     {
       title: 'System',
       route: '/nervbox/logs/system',
-    }
+    },
   ];
 
   constructor(private themeService: NbThemeService) { }

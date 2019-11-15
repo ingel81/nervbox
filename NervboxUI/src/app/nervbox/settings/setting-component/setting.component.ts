@@ -12,8 +12,8 @@ export class SettingComponent implements OnInit {
 
     @ViewChild('settingForm', { static: false }) public settingForm: NgForm;
 
-    public doubleMask = "[-+]?\d*(.\d(\d*)?)?";
-    public intMask = "[-+]?\d*";
+    public doubleMask = '[-+]?\d*(.\d(\d*)?)?';
+    public intMask = '[-+]?\d*';
 
     @Input()
     set setting(s: ISetting) {
@@ -36,13 +36,13 @@ export class SettingComponent implements OnInit {
     updateSetting() {
         this.nervboxSettingService.updateSingleSetting(this.settingEdit).subscribe((response: ISetting) => {
             this.setting = response;
-            this.settingForm.controls["value"].markAsPristine();
+            this.settingForm.controls['value'].markAsPristine();
         });
     }
 
     revertChanges() {
         this.setting = Object.assign({}, this.settingOriginal);
-        this.settingForm.controls["value"].markAsPristine();
+        this.settingForm.controls['value'].markAsPristine();
     }
 
 }

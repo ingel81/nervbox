@@ -1,14 +1,14 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NbThemeService, NbToastrService } from '@nebular/theme';
 import { takeWhile } from 'rxjs/operators/takeWhile';
-import { NervboxSettingsService, ISetting, SettingScope } from '../../services/nervboxsettings.service';
+import { NervboxSettingsService } from '../../services/nervboxsettings.service';
 import { FormBuilder, FormGroup, Validators, AbstractControl } from '@angular/forms';
 
 // import custom validator to validate that password and confirm password fields match
 import { MustMatch } from '../../helpers/must-match.validator';
 import { Router } from '@angular/router';
 import { timeout } from 'rxjs/operators';
-//import { NbToastStatus } from '@nebular/theme/components/toastr/model';
+// import { NbToastStatus } from '@nebular/theme/components/toastr/model';
 
 @Component({
   selector: 'user-settings',
@@ -27,7 +27,7 @@ export class UserSettingsComponent implements OnDestroy, OnInit {
     private settingsService: NervboxSettingsService,
     private formBuilder: FormBuilder,
     private toastrService: NbToastrService,
-    private router: Router
+    private router: Router,
 
   ) { }
 
@@ -38,7 +38,7 @@ export class UserSettingsComponent implements OnDestroy, OnInit {
       newPassword1: ['', Validators.required],
       newPassword2: ['', Validators.required],
     }, {
-        validator: MustMatch('newPassword1', 'newPassword2')
+        validator: MustMatch('newPassword1', 'newPassword2'),
       });
   }
 
@@ -59,10 +59,10 @@ export class UserSettingsComponent implements OnDestroy, OnInit {
       if (!res.success) {
         this.error = res.error;
       } else {
-        this.toastrService.show("Bitte erneut anmelden...", "Passwort erfolgreich geändert", { status: "info" });
+        this.toastrService.show('Bitte erneut anmelden...', 'Passwort erfolgreich geändert', { status: 'info' });
 
         setTimeout(() => {
-          this.router.navigateByUrl("/auth/logout");
+          this.router.navigateByUrl('/auth/logout');
         }, 5000);
       }
     });

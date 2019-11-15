@@ -1,5 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef, Inject } from '@angular/core';
-import { NbLoginComponent, NbAuthService, NB_AUTH_OPTIONS, NbAuthJWTToken } from '@nebular/auth';
+import { NbLoginComponent, NbAuthService, NB_AUTH_OPTIONS } from '@nebular/auth';
 import { Router } from '@angular/router';
 import { SystemService } from '../../services/system.service';
 import * as moment from 'moment';
@@ -36,7 +36,7 @@ export class NervboxLoginComponent extends NbLoginComponent implements OnInit {
 
       this.datesRaspian = {
         date: moment(dates.date).format(),
-        dateUtc: moment(dates.dateUtc).utc()
+        dateUtc: moment(dates.dateUtc).utc(),
       };
 
       this.datesBrowser = {
@@ -46,10 +46,10 @@ export class NervboxLoginComponent extends NbLoginComponent implements OnInit {
 
       this.delta = {
         unix: 0,
-        abs: 0
-      }
+        abs: 0,
+      };
 
-      //compare browser and ***REMOVED*** date
+      // compare browser and ***REMOVED*** date
       if (moment(this.datesRaspian.date).unix() !== moment(this.datesBrowser.date).unix()) {
         this.delta.unix = moment(this.datesRaspian.date).unix() - moment(this.datesBrowser.date).unix();
         this.delta.abs = Math.abs(this.delta.unix);

@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { NbDialogRef } from '@nebular/theme';
 import { SystemService } from '../../services/system.service';
-import { HttpClient, HttpRequest, HttpHeaders, HttpErrorResponse, HttpParams, HttpEvent } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 
 import { ISystemInfo } from '../../services/system.service';
 import { HttpResponse } from '@aspnet/signalr';
@@ -31,7 +31,7 @@ export class RebootWaitComponent implements OnInit {
     }
 
     ngOnInit() {
-        console.log("rebootWaitComponent onInit");
+        console.log('rebootWaitComponent onInit');
 
         this.rebootFinished = false;
         this.goodCounter = 0;
@@ -42,30 +42,30 @@ export class RebootWaitComponent implements OnInit {
     }
 
     ping() {
-        console.log("pingFunc")
+        console.log('pingFunc');
         this.getSystemInfo().subscribe((res: any) => {
             if (this.offDetected === true && res.status === 200) {
                 this.goodCounter++;
 
                 if (this.goodCounter > 5) {
-                    console.log("finished! online again.");
+                    console.log('finished! online again.');
                     this.rebootFinished = true;
                     this.dialogRef.close(true);
                     window.location.reload();
                 } else {
-                    console.log("ping again..prevent false nginxpositives.");
-                    setTimeout(() => { this.ping() }, 1000);
+                    console.log('ping again..prevent false nginxpositives.');
+                    setTimeout(() => { this.ping(); }, 1000);
                     return;
                 }
             } else {
-                console.log("still online...");
-                setTimeout(() => { this.ping() }, 5000);
+                console.log('still online...');
+                setTimeout(() => { this.ping(); }, 5000);
             }
 
         }, err => {
             this.offDetected = true;
             console.log('error', err);
-            setTimeout(() => { this.ping() }, 5000);
+            setTimeout(() => { this.ping(); }, 5000);
         });
     }
 

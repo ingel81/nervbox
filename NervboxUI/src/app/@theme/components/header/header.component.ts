@@ -5,7 +5,7 @@ import { UserData } from '../../../@core/data/users';
 import { LayoutService } from '../../../@core/utils';
 import { map, takeUntil } from 'rxjs/operators';
 import { Subject } from 'rxjs';
-import { NbAuthJWTToken, NbAuthService, NbAuthResult } from '@nebular/auth';
+import { NbAuthJWTToken, NbAuthService } from '@nebular/auth';
 
 @Component({
   selector: 'ngx-header',
@@ -51,13 +51,13 @@ export class HeaderComponent implements OnInit, OnDestroy {
     private userService: UserData,
     private layoutService: LayoutService,
     private breakpointService: NbMediaBreakpointsService,
-    private authService: NbAuthService
+    private authService: NbAuthService,
   ) {
 
     this.authService.onTokenChange()
       .subscribe((token: NbAuthJWTToken) => {
         if (token.isValid()) {
-          this.user = token.getPayload(); // here we receive a payload from the token and assigne it to our `user` variable 
+          this.user = token.getPayload(); // here we receive a payload from the token and assigne it to our `user` variable
         }
       });
 

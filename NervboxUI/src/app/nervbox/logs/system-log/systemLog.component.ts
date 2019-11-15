@@ -33,8 +33,8 @@ export class SystemLogComponent implements OnDestroy, OnInit {
     }
 
     pageChanged(): void {
-        var page = this.pager.currentPage;
-        var skip = (page - 1) * this.pager.pageSize;
+        const page = this.pager.currentPage;
+        const skip = (page - 1) * this.pager.pageSize;
         this.currentPageRecords = this.allLogs.slice(skip, skip + this.pager.pageSize);
     }
 

@@ -8,7 +8,7 @@ import { SettingsComponent } from './settings/settings.component';
 import { LogsComponent } from './logs/logs.component';
 import { DebugComponent } from './debug/debug.component';
 import { AuthGuard2 } from '../auth-guard.service';
-import { SystemLogComponent } from './logs/system-log/systemLog.component'
+import { SystemLogComponent } from './logs/system-log/systemLog.component';
 
 import { SshComponent } from './debug/ssh-component/ssh.component';
 import { LanSettingsComponent } from './settings/lan-settings-component/lanSettings.component';
@@ -33,8 +33,8 @@ const routes: Routes = [{
         {
           path: 'system',
           component: SystemLogComponent,
-        }
-      ]
+        },
+      ],
     },
     {
       path: 'settings',
@@ -48,13 +48,13 @@ const routes: Routes = [{
         {
           path: 'update',
           component: UpdateComponent,
-        }
-      ]
+        },
+      ],
 
     },
     {
       path: 'usersettings',
-      component: UserSettingsComponent
+      component: UserSettingsComponent,
     },
     {
       path: 'debug',
@@ -69,7 +69,7 @@ const routes: Routes = [{
           path: 'special',
           component: SpecialComponent,
         },
-      ]
+      ],
     },
     {
       path: 'version',
@@ -79,7 +79,7 @@ const routes: Routes = [{
       path: '',
       redirectTo: 'dashboard',
       pathMatch: 'full',
-    }
+    },
   ],
 }];
 

@@ -1,15 +1,10 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { NbThemeService, NbToastrService, NbGlobalLogicalPosition, NbGlobalPositionStrategy, NbGlobalPhysicalPosition } from '@nebular/theme';
+import { NbThemeService, NbToastrService, NbGlobalPhysicalPosition } from '@nebular/theme';
 import { SoundService, ISound } from '../../../services/sound.service';
-import { HubConnection, HubConnectionBuilder, LogLevel, HttpTransportType } from '@aspnet/signalr';
 import { environment } from '../../../../../environments/environment';
+import { Observable, Subscription } from 'rxjs';
 
-export interface ISoundPlayed {
-    initiator: string,
-    time: Date,
-    soundHash: string,
-    fileName: string
-}
+
 
 @Component({
     selector: 'play-sounds',
@@ -22,16 +17,16 @@ export class PlaySoundComponent implements OnDestroy, OnInit {
     public filterargs = { fileName: '' };
 
     public orderModes: any[] = [
-        { mode: 'fileName', displayName: "Name (a-z)", reverse: false },
-        { mode: 'size', displayName: "Größe (aufsteigend)", reverse: false },
-        { mode: 'played', displayName: "Gespielt (absteigend)", reverse: true }
+        { mode: 'fileName', displayName: 'Name (a-z)', reverse: false },
+        { mode: 'size', displayName: 'Größe (aufsteigend)', reverse: false },
+        { mode: 'played', displayName: 'Gespielt (absteigend)', reverse: true },
     ];
 
     public order: any = this.orderModes[0];
 
     public currentTheme: string;
     public themeSubscription: any;
-    private hubConnection: HubConnection;
+    public soundSubscription: Subscription;
 
     constructor(
         private toastrService: NbToastrService,
@@ -49,27 +44,15 @@ export class PlaySoundComponent implements OnDestroy, OnInit {
     }
 
     ngOnInit() {
-        this.initWebSocket();
-    }
 
-    ngOnDestroy() {
-        this.themeSubscription.unsubscribe();
-    }
+        this.soundSubscription = this.soundService.OnSoundPlayed.subscribe(sound => {
 
-    initWebSocket(): void {
-        this.hubConnection = new HubConnectionBuilder()
-            .withUrl(environment.signalrSoundUrl, HttpTransportType.WebSockets)
-            .configureLogging(LogLevel.Trace)
-            .build();
+            if(!sound) return;
 
-        this.hubConnection.serverTimeoutInMilliseconds = 5000000;
-
-        this.hubConnection.on('soundPlayed', (sound: ISoundPlayed) => {
-
-            this.toastrService.show("played '" + sound.fileName + "'", sound.initiator, {
+            this.toastrService.show('played \'' + sound.fileName + '\'', sound.initiator.name, {
                 status: 'success',
                 duration: 5000,
-                position: NbGlobalPhysicalPosition.BOTTOM_RIGHT
+                position: NbGlobalPhysicalPosition.BOTTOM_RIGHT,
             });
 
             this.sounds.filter(i => i.hash === sound.soundHash).forEach(a => {
@@ -78,24 +61,21 @@ export class PlaySoundComponent implements OnDestroy, OnInit {
                 setTimeout(() => {
                     a.active = false;
                 }, 5000);
-            });
+            });            
         });
 
-        this.hubConnection.onclose(error => {
-            setTimeout(() => { this.initWebSocket() }, 5000);
-        });
+    }
 
-        this.hubConnection.start().then(() => {
-        }).catch(error => {
-            setTimeout(() => { this.initWebSocket() }, 5000);
-        });
+    ngOnDestroy() {
+        this.themeSubscription.unsubscribe();
+        this.soundSubscription.unsubscribe();
     }
 
     playSound(sound: ISound): void {
         this.soundService.playSound(sound.hash).subscribe(res => { }, err => { });
     }
 
-    killAllSounds(){
+    killAllSounds() {
         this.soundService.killAllSounds().subscribe(res => {}, err => {});
     }
 

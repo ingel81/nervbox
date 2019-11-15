@@ -9,7 +9,7 @@ import {
     NbAlertModule,
     NbButtonModule,
     NbCheckboxModule,
-    NbInputModule
+    NbInputModule,
 } from '@nebular/theme';
 
 import { NervboxLoginComponent } from './login/login.component'; // <---

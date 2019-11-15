@@ -17,7 +17,7 @@ export class VersionComponent implements OnDestroy, OnInit {
       this.changeLog = response.changeLog;
     }, err => {
 
-    })
+    });
   }
 
   ngOnDestroy() {

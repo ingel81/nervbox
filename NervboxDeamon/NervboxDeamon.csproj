@@ -47,7 +47,6 @@
 
   <ItemGroup>
     <Folder Include="docs\newConfig\" />
-    <Folder Include="Migrations\" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">

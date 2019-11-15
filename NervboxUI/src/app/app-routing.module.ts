@@ -15,7 +15,7 @@ const routes: Routes = [
   {
     path: 'nervbox',
     canActivate: [AuthGuard],
-    loadChildren: 'app/nervbox/nervbox.module#NervboxModule'
+    loadChildren: 'app/nervbox/nervbox.module#NervboxModule',
   },
   {
     path: 'auth',

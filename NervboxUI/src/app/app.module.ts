@@ -17,7 +17,7 @@ import { AuthGuard } from './auth-guard.service';
 import { AuthGuard2 } from './auth-guard.service';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
-import { NbAuthJWTInterceptor } from '@nebular/auth'
+import { NbAuthJWTInterceptor } from '@nebular/auth';
 import { NbPasswordAuthStrategy, NbAuthModule, NbAuthJWTToken, NB_AUTH_TOKEN_INTERCEPTOR_FILTER } from '@nebular/auth';
 
 import { environment } from '../environments/environment';
@@ -37,7 +37,7 @@ import { SystemService } from './nervbox/services/system.service';
 
 registerLocaleData(localeDe, 'de-DE', localeDeExtra);
 
-//other modules added by CSP
+// other modules added by CSP
 
 @NgModule({
   declarations: [AppComponent],
@@ -61,16 +61,16 @@ registerLocaleData(localeDe, 'de-DE', localeDeExtra);
           baseEndpoint: environment.apiUrl,
           login: {
             endpoint: '/users/auth/login',
-            method: 'post'
+            method: 'post',
           },
           refreshToken: {
             endpoint: '/users/auth/refresh',
-            method: 'post'
+            method: 'post',
           },
           logout: {
             endpoint: '/users/auth/logout',
             method: 'delete',
-            alwaysFail: false
+            alwaysFail: false,
           },
         }),
       ],
@@ -114,18 +114,18 @@ registerLocaleData(localeDe, 'de-DE', localeDeExtra);
     { provide: APP_BASE_HREF, useValue: '/' },
     {
       provide: NB_AUTH_TOKEN_INTERCEPTOR_FILTER, useValue: (req) => {
-        if (req.url.indexOf("users/auth/refresh") > -1) {
-          //use no auth token on refresh endpoint
+        if (req.url.indexOf('users/auth/refresh') > -1) {
+          // use no auth token on refresh endpoint
           return true;
         }
 
         return false;
-      }
-    }, //fix für Token sending: https://github.com/akveo/ngx-admin/issues/1871
+      },
+    }, // fix für Token sending: https://github.com/akveo/ngx-admin/issues/1871
     { provide: HTTP_INTERCEPTORS, useClass: NbAuthJWTInterceptor, multi: true },
     AuthGuard,
     AuthGuard2,
-    { provide: NbRoleProvider, useClass: RoleProvider }
+    { provide: NbRoleProvider, useClass: RoleProvider },
   ],
 })
 export class AppModule {

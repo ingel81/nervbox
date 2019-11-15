@@ -14,10 +14,10 @@ export class DashboardComponent implements OnDestroy {
 
   private subscribers: Subscription[] = [];
 
-  public featuresDict: { [key: string]: ISetting }
+  public featuresDict: { [key: string]: ISetting };
 
   constructor(
-    private dialogService: NbDialogService
+    private dialogService: NbDialogService,
     ) {
 
   }
@@ -33,7 +33,7 @@ export class DashboardComponent implements OnDestroy {
       return this.translateColor(color1) + ' / ' + color1;
     } else {
 
-      var r = '';
+      let r = '';
 
       if (color1 !== 'Off') {
         r += this.translateColor(color1) + ' / ' + color1;
@@ -41,7 +41,7 @@ export class DashboardComponent implements OnDestroy {
 
       if (color2 !== 'Off') {
         if (r.length > 0) {
-          r += "<br>"
+          r += '<br>';
         }
 
         r += this.translateColor(color2) + ' / ' + color2;
@@ -62,33 +62,33 @@ export class DashboardComponent implements OnDestroy {
     // Purple = 6,
     // White = 7
 
-    //console.log(color);
+    // console.log(color);
 
     switch (color) {
 
       case 'Off':
-        return 'Aus'
+        return 'Aus';
 
       case 'Green':
-        return 'Grün'
+        return 'Grün';
 
       case 'Blue':
-        return 'Blau'
+        return 'Blau';
 
       case 'Turquoise':
-        return 'Türkis'
+        return 'Türkis';
 
       case 'Red':
-        return 'Rot'
+        return 'Rot';
 
       case 'Yellow':
-        return 'Gelb'
+        return 'Gelb';
 
       case 'Purple':
-        return 'lila'
+        return 'lila';
 
       case 'White':
-        return 'Weiß'
+        return 'Weiß';
 
       default:
         return '-';

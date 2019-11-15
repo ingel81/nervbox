@@ -17,7 +17,7 @@ export class ResetDialogComponent implements OnInit {
     public inputRequired: boolean;
 
     public inputName: string;
-    public inputComment: string
+    public inputComment: string;
 
     constructor(
         private formBuilder: FormBuilder,

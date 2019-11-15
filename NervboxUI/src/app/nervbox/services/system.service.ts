@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpRequest, HttpHeaders, HttpErrorResponse, HttpParams, HttpEvent } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { HttpClient, HttpRequest, HttpHeaders, HttpEvent } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 const httpOptions = {
     headers: new HttpHeaders({
-        'Content-Type': 'application/json'
-    })
+        'Content-Type': 'application/json',
+    }),
 };
 
 export interface IVersionInfo {

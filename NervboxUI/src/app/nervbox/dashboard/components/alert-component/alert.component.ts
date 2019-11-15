@@ -15,7 +15,7 @@ export class AlertComponent implements OnDestroy {
     private subscribers: Subscription[] = [];
 
     closedWarnings: { [key: string]: boolean } = {};
-    public version: any = version;    
+    public version: any = version;
 
     constructor() {    }
 

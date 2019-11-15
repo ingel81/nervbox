@@ -30,7 +30,7 @@ import { GreatherThanValidator } from '../helpers/greather-than.validator.direct
     FormsModule,
     NbSelectModule,
     NbSpinnerModule,
-    NbProgressBarModule
+    NbProgressBarModule,
   ],
   declarations: [
     SettingsComponent,
@@ -38,11 +38,11 @@ import { GreatherThanValidator } from '../helpers/greather-than.validator.direct
     LanSettingsComponent,
     WifiPickerComponent,
     UpdateComponent,
-    GreatherThanValidator
+    GreatherThanValidator,
   ],
   entryComponents: [
     WifiPickerComponent,
-    RebootWaitComponent
-  ]
+    RebootWaitComponent,
+  ],
 })
 export class SettingsModule { }

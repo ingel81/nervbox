@@ -18,7 +18,7 @@ export class NervboxComponent {
 
   constructor(public accessChecker: NbAccessChecker) {
 
-    //filter menu based on permissions
+    // filter menu based on permissions
     MENU_ITEMS.forEach(element => {
       accessChecker.isGranted('view', element.permissionKey).subscribe(res => {
         if (res) {

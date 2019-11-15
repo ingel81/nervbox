@@ -81,15 +81,17 @@ namespace NervboxDeamon.Migrations
                         .HasColumnName("time")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<string>("Initiator")
-                        .HasColumnName("initiator")
-                        .HasColumnType("text");
+                    b.Property<int>("PlayedByUserId")
+                        .HasColumnName("playedByUserId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("SoundHash")
                         .HasColumnName("soundhash")
                         .HasColumnType("text");
 
                     b.HasKey("Time");
+
+                    b.HasIndex("PlayedByUserId");
 
                     b.HasIndex("SoundHash");
 
@@ -133,6 +135,12 @@ namespace NervboxDeamon.Migrations
 
             modelBuilder.Entity("NervboxDeamon.DbModels.SoundUsage", b =>
                 {
+                    b.HasOne("NervboxDeamon.DbModels.User", "User")
+                        .WithMany()
+                        .HasForeignKey("PlayedByUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("NervboxDeamon.DbModels.Sound", "Sound")
                         .WithMany("Usages")
                         .HasForeignKey("SoundHash");

@@ -11,8 +11,8 @@ export const MENU_ITEMS: NbMenuItemWithPermission[] = [
     link: '/nervbox/dashboard',
     home: true,
     hidden: false,
-    permissionKey: "dashboard",
-    pathMatch: "nervbox/dashboard"
+    permissionKey: 'dashboard',
+    pathMatch: 'nervbox/dashboard',
   },
   {
     title: 'Einstellungen',
@@ -20,8 +20,8 @@ export const MENU_ITEMS: NbMenuItemWithPermission[] = [
     link: '/nervbox/settings/network',
     home: false,
     hidden: true,
-    permissionKey: "settings",
-    pathMatch: "nervbox/settings"
+    permissionKey: 'settings',
+    pathMatch: 'nervbox/settings',
   },
   {
     title: 'Logs',
@@ -29,8 +29,8 @@ export const MENU_ITEMS: NbMenuItemWithPermission[] = [
     link: '/nervbox/logs/system',
     home: false,
     hidden: true,
-    permissionKey: "logs",
-    pathMatch: "nervbox/logs"
+    permissionKey: 'logs',
+    pathMatch: 'nervbox/logs',
   },
   {
     title: 'Debug',
@@ -38,7 +38,7 @@ export const MENU_ITEMS: NbMenuItemWithPermission[] = [
     link: '/nervbox/debug/ssh',
     home: false,
     hidden: true,
-    permissionKey: "debug",
-    pathMatch: "nervbox/debug"
+    permissionKey: 'debug',
+    pathMatch: 'nervbox/debug',
   },
 ];

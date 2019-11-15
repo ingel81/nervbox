@@ -20,7 +20,7 @@ import { RebootWaitComponent } from './components/rebootWait-component/rebootWai
 import { UserSettingsComponent } from './components/userSettings-component/userSettings.component';
 import { ResetDialogComponent } from './components/resetDialog-component/resetDialog.component';
 import { NbRouteTabsetModule, NbMenuModule, NbCardModule, NbProgressBarModule, NbSpinnerModule, NbSidebarModule, NbToastrModule, NbButtonModule } from '@nebular/theme';
-import { FormsModule, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { GreatherThanValidator } from './helpers/greather-than.validator.directive';
 import { VersionModule } from './version/version.module';
 import { SoundService } from './services/sound.service';
@@ -29,7 +29,7 @@ const SERVICES = [
   NervboxDataService,
   NervboxSettingsService,
   SshService,
-  SoundService
+  SoundService,
 ];
 
 const NERVBOX_COMPONENTS = [
@@ -37,7 +37,7 @@ const NERVBOX_COMPONENTS = [
   ConfirmationComponent,
   RebootWaitComponent,
   UserSettingsComponent,
-  ResetDialogComponent
+  ResetDialogComponent,
 ];
 
 @NgModule({
@@ -47,9 +47,9 @@ const NERVBOX_COMPONENTS = [
     ThemeModule,
     DashboardModule,
     LogsModule,
-    SettingsModule,    
+    SettingsModule,
     VersionModule,
-    DebugModule,       
+    DebugModule,
     NbRouteTabsetModule,
     NbCardModule,
     NbProgressBarModule,
@@ -58,7 +58,7 @@ const NERVBOX_COMPONENTS = [
     NbToastrModule.forRoot(),
     NbButtonModule,
     FormsModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
   ],
   declarations: [
     ...NERVBOX_COMPONENTS,

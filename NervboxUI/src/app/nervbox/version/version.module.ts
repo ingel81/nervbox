@@ -21,6 +21,6 @@ import { RouterModule } from '@angular/router';
   ],
   providers: [
 
-  ]
+  ],
 })
 export class VersionModule { }

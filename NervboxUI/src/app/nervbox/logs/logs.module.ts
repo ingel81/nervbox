@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 
-import { NbListModule, NbBadgeModule, NbTabsetModule, NbRouteTabsetModule, NbAccordionModule, } from '@nebular/theme';
+import { NbListModule, NbBadgeModule, NbTabsetModule, NbRouteTabsetModule, NbAccordionModule } from '@nebular/theme';
 
 import { NgxEchartsModule } from 'ngx-echarts';
 import { ThemeModule } from '../../@theme/theme.module';
@@ -17,7 +17,7 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
     NbTabsetModule,
     NbRouteTabsetModule,
     NbAccordionModule,
-    NgbModule
+    NgbModule,
   ],
   declarations: [
     LogsComponent,

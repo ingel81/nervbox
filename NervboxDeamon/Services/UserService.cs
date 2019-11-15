@@ -27,6 +27,7 @@ namespace NervboxDeamon.Services
     private readonly IServiceProvider ServiceProvider;
 
 
+
     public UserService(IOptions<AppSettings> appSettings, IServiceProvider serviceProvider)
     {
       _appSettings = appSettings.Value;

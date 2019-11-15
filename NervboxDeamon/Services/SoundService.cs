@@ -16,13 +16,14 @@ using System.Security.Cryptography;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Net;
+using Microsoft.AspNetCore.Hosting;
 
 namespace NervboxDeamon.Services
 {
     public interface ISoundService
     {
         void Init();
-        void PlaySound(string soundId, string initiator);
+        void PlaySound(string soundId, int userId);
         void KillAll();
     }
 
@@ -34,21 +35,24 @@ namespace NervboxDeamon.Services
         private readonly IServiceProvider serviceProvider;
         private ISshService SshService { get; }
         private readonly IHubContext<SoundHub> SoundHub;
-
+        private IWebHostEnvironment Environment { get; }
 
         //member
+        public ConcurrentDictionary<int, User> UserLookup { private set; get; } = new ConcurrentDictionary<int, User>();
         private Dictionary<string, Sound> Sounds { get; set; }
         private DirectoryInfo SoundDirectory { get; set; }
+        private string SoundDirectoryDebugPlay { get; set; }
         private ConcurrentQueue<SoundUsage> Usages { get; set; } = new ConcurrentQueue<SoundUsage>();
         private Thread LoggingThread = null;
-        private bool keepRunning = true;
+        private bool keepRunning = true;        
 
         public SoundService(
           IServiceProvider serviceProvider,
           ILogger<ISoundService> logger,
           IConfiguration configuration,
           ISshService sshService,
-          IHubContext<SoundHub> soundHub
+          IHubContext<SoundHub> soundHub,
+          IWebHostEnvironment environment
           )
         {
             this.serviceProvider = serviceProvider;
@@ -56,6 +60,7 @@ namespace NervboxDeamon.Services
             this.Configuration = configuration;
             this.SshService = sshService;
             this.SoundHub = soundHub;
+            this.Environment = environment;
 
             LoggingThread = new Thread(() =>
             {
@@ -89,8 +94,16 @@ namespace NervboxDeamon.Services
 
         public void Init()
         {
+            InitUserLookup();
+
             var appSettingsSection = Configuration.GetSection("AppSettings");
             var appSettings = appSettingsSection.Get<AppSettings>();
+
+            if (Environment.EnvironmentName == "Development")
+            {
+                SoundDirectoryDebugPlay = appSettings.SoundPathDebugPlay;
+            }
+
             SoundDirectory = new DirectoryInfo(appSettings.SoundPath);
 
             var soundFiles = SoundDirectory.GetFiles();
@@ -163,12 +176,33 @@ namespace NervboxDeamon.Services
             }
         }
 
-        public void PlaySound(string soundId, string initiator)
+        
+
+        public void InitUserLookup()
+        {
+            using (var scope = serviceProvider.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+                db.Users.ToList().ForEach(user =>
+                {
+                    UserLookup.AddOrUpdate(user.Id, user, (id, newUser) => { return newUser; });
+                });
+            }
+        }
+
+        public void PlaySound(string soundId, int userId)
         {
             new Task(() =>
             {
+                var path = SoundDirectory.FullName;
+                if (Environment.EnvironmentName == "Development")
+                {
+                    path = SoundDirectoryDebugPlay;
+                }
+
                 var sound = this.Sounds[soundId];
-                this.SshService.SendCmd($"omxplayer -o local --no-keys {Path.Combine(SoundDirectory.FullName, sound.FileName.Replace("!", "\\!").Replace(" ", "\\ "))} &");
+                //this.SshService.SendCmd($"omxplayer -o local --no-keys {Path.Combine(path, sound.FileName.Replace("!", "\\!").Replace(" ", "\\ "))} &");
+                this.SshService.SendCmd($"omxplayer -o local --no-keys {path}/{sound.FileName.Replace("!", "\\!").Replace(" ", "\\ ")} &");
 
                 //try
                 //{
@@ -182,15 +216,23 @@ namespace NervboxDeamon.Services
 
                 var usage = new SoundUsage()
                 {
-                    Initiator = initiator,
+                    PlayedByUserId = userId,
                     Time = DateTime.UtcNow,
                     SoundHash = sound.Hash
                 };
 
                 this.Usages.Enqueue(usage);
+
+                if (!UserLookup.ContainsKey(userId))
+                {
+                    InitUserLookup();
+                }
+
+                User initiator = UserLookup[userId];
+
                 this.SoundHub.Clients.All.SendAsync("soundPlayed", new
                 {
-                    Initiator = initiator,
+                    Initiator = new { Name = initiator.FirstName + " " + initiator.LastName, Id = initiator.Id },
                     Time = DateTime.UtcNow,
                     SoundHash = sound.Hash,
                     FileName = sound.FileName
