@@ -13,6 +13,7 @@ import {
 } from '@nebular/theme';
 
 import { NervboxLoginComponent } from './login/login.component'; // <---
+import { NervboxRegisterComponent } from './register/register.component'; // <---
 
 @NgModule({
     imports: [
@@ -29,6 +30,7 @@ import { NervboxLoginComponent } from './login/login.component'; // <---
     ],
     declarations: [
         NervboxLoginComponent,
+        NervboxRegisterComponent
     ],
 })
 export class NervboxAuthModule {

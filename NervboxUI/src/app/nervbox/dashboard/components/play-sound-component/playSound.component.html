@@ -1,22 +1,16 @@
 <nb-card size="large">
     <nb-card-header>
 
-        <form #searchForm="ngForm"
-              class="form">
-
-            <div class="form-group">
-                <input ngControl="soundSearch"
-                       id="soundSearch"
-                       type="text"
-                       placeholder="suchen..."
-                       class="form-control"
-                       required
-                       minlength="1"
-                       name="soundSearch"
-                       [(ngModel)]="filterargs.fileName" />
-
-            </div>
-        </form>
+        <input nbInput
+               ngControl="soundSearch"
+               id="soundSearch"
+               type="text"
+               placeholder="suchen..."
+               class="form-control"
+               required
+               minlength="1"
+               name="soundSearch"
+               [(ngModel)]="filterargs.fileName" />
 
     </nb-card-header>
 
@@ -37,11 +31,17 @@
 
     <nb-card-footer>
 
-        <nb-select placeholder="Select Showcase" size="tiny" shape="round" [(selected)]="order" style="width: 33%;">
-            <nb-option  *ngFor="let m of orderModes" [value]="m">{{m.displayName}}</nb-option>
-          </nb-select>
+        <nb-select placeholder="Select Showcase"
+                   size="tiny"
+                   shape="round"
+                   [(selected)]="order"
+                   style="width: 33%;">
+            <nb-option *ngFor="let m of orderModes"
+                       [value]="m">{{m.displayName}}</nb-option>
+        </nb-select>
 
-        <span class="kill-all" (click)="killAllSounds()">Kill</span>
+        <span class="kill-all"
+              (click)="killAllSounds()">Kill</span>
 
     </nb-card-footer>
 

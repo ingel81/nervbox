@@ -19,6 +19,8 @@ import { SearchFilterPipe } from './components/search-filter/searchFilter.pipe';
 import { OrderModule } from 'ngx-order-pipe';
 import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 import { StatisticsComponent } from './components/statistics-component/statistics.component';
+import { SimpleChartWrapperComponent } from './components/simpleChart-component/simpleChartWrapper.component';
+import { SimpleChartComponent } from './components/simpleChart-component/simpleChart.component';
 
 @NgModule({
   imports: [
@@ -45,7 +47,9 @@ import { StatisticsComponent } from './components/statistics-component/statistic
     CallbackPipe,
     PlaySoundComponent,
     SearchFilterPipe,
-    StatisticsComponent
+    StatisticsComponent,
+    SimpleChartComponent,
+    SimpleChartWrapperComponent
   ],
   entryComponents: [
     ConfirmationComponent,

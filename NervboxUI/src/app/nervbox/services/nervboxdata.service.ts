@@ -66,9 +66,9 @@ export enum QueryRangeKey {
 
 export interface IMetricType {
     aggregationType: string;
+    metricKey: string;
     displayName: string;
     unitDisplayName: string;
-    requiredFeatureKey?: string;
 }
 
 @Injectable()
