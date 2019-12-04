@@ -58,6 +58,10 @@ namespace NervboxDeamon.Migrations
                         .HasColumnName("allowed")
                         .HasColumnType("boolean");
 
+                    b.Property<TimeSpan>("Duration")
+                        .HasColumnName("Duration")
+                        .HasColumnType("interval");
+
                     b.Property<string>("FileName")
                         .HasColumnName("fileName")
                         .HasColumnType("text");
@@ -115,6 +119,9 @@ namespace NervboxDeamon.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Password")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RegistrationIp")
                         .HasColumnType("text");
 
                     b.Property<string>("Role")

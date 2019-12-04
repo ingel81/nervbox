@@ -28,6 +28,9 @@ export interface ISound {
     allowed: boolean;
     valid: boolean;
     active: boolean;
+    size: number;
+    played: number;
+    duration: number;
 }
 
 @Injectable()

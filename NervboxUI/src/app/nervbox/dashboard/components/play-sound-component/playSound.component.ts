@@ -19,6 +19,7 @@ export class PlaySoundComponent implements OnDestroy, OnInit {
     public orderModes: any[] = [
         { mode: 'fileName', displayName: 'Name (a-z)', reverse: false },
         { mode: 'size', displayName: 'Größe (aufsteigend)', reverse: false },
+        { mode: 'duration', displayName: 'Dauer (aufsteigend)', reverse: false },
         { mode: 'played', displayName: 'Gespielt (absteigend)', reverse: true },
     ];
 
@@ -37,6 +38,7 @@ export class PlaySoundComponent implements OnDestroy, OnInit {
         });
 
         this.soundService.getSounds().subscribe(sounds => {
+            debugger;
             this.sounds = sounds;
         }, err => {
 

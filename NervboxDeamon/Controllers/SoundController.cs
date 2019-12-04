@@ -37,7 +37,8 @@ namespace NervboxDeamon.Controllers
                 Allowed = s.Allowed,
                 Valid = s.Valid,
                 Size = s.Size,
-                Played = s.Usages.Count()
+                Played = s.Usages.Count(),
+                Duration = s.Duration.TotalMilliseconds
             }).ToList());
         }
 

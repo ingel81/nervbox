@@ -53,7 +53,7 @@ registerLocaleData(localeDe, 'de-DE', localeDeExtra);
     NbAuthModule.forRoot({
       strategies: [
         NbPasswordAuthStrategy.setup({
-          name: 'email',
+          name: 'email',          
           token: {
             class: NbAuthJWTToken,
             key: 'token', // this parameter tells where to look for the token
@@ -72,6 +72,11 @@ registerLocaleData(localeDe, 'de-DE', localeDeExtra);
             method: 'delete',
             alwaysFail: false,
           },
+          register: {
+            endpoint: '/users/auth/register',
+            method: 'post',
+            alwaysFail : false
+          }
         }),
       ],
       forms: {
@@ -83,6 +88,17 @@ registerLocaleData(localeDe, 'de-DE', localeDeExtra);
             error: true,
           },
         },
+        register: {
+          redirectDelay: 500,
+          strategy: 'email',
+          showMessages: {
+            success: true,
+            error: true,
+          },
+          terms: false,
+          defaultErrors: null,
+          defaultMessages: null,
+        },        
         logout: {
           redirectDelay: 500,
           strategy: 'email',

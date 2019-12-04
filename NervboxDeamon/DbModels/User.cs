@@ -9,25 +9,28 @@ using System.Threading.Tasks;
 namespace NervboxDeamon.DbModels
 {
 
-  [Table("users")]
-  public class User
-  {
-    [Key]
-    [Required]
-    public int Id { get; set; }
+    [Table("users")]
+    public class User
+    {
+        [Key]
+        [Required]
+        public int Id { get; set; }
 
-    public string Email { get; set; }
-    public string FirstName { get; set; }
-    public string LastName { get; set; }
+        public string Email { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
 
-    [Required]
-    public string Username { get; set; }
+        [Required]
+        public string Username { get; set; }
 
-    [JsonIgnore]
-    public string Password { get; set; }
-    public string Token { get; set; }
+        [JsonIgnore]
+        public string Password { get; set; }
+        public string Token { get; set; }
 
-    [Required]
-    public string Role { get; set; }
-  }
+        [Required]
+        public string Role { get; set; }
+
+        [JsonIgnore]
+        public string RegistrationIp { get; set; }
+    }
 }

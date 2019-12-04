@@ -44,7 +44,7 @@ namespace NervboxDeamon.Services
         private string SoundDirectoryDebugPlay { get; set; }
         private ConcurrentQueue<SoundUsage> Usages { get; set; } = new ConcurrentQueue<SoundUsage>();
         private Thread LoggingThread = null;
-        private bool keepRunning = true;        
+        private bool keepRunning = true;
 
         public SoundService(
           IServiceProvider serviceProvider,
@@ -122,8 +122,12 @@ namespace NervboxDeamon.Services
                         hash = BitConverter.ToString(hBytes).Replace("-", "").ToLowerInvariant();
                     }
                 }
+                
+                //check meta data:
+                var file = TagLib.File.Create(fi.FullName);
+                TimeSpan duration = file.Properties.Duration;
 
-                found.Add(new { Name = name, Hash = hash, Size = fi.Length });
+                found.Add(new { Name = name, Hash = hash, Size = fi.Length, Duration = duration });
             }
 
             using (var scope = serviceProvider.CreateScope())
@@ -150,7 +154,7 @@ namespace NervboxDeamon.Services
                 foreach (var newSound in newSounds)
                 {
 
-                    db.Sounds.Add(new Sound() { Allowed = true, Hash = newSound.Hash, FileName = newSound.Name, Valid = true, Size = newSound.Size });
+                    db.Sounds.Add(new Sound() { Allowed = true, Hash = newSound.Hash, FileName = newSound.Name, Valid = true, Size = newSound.Size, Duration = newSound.Duration });
                     soundsChanged = true;
                 }
 
@@ -162,6 +166,7 @@ namespace NervboxDeamon.Services
                     if (!foundSound.Name.Equals(sound.FileName))
                     {
                         sound.FileName = foundSound.Name;
+
                         soundsChanged = true;
                     }
                 }
@@ -176,7 +181,7 @@ namespace NervboxDeamon.Services
             }
         }
 
-        
+
 
         public void InitUserLookup()
         {
