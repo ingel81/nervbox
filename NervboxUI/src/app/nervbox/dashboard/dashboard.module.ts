@@ -17,7 +17,7 @@ import { DecimalPipe } from '@angular/common';
 import { PlaySoundComponent } from './components/play-sound-component/playSound.component';
 import { SearchFilterPipe } from './components/search-filter/searchFilter.pipe';
 import { OrderModule } from 'ngx-order-pipe';
-import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgbDropdownModule, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { StatisticsComponent } from './components/statistics-component/statistics.component';
 import { SimpleChartWrapperComponent } from './components/simpleChart-component/simpleChartWrapper.component';
 import { SimpleChartComponent } from './components/simpleChart-component/simpleChart.component';
@@ -40,6 +40,7 @@ import { SimpleChartComponent } from './components/simpleChart-component/simpleC
     OrderModule,
     NbDialogModule.forChild(),
     NgbDropdownModule,
+    NgbModule,
   ],
   declarations: [
     DashboardComponent,
@@ -49,7 +50,7 @@ import { SimpleChartComponent } from './components/simpleChart-component/simpleC
     SearchFilterPipe,
     StatisticsComponent,
     SimpleChartComponent,
-    SimpleChartWrapperComponent
+    SimpleChartWrapperComponent,
   ],
   entryComponents: [
     ConfirmationComponent,

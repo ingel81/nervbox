@@ -15,21 +15,20 @@
     </nb-card-header>
 
     <nb-card-body>
-
         <button nbButton
                 status="primary"
                 size="small"
                 (click)="playSound(s)"
                 class="sound-item"
+                placement="right"
+                [ngbTooltip]="tipContent"
+                container="body"
                 [ngClass]="{'active': s.active === true }"
                 *ngFor="let s of sounds | searchfilter:filterargs | orderBy: order.mode : order.reverse : true">
+            <ng-template #tipContent>Dauer <b>{{s.duration / 1000 | number:'1.1-1'}} [s]</b></ng-template>
             <i class="far far fa-play-circle"></i>&nbsp;{{s.fileName | slice:0:30}}
         </button>
-
-        <!-- <pre>{{sounds | json}}</pre> -->
-    </nb-card-body>
-
-    <nb-card-footer>
+    </nb-card-body>    <nb-card-footer>
 
         <nb-select placeholder="Select Showcase"
                    size="tiny"
