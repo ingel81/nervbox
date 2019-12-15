@@ -6,34 +6,25 @@
 
     @-o-keyframes fadeIt {
         0% {
-            background-color: #4e4e4e;
-        }
-
-        10% {
-            background-color: #AD301B;
+          box-shadow: #f00 1px 1px 7px;
         }
 
         100% {
-            background-color: #4e4e4e;
+          box-shadow: #666 1px 1px 7px;
         }
     }
 
     @keyframes fadeIt {
         0% {
-            background-color: #4e4e4e;
-        }
-
-        10% {
-            background-color: #AD301B;
+          box-shadow: #f00 1px 1px 7px;
         }
 
         100% {
-            background-color: #4e4e4e;
+          box-shadow: #666 1px 1px 7px;
         }
     }
 
     .active {
-        background-image: none !important;
         -o-animation: fadeIt 5s ease-in-out;
         animation: fadeIt 5s ease-in-out;
     }
@@ -44,7 +35,7 @@
         font-weight: bold;
         text-transform: none;
         font-size: 0.9em;
-        box-shadow: #ccc 1px 1px 1px;
+        box-shadow: #666 1px 1px 7px;
     }
 
     .kill-all {

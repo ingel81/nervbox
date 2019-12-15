@@ -27,21 +27,21 @@
         </div>
         -->
 
-        <h5 *ngIf="currentStatisticsType.statisticsType === 'TOPUSER'">Top Users (TOP 10)</h5>
-        <h5 *ngIf="currentStatisticsType.statisticsType === 'TOPSOUND'"> Top Sounds (TOP 25)</h5>
+        <h5 *ngIf="currentStatisticsType.statisticsType === 'TOPUSER'">Users (TOP 10)</h5>
+        <h5 *ngIf="currentStatisticsType.statisticsType === 'TOPSOUND'"> Sounds (TOP 25)</h5>
 
     </nb-card-header>
 
     <nb-card-body *ngIf="currentStatisticsType.statisticsType === 'TOPUSER'">
-        <ul class="list-group">
-            <li class="list-group-item list-group-item-secondary top-user-item"
+        <ul class="list-unstyled">
+            <li class="top-user-item"
                 *ngFor="let s of this.topUsers"><span class="badge badge-primary count">{{s.count}}</span> <span class="name"> {{ s.name }}</span> </li>
         </ul>
     </nb-card-body>
 
     <nb-card-body *ngIf="currentStatisticsType.statisticsType === 'TOPSOUND'">
-        <ul class="list-group">
-            <li class="list-group-item list-group-item-secondary top-sound-item"
+        <ul class="list-unstyled">
+            <li class="top-sound-item"
                 *ngFor="let s of this.topSounds"
                 (click)="playSound(s.hash)"><span class="badge badge-primary count">{{s.count}}</span> <span class="name">{{ s.name }}</span> </li>
         </ul>
