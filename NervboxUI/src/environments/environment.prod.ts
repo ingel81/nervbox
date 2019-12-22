@@ -6,4 +6,6 @@ export const environment = {
   apiUrl: '/api',
   signalrSshUrl: '/ws/sshHub',
   signalrSoundUrl: '/ws/soundHub',
+  signalrCamUrl: '/ws/camHub',
+  signalrChatUrl: '/ws/chatHub',
 };

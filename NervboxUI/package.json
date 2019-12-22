@@ -24,7 +24,7 @@
         "pree2e": "webdriver-manager update --standalone false --gecko false",
         "e2e": "ng e2e",
         "docs": "compodoc -p src/tsconfig.app.json -d docs",
-        "docs:serve": "compodoc -p src/tsconfig.app.json -d docs -s",        
+        "docs:serve": "compodoc -p src/tsconfig.app.json -d docs -s",
         "release:changelog": "npm run conventional-changelog -- -p angular -i CHANGELOG.md -s"
     },
     "dependencies": {
@@ -57,6 +57,7 @@
         "core-js": "2.5.1",
         "echarts": "^4.0.2",
         "eva-icons": "^1.1.0",
+        "file-saver": "2.0.2",
         "intl": "1.2.5",
         "ionicons": "2.0.1",
         "leaflet": "1.2.0",
@@ -66,6 +67,7 @@
         "ng2-completer": "2.0.8",
         "ng2-smart-table": "1.3.5",
         "ngx-echarts": "^4.0.1",
+        "ngx-order-pipe": "2.0.2",
         "node-sass": "^4.12.0",
         "normalize.css": "6.0.0",
         "npm-font-open-sans": "1.1.0",
@@ -78,9 +80,7 @@
         "tslib": "^1.9.0",
         "typeface-exo": "0.0.22",
         "web-animations-js": "github:angular/web-animations-js#release_pr208",
-        "zone.js": "~0.9.1",
-        "file-saver": "2.0.2",
-        "ngx-order-pipe": "2.0.2"
+        "zone.js": "~0.9.1"
     },
     "devDependencies": {
         "@angular-devkit/build-angular": "~0.800.2",

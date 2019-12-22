@@ -44,7 +44,9 @@ namespace NervboxDeamon
               .WriteTo.Console(outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} {Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}");
             }
           )
+          .UseContentRoot(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location))
           .UseStartup<Startup>().UseUrls("http://0.0.0.0:8080")
+          .UseWebRoot("wwwroot")
           .ConfigureKestrel((context, options) =>
           {
             options.AllowSynchronousIO = true;

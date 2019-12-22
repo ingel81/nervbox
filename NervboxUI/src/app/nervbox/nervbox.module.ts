@@ -24,12 +24,14 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { GreatherThanValidator } from './helpers/greather-than.validator.directive';
 import { VersionModule } from './version/version.module';
 import { SoundService } from './services/sound.service';
+import { CamService } from './services/cam.service';
 
 const SERVICES = [
   NervboxDataService,
   NervboxSettingsService,
   SshService,
   SoundService,
+  CamService,
 ];
 
 const NERVBOX_COMPONENTS = [

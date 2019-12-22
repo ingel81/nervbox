@@ -21,6 +21,7 @@ import { NgbDropdownModule, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { StatisticsComponent } from './components/statistics-component/statistics.component';
 import { SimpleChartWrapperComponent } from './components/simpleChart-component/simpleChartWrapper.component';
 import { SimpleChartComponent } from './components/simpleChart-component/simpleChart.component';
+import { CamComponent } from './components/cam-component/cam.component';
 
 @NgModule({
   imports: [
@@ -51,6 +52,7 @@ import { SimpleChartComponent } from './components/simpleChart-component/simpleC
     StatisticsComponent,
     SimpleChartComponent,
     SimpleChartWrapperComponent,
+    CamComponent,
   ],
   entryComponents: [
     ConfirmationComponent,
