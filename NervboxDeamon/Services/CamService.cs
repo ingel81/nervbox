@@ -25,7 +25,7 @@ namespace NervboxDeamon.Services
   public interface ICamService
   {
     void Init();
-    Image GetCurrentImage();
+    byte[] GetCurrentImageBytes();
     void Move(string direction, int userId);
   }
 
@@ -38,11 +38,14 @@ namespace NervboxDeamon.Services
     private ISshService SshService { get; }
     private readonly IHubContext<CamHub> CamHub;
     private IWebHostEnvironment Environment { get; }
+    private AppSettings AppSettings { get; }
 
     //member
     private Thread CamThread { get; set; }
     private bool keepRunning = true;
     private Image currentImage = null;
+    private byte[] currentImageBytes = null;
+    private object lockObject = new object();
 
 
     public CamService(
@@ -61,33 +64,41 @@ namespace NervboxDeamon.Services
       this.CamHub = camHub;
       this.Environment = environment;
 
+      this.AppSettings = Configuration.GetSection("AppSettings").Get<AppSettings>();
     }
 
-    public Image GetCurrentImage()
+    public byte[] GetCurrentImageBytes()
     {
-      return this.currentImage;
+      lock (lockObject)
+      {
+        byte[] tarr = new byte[this.currentImageBytes.Length];
+        this.currentImageBytes.CopyTo(tarr, 0);
+        return tarr;
+      }
     }
-
 
     private CredentialCache credCache { get; set; }
 
     public void Init()
     {
-      var appSettingsSection = Configuration.GetSection("AppSettings");
-      var appSettings = appSettingsSection.Get<AppSettings>();
 
       this.CamThread = new Thread(() =>
       {
         this.credCache = new CredentialCache();
-        this.credCache.Add(new Uri("http://192.168.2.162/"), "Digest", new NetworkCredential("admin", "***REMOVED***"));
+        this.credCache.Add(new Uri($"http://{AppSettings.Camera1.Host}:{AppSettings.Camera1.Port}/"), "Digest", new NetworkCredential(AppSettings.Camera1.User, AppSettings.Camera1.Password));
         var client = new HttpClient(new HttpClientHandler { Credentials = credCache });
 
         while (keepRunning)
         {
           try
           {
-            var response = client.GetAsync($"http://192.168.2.162/mjpeg/snap.cgi?chn=0").GetAwaiter().GetResult();
+            var response = client.GetAsync($"http://{AppSettings.Camera1.Host}:{AppSettings.Camera1.Port}/mjpeg/snap.cgi?chn=0").GetAwaiter().GetResult();
             this.currentImage = Image.FromStream(response.Content.ReadAsStreamAsync().GetAwaiter().GetResult());
+
+            lock (lockObject)
+            {
+              this.currentImageBytes = ImageToByteArray(this.currentImage);
+            }
 
             this.CamHub.Clients.All.SendAsync("imageCaptured", new
             {
@@ -100,7 +111,7 @@ namespace NervboxDeamon.Services
           }
           finally
           {
-            Thread.Sleep(20);
+            Thread.Sleep(50);
           }
         }
       });
@@ -111,7 +122,9 @@ namespace NervboxDeamon.Services
     public void Move(string direction, int userId)
     {
       var client = new HttpClient(new HttpClientHandler { Credentials = credCache });
-      var request = new HttpRequestMessage(HttpMethod.Get, $"http://192.168.2.162/hy-cgi/ptz.cgi?cmd=ptzctrl&act={direction}");
+
+      //ipaddr/hy-cgi/ptz.cgi?cmd=ptzctrl&act=left|right|up|down|stop|home|hscan|vscan 
+      var request = new HttpRequestMessage(HttpMethod.Get, $"http://{AppSettings.Camera1.Host}:{AppSettings.Camera1.Port}/hy-cgi/ptz.cgi?cmd=ptzctrl&act={direction}");
       request.Headers.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9");
       request.Headers.Add("Accept-Encoding", "gzip, deflate");
       request.Headers.Add("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,nb;q=0.6");
@@ -121,7 +134,14 @@ namespace NervboxDeamon.Services
       {
         this.Logger.LogError(response.Content.ReadAsStringAsync().GetAwaiter().GetResult());
       }
-      //ipaddr/hy-cgi/ptz.cgi?cmd=ptzctrl&act=left|right|up|down|stop|home|hscan|vscan 
     }
+
+    private byte[] ImageToByteArray(System.Drawing.Image imageIn)
+    {
+      MemoryStream ms = new MemoryStream();
+      imageIn.Save(ms, System.Drawing.Imaging.ImageFormat.Jpeg);
+      return ms.ToArray();
+    }
+
   }
 }

@@ -18,197 +18,197 @@ using NervboxDeamon.Services.Interfaces;
 namespace NervboxDeamon.Services
 {
 
-    /// <summary>
-    /// Managed Benutzerverwaltung und Anmeldung
-    /// </summary>
-    public class UserService : IUserService
+  /// <summary>
+  /// Managed Benutzerverwaltung und Anmeldung
+  /// </summary>
+  public class UserService : IUserService
+  {
+    private readonly AppSettings _appSettings;
+    private readonly IServiceProvider ServiceProvider;
+
+
+
+    public UserService(IOptions<AppSettings> appSettings, IServiceProvider serviceProvider)
     {
-        private readonly AppSettings _appSettings;
-        private readonly IServiceProvider ServiceProvider;
+      _appSettings = appSettings.Value;
+      this.ServiceProvider = serviceProvider;
+    }
 
+    public User Authenticate(string username, string password)
+    {
+      User user = null;
 
+      using (var scope = ServiceProvider.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+        user = db.Users.SingleOrDefault(x => x.Username == username && x.Password == GetPasswordHash(password));
+      }
 
-        public UserService(IOptions<AppSettings> appSettings, IServiceProvider serviceProvider)
-        {
-            _appSettings = appSettings.Value;
-            this.ServiceProvider = serviceProvider;
-        }
+      // return null if user not found
+      if (user == null)
+        return null;
 
-        public User Authenticate(string username, string password)
-        {
-            User user = null;
-
-            using (var scope = ServiceProvider.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
-                user = db.Users.SingleOrDefault(x => x.Username == username && x.Password == GetPasswordHash(password));
-            }
-
-            // return null if user not found
-            if (user == null)
-                return null;
-
-            // authentication successful so generate jwt token
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new Claim[] {
+      // authentication successful so generate jwt token
+      var tokenHandler = new JwtSecurityTokenHandler();
+      var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+      var tokenDescriptor = new SecurityTokenDescriptor
+      {
+        Subject = new ClaimsIdentity(new Claim[] {
                     new Claim(ClaimTypes.Name, user.Id.ToString()),
                     new Claim("userName", user.Username),
                     new Claim("role", user.Role) }),
-                Expires = DateTime.UtcNow.AddDays(7),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            user.Token = tokenHandler.WriteToken(token);
+        Expires = DateTime.UtcNow.AddDays(7),
+        SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+      };
+      var token = tokenHandler.CreateToken(tokenDescriptor);
+      user.Token = tokenHandler.WriteToken(token);
 
-            // remove password before returning
-            user.Password = null;
+      // remove password before returning
+      user.Password = null;
 
-            return user;
+      return user;
+    }
+
+    public User Register(UserRegisterModel model, string ip, out string message)
+    {
+      using (var scope = ServiceProvider.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+
+        //existing
+        if (db.Users.Any(x => x.Username == model.Username))
+        {
+          message = $"User with this name already exists.";
+          return null;
         }
 
-        public User Register(UserRegisterModel model, string ip, out string message)
+        //existing
+        if (db.Users.Any(x => x.RegistrationIp == ip))
         {
-            using (var scope = ServiceProvider.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+          message = $"Your IP has no more free account registrations.";
+          return null;
+        }
 
-                //existing
-                if (db.Users.Any(x => x.Username == model.Username))
-                {
-                    message = $"User with this name already exists.";
-                    return null;
-                }
+        User user = new User()
+        {
+          Username = model.Username,
+          FirstName = model.Firstname,
+          LastName = model.Lastname,
+          Password = GetPasswordHash(model.Password),
+          Role = "user_low",
+          RegistrationIp = ip
+        };
+        db.Users.Add(user);
+        db.SaveChanges();
 
-                //existing
-                if (db.Users.Any(x => x.RegistrationIp == ip))
-                {
-                    message = $"Your IP has no more free account registrations.";
-                    return null;
-                }
-
-                User user = new User()
-                {
-                    Username = model.Username,
-                    FirstName = model.Firstname,
-                    LastName = model.Lastname,
-                    Password = GetPasswordHash(model.Password),
-                    Role = "user_low",
-                    RegistrationIp = ip
-                };
-                db.Users.Add(user);
-                db.SaveChanges();
-
-                message = string.Empty;
+        message = string.Empty;
 
 
-                // authentication successful so generate jwt token
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
-                var tokenDescriptor = new SecurityTokenDescriptor
-                {
-                    Subject = new ClaimsIdentity(new Claim[] {
+        // authentication successful so generate jwt token
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+          Subject = new ClaimsIdentity(new Claim[] {
                     new Claim(ClaimTypes.Name, user.Id.ToString()),
                     new Claim("userName", user.Username),
                     new Claim("role", user.Role) }),
-                    Expires = DateTime.UtcNow.AddDays(7),
-                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-                };
-                var token = tokenHandler.CreateToken(tokenDescriptor);
-                user.Token = tokenHandler.WriteToken(token);
+          Expires = DateTime.UtcNow.AddDays(7),
+          SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+        };
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        user.Token = tokenHandler.WriteToken(token);
 
-                // remove password before returning
-                user.Password = null;
+        // remove password before returning
+        user.Password = null;
 
-                return user;
-            }
+        return user;
+      }
+    }
+
+    public IEnumerable<User> GetAll()
+    {
+      using (var scope = this.ServiceProvider.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+        return db.Users.ToList();
+      }
+    }
+
+    public void CheckUsers()
+    {
+      //check if user exists
+
+      using (var scope = this.ServiceProvider.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+        var users = db.Users.ToList();
+
+        bool changesMade = false;
+        foreach (var userShould in UserDefaults)
+        {
+          if (users.Exists(u => u.Username.Equals(userShould.Username)) == false)
+          {
+            db.Users.Add(new User()
+            {
+              Email = userShould.Email,
+              Username = userShould.Username,
+              FirstName = userShould.FirstName,
+              LastName = userShould.LastName,
+              Token = userShould.Token,
+              Password = GetPasswordHash(userShould.Password),
+              Role = userShould.Role
+            });
+
+            changesMade = true;
+          }
         }
 
-        public IEnumerable<User> GetAll()
+        if (changesMade)
         {
-            using (var scope = this.ServiceProvider.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
-                return db.Users.ToList();
-            }
+          db.SaveChanges();
+        }
+      }
+    }
+
+    public bool ChangePassword(int userId, UserChangePasswordModel model, out string error)
+    {
+      error = string.Empty;
+
+      if (!model.NewPassword1.Equals(model.NewPassword2))
+      {
+        error = "Password mismatch";
+        return false;
+      }
+
+      using (var scope = this.ServiceProvider.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+        var user = db.Users.Where(u => u.Id == userId).FirstOrDefault();
+
+        if (user == null)
+        {
+          error = "User not found";
+          return false;
         }
 
-        public void CheckUsers()
+        if (!user.Password.Equals(GetPasswordHash(model.OldPassword)))
         {
-            //check if user exists
-
-            using (var scope = this.ServiceProvider.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
-                var users = db.Users.ToList();
-
-                bool changesMade = false;
-                foreach (var userShould in UserDefaults)
-                {
-                    if (users.Exists(u => u.Username.Equals(userShould.Username)) == false)
-                    {
-                        db.Users.Add(new User()
-                        {
-                            Email = userShould.Email,
-                            Username = userShould.Username,
-                            FirstName = userShould.FirstName,
-                            LastName = userShould.LastName,
-                            Token = userShould.Token,
-                            Password = GetPasswordHash(userShould.Password),
-                            Role = userShould.Role
-                        });
-
-                        changesMade = true;
-                    }
-                }
-
-                if (changesMade)
-                {
-                    db.SaveChanges();
-                }
-            }
+          error = "Wrong password";
+          return false;
         }
 
-        public bool ChangePassword(int userId, UserChangePasswordModel model, out string error)
-        {
-            error = string.Empty;
+        user.Password = GetPasswordHash(model.NewPassword1);
+        db.SaveChanges();
+        return true;
+      }
+    }
 
-            if (!model.NewPassword1.Equals(model.NewPassword2))
-            {
-                error = "Password mismatch";
-                return false;
-            }
-
-            using (var scope = this.ServiceProvider.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
-                var user = db.Users.Where(u => u.Id == userId).FirstOrDefault();
-
-                if (user == null)
-                {
-                    error = "User not found";
-                    return false;
-                }
-
-                if (!user.Password.Equals(GetPasswordHash(model.OldPassword)))
-                {
-                    error = "Wrong password";
-                    return false;
-                }
-
-                user.Password = GetPasswordHash(model.NewPassword1);
-                db.SaveChanges();
-                return true;
-            }
-        }
-
-        private List<User> UserDefaults
-        {
-            get
-            {
-                return new List<User>()
+    private List<User> UserDefaults
+    {
+      get
+      {
+        return new List<User>()
         {
           new User(){Username = "u1", Id = -1, LastName = "User", FirstName = "u1", Token = null, Email = null, Password ="test", Role = "user_low" },
           new User(){Username = "u2", Id = -1, LastName = "User", FirstName = "k2", Token = null, Email = null, Password ="test", Role = "user_medium"},
@@ -217,20 +217,20 @@ namespace NervboxDeamon.Services
           new User(){Username = "a2", Id = -1, LastName = "Admin", FirstName = "a2", Token = null, Email = null, Password ="affeaffe", Role = "admin_medium"  },
           new User(){Username = "a3", Id = -1, LastName = "Admin", FirstName = "a3", Token = null, Email = null, Password ="affeaffe", Role = "admin_high"  },
         };
-            }
-        }
-
-        private static string GetPasswordHash(string text)
-        {
-            // SHA512 is disposable by inheritance.  
-            using (var sha256 = SHA256.Create())
-            {
-                // Send a sample text to hash.  
-                var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(text));
-                // Get the hashed string.  
-                return BitConverter.ToString(hashedBytes).Replace("-", "").ToLower();
-            }
-        }
-
+      }
     }
+
+    private static string GetPasswordHash(string text)
+    {
+      // SHA512 is disposable by inheritance.  
+      using (var sha256 = SHA256.Create())
+      {
+        // Send a sample text to hash.  
+        var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(text));
+        // Get the hashed string.  
+        return BitConverter.ToString(hashedBytes).Replace("-", "").ToLower();
+      }
+    }
+
+  }
 }

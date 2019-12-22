@@ -8,5 +8,9 @@ namespace NervboxDeamon.Hubs
 {
   public class ChatHub : Hub
   {
+    public Task SendMessage(object msg)
+    {
+      return Clients.All.SendAsync("message", msg);
+    }
   }
 }

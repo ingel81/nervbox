@@ -25,6 +25,7 @@ import { GreatherThanValidator } from './helpers/greather-than.validator.directi
 import { VersionModule } from './version/version.module';
 import { SoundService } from './services/sound.service';
 import { CamService } from './services/cam.service';
+import { ChatService } from './services/chat.service';
 
 const SERVICES = [
   NervboxDataService,
@@ -32,6 +33,7 @@ const SERVICES = [
   SshService,
   SoundService,
   CamService,
+  ChatService,
 ];
 
 const NERVBOX_COMPONENTS = [

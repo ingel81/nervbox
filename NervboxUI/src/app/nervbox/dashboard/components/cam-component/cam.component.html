@@ -9,7 +9,7 @@
              [src]="imageUrl">
 
 
-        <div class="cam-controls">
+        <div class="cam-controls" *ngIf="accessChecker.isGranted('do', 'cam_control') | async">
 
             <div class="row">
                 <div class="col-2"></div>

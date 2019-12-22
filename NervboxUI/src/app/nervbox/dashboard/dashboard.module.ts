@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 
-import { NbListModule, NbAlertModule, NbSelectModule, NbCardModule, NbTooltipModule, NbButtonModule, NbTabsetModule, NbPopoverModule } from '@nebular/theme';
+import { NbListModule, NbAlertModule, NbSelectModule, NbCardModule, NbTooltipModule, NbButtonModule, NbTabsetModule, NbPopoverModule, NbChatModule } from '@nebular/theme';
 import { NgxEchartsModule } from 'ngx-echarts';
 import { ThemeModule } from '../../@theme/theme.module';
 import { DashboardComponent } from './dashboard.component';
@@ -22,6 +22,8 @@ import { StatisticsComponent } from './components/statistics-component/statistic
 import { SimpleChartWrapperComponent } from './components/simpleChart-component/simpleChartWrapper.component';
 import { SimpleChartComponent } from './components/simpleChart-component/simpleChart.component';
 import { CamComponent } from './components/cam-component/cam.component';
+import { ChatComponent } from './components/chat-component/chat.component';
+
 
 @NgModule({
   imports: [
@@ -42,6 +44,7 @@ import { CamComponent } from './components/cam-component/cam.component';
     NbDialogModule.forChild(),
     NgbDropdownModule,
     NgbModule,
+    NbChatModule,
   ],
   declarations: [
     DashboardComponent,
@@ -53,6 +56,7 @@ import { CamComponent } from './components/cam-component/cam.component';
     SimpleChartComponent,
     SimpleChartWrapperComponent,
     CamComponent,
+    ChatComponent,
   ],
   entryComponents: [
     ConfirmationComponent,

@@ -31,9 +31,8 @@ namespace NervboxDeamon.Controllers
     [HttpGet]
     public IActionResult GetCurrentImage()
     {
-      return File(ImageToByteArray(this.CamService.GetCurrentImage()), "image/jpeg");
+      return File(this.CamService.GetCurrentImageBytes(), "image/jpeg");
     }
-
 
     [HttpGet]
     [Route("move/{direction}")]
@@ -58,12 +57,7 @@ namespace NervboxDeamon.Controllers
     }
 
 
-    private byte[] ImageToByteArray(System.Drawing.Image imageIn)
-    {
-      MemoryStream ms = new MemoryStream();
-      imageIn.Save(ms, System.Drawing.Imaging.ImageFormat.Jpeg);
-      return ms.ToArray();
-    }
+
 
   }
 }

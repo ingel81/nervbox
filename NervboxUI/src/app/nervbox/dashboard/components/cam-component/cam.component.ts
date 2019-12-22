@@ -3,6 +3,7 @@ import { NbThemeService } from '@nebular/theme';
 import { SoundService } from '../../../services/sound.service';
 import { CamService } from '../../../services/cam.service';
 import { environment } from '../../../../../environments/environment';
+import { NbAccessChecker } from '@nebular/security';
 
 
 @Component({
@@ -16,7 +17,12 @@ export class CamComponent implements OnDestroy, OnInit {
   themeSubscription: any;
   imageUrl: string;
 
-  constructor(private themeService: NbThemeService, private camService: CamService) {
+  constructor(
+    private themeService: NbThemeService,
+    private camService: CamService,
+    public accessChecker: NbAccessChecker,
+  ) {
+
     this.themeSubscription = this.themeService.getJsTheme().subscribe(theme => {
       this.currentTheme = theme.name;
     });
