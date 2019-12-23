@@ -30,16 +30,10 @@ export class CamComponent implements OnDestroy, OnInit {
 
   ngOnInit(): void {
     this.camService.OnNewImage.subscribe(obs => {
-
       if (obs) {
-        console.log('new image ready');
         this.imageUrl = environment.apiUrl + '/cam?ts=' + Date.now();
       }
-
-    }, err => {
-
-    });
-
+    }, err => { });
   }
 
   ngOnDestroy() {

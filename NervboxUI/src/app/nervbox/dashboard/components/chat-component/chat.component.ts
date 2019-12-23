@@ -40,8 +40,21 @@ export class ChatComponent implements OnDestroy, OnInit {
 
     this.messages = [];
 
+    this.chatService.getChat().subscribe(msgs => {
+
+      msgs.forEach(msg => {
+        if (this.user.unique_name == msg.userId) {
+          msg.reply = true;
+        }
+      });
+
+      this.messages = msgs;
+    }, err => {
+
+    });
+
     this.chatService.OnNewChatMessage.subscribe(msg => {
-      if (this.user.unique_name === msg.userId) {
+      if (this.user.unique_name == msg.userId) {
         msg.reply = true;
       }
 

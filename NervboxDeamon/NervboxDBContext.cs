@@ -7,29 +7,30 @@ using NervboxDeamon.DbModels;
 
 namespace NervboxDeamon
 {
-    public class NervboxDBContext : DbContext
-    {
-        // When used with ASP.net core, add these lines to Startup.cs
-        //   var connectionString = Configuration.GetConnectionString("BlogContext");
-        //   services.AddEntityFrameworkNpgsql().AddDbContext<BlogContext>(options => options.UseNpgsql(connectionString));
-        // and add this to appSettings.json
-        // "ConnectionStrings": { "BlogContext": "Server=localhost;Database=blog" }
+  public class NervboxDBContext : DbContext
+  {
+    // When used with ASP.net core, add these lines to Startup.cs
+    //   var connectionString = Configuration.GetConnectionString("BlogContext");
+    //   services.AddEntityFrameworkNpgsql().AddDbContext<BlogContext>(options => options.UseNpgsql(connectionString));
+    // and add this to appSettings.json
+    // "ConnectionStrings": { "BlogContext": "Server=localhost;Database=blog" }
 
-        /*
-          Howto: 
+    /*
+      Howto: 
 
-          add-migration {name}
-          update-database
+      add-migration {name}
+      update-database
 
-          --> 
+      --> 
 
-        */
+    */
 
-        public NervboxDBContext(DbContextOptions<NervboxDBContext> options) : base(options) { }
+    public NervboxDBContext(DbContextOptions<NervboxDBContext> options) : base(options) { }
 
-        public DbSet<Setting> Settings { get; set; }
-        public DbSet<User> Users { get; set; }
-        public DbSet<Sound> Sounds { get; set; }
-        public DbSet<SoundUsage> SoundUsages { get; set; }
-    }
+    public DbSet<Setting> Settings { get; set; }
+    public DbSet<User> Users { get; set; }
+    public DbSet<Sound> Sounds { get; set; }
+    public DbSet<SoundUsage> SoundUsages { get; set; }
+    public DbSet<ChatMessage> ChatMessages { get; set; }
+  }
 }

@@ -62,4 +62,8 @@ export class ChatService {
   sendMessage(msg: IChatMessage): void {
     this.hubConnection.send('sendMessage', msg).then(res => { }, err => { });
   }
+
+  getChat(): Observable<Array<IChatMessage>> {
+    return this.http.get<Array<IChatMessage>>(environment.apiUrl + '/chat');
+  }
 }
