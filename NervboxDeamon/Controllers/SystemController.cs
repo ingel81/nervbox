@@ -256,5 +256,13 @@ namespace NervboxDeamon.Controllers
       return Ok(new { date = date, dateUtc = dateUtc });
     }
 
+    [AllowAnonymous]
+    [HttpPut]
+    [Route("date")]
+    public IActionResult SetCurrentDate(DateUpdateModel model)
+    {
+      this.SystemService.SetSystemDate(model.NewDate);
+      return Ok();
+    }
   }
 }

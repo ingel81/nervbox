@@ -4,6 +4,10 @@
 
 @include nb-install-component() {
 
+    .cam-image {
+        width: 100%;
+    }
+
     .cleaning {
         cursor: pointer;
     }
@@ -15,7 +19,8 @@
             height: nb-theme(card-height-medium);
         }
     }
-/*
+
+    /*
     ::ng-deep nb-card-header {
         border-top-left-radius: 0px;
         border-top-right-radius: 0px;
@@ -24,7 +29,7 @@
 
     ::ng-deep nb-card-body {
         background-color: #EAF0F4;
-        
+
     }
 */
     .wind-animation {
@@ -161,7 +166,7 @@
         100% {
             background-color: #fff;
         }
-    }    
+    }
 
     @keyframes blink-Green-Blue {
         0% {
