@@ -7,15 +7,17 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace NervboxDeamon.Controllers.Base
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class ChatController : NervboxBaseController<ChatController>
+  [Route("api/[controller]")]
+  [ApiController]
+  public class ChatController : NervboxBaseController<ChatController>
   {
-        // GET: api/Chat
-        [HttpGet]
-        public IActionResult Get()
-        {
-          return Ok (DbContext.ChatMessages.OrderBy(a => a.Date).Take(100).ToList());
-        }
+    // GET: api/Chat
+    [HttpGet]
+    public IActionResult Get()
+    {
+      var results = DbContext.ChatMessages.OrderByDescending(a => a.Date).Take(100).ToList();
+      results.Reverse();
+      return Ok(results);
     }
+  }
 }

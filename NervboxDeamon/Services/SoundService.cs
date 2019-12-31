@@ -213,13 +213,15 @@ namespace NervboxDeamon.Services
 
     public void TTS(string text, int userId)
     {
+      // pico2wave - w affe.wav -l "de-DE" "kaffe fertig" && aplay affe.wav
+
       new Task(() =>
       {
         var path = TTSDirectory.FullName;
         var id = Guid.NewGuid().ToString("N");
         var randFile = Path.Combine(path, $"{id}.wav");
 
-        this.SshService.SendCmd($"pico2wave -w {randFile} -l \"de-DE\" \"{text.Trim()}\" && aplay {randFile}");
+        this.SshService.SendCmd($"pico2wave -w {randFile} -l \"de-DE\" \"<pitch level='80'><volume level='200'>{text.Trim()}\" && aplay {randFile}");
       }).Start();
     }
 

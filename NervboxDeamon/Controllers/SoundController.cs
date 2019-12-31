@@ -92,12 +92,12 @@ namespace NervboxDeamon.Controllers
     {
       try
       {
-        return Ok(this.DbContext.SoundUsages.GroupBy(g => new { id = g.User.Id, name = g.User.FirstName + " " + g.User.LastName }).Select(g => new
+        return Ok(this.DbContext.SoundUsages.GroupBy(g => new { id = g.User.Id, name = g.User.Username }).Select(g => new
         {
           PlayedById = g.Key.id,
           Name = g.Key.name,
           Count = g.Count()
-        }).OrderByDescending(g => g.Count).Take(10));
+        }).OrderByDescending(g => g.Count).Take(25));
       }
       catch (Exception ex)
       {
