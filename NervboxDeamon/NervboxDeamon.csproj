@@ -44,7 +44,7 @@
     <PackageReference Include="Serilog.Settings.Configuration" Version="3.1.1-dev-00209" />
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.2-dev-00806" />
     <PackageReference Include="Serilog.Sinks.RollingFile" Version="3.3.1-dev-00771" />
-    <PackageReference Include="SSH.NET" Version="2016.1.0" />
+    <PackageReference Include="SSH.NET" Version="2020.0.2" />
     <PackageReference Include="System.IO.Ports" Version="4.6.0" />
     <PackageReference Include="taglib" Version="2.1.0" />
   </ItemGroup>
