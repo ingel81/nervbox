@@ -63,7 +63,7 @@ namespace NervboxDeamon.Services
         return;
       }
 
-      client = new SshClient(appSettings.SSH.Host, appSettings.SSH.Port, "pi", "raspberry");
+      client = new SshClient(appSettings.SSH.Host, appSettings.SSH.Port, appSettings.SSH.User, appSettings.SSH.Password);
       client.Connect();
 
       shell = client.CreateShellStream("", 80, 80, 80, 40, 1024);

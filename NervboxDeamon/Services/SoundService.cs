@@ -213,7 +213,10 @@ namespace NervboxDeamon.Services
 
     public void TTS(string text, int userId)
     {
-      // pico2wave - w affe.wav -l "de-DE" "kaffe fertig" && aplay affe.wav
+      // pico2wave - w affe.wav -l "de-DE" "<pitch level='80'><volume level='200'>kaffe fertig" && aplay affe.wav
+	  
+	  // besser:
+	  // espeak -p 100 -a 1000 -vde "fickt, ficken, gefickt, fick" -w affe.wav && omxplayer affe.wav
 
       new Task(() =>
       {
