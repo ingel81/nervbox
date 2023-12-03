@@ -1,18 +1,9 @@
-open sftp://pi:raspberry@192.168.1.14/ -hostkey="ssh-ed25519 256 9dq0Ni57UNIFouknAaXyRs3zheS5ndNi+Hjw0HavNX4="
+open sftp://pi:raspberry@192.168.0.190/ -hostkey="ssh-ed25519 255 gR3bd6D1KtSx3e2xvWt8RmFOBnzMF0NbqV5JrmiJrUU"
 
 call sudo systemctl stop nervbox
 
-#rmdir /home/pi/nervbox
-#mkdir /home/pi/nervbox
-
-# Ihr Befehl 1
-# Ihr Befehl 2
-
-synchronize remote -delete .\release /home/pi/nervbox
-chmod 755 /home/pi/nervbox/NervboxDeamon 
+synchronize remote -delete .\release /opt/nervbox
+chmod 755 /opt/nervbox/NervboxDeamon 
 call sudo systemctl start nervbox
 
 exit
-
-# Führe das Script aus, unter Verwendung eines Befehls wie:
-# "C:\Program Files (x86)\WinSCP\WinSCP.exe" /log="WinSCP.log" /ini=nul /script="deploy.txt"

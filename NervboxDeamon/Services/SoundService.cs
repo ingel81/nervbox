@@ -239,8 +239,8 @@ namespace NervboxDeamon.Services
         }
 
         var sound = this.Sounds[soundId];
-        //this.SshService.SendCmd($"omxplayer -o local --no-keys {Path.Combine(path, sound.FileName.Replace("!", "\\!").Replace(" ", "\\ "))} &");
-        this.SshService.SendCmd($"omxplayer -o local --no-keys {path}/{sound.FileName.Replace("!", "\\!").Replace(" ", "\\ ")} &");
+        //this.SshService.SendCmd($"omxplayer -o local --no-keys {path}/{sound.FileName.Replace("!", "\\!").Replace(" ", "\\ ")} &");
+        this.SshService.SendCmd($"mpg123 -q --no-control {path}/{sound.FileName.Replace("!", "\\!").Replace(" ", "\\ ")} &");
 
         //try
         //{
@@ -281,6 +281,7 @@ namespace NervboxDeamon.Services
 
     public void KillAll()
     {
+      this.SshService.SendCmd($"sudo pkill -f mpg123");
       this.SshService.SendCmd($"sudo pkill -f omxplayer");
       this.SshService.SendCmd($"sudo pkill -f aplay");
     }
