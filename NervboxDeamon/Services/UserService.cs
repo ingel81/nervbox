@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System;
@@ -8,9 +8,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 using NervboxDeamon.DbModels;
-using NervboxDeamon.Helpers;
 using NervboxDeamon.Models.Settings;
 using NervboxDeamon.Models.View;
 using NervboxDeamon.Services.Interfaces;
@@ -41,14 +39,14 @@ namespace NervboxDeamon.Services
       using (var scope = ServiceProvider.CreateScope())
       {
         var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
-        user = db.Users.SingleOrDefault(x => x.Username == username && x.Password == GetPasswordHash(password));
+        user = db.Users.SingleOrDefault(x => x.Username == username && x.PasswordHash == GetPasswordHash(password));
       }
 
       // return null if user not found
       if (user == null)
         return null;
 
-      // authentication successful so generate jwt token
+      // authentication successful so generate jwt token (14 days validity)
       var tokenHandler = new JwtSecurityTokenHandler();
       var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
       var tokenDescriptor = new SecurityTokenDescriptor
@@ -57,14 +55,11 @@ namespace NervboxDeamon.Services
                     new Claim(ClaimTypes.Name, user.Id.ToString()),
                     new Claim("userName", user.Username),
                     new Claim("role", user.Role) }),
-        Expires = DateTime.UtcNow.AddDays(7),
+        Expires = DateTime.UtcNow.AddDays(14),
         SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
       };
       var token = tokenHandler.CreateToken(tokenDescriptor);
       user.Token = tokenHandler.WriteToken(token);
-
-      // remove password before returning
-      user.Password = null;
 
       return user;
     }
@@ -75,17 +70,17 @@ namespace NervboxDeamon.Services
       {
         var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
 
-        //existing
+        // Check if username exists
         if (db.Users.Any(x => x.Username == model.Username))
         {
-          message = $"User with this name already exists.";
+          message = "User with this name already exists.";
           return null;
         }
 
-        //existing
-        if (db.Users.Any(x => x.RegistrationIp == ip))
+        // Check if IP already has an account (1 account per IP)
+        if (db.Users.Any(x => x.IpAddress == ip))
         {
-          message = $"Your IP has no more free account registrations.";
+          message = "Your IP has no more free account registrations.";
           return null;
         }
 
@@ -94,17 +89,16 @@ namespace NervboxDeamon.Services
           Username = model.Username,
           FirstName = model.Firstname,
           LastName = model.Lastname,
-          Password = GetPasswordHash(model.Password),
-          Role = "user_low",
-          RegistrationIp = ip
+          PasswordHash = GetPasswordHash(model.Password),
+          Role = "user",
+          IpAddress = ip
         };
         db.Users.Add(user);
         db.SaveChanges();
 
         message = string.Empty;
 
-
-        // authentication successful so generate jwt token
+        // Generate jwt token (14 days validity)
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
         var tokenDescriptor = new SecurityTokenDescriptor
@@ -113,14 +107,11 @@ namespace NervboxDeamon.Services
                     new Claim(ClaimTypes.Name, user.Id.ToString()),
                     new Claim("userName", user.Username),
                     new Claim("role", user.Role) }),
-          Expires = DateTime.UtcNow.AddDays(7),
+          Expires = DateTime.UtcNow.AddDays(14),
           SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };
         var token = tokenHandler.CreateToken(tokenDescriptor);
         user.Token = tokenHandler.WriteToken(token);
-
-        // remove password before returning
-        user.Password = null;
 
         return user;
       }
@@ -137,8 +128,7 @@ namespace NervboxDeamon.Services
 
     public void CheckUsers()
     {
-      //check if user exists
-
+      // Ensure default admin user exists
       using (var scope = this.ServiceProvider.CreateScope())
       {
         var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
@@ -147,16 +137,14 @@ namespace NervboxDeamon.Services
         bool changesMade = false;
         foreach (var userShould in UserDefaults)
         {
-          if (users.Exists(u => u.Username.Equals(userShould.Username)) == false)
+          if (!users.Exists(u => u.Username.Equals(userShould.Username)))
           {
             db.Users.Add(new User()
             {
-              Email = userShould.Email,
               Username = userShould.Username,
               FirstName = userShould.FirstName,
               LastName = userShould.LastName,
-              Token = userShould.Token,
-              Password = GetPasswordHash(userShould.Password),
+              PasswordHash = GetPasswordHash(userShould.PasswordHash),
               Role = userShould.Role
             });
 
@@ -192,13 +180,13 @@ namespace NervboxDeamon.Services
           return false;
         }
 
-        if (!user.Password.Equals(GetPasswordHash(model.OldPassword)))
+        if (!user.PasswordHash.Equals(GetPasswordHash(model.OldPassword)))
         {
           error = "Wrong password";
           return false;
         }
 
-        user.Password = GetPasswordHash(model.NewPassword1);
+        user.PasswordHash = GetPasswordHash(model.NewPassword1);
         db.SaveChanges();
         return true;
       }
@@ -210,12 +198,7 @@ namespace NervboxDeamon.Services
       {
         return new List<User>()
         {
-          new User(){Username = "u1", Id = -1, LastName = "User", FirstName = "u1", Token = null, Email = null, Password ="test", Role = "user_low" },
-          new User(){Username = "u2", Id = -1, LastName = "User", FirstName = "k2", Token = null, Email = null, Password ="test", Role = "user_medium"},
-          new User(){Username = "u3", Id = -1, LastName = "User", FirstName = "k3", Token = null, Email = null, Password ="test", Role = "user_high"},
-          new User(){Username = "a1", Id = -1, LastName = "Admin", FirstName = "a1", Token = null, Email = null, Password ="affeaffe", Role = "admin_low" },
-          new User(){Username = "a2", Id = -1, LastName = "Admin", FirstName = "a2", Token = null, Email = null, Password ="affeaffe", Role = "admin_medium"  },
-          new User(){Username = "a3", Id = -1, LastName = "Admin", FirstName = "a3", Token = null, Email = null, Password ="affeaffe", Role = "admin_high"  },
+          new User() { Username = "admin", FirstName = "Admin", LastName = "User", PasswordHash = "admin", Role = "admin" }
         };
       }
     }

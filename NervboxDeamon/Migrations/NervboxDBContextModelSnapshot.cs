@@ -4,7 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NervboxDeamon;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+
+#nullable disable
 
 namespace NervboxDeamon.Migrations
 {
@@ -14,71 +15,58 @@ namespace NervboxDeamon.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder
-                .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn)
-                .HasAnnotation("ProductVersion", "3.0.0")
-                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+            modelBuilder.HasAnnotation("ProductVersion", "8.0.0");
 
             modelBuilder.Entity("NervboxDeamon.DbModels.ChatMessage", b =>
                 {
-                    b.Property<long>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn);
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
 
-                    b.Property<DateTime>("Date")
-                        .HasColumnName("date")
-                        .HasColumnType("timestamp without time zone");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("Message")
                         .IsRequired()
-                        .HasColumnName("message")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnName("type")
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("message");
 
                     b.Property<int>("UserId")
-                        .HasColumnName("userId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Username")
-                        .IsRequired()
-                        .HasColumnName("username")
-                        .HasColumnType("text");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("user_id");
 
                     b.HasKey("Id");
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("chatmessage");
+                    b.ToTable("chat_messages");
                 });
 
             modelBuilder.Entity("NervboxDeamon.DbModels.Setting", b =>
                 {
                     b.Property<string>("Key")
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("SettingScopeString")
                         .IsRequired()
-                        .HasColumnName("SettingScope")
-                        .HasColumnType("character varying(50)")
-                        .HasMaxLength(50);
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("SettingScope");
 
                     b.Property<string>("SettingTypeString")
                         .IsRequired()
-                        .HasColumnName("SettingType")
-                        .HasColumnType("character varying(50)")
-                        .HasMaxLength(50);
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("SettingType");
 
                     b.Property<string>("Value")
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Key");
 
@@ -88,91 +76,150 @@ namespace NervboxDeamon.Migrations
             modelBuilder.Entity("NervboxDeamon.DbModels.Sound", b =>
                 {
                     b.Property<string>("Hash")
-                        .HasColumnName("hash")
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("hash");
 
-                    b.Property<bool>("Allowed")
-                        .HasColumnName("allowed")
-                        .HasColumnType("boolean");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
-                    b.Property<TimeSpan>("Duration")
-                        .HasColumnName("Duration")
-                        .HasColumnType("interval");
+                    b.Property<int>("DurationMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("duration_ms");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("enabled");
 
                     b.Property<string>("FileName")
-                        .HasColumnName("fileName")
-                        .HasColumnType("text");
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("file_name");
 
-                    b.Property<long>("Size")
-                        .HasColumnName("Size")
-                        .HasColumnType("bigint");
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
 
-                    b.Property<bool>("Valid")
-                        .HasColumnName("valid")
-                        .HasColumnType("boolean");
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("size_bytes");
 
                     b.HasKey("Hash");
 
-                    b.ToTable("sound");
+                    b.ToTable("sounds");
+                });
+
+            modelBuilder.Entity("NervboxDeamon.DbModels.SoundTag", b =>
+                {
+                    b.Property<string>("SoundHash")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("sound_hash");
+
+                    b.Property<int>("TagId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("tag_id");
+
+                    b.HasKey("SoundHash", "TagId");
+
+                    b.HasIndex("TagId");
+
+                    b.ToTable("sound_tags");
                 });
 
             modelBuilder.Entity("NervboxDeamon.DbModels.SoundUsage", b =>
                 {
-                    b.Property<DateTime>("Time")
-                        .HasColumnName("time")
-                        .HasColumnType("timestamp without time zone");
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
 
-                    b.Property<int>("PlayedByUserId")
-                        .HasColumnName("playedByUserId")
-                        .HasColumnType("integer");
+                    b.Property<DateTime>("PlayedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("played_at");
 
                     b.Property<string>("SoundHash")
-                        .HasColumnName("soundhash")
-                        .HasColumnType("text");
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("sound_hash");
 
-                    b.HasKey("Time");
+                    b.Property<int?>("UserId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("user_id");
 
-                    b.HasIndex("PlayedByUserId");
+                    b.HasKey("Id");
 
                     b.HasIndex("SoundHash");
 
-                    b.ToTable("soundusage");
+                    b.HasIndex("UserId");
+
+                    b.ToTable("sound_usages");
+                });
+
+            modelBuilder.Entity("NervboxDeamon.DbModels.Tag", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("tags");
                 });
 
             modelBuilder.Entity("NervboxDeamon.DbModels.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn);
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
 
-                    b.Property<string>("Email")
-                        .HasColumnType("text");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("FirstName")
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("first_name");
+
+                    b.Property<string>("IpAddress")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("ip_address");
 
                     b.Property<string>("LastName")
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("last_name");
 
-                    b.Property<string>("Password")
-                        .HasColumnType("text");
-
-                    b.Property<string>("RegistrationIp")
-                        .HasColumnType("text");
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("password_hash");
 
                     b.Property<string>("Role")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Token")
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("role");
 
                     b.Property<string>("Username")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("username");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("IpAddress")
+                        .IsUnique();
+
+                    b.HasIndex("Username")
+                        .IsUnique();
 
                     b.ToTable("users");
                 });
@@ -184,19 +231,56 @@ namespace NervboxDeamon.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("NervboxDeamon.DbModels.SoundTag", b =>
+                {
+                    b.HasOne("NervboxDeamon.DbModels.Sound", "Sound")
+                        .WithMany("SoundTags")
+                        .HasForeignKey("SoundHash")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NervboxDeamon.DbModels.Tag", "Tag")
+                        .WithMany("SoundTags")
+                        .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Sound");
+
+                    b.Navigation("Tag");
                 });
 
             modelBuilder.Entity("NervboxDeamon.DbModels.SoundUsage", b =>
                 {
-                    b.HasOne("NervboxDeamon.DbModels.User", "User")
-                        .WithMany()
-                        .HasForeignKey("PlayedByUserId")
+                    b.HasOne("NervboxDeamon.DbModels.Sound", "Sound")
+                        .WithMany("Usages")
+                        .HasForeignKey("SoundHash")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("NervboxDeamon.DbModels.Sound", "Sound")
-                        .WithMany("Usages")
-                        .HasForeignKey("SoundHash");
+                    b.HasOne("NervboxDeamon.DbModels.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("Sound");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("NervboxDeamon.DbModels.Sound", b =>
+                {
+                    b.Navigation("SoundTags");
+
+                    b.Navigation("Usages");
+                });
+
+            modelBuilder.Entity("NervboxDeamon.DbModels.Tag", b =>
+                {
+                    b.Navigation("SoundTags");
                 });
 #pragma warning restore 612, 618
         }

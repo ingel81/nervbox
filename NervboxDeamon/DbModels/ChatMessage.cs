@@ -1,40 +1,28 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace NervboxDeamon.DbModels
 {
-  [Table("chatmessage")]
-  public class ChatMessage
-  {
-    [Key]
-    [Required]
-    public long Id { get; set; }
+    [Table("chat_messages")]
+    public class ChatMessage
+    {
+        [Key]
+        [Column("id")]
+        public int Id { get; set; }
 
-    [Required]
-    [Column("date")]
-    public DateTime Date { get; set; }
+        [Required]
+        [Column("user_id")]
+        public int UserId { get; set; }
 
-    [Required]
-    [Column("type")]
-    public string Type { get; set; }
+        [Required]
+        [Column("message")]
+        public string Message { get; set; }
 
-    [Required]
-    [Column("message")]
-    public string Message { get; set; }
+        [Column("created_at")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    [Column("userId")]
-    public int UserId { get; set; }
-
-    [ForeignKey("UserId")]
-    public virtual User User { get; set; }
-    
-    [Required]
-    [Column("username")]
-    public string Username { get; set; }
-
-  }
+        [ForeignKey("UserId")]
+        public virtual User User { get; set; }
+    }
 }

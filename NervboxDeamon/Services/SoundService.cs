@@ -16,6 +16,7 @@ using System.Security.Cryptography;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Net;
+using System.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
 
 namespace NervboxDeamon.Services
@@ -24,7 +25,6 @@ namespace NervboxDeamon.Services
   {
     void Init();
     void PlaySound(string soundId, int userId);
-    void TTS(string text, int userId);
     void KillAll();
   }
 
@@ -42,8 +42,8 @@ namespace NervboxDeamon.Services
     public ConcurrentDictionary<int, User> UserLookup { private set; get; } = new ConcurrentDictionary<int, User>();
     private Dictionary<string, Sound> Sounds { get; set; }
     private DirectoryInfo SoundDirectory { get; set; }
-    private DirectoryInfo TTSDirectory { get; set; }
     private string SoundDirectoryDebugPlay { get; set; }
+    private AppSettings appSettings { get; set; }
     private ConcurrentQueue<SoundUsage> Usages { get; set; } = new ConcurrentQueue<SoundUsage>();
     private Thread LoggingThread = null;
     private bool keepRunning = true;
@@ -99,7 +99,7 @@ namespace NervboxDeamon.Services
       InitUserLookup();
 
       var appSettingsSection = Configuration.GetSection("AppSettings");
-      var appSettings = appSettingsSection.Get<AppSettings>();
+      appSettings = appSettingsSection.Get<AppSettings>();
 
       if (Environment.EnvironmentName == "Development")
       {
@@ -107,7 +107,13 @@ namespace NervboxDeamon.Services
       }
 
       SoundDirectory = new DirectoryInfo(appSettings.SoundPath);
-      TTSDirectory = new DirectoryInfo(appSettings.TTSPath);
+
+      if (!SoundDirectory.Exists)
+      {
+        Logger.LogWarning($"Sound directory does not exist: {SoundDirectory.FullName}");
+        this.Sounds = new Dictionary<string, Sound>();
+        return;
+      }
 
       var soundFiles = SoundDirectory.GetFiles();
       List<dynamic> found = new List<dynamic>();
@@ -115,7 +121,8 @@ namespace NervboxDeamon.Services
       foreach (FileInfo fi in soundFiles)
       {
         string hash = string.Empty;
-        string name = fi.Name;
+        string fileName = fi.Name;
+        string name = Path.GetFileNameWithoutExtension(fi.Name);
 
         using (var md5 = MD5.Create())
         {
@@ -126,11 +133,19 @@ namespace NervboxDeamon.Services
           }
         }
 
-        //check meta data:
-        var file = TagLib.File.Create(fi.FullName);
-        TimeSpan duration = file.Properties.Duration;
+        // Get duration from file metadata
+        int durationMs = 0;
+        try
+        {
+          var file = TagLib.File.Create(fi.FullName);
+          durationMs = (int)file.Properties.Duration.TotalMilliseconds;
+        }
+        catch (Exception ex)
+        {
+          Logger.LogDebug($"Could not read duration for {fileName}: {ex.Message}");
+        }
 
-        found.Add(new { Name = name, Hash = hash, Size = fi.Length, Duration = duration });
+        found.Add(new { Name = name, FileName = fileName, Hash = hash, SizeBytes = fi.Length, DurationMs = durationMs });
       }
 
       using (var scope = serviceProvider.CreateScope())
@@ -141,49 +156,62 @@ namespace NervboxDeamon.Services
         var existing = db.Sounds.ToList();
 
         var validSounds = existing.Where(e => found.Exists(f => e.Hash.Equals(f.Hash))).ToList();
-        var invalidSounds = existing.Where(e => !(found.Exists(f => e.Hash.Equals(f.Hash)))).ToList();
+        var invalidSounds = existing.Where(e => !found.Exists(f => e.Hash.Equals(f.Hash))).ToList();
         var newSounds = found.Where(f => !existing.Exists(e => e.Hash.Equals(f.Hash))).ToList();
 
-        var conflicts = new Dictionary<string, dynamic>();
-
-        // 1) delete removed sounds
+        // 1) Mark removed sounds as disabled
         foreach (var invalidSound in invalidSounds)
         {
-          invalidSound.Valid = false;
+          invalidSound.Enabled = false;
           soundsChanged = true;
         }
 
-        // 2) neue sounds inserten
+        // 2) Add new sounds
         foreach (var newSound in newSounds)
         {
           try
           {
-            db.Sounds.Add(new Sound() { Allowed = true, Hash = newSound.Hash, FileName = newSound.Name, Valid = true, Size = newSound.Size, Duration = newSound.Duration });
+            db.Sounds.Add(new Sound()
+            {
+              Hash = newSound.Hash,
+              Name = newSound.Name,
+              FileName = newSound.FileName,
+              SizeBytes = newSound.SizeBytes,
+              DurationMs = newSound.DurationMs,
+              Enabled = true
+            });
             soundsChanged = true;
           }
           catch (Exception ex)
           {
-            Logger.LogDebug($"Cant add sound with hash {newSound.Hash} and Filename {newSound.Name}. Exception was {ex}");
+            Logger.LogDebug($"Cannot add sound with hash {newSound.Hash} and filename {newSound.FileName}. Exception: {ex}");
           }
         }
 
-        //3) für die validen soduns den Namen Updaten falls geändert
+        // 3) Update filename if changed for valid sounds
         foreach (var sound in validSounds)
         {
           try
           {
             var foundSound = found.Where(f => f.Hash.Equals(sound.Hash)).Single();
 
-            if (!foundSound.Name.Equals(sound.FileName))
+            if (!foundSound.FileName.Equals(sound.FileName))
             {
-              sound.FileName = foundSound.Name;
+              sound.FileName = foundSound.FileName;
+              sound.Name = foundSound.Name;
+              soundsChanged = true;
+            }
 
+            // Re-enable if previously disabled
+            if (!sound.Enabled)
+            {
+              sound.Enabled = true;
               soundsChanged = true;
             }
           }
           catch (Exception)
           {
-            var foundSounds = found.Where(f => f.Hash.Equals(sound.Hash)).ToList();
+            // Multiple files with same hash - skip
           }
         }
 
@@ -192,8 +220,8 @@ namespace NervboxDeamon.Services
           db.SaveChanges();
         }
 
-        //load all
-        this.Sounds = db.Sounds.ToDictionary(s => s.Hash, s => s);
+        // Load all enabled sounds
+        this.Sounds = db.Sounds.Where(s => s.Enabled).ToDictionary(s => s.Hash, s => s);
       }
     }
 
@@ -211,51 +239,37 @@ namespace NervboxDeamon.Services
       }
     }
 
-    public void TTS(string text, int userId)
-    {
-      // pico2wave - w affe.wav -l "de-DE" "<pitch level='80'><volume level='200'>kaffe fertig" && aplay affe.wav
-	  
-	  // besser:
-	  // espeak -p 100 -a 1000 -vde "fickt, ficken, gefickt, fick" -w affe.wav && omxplayer affe.wav
-
-      new Task(() =>
-      {
-        var path = TTSDirectory.FullName;
-        var id = Guid.NewGuid().ToString("N");
-        var randFile = Path.Combine(path, $"{id}.wav");
-
-        this.SshService.SendCmd($"pico2wave -w {randFile} -l \"de-DE\" \"<pitch level='80'><volume level='200'>{text.Trim()}\" && aplay {randFile}");
-      }).Start();
-    }
-
     public void PlaySound(string soundId, int userId)
     {
       new Task(() =>
       {
-        var path = SoundDirectory.FullName;
-        if (Environment.EnvironmentName == "Development")
+        if (!this.Sounds.TryGetValue(soundId, out var sound))
         {
-          path = SoundDirectoryDebugPlay;
+          Logger.LogWarning($"Sound not found: {soundId}");
+          return;
         }
 
-        var sound = this.Sounds[soundId];
-        //this.SshService.SendCmd($"omxplayer -o local --no-keys {path}/{sound.FileName.Replace("!", "\\!").Replace(" ", "\\ ")} &");
-        this.SshService.SendCmd($"mpg123 -q --no-control {path}/{sound.FileName.Replace("!", "\\!").Replace(" ", "\\ ")} &");
-
-        //try
-        //{
-        //  IPHostEntry e = Dns.GetHostEntry(initiator);
-        //  if (e != null)
-        //  {
-        //    initiator = $"{e.HostName} ({initiator})";
-        //  }
-        //}
-        //catch { }
+        if (appSettings.SSH?.Enabled == true)
+        {
+          // Remote via SSH auf Raspberry Pi
+          var path = SoundDirectory.FullName;
+          if (Environment.EnvironmentName == "Development")
+          {
+            path = SoundDirectoryDebugPlay;
+          }
+          this.SshService.SendCmd($"mpg123 -q --no-control {path}/{sound.FileName.Replace("!", "\\!").Replace(" ", "\\ ")} &");
+        }
+        else
+        {
+          // Lokal abspielen
+          var localPath = Path.Combine(SoundDirectory.FullName, sound.FileName);
+          PlayLocal(localPath);
+        }
 
         var usage = new SoundUsage()
         {
-          PlayedByUserId = userId,
-          Time = DateTime.UtcNow,
+          UserId = userId,
+          PlayedAt = DateTime.UtcNow,
           SoundHash = sound.Hash
         };
 
@@ -279,11 +293,73 @@ namespace NervboxDeamon.Services
       }).Start();
     }
 
+    private void PlayLocal(string filePath)
+    {
+      try
+      {
+        var player = appSettings.LocalPlayer ?? "mpg123";
+        var args = player switch
+        {
+          "mpg123" => $"-q \"{filePath}\"",
+          "ffplay" => $"-nodisp -autoexit -loglevel quiet \"{filePath}\"",
+          "cvlc" => $"--play-and-exit --quiet \"{filePath}\"",
+          _ => $"-q \"{filePath}\""
+        };
+
+        Logger.LogDebug($"Playing locally with {player}: {filePath}");
+
+        Process.Start(new ProcessStartInfo
+        {
+          FileName = player,
+          Arguments = args,
+          UseShellExecute = false,
+          CreateNoWindow = true,
+          RedirectStandardOutput = true,
+          RedirectStandardError = true
+        });
+      }
+      catch (Exception ex)
+      {
+        Logger.LogError($"Failed to play sound locally: {ex.Message}");
+      }
+    }
+
     public void KillAll()
     {
-      this.SshService.SendCmd($"sudo pkill -f mpg123");
-      this.SshService.SendCmd($"sudo pkill -f omxplayer");
-      this.SshService.SendCmd($"sudo pkill -f aplay");
+      if (appSettings.SSH?.Enabled == true)
+      {
+        // Remote via SSH
+        this.SshService.SendCmd($"sudo pkill -f mpg123");
+        this.SshService.SendCmd($"sudo pkill -f omxplayer");
+        this.SshService.SendCmd($"sudo pkill -f aplay");
+      }
+      else
+      {
+        // Lokal
+        KillLocalPlayers();
+      }
+    }
+
+    private void KillLocalPlayers()
+    {
+      var players = new[] { "mpg123", "ffplay", "cvlc" };
+      foreach (var player in players)
+      {
+        try
+        {
+          Process.Start(new ProcessStartInfo
+          {
+            FileName = "pkill",
+            Arguments = $"-f {player}",
+            UseShellExecute = false,
+            CreateNoWindow = true
+          });
+        }
+        catch
+        {
+          // Player not running or pkill failed - ignore
+        }
+      }
     }
 
   }

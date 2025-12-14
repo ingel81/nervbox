@@ -10,9 +10,10 @@ namespace NervboxDeamon.Models.Settings
   {
     public string Secret { get; set; }
     public string LogPath { get; set; }
+    public string DatabasePath { get; set; } = "nervbox.db";
     public string SoundPath { get; set; }
     public string SoundPathDebugPlay { get; set; }
-    public string TTSPath { get; set; }
+    public string LocalPlayer { get; set; } = "mpg123";
     public SSHSettings SSH { get; set; }
     public CameraSettings Camera1 { get; set; }
   }

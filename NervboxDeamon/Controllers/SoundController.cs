@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NervboxDeamon.Controllers.Base;
-using NervboxDeamon.Models.View;
 using NervboxDeamon.Services;
 
 namespace NervboxDeamon.Controllers
@@ -29,51 +25,34 @@ namespace NervboxDeamon.Controllers
     }
 
     [HttpGet]
-    public IActionResult GetAllValidSounds()
+    public IActionResult GetAllSounds()
     {
-      return Ok(this.DbContext.Sounds.Where(s => s.Allowed == true && s.Valid == true).Select(s => new
-      {
-        Hash = s.Hash,
-        FileName = s.FileName,
-        Allowed = s.Allowed,
-        Valid = s.Valid,
-        Size = s.Size,
-        Played = s.Usages.Count(),
-        Duration = s.Duration.TotalMilliseconds
-      }).ToList());
+      var sounds = this.DbContext.Sounds
+        .Where(s => s.Enabled)
+        .Select(s => new
+        {
+          s.Hash,
+          s.Name,
+          s.FileName,
+          s.SizeBytes,
+          s.DurationMs,
+          s.Enabled,
+          s.CreatedAt,
+          Tags = s.SoundTags.Select(st => st.Tag.Name).ToList(),
+          PlayCount = s.Usages.Count()
+        })
+        .ToList();
+
+      return Ok(sounds);
     }
 
     [HttpGet]
     [Route("{soundId}/play")]
     public IActionResult PlaySound(string soundId)
     {
-      var ip = Accessor.HttpContext.Connection.RemoteIpAddress.ToString();
-
       try
       {
         this.SoundService.PlaySound(soundId, this.UserId);
-
-        return Ok();
-      }
-      catch (Exception ex)
-      {
-        return StatusCode(500, new
-        {
-          Error = ex.Message,
-          Stacktrace = ex.StackTrace
-        });
-      }
-    }
-
-    [HttpPost]
-    [Route("tts")]
-    public IActionResult PlaySound(TTSModel model)
-    {
-      var ip = Accessor.HttpContext.Connection.RemoteIpAddress.ToString();
-
-      try
-      {
-        this.SoundService.TTS(model.Text, this.UserId);
         return Ok();
       }
       catch (Exception ex)

@@ -1,33 +1,31 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace NervboxDeamon.DbModels
 {
-    [Table("soundusage")]
+    [Table("sound_usages")]
     public class SoundUsage
     {
         [Key]
-        [Required]
-        [Column("time")]
-        public DateTime Time { get; set; }
+        [Column("id")]
+        public int Id { get; set; }
 
-        [Column("soundhash")]
+        [Required]
+        [Column("sound_hash")]
         public string SoundHash { get; set; }
+
+        [Column("user_id")]
+        public int? UserId { get; set; }
+
+        [Column("played_at")]
+        public DateTime PlayedAt { get; set; } = DateTime.UtcNow;
 
         [ForeignKey("SoundHash")]
         public virtual Sound Sound { get; set; }
 
-        [Column("playedByUserId")]
-        public int PlayedByUserId { get; set; }
-
-        [ForeignKey("PlayedByUserId")]
+        [ForeignKey("UserId")]
         public virtual User User { get; set; }
-
-
     }
 }
 

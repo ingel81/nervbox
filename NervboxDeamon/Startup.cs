@@ -1,28 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.Common;
-using System.Diagnostics;
+using System;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.SignalR.Protocol;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using NervboxDeamon.Helpers;
 using NervboxDeamon.Hubs;
 using NervboxDeamon.Models.Settings;
 using NervboxDeamon.Services;
@@ -67,8 +56,13 @@ namespace NervboxDeamon
     // This method gets called by the runtime. Use this method to add services to the container.
     public void ConfigureServices(IServiceCollection services)
     {
-      var connectionString = Configuration.GetConnectionString("NervboxContext");
-      services.AddEntityFrameworkNpgsql().AddDbContext<NervboxDBContext>(options => options.UseNpgsql(connectionString, o => { o.SetPostgresVersion(9, 6); }));
+      // Configure SQLite with path from AppSettings
+      var appSettingsSection = Configuration.GetSection("AppSettings");
+      var appSettings = appSettingsSection.Get<AppSettings>();
+      var dbPath = appSettings?.DatabasePath ?? "nervbox.db";
+
+      services.AddDbContext<NervboxDBContext>(options =>
+          options.UseSqlite($"Data Source={dbPath}"));
 
       services.AddCors(options => options.AddPolicy("CorsPolicy", builder =>
       {
@@ -95,11 +89,9 @@ namespace NervboxDeamon
             });
 
       // configure strongly typed settings objects
-      var appSettingsSection = Configuration.GetSection("AppSettings");
       services.Configure<AppSettings>(appSettingsSection);
 
       // configure jwt authentication
-      var appSettings = appSettingsSection.Get<AppSettings>();
       var key = Encoding.ASCII.GetBytes(appSettings.Secret);
 
       services.AddAuthentication(x =>
@@ -145,47 +137,14 @@ namespace NervboxDeamon
         ForwardedHeaders = ForwardedHeaders.All
       });
 
-      //auto migration db
-      UpdateDatabase(app);
-
+      // Apply database migrations
       try
       {
-        using (var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope())
-        {
-          var db = serviceScope.ServiceProvider.GetService<NervboxDBContext>().Database;
-
-          //apply pending migrations
-          db.Migrate();
-
-          try
-          {
-            DbConnection con = db.GetDbConnection();
-            con.Open();
-            DbCommand cmd = con.CreateCommand();
-            cmd.CommandText = @"SELECT COUNT(1) FROM _timescaledb_catalog.hypertable WHERE table_name = 'soundusage' LIMIT 1";
-            Int64 hyperTable = (Int64)cmd.ExecuteScalar();
-            con.Close();
-
-            if (hyperTable == 0)
-            {
-              //try setting hypertable mode for our records table
-              var result = db.ExecuteSqlRaw("SELECT create_hypertable('soundusage', 'time', chunk_time_interval => interval '1 day');"); //1 day
-
-            }
-            else
-            {
-              //already created --> do nothing
-            }
-          }
-          catch (Npgsql.PostgresException ex) when (ex.SqlState.Equals("TS110")) //ignore this error
-          {
-            //System.Diagnostics.Debugger.Break();
-          }
-        }
+        UpdateDatabase(app);
       }
       catch (Exception ex)
       {
-        Logger.LogCritical(ex, "Failed to migrate or seed database");
+        Logger.LogCritical(ex, "Failed to migrate database");
       }
 
       if (env.EnvironmentName == "Development")
