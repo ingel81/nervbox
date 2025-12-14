@@ -1,12 +1,28 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { ToolbarComponent } from './components/toolbar/toolbar.component';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ToolbarComponent, SortOption } from './components/toolbar/toolbar.component';
 import { SoundGridComponent } from './components/sound-grid/sound-grid.component';
 import { TagFilterComponent } from './components/tag-filter/tag-filter.component';
+import { LoginDialogComponent } from './components/auth/login-dialog.component';
+import { RegisterDialogComponent } from './components/auth/register-dialog.component';
+import { ChangePasswordDialogComponent } from './components/auth/change-password-dialog.component';
+import { StatsDialogComponent } from './components/stats/stats-dialog.component';
+import { ChatSidebarComponent } from './components/chat/chat-sidebar.component';
 import { SoundService } from './core/services/sound.service';
+import { AuthService } from './core/services/auth.service';
+import { SignalRService } from './core/services/signalr.service';
 import { Sound } from './core/models';
+
+interface Activity {
+  id: number;
+  user: string;
+  sound: string;
+  timestamp: Date;
+  fading: boolean;
+}
 
 @Component({
   selector: 'app-root',
@@ -15,62 +31,79 @@ import { Sound } from './core/models';
     CommonModule,
     MatSnackBarModule,
     MatProgressSpinnerModule,
+    MatDialogModule,
     ToolbarComponent,
     SoundGridComponent,
     TagFilterComponent,
+    ChatSidebarComponent,
   ],
   template: `
     <div class="app-container">
       <!-- Toolbar -->
       <app-toolbar
+        [currentSort]="currentSort()"
         (searchChange)="onSearchChange($event)"
+        (sortChange)="onSortChange($event)"
         (killAllClick)="onKillAll()"
         (statsClick)="onStatsClick()"
-        (chatClick)="onChatClick()"
+        (chatClick)="toggleChat()"
         (loginClick)="onLoginClick()"
+        (changePasswordClick)="onChangePasswordClick()"
       />
 
-      <!-- Main Content -->
-      <main class="main-content">
-        <!-- Tag Filter -->
-        @if (soundService.sounds().length > 0) {
-          <app-tag-filter
-            [tags]="allTags()"
-            (selectedTagsChange)="onTagsChange($event)"
-          />
-        }
+      <!-- Main Layout -->
+      <div class="main-layout">
+        <!-- Main Content -->
+        <main class="main-content">
+          <!-- Tag Filter -->
+          @if (soundService.sounds().length > 0) {
+            <app-tag-filter
+              [tags]="allTags()"
+              (selectedTagsChange)="onTagsChange($event)"
+            />
+          }
 
-        <!-- Sound Grid -->
-        @if (soundService.loading()) {
-          <div class="loading-container">
-            <mat-spinner diameter="48"></mat-spinner>
-            <p>Sounds werden geladen...</p>
-          </div>
-        } @else if (soundService.error()) {
-          <div class="error-container">
-            <span class="error-icon">!</span>
-            <p>{{ soundService.error() }}</p>
-            <button class="retry-btn" (click)="loadSounds()">
-              Erneut versuchen
-            </button>
-          </div>
-        } @else {
-          <app-sound-grid
-            [sounds]="soundService.sounds()"
-            [searchQuery]="searchQuery()"
-            [selectedTags]="selectedTags()"
-            (playSound)="onPlaySound($event)"
-          />
-        }
-      </main>
+          <!-- Sound Grid -->
+          @if (soundService.loading()) {
+            <div class="loading-container">
+              <mat-spinner diameter="48"></mat-spinner>
+              <p>Sounds werden geladen...</p>
+            </div>
+          } @else if (soundService.error()) {
+            <div class="error-container">
+              <span class="error-icon">!</span>
+              <p>{{ soundService.error() }}</p>
+              <button class="retry-btn" (click)="loadSounds()">
+                Erneut versuchen
+              </button>
+            </div>
+          } @else {
+            <app-sound-grid
+              [sounds]="sortedSounds()"
+              [searchQuery]="searchQuery()"
+              [selectedTags]="selectedTags()"
+              (playSound)="onPlaySound($event)"
+            />
+          }
+        </main>
 
-      <!-- Now Playing Bar -->
-      @if (lastPlayedSound()) {
-        <div class="now-playing-bar">
-          <span class="now-playing-icon">▶</span>
-          <span class="now-playing-text">
-            Spielt: <strong>{{ lastPlayedSound() }}</strong>
-          </span>
+        <!-- Chat Sidebar (Desktop) -->
+        @if (showChat()) {
+          <app-chat-sidebar />
+        }
+      </div>
+
+      <!-- Activity Bar -->
+      @if (recentActivity().length > 0) {
+        <div class="activity-bar">
+          @for (activity of recentActivity(); track activity.id) {
+            <div class="activity-item" [class.fading]="activity.fading">
+              <span class="activity-icon">▶</span>
+              <span class="activity-user">{{ activity.user }}</span>
+              <span class="activity-text">spielt</span>
+              <span class="activity-sound">{{ activity.sound }}</span>
+            </div>
+          }
         </div>
       }
     </div>
@@ -83,12 +116,19 @@ import { Sound } from './core/models';
       background: #0a0a0a;
     }
 
+    .main-layout {
+      flex: 1;
+      display: flex;
+      margin-top: 56px;
+      min-height: 0;
+    }
+
     .main-content {
       flex: 1;
       display: flex;
       flex-direction: column;
-      margin-top: 56px;
-      overflow: hidden;
+      overflow-y: auto;
+      min-height: 0;
     }
 
     .loading-container,
@@ -136,36 +176,53 @@ import { Sound } from './core/models';
       transform: translateY(-2px);
     }
 
-    .now-playing-bar {
+    .activity-bar {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      height: 40px;
-      background: linear-gradient(90deg, rgba(147, 51, 234, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
-      border-top: 1px solid rgba(147, 51, 234, 0.3);
+      background: rgba(10, 10, 10, 0.95);
+      border-top: 2px solid rgba(147, 51, 234, 0.5);
+      box-shadow: 0 -4px 20px rgba(147, 51, 234, 0.3);
+      padding: 8px 16px;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.9);
-      animation: slideUp 0.3s ease;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 120px;
+      overflow-y: auto;
     }
 
-    @keyframes slideUp {
+    .activity-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: linear-gradient(90deg, rgba(147, 51, 234, 0.15) 0%, rgba(236, 72, 153, 0.1) 100%);
+      border-radius: 6px;
+      border-left: 3px solid #9333ea;
+      font-size: 13px;
+      animation: slideIn 0.3s ease;
+      transition: opacity 0.5s ease;
+    }
+
+    .activity-item.fading {
+      opacity: 0.4;
+    }
+
+    @keyframes slideIn {
       from {
-        transform: translateY(100%);
+        transform: translateX(-20px);
         opacity: 0;
       }
       to {
-        transform: translateY(0);
+        transform: translateX(0);
         opacity: 1;
       }
     }
 
-    .now-playing-icon {
-      color: #f97316;
+    .activity-icon {
+      color: #22c55e;
+      font-size: 12px;
       animation: pulse 1s ease-in-out infinite;
     }
 
@@ -174,8 +231,18 @@ import { Sound } from './core/models';
       50% { opacity: 0.5; }
     }
 
-    .now-playing-text strong {
+    .activity-user {
+      color: #9333ea;
+      font-weight: 600;
+    }
+
+    .activity-text {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .activity-sound {
       color: #ec4899;
+      font-weight: 500;
     }
 
     ::ng-deep .mat-mdc-progress-spinner circle {
@@ -185,14 +252,69 @@ import { Sound } from './core/models';
 })
 export class App implements OnInit {
   readonly soundService = inject(SoundService);
+  readonly authService = inject(AuthService);
+  private readonly signalR = inject(SignalRService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
   readonly searchQuery = signal('');
   readonly selectedTags = signal<string[]>([]);
-  readonly lastPlayedSound = signal<string | null>(null);
+  readonly recentActivity = signal<Activity[]>([]);
+  readonly currentSort = signal<SortOption>('name-asc');
+  readonly showChat = signal(true); // Desktop: Chat defaultmäßig offen
+  private activityCounter = 0;
+  private processedEventTimes = new Set<string>();
+
+  constructor() {
+    // React to sound events for activity bar
+    effect(() => {
+      const events = this.signalR.soundEvents();
+      if (events.length > 0) {
+        const latestEvent = events[0];
+        // Check if we already processed this event
+        if (!this.processedEventTimes.has(latestEvent.time)) {
+          this.processedEventTimes.add(latestEvent.time);
+          this.addActivity(latestEvent.initiator.name, latestEvent.fileName);
+
+          // Cleanup old entries (keep last 50)
+          if (this.processedEventTimes.size > 50) {
+            const firstKey = this.processedEventTimes.values().next().value;
+            if (firstKey) this.processedEventTimes.delete(firstKey);
+          }
+        }
+      }
+    });
+  }
+
+  readonly sortedSounds = computed(() => {
+    const sounds = [...this.soundService.sounds()];
+    const sort = this.currentSort();
+
+    switch (sort) {
+      case 'name-asc':
+        return sounds.sort((a, b) => a.name.localeCompare(b.name));
+      case 'name-desc':
+        return sounds.sort((a, b) => b.name.localeCompare(a.name));
+      case 'plays-desc':
+        return sounds.sort((a, b) => (b.playCount || 0) - (a.playCount || 0));
+      case 'newest':
+        return sounds.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      case 'duration-desc':
+        return sounds.sort((a, b) => b.durationMs - a.durationMs);
+      case 'duration-asc':
+        return sounds.sort((a, b) => a.durationMs - b.durationMs);
+      default:
+        return sounds;
+    }
+  });
 
   ngOnInit(): void {
     this.loadSounds();
+    this.connectSignalR();
+  }
+
+  private connectSignalR(): void {
+    this.signalR.connectSound();
   }
 
   loadSounds(): void {
@@ -211,17 +333,23 @@ export class App implements OnInit {
     this.selectedTags.set(tags);
   }
 
+  onSortChange(sort: SortOption): void {
+    this.currentSort.set(sort);
+  }
+
   onPlaySound(sound: Sound): void {
+    if (!this.authService.isLoggedIn()) {
+      this.openLoginDialog(() => this.onPlaySound(sound));
+      return;
+    }
+
     this.soundService.playSound(sound.hash).subscribe({
-      next: () => {
-        this.lastPlayedSound.set(sound.name);
-        setTimeout(() => {
-          if (this.lastPlayedSound() === sound.name) {
-            this.lastPlayedSound.set(null);
-          }
-        }, 5000);
-      },
       error: err => {
+        if (err.status === 401) {
+          this.authService.logout();
+          this.openLoginDialog(() => this.onPlaySound(sound));
+          return;
+        }
         this.snackBar.open(
           `Fehler beim Abspielen: ${err.message || 'Unbekannter Fehler'}`,
           'OK',
@@ -231,10 +359,36 @@ export class App implements OnInit {
     });
   }
 
+  private addActivity(user: string, sound: string): void {
+    const id = ++this.activityCounter;
+    const activity: Activity = {
+      id,
+      user,
+      sound,
+      timestamp: new Date(),
+      fading: false,
+    };
+
+    // Add to beginning of list, keep max 5
+    this.recentActivity.update(list => [activity, ...list].slice(0, 5));
+
+    // Start fading after 4 seconds
+    setTimeout(() => {
+      this.recentActivity.update(list =>
+        list.map(a => (a.id === id ? { ...a, fading: true } : a))
+      );
+    }, 4000);
+
+    // Remove after 6 seconds
+    setTimeout(() => {
+      this.recentActivity.update(list => list.filter(a => a.id !== id));
+    }, 6000);
+  }
+
   onKillAll(): void {
     this.soundService.killAll().subscribe({
       next: () => {
-        this.lastPlayedSound.set(null);
+        this.recentActivity.set([]);
         this.snackBar.open('Alle Sounds gestoppt', 'OK', { duration: 2000 });
       },
       error: () => {
@@ -244,14 +398,71 @@ export class App implements OnInit {
   }
 
   onStatsClick(): void {
-    this.snackBar.open('Stats-Dialog kommt noch...', 'OK', { duration: 2000 });
+    this.dialog.open(StatsDialogComponent, {
+      width: '500px',
+      panelClass: 'dark-dialog',
+    });
   }
 
-  onChatClick(): void {
-    this.snackBar.open('Chat kommt noch...', 'OK', { duration: 2000 });
+  toggleChat(): void {
+    this.showChat.update(v => !v);
   }
 
   onLoginClick(): void {
-    this.snackBar.open('Login-Dialog kommt noch...', 'OK', { duration: 2000 });
+    if (this.authService.isLoggedIn()) {
+      this.authService.logout();
+      this.snackBar.open('Abgemeldet', 'OK', { duration: 2000 });
+      return;
+    }
+    this.openLoginDialog();
+  }
+
+  private openLoginDialog(onSuccess?: () => void): void {
+    const dialogRef = this.dialog.open(LoginDialogComponent, {
+      width: '400px',
+      panelClass: 'dark-dialog',
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result === 'register') {
+        this.openRegisterDialog(onSuccess);
+      } else if (result) {
+        this.snackBar.open(`Willkommen, ${result.username}!`, 'OK', { duration: 2000 });
+        if (onSuccess) {
+          onSuccess();
+        }
+      }
+    });
+  }
+
+  private openRegisterDialog(onSuccess?: () => void): void {
+    const dialogRef = this.dialog.open(RegisterDialogComponent, {
+      width: '440px',
+      panelClass: 'dark-dialog',
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.snackBar.open(`Willkommen, ${result.username}! Dein Account wurde erstellt.`, 'OK', {
+          duration: 3000,
+        });
+        if (onSuccess) {
+          onSuccess();
+        }
+      }
+    });
+  }
+
+  onChangePasswordClick(): void {
+    const dialogRef = this.dialog.open(ChangePasswordDialogComponent, {
+      width: '400px',
+      panelClass: 'dark-dialog',
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.snackBar.open('Kennwort wurde geändert', 'OK', { duration: 3000 });
+      }
+    });
   }
 }

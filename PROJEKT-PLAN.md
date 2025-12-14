@@ -428,42 +428,54 @@ CREATE TABLE chat_messages (
 - [ ] C# DTO im Backend entsprechend anlegen
 - [ ] Mixer `sounds.json` Format anpassen (falls nötig)
 
-### Phase 1: Backend migrieren (.NET 10)
+### Phase 1: Backend migrieren (.NET 10) ✅ ABGESCHLOSSEN
 
 > Bestehendes Backend modernisieren, nicht neu schreiben
 
-- [ ] PostgreSQL → SQLite migrieren
-  - NuGet: `Npgsql.EntityFrameworkCore.PostgreSQL` entfernen
-  - NuGet: `Microsoft.EntityFrameworkCore.Sqlite` hinzufügen
-  - Connection String anpassen
-  - Migrationen neu erstellen
-- [ ] Tags-System implementieren (statt Kategorien)
+- [x] PostgreSQL → SQLite migriert
+  - NuGet: `Npgsql.EntityFrameworkCore.PostgreSQL` entfernt
+  - NuGet: `Microsoft.EntityFrameworkCore.Sqlite` hinzugefügt
+  - Connection String angepasst
+  - Migrationen neu erstellt
+- [x] Tags-System implementiert (statt Kategorien)
   - `tags` und `sound_tags` Tabellen
   - API für Tag-Verwaltung
-- [ ] JWT-Auth mit langer Laufzeit (14 Tage)
+- [x] JWT-Auth mit langer Laufzeit (14 Tage)
   - `Microsoft.AspNetCore.Authentication.JwtBearer`
   - IP-Beschränkung bei Registrierung
+- [x] Sound-Play Endpoint mit [Authorize] Attribut
 - [ ] Sound-File Download Endpoint (`GET /api/sounds/{hash}/file`)
 - [ ] Sound-Upload Endpoint (`POST /api/sounds/upload`)
 - [ ] SignalR Hub für Sound-Events (notify bei neuem Sound)
-- [ ] TTS-Feature entfernen
+- [x] TTS-Feature entfernt
 - [ ] Altes Angular 8 Frontend aus wwwroot entfernen
 
-### Phase 2: Neues Player UI (Angular 21)
+### Phase 2: Neues Player UI (Angular 21) 🔄 IN PROGRESS (~80%)
 
 > Komplett neu entwickeln (altes Frontend verwerfen)
 
-- [ ] Neues Angular 21 Projekt erstellen
-- [ ] Sound-Browser Komponente
-  - Tags als Filter/Chips
-  - Suche (Titel + Tags)
-  - Play-Button pro Sound
-- [ ] Sound abspielen via API
-- [ ] Top Sounds Anzeige
-- [ ] Top Users Anzeige
+- [x] Neues Angular 21 Projekt erstellt (standalone components, signals)
+- [x] Sound-Browser Komponente
+  - [x] Tags als Filter/Chips (Tag-Filter Komponente)
+  - [x] Suche (Titel + Tags)
+  - [x] Play-Button pro Sound (kompakte Sound Cards)
+- [x] Sound abspielen via API
+- [x] Sortierung (Name A-Z/Z-A, Beliebteste, Neueste, Längste, Kürzeste)
+- [x] User Login Dialog mit JWT
+- [x] Activity Bar (zeigt wer was spielt, vorbereitet für SignalR)
+- [ ] Top Sounds Anzeige (Stats-Dialog)
+- [ ] Top Users Anzeige (Stats-Dialog)
 - [ ] Chat Integration (SignalR)
-- [ ] User Login/Register (mit IP-Hinweis)
+- [ ] User Register Dialog
 - [ ] Real-time Updates via SignalR (wer spielt was)
+
+#### UI Status (14.12.2024)
+- **Toolbar**: Logo, Suche, Sort-Dropdown, Kill All, Stats, Chat, Login/Logout
+- **Sound Grid**: Kompakte einzeilige Cards mit Name, Duration, PlayCount, Play-Button
+- **Tag Filter**: Horizontale Chip-Leiste mit Multi-Select
+- **Activity Bar**: Zeigt letzte 5 Aktivitäten, faded nach 6s aus
+- **Login Dialog**: Material Dialog mit Username/Passwort
+- **Theme**: Dark Theme mit Purple/Pink Akzenten (wie nervbox-mixer)
 
 ### Phase 3: Mixer LAN-Integration
 

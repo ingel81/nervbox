@@ -4,7 +4,15 @@ import { ApiService } from './api.service';
 import { User, LoginRequest, RegisterRequest } from '../models';
 
 const TOKEN_KEY = 'nervbox_token';
-const USER_KEY = 'nervbox_user';
+
+interface JwtPayload {
+  unique_name: string; // user id
+  userName: string;
+  role: string;
+  exp: number;
+  nbf: number;
+  iat: number;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -12,27 +20,25 @@ const USER_KEY = 'nervbox_user';
 export class AuthService {
   private readonly api = inject(ApiService);
 
-  // State
-  readonly currentUser = signal<User | null>(this.loadUserFromStorage());
-  readonly isLoggedIn = computed(() => this.currentUser() !== null);
+  // State - User wird aus Token extrahiert
   readonly token = signal<string | null>(this.loadTokenFromStorage());
+  readonly currentUser = computed(() => this.extractUserFromToken(this.token()));
+  readonly isLoggedIn = computed(() => this.currentUser() !== null);
 
   login(credentials: LoginRequest): Observable<User> {
     return this.api.post<User>('/users/auth/login', credentials).pipe(
-      tap(user => this.handleAuthSuccess(user))
+      tap(response => this.handleAuthSuccess(response.token))
     );
   }
 
   register(data: RegisterRequest): Observable<User> {
     return this.api.post<User>('/users/auth/register', data).pipe(
-      tap(user => this.handleAuthSuccess(user))
+      tap(response => this.handleAuthSuccess(response.token))
     );
   }
 
   logout(): void {
     localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    this.currentUser.set(null);
     this.token.set(null);
   }
 
@@ -40,31 +46,57 @@ export class AuthService {
     return this.token();
   }
 
-  private handleAuthSuccess(user: User): void {
-    if (user.token) {
-      localStorage.setItem(TOKEN_KEY, user.token);
-      this.token.set(user.token);
+  private handleAuthSuccess(token: string | undefined): void {
+    if (token) {
+      localStorage.setItem(TOKEN_KEY, token);
+      this.token.set(token);
     }
-    // Store user without token
-    const userWithoutToken = { ...user };
-    delete userWithoutToken.token;
-    localStorage.setItem(USER_KEY, JSON.stringify(userWithoutToken));
-    this.currentUser.set(userWithoutToken);
   }
 
   private loadTokenFromStorage(): string | null {
-    return localStorage.getItem(TOKEN_KEY);
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return null;
+
+    // Prüfe ob Token abgelaufen ist
+    const payload = this.decodeToken(token);
+    if (!payload || this.isTokenExpired(payload)) {
+      localStorage.removeItem(TOKEN_KEY);
+      return null;
+    }
+
+    return token;
   }
 
-  private loadUserFromStorage(): User | null {
-    const userJson = localStorage.getItem(USER_KEY);
-    if (userJson) {
-      try {
-        return JSON.parse(userJson);
-      } catch {
-        return null;
-      }
+  private extractUserFromToken(token: string | null): User | null {
+    if (!token) return null;
+
+    const payload = this.decodeToken(token);
+    if (!payload || this.isTokenExpired(payload)) {
+      return null;
     }
-    return null;
+
+    return {
+      id: parseInt(payload.unique_name, 10),
+      username: payload.userName,
+      role: payload.role,
+    };
+  }
+
+  private decodeToken(token: string): JwtPayload | null {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return null;
+
+      const payload = parts[1];
+      const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+      return JSON.parse(decoded);
+    } catch {
+      return null;
+    }
+  }
+
+  private isTokenExpired(payload: JwtPayload): boolean {
+    const now = Math.floor(Date.now() / 1000);
+    return payload.exp < now;
   }
 }

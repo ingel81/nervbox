@@ -1,4 +1,4 @@
-import { Component, inject, output } from '@angular/core';
+import { Component, inject, output, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -10,7 +10,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatSelectModule } from '@angular/material/select';
 import { AuthService } from '../../core/services/auth.service';
+
+export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'duration-desc' | 'duration-asc';
 
 @Component({
   selector: 'app-toolbar',
@@ -27,6 +30,7 @@ import { AuthService } from '../../core/services/auth.service';
     MatFormFieldModule,
     MatBadgeModule,
     MatDividerModule,
+    MatSelectModule,
   ],
   template: `
     <mat-toolbar class="toolbar">
@@ -57,18 +61,47 @@ import { AuthService } from '../../core/services/auth.service';
         }
       </div>
 
+      <!-- Sort Dropdown -->
+      <div class="sort-container">
+        <mat-icon class="sort-icon">sort</mat-icon>
+        <select
+          class="sort-select"
+          [value]="currentSort()"
+          (change)="onSortChange($event)"
+        >
+          <option value="name-asc">Name A-Z</option>
+          <option value="name-desc">Name Z-A</option>
+          <option value="plays-desc">Beliebteste</option>
+          <option value="newest">Neueste</option>
+          <option value="duration-desc">Längste</option>
+          <option value="duration-asc">Kürzeste</option>
+        </select>
+      </div>
+
       <div class="spacer"></div>
 
       <!-- Action Buttons -->
       <div class="actions">
-        <!-- Kill All -->
+        <!-- Kill All (Admin only) -->
+        @if (auth.currentUser()?.role === 'admin') {
+          <button
+            mat-icon-button
+            class="action-btn"
+            matTooltip="Alle Sounds stoppen"
+            (click)="killAllClick.emit()"
+          >
+            <mat-icon>stop_circle</mat-icon>
+          </button>
+        }
+
+        <!-- Mixer -->
         <button
           mat-icon-button
           class="action-btn"
-          matTooltip="Alle Sounds stoppen"
-          (click)="killAllClick.emit()"
+          matTooltip="Mixer öffnen"
+          (click)="openMixer()"
         >
-          <mat-icon>stop_circle</mat-icon>
+          <mat-icon>tune</mat-icon>
         </button>
 
         <!-- Stats -->
@@ -102,6 +135,10 @@ import { AuthService } from '../../core/services/auth.service';
               <span>{{ auth.currentUser()?.username }}</span>
             </div>
             <mat-divider></mat-divider>
+            <button mat-menu-item (click)="changePasswordClick.emit()">
+              <mat-icon>key</mat-icon>
+              <span>Kennwort ändern</span>
+            </button>
             <button mat-menu-item (click)="auth.logout()">
               <mat-icon>logout</mat-icon>
               <span>Abmelden</span>
@@ -195,18 +232,66 @@ import { AuthService } from '../../core/services/auth.service';
     .clear-btn {
       width: 24px !important;
       height: 24px !important;
-      line-height: 24px !important;
+      min-width: 24px !important;
+      padding: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      flex-shrink: 0;
     }
 
     .clear-btn mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
+      font-size: 16px !important;
+      width: 16px !important;
+      height: 16px !important;
+      line-height: 16px !important;
       color: rgba(255, 255, 255, 0.5);
+    }
+
+    .clear-btn:hover mat-icon {
+      color: #ec4899;
     }
 
     .spacer {
       flex: 1;
+    }
+
+    .sort-container {
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(147, 51, 234, 0.3);
+      border-radius: 8px;
+      padding: 4px 10px;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .sort-container:hover {
+      border-color: rgba(147, 51, 234, 0.5);
+    }
+
+    .sort-icon {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    .sort-select {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: rgba(255, 255, 255, 0.8);
+      font-family: Inter, sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      padding-right: 4px;
+    }
+
+    .sort-select option {
+      background: #1a1b1f;
+      color: white;
     }
 
     .actions {
@@ -267,12 +352,17 @@ export class ToolbarComponent {
 
   searchQuery = '';
 
+  // Inputs
+  readonly currentSort = input<SortOption>('name-asc');
+
   // Outputs
   readonly searchChange = output<string>();
+  readonly sortChange = output<SortOption>();
   readonly killAllClick = output<void>();
   readonly statsClick = output<void>();
   readonly chatClick = output<void>();
   readonly loginClick = output<void>();
+  readonly changePasswordClick = output<void>();
 
   onSearchChange(): void {
     this.searchChange.emit(this.searchQuery);
@@ -281,5 +371,15 @@ export class ToolbarComponent {
   clearSearch(): void {
     this.searchQuery = '';
     this.searchChange.emit('');
+  }
+
+  onSortChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value as SortOption;
+    this.sortChange.emit(value);
+  }
+
+  openMixer(): void {
+    // Mixer is served at /mixer (same origin, shares localStorage)
+    window.open('/mixer', '_blank');
   }
 }
