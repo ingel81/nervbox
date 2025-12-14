@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Net.Http;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -18,6 +19,7 @@ using NervboxDeamon.Services;
 using Newtonsoft.Json.Converters;
 using NervboxDeamon.Services.Interfaces;
 using Microsoft.AspNetCore.HttpOverrides;
+using Yarp.ReverseProxy.Forwarder;
 
 namespace NervboxDeamon
 {
@@ -120,16 +122,18 @@ namespace NervboxDeamon
       services.AddSingleton<ISshService, SSHService>();
       services.AddSingleton<ISystemService, SystemService>();
       services.AddSingleton<ISoundService, SoundService>();
-      services.AddSingleton<ICamService, CamService>();
+      // services.AddSingleton<ICamService, CamService>(); // Deaktiviert - nicht benötigt
 
       services.Configure<IISServerOptions>(options =>
       {
         options.AllowSynchronousIO = true;
       });
 
+      // Add HTTP Forwarder for dev proxy
+      services.AddHttpForwarder();
     }
 
-    // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.    
+    // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
       app.UseForwardedHeaders(new ForwardedHeadersOptions
@@ -155,13 +159,6 @@ namespace NervboxDeamon
       // global cors policy
       app.UseCors("CorsPolicy");
 
-      //app.UseSignalR(routes =>
-      //{
-      //  routes.MapHub<SerialComHub>("/serialComHub");
-      //  routes.MapHub<SshHub>("/sshHub");
-      //  routes.MapHub<InfoModuleHub>("/moduleHub");
-      //});
-
       app.UseRouting();
 
       app.UseAuthentication();
@@ -176,29 +173,105 @@ namespace NervboxDeamon
         endpoints.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
       });
 
-      //app.UseMvc();
+      // ========== FRONTEND ROUTING ==========
+      // /       -> Player App (dev: 4200, prod: wwwroot)
+      // /mixer  -> Mixer App (dev: 4201, prod: wwwroot/mixer)
 
-      //app.UseStaticFiles();
-      //app.UseDefaultFiles();
-      //app.Run(async (context) =>
-      //{
-      //  context.Response.ContentType = "text/html";
-      //  await context.Response.SendFileAsync(Path.Combine(env.WebRootPath, "index.html"));
-      //});
+      if (env.EnvironmentName == "Development")
+      {
+        // Dev mode: Proxy to Angular dev servers
+        var httpClient = new HttpMessageInvoker(new SocketsHttpHandler()
+        {
+          UseProxy = false,
+          AllowAutoRedirect = false,
+          AutomaticDecompression = System.Net.DecompressionMethods.None,
+          UseCookies = false,
+          EnableMultipleHttp2Connections = true,
+          PooledConnectionIdleTimeout = TimeSpan.FromMinutes(2),
+          PooledConnectionLifetime = TimeSpan.FromMinutes(15),
+        });
 
-      app.UseWhen(
-          context => !context.Request.Path.Value.StartsWith("/api"),
-          appInner =>
-          {
-            appInner.UseStaticFiles();
-            appInner.UseDefaultFiles();
-            appInner.Run(async (context) =>
+        var forwarder = app.ApplicationServices.GetRequiredService<IHttpForwarder>();
+
+        // Mixer: Proxy to localhost:4201 (keep /mixer prefix - dev server uses --serve-path /mixer)
+        app.UseWhen(
+            context => context.Request.Path.Value != null && context.Request.Path.Value.StartsWith("/mixer"),
+            appInner =>
             {
-              context.Response.ContentType = "text/html";
-              await context.Response.SendFileAsync(Path.Combine(env.WebRootPath, "index.html"));
+              appInner.Run(async (context) =>
+              {
+                var error = await forwarder.SendAsync(context, "http://localhost:4201", httpClient);
+                if (error != ForwarderError.None)
+                {
+                  var errorFeature = context.GetForwarderErrorFeature();
+                  Logger.LogWarning($"Mixer proxy error: {error}, {errorFeature?.Exception?.Message}");
+                }
+              });
             });
-          });
 
+        // Player: Proxy everything else to localhost:4200 (catch-all)
+        app.UseWhen(
+            context => context.Request.Path.Value != null &&
+                       !context.Request.Path.Value.StartsWith("/api") &&
+                       !context.Request.Path.Value.StartsWith("/ws") &&
+                       !context.Request.Path.Value.StartsWith("/mixer"),
+            appInner =>
+            {
+              appInner.Run(async (context) =>
+              {
+                var error = await forwarder.SendAsync(context, "http://localhost:4200", httpClient);
+                if (error != ForwarderError.None)
+                {
+                  var errorFeature = context.GetForwarderErrorFeature();
+                  Logger.LogWarning($"Player proxy error: {error}, {errorFeature?.Exception?.Message}");
+                }
+              });
+            });
+
+        Logger.LogInformation("Dev mode: / -> localhost:4200 (Player), /mixer -> localhost:4201 (Mixer)");
+      }
+      else
+      {
+        // Production mode: Serve static files
+
+        // Serve Mixer app from /mixer path
+        app.UseWhen(
+            context => context.Request.Path.Value != null && context.Request.Path.Value.StartsWith("/mixer"),
+            appInner =>
+            {
+              appInner.UseStaticFiles();
+              appInner.Run(async (context) =>
+              {
+                var mixerIndexPath = Path.Combine(env.WebRootPath, "mixer", "index.html");
+                if (File.Exists(mixerIndexPath))
+                {
+                  context.Response.ContentType = "text/html";
+                  await context.Response.SendFileAsync(mixerIndexPath);
+                }
+                else
+                {
+                  context.Response.StatusCode = 404;
+                  await context.Response.WriteAsync("Mixer not found. Deploy mixer to wwwroot/mixer/");
+                }
+              });
+            });
+
+        // Serve Player app from root path
+        app.UseWhen(
+            context => context.Request.Path.Value != null &&
+                       !context.Request.Path.Value.StartsWith("/api") &&
+                       !context.Request.Path.Value.StartsWith("/mixer"),
+            appInner =>
+            {
+              appInner.UseStaticFiles();
+              appInner.UseDefaultFiles();
+              appInner.Run(async (context) =>
+              {
+                context.Response.ContentType = "text/html";
+                await context.Response.SendFileAsync(Path.Combine(env.WebRootPath, "index.html"));
+              });
+            });
+      }
 
       //### start own services ###
 
@@ -206,8 +279,6 @@ namespace NervboxDeamon
       var settingsService = app.ApplicationServices.GetRequiredService<ISettingsService>();
       settingsService.CheckSettingConsistency();
 
-      //var userService = app.ApplicationServices.GetRequiredService<IUserService>();
-      //userService.CheckUsers();
       CheckUsers(app);
 
       //configure/start ISSHService
@@ -217,11 +288,6 @@ namespace NervboxDeamon
       // configure/start ISoundService
       var soundService = app.ApplicationServices.GetRequiredService<ISoundService>();
       soundService.Init();
-
-      // configure/start ISoundService
-      var camService = app.ApplicationServices.GetRequiredService<ICamService>();
-      camService.Init();
-
     }
 
     private static void UpdateDatabase(IApplicationBuilder app)

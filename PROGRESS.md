@@ -1,8 +1,8 @@
 # nervbox Integration - Fortschritt
 
-## Status: Phase 2 in Arbeit
+## Status: Phase 1+2 abgeschlossen
 
-**Letzte Aktualisierung:** 2025-12-14
+**Letzte Aktualisierung:** 2025-12-14 14:40
 
 ---
 
@@ -108,6 +108,8 @@
 | Endpoint | Status |
 |----------|--------|
 | `GET /api/sounds` | Aktualisiert - gibt jetzt `name`, `durationMs`, `sizeBytes`, `tags`, `enabled`, `createdAt` zurück |
+| `GET /api/sound/{hash}/file` | Neu - Sound-Datei herunterladen |
+| `POST /api/sound/upload` | Neu - Sound hochladen mit Tags |
 | `POST /api/sounds/tts` | Entfernt |
 | `GET /api/sound/{id}/play` | Unverändert |
 | `GET /api/sounds/killAll` | Unverändert |
@@ -159,17 +161,15 @@
 - [x] Sound Grid (responsives Karten-Raster)
 - [x] Sound Card (kompakte Anzeige mit Play Button)
 - [x] Tag Filter (Chips zum Filtern)
-- [x] Now Playing Bar (zeigt aktuellen Sound)
-- [ ] Stats Dialog (Top Sounds/Users)
-- [ ] Chat Widget (SignalR)
-- [ ] Login/Register Dialogs
+- [x] Activity Bar (zeigt wer spielt was)
+- [x] Stats Dialog (Top Sounds/Users mit Tabs)
+- [x] Chat Sidebar (SignalR, permanent rechts auf Desktop)
+- [x] Login Dialog (mit Enter-Support, Browser-Credentials)
+- [x] Register Dialog (mit IP-Hinweis)
 
-### Noch zu implementieren
+### Alle Features implementiert
 
-- [ ] SignalR Integration für Real-time Updates
-- [ ] Chat-Funktion
-- [ ] User Login/Register mit IP-Hinweis
-- [ ] Top Sounds/Users Dialog
+- [x] SignalR Real-time Updates für Activity Bar
 
 ### Build-Status
 

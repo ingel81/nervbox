@@ -26,6 +26,7 @@ namespace NervboxDeamon.Services
     void Init();
     void PlaySound(string soundId, int userId);
     void KillAll();
+    void AddSoundToCache(Sound sound);
   }
 
   public class SoundService : ISoundService
@@ -359,6 +360,15 @@ namespace NervboxDeamon.Services
         {
           // Player not running or pkill failed - ignore
         }
+      }
+    }
+
+    public void AddSoundToCache(Sound sound)
+    {
+      if (sound != null && !string.IsNullOrEmpty(sound.Hash))
+      {
+        this.Sounds[sound.Hash] = sound;
+        Logger.LogInformation($"Added sound to cache: {sound.Name} ({sound.Hash})");
       }
     }
 

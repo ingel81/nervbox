@@ -38,9 +38,8 @@ import { SoundCardComponent } from './sound-card.component';
 
     .sound-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-      gap: 12px;
-      justify-items: center;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 6px;
     }
 
     .no-sounds {
@@ -69,12 +68,12 @@ import { SoundCardComponent } from './sound-card.component';
 
     @media (max-width: 600px) {
       .sound-grid {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 8px;
+        grid-template-columns: 1fr;
+        gap: 4px;
       }
 
       .sound-grid-container {
-        padding: 12px;
+        padding: 8px;
       }
     }
   `,
