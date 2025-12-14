@@ -1,9 +1,6 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using NervboxDeamon.DbModels;
-using NervboxDeamon.Services;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace NervboxDeamon.Hubs
@@ -11,23 +8,33 @@ namespace NervboxDeamon.Hubs
   public class ChatHub : Hub
   {
     private NervboxDBContext Db { get; }
-    private ISoundService SoundService { get; }
 
-    public ChatHub(NervboxDBContext db, ISoundService soundService)
+    public ChatHub(NervboxDBContext db)
     {
       this.Db = db;
-      this.SoundService = soundService;
     }
 
-    public Task SendMessage(ChatMessage msg)
+    public Task SendMessage(int userId, string message)
     {
-      msg.Date = DateTime.Now;
-      Db.ChatMessages.Add(msg);
+      var chatMessage = new ChatMessage
+      {
+        UserId = userId,
+        Message = message,
+        CreatedAt = DateTime.UtcNow
+      };
+
+      Db.ChatMessages.Add(chatMessage);
       Db.SaveChanges();
 
-      this.SoundService.TTS(msg.Message, msg.UserId);
+      var user = Db.Users.Find(userId);
 
-      return Clients.All.SendAsync("message", msg);
+      return Clients.All.SendAsync("message", new
+      {
+        UserId = userId,
+        Username = user?.Username ?? "Unknown",
+        Message = message,
+        CreatedAt = chatMessage.CreatedAt
+      });
     }
   }
 }

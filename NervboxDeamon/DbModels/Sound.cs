@@ -1,13 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace NervboxDeamon.DbModels
 {
-    [Table("sound")]
+    [Table("sounds")]
     public class Sound
     {
         [Key]
@@ -15,21 +13,27 @@ namespace NervboxDeamon.DbModels
         [Column("hash")]
         public string Hash { get; set; }
 
-        [Column("fileName")]
+        [Required]
+        [Column("name")]
+        public string Name { get; set; }
+
+        [Required]
+        [Column("file_name")]
         public string FileName { get; set; }
 
-        [Column("allowed")]
-        public bool Allowed { get; set; }
+        [Column("duration_ms")]
+        public int DurationMs { get; set; }
 
-        [Column("valid")]
-        public bool Valid { get; set; }
+        [Column("size_bytes")]
+        public long SizeBytes { get; set; }
 
-        [Column("Size")]
-        public long Size { get; set; }
+        [Column("enabled")]
+        public bool Enabled { get; set; } = true;
 
-        [Column("Duration")]
-        public TimeSpan Duration { get; set; }
+        [Column("created_at")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        public virtual IEnumerable<SoundUsage> Usages { get; set; }
+        public virtual ICollection<SoundTag> SoundTags { get; set; } = new List<SoundTag>();
+        public virtual ICollection<SoundUsage> Usages { get; set; } = new List<SoundUsage>();
     }
 }

@@ -1,36 +1,43 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace NervboxDeamon.DbModels
 {
-
     [Table("users")]
     public class User
     {
         [Key]
-        [Required]
+        [Column("id")]
         public int Id { get; set; }
 
-        public string Email { get; set; }
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-
         [Required]
+        [Column("username")]
         public string Username { get; set; }
 
         [JsonIgnore]
-        public string Password { get; set; }
-        public string Token { get; set; }
-
         [Required]
-        public string Role { get; set; }
+        [Column("password_hash")]
+        public string PasswordHash { get; set; }
+
+        [Column("first_name")]
+        public string FirstName { get; set; }
+
+        [Column("last_name")]
+        public string LastName { get; set; }
 
         [JsonIgnore]
-        public string RegistrationIp { get; set; }
+        [Column("ip_address")]
+        public string IpAddress { get; set; }
+
+        [Column("role")]
+        public string Role { get; set; } = "user";
+
+        [Column("created_at")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [NotMapped]
+        public string Token { get; set; }
     }
 }

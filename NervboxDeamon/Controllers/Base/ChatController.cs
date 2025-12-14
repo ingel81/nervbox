@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace NervboxDeamon.Controllers.Base
@@ -11,11 +7,22 @@ namespace NervboxDeamon.Controllers.Base
   [ApiController]
   public class ChatController : NervboxBaseController<ChatController>
   {
-    // GET: api/Chat
     [HttpGet]
     public IActionResult Get()
     {
-      var results = DbContext.ChatMessages.OrderByDescending(a => a.Date).Take(100).ToList();
+      var results = DbContext.ChatMessages
+        .OrderByDescending(m => m.CreatedAt)
+        .Take(100)
+        .Select(m => new
+        {
+          m.Id,
+          m.UserId,
+          Username = m.User != null ? m.User.Username : "Unknown",
+          m.Message,
+          m.CreatedAt
+        })
+        .ToList();
+
       results.Reverse();
       return Ok(results);
     }
