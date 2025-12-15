@@ -4,12 +4,14 @@ namespace NervboxDeamon.Models.View
     {
         public string Name { get; set; }
         public string Color { get; set; }
+        public bool IsPinned { get; set; } = false;
     }
 
     public class TagUpdateModel
     {
         public string Name { get; set; }
         public string Color { get; set; }
+        public bool? IsPinned { get; set; }
     }
 
     public class SoundUpdateModel

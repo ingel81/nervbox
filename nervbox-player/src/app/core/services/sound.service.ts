@@ -119,6 +119,9 @@ export class SoundService {
     }
     return map;
   });
+  readonly pinnedTagNames = computed(() =>
+    this.tags().filter(t => t.isPinned).map(t => t.name)
+  );
 
   loadTags(): Observable<Tag[]> {
     return this.api.get<Tag[]>('/tag').pipe(
@@ -128,22 +131,27 @@ export class SoundService {
     );
   }
 
-  createTag(name: string, color?: string): Observable<Tag> {
-    return this.api.post<Tag>('/tag', { name, color }).pipe(
+  createTag(name: string, color?: string, isPinned?: boolean): Observable<Tag> {
+    return this.api.post<Tag>('/tag', { name, color, isPinned }).pipe(
       tap(newTag => {
-        this.tags.update(tags => [...tags, newTag].sort((a, b) => a.name.localeCompare(b.name)));
+        this.tags.update(tags => this.sortTags([...tags, newTag]));
       })
     );
   }
 
-  updateTag(id: number, name: string, color?: string): Observable<Tag> {
-    return this.api.put<Tag>(`/tag/${id}`, { name, color }).pipe(
+  updateTag(id: number, name: string, color?: string, isPinned?: boolean): Observable<Tag> {
+    return this.api.put<Tag>(`/tag/${id}`, { name, color, isPinned }).pipe(
       tap(updatedTag => {
-        this.tags.update(tags =>
-          tags.map(t => (t.id === id ? updatedTag : t))
-        );
+        this.tags.update(tags => this.sortTags(tags.map(t => (t.id === id ? updatedTag : t))));
       })
     );
+  }
+
+  private sortTags(tags: Tag[]): Tag[] {
+    return tags.sort((a, b) => {
+      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
   }
 
   deleteTag(id: number): Observable<void> {

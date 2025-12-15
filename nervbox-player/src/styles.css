@@ -48,6 +48,12 @@ body {
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
+/* Hash symbol for tags - dezenter */
+.hash {
+  opacity: 0.5;
+  margin-right: 0.5px;
+}
+
 /* Custom Dialog Styling for Dark Theme */
 .mat-mdc-dialog-container {
   --mat-dialog-container-color: #1a1b1f !important;

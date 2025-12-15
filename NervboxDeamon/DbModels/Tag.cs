@@ -18,6 +18,9 @@ namespace NervboxDeamon.DbModels
         [Column("color")]
         public string Color { get; set; } = "#9333ea";
 
+        [Column("is_pinned")]
+        public bool IsPinned { get; set; } = false;
+
         public virtual ICollection<SoundTag> SoundTags { get; set; } = new List<SoundTag>();
     }
 }
