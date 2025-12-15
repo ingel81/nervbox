@@ -64,6 +64,7 @@ interface Activity {
             <app-tag-filter
               [tags]="allTags()"
               [tagColors]="soundService.tagColorMap()"
+              [pinnedTags]="soundService.pinnedTagNames()"
               (selectedTagsChange)="onTagsChange($event)"
             />
           }
@@ -319,6 +320,7 @@ export class App implements OnInit {
 
   ngOnInit(): void {
     this.loadSounds();
+    this.soundService.loadTags().subscribe();
     this.connectSignalR();
   }
 

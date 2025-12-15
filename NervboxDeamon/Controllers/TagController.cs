@@ -26,9 +26,11 @@ namespace NervboxDeamon.Controllers
                         t.Id,
                         t.Name,
                         t.Color,
+                        t.IsPinned,
                         SoundCount = t.SoundTags.Count()
                     })
-                    .OrderBy(t => t.Name)
+                    .OrderByDescending(t => t.IsPinned)
+                    .ThenBy(t => t.Name)
                     .ToList();
 
                 return Ok(tags);
@@ -65,7 +67,8 @@ namespace NervboxDeamon.Controllers
                 var tag = new Tag
                 {
                     Name = normalizedName,
-                    Color = string.IsNullOrWhiteSpace(model.Color) ? "#9333ea" : model.Color
+                    Color = string.IsNullOrWhiteSpace(model.Color) ? "#9333ea" : model.Color,
+                    IsPinned = model.IsPinned
                 };
                 this.DbContext.Tags.Add(tag);
                 this.DbContext.SaveChanges();
@@ -75,6 +78,7 @@ namespace NervboxDeamon.Controllers
                     tag.Id,
                     tag.Name,
                     tag.Color,
+                    tag.IsPinned,
                     SoundCount = 0
                 });
             }
@@ -118,6 +122,10 @@ namespace NervboxDeamon.Controllers
                 {
                     tag.Color = model.Color;
                 }
+                if (model.IsPinned.HasValue)
+                {
+                    tag.IsPinned = model.IsPinned.Value;
+                }
                 this.DbContext.SaveChanges();
 
                 return Ok(new
@@ -125,6 +133,7 @@ namespace NervboxDeamon.Controllers
                     tag.Id,
                     tag.Name,
                     tag.Color,
+                    tag.IsPinned,
                     SoundCount = tag.SoundTags?.Count ?? 0
                 });
             }

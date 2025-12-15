@@ -61,7 +61,7 @@ import { AuthService } from '../../core/services/auth.service';
               class="tag-chip"
               [style.background]="getTagBackground(tag)"
               [style.border-color]="getTagBorderColor(tag)"
-            >{{ tag }}</span>
+            ><span class="hash">#</span>{{ tag }}</span>
           }
           @if (hiddenTagCount() > 0) {
             <span class="tag-chip tag-more" [matTooltip]="hiddenTags()">+{{ hiddenTagCount() }}</span>
@@ -234,7 +234,7 @@ export class SoundCardComponent implements AfterViewInit {
   readonly isNameTruncated = computed(() => this.nameTruncated());
   readonly displayedTags = computed(() => this.sound().tags?.slice(0, 3) ?? []);
   readonly hiddenTagCount = computed(() => Math.max(0, (this.sound().tags?.length ?? 0) - 3));
-  readonly hiddenTags = computed(() => this.sound().tags?.slice(3).join(', ') ?? '');
+  readonly hiddenTags = computed(() => this.sound().tags?.slice(3).map(t => `#${t}`).join(', ') ?? '');
 
   ngAfterViewInit(): void {
     this.checkTruncation();

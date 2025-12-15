@@ -9,6 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { Tag } from '../../core/models';
 import { SoundService } from '../../core/services/sound.service';
 
@@ -26,6 +27,7 @@ import { SoundService } from '../../core/services/sound.service';
     MatListModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
+    MatSlideToggleModule,
   ],
   template: `
     <h2 mat-dialog-title>
@@ -59,6 +61,14 @@ import { SoundService } from '../../core/services/sound.service';
           </mat-form-field>
           <button
             mat-icon-button
+            [class.pinned]="newTagPinned"
+            (click)="newTagPinned = !newTagPinned"
+            [matTooltip]="newTagPinned ? 'Gepinnt' : 'Nicht gepinnt'"
+          >
+            <mat-icon>{{ newTagPinned ? 'push_pin' : 'push_pin' }}</mat-icon>
+          </button>
+          <button
+            mat-icon-button
             color="primary"
             (click)="createTag()"
             [disabled]="!newTagName.trim() || creating()"
@@ -81,7 +91,7 @@ import { SoundService } from '../../core/services/sound.service';
             </div>
           } @else {
             @for (tag of tags(); track tag.id) {
-              <div class="tag-item" [class.editing]="editingTagId() === tag.id">
+              <div class="tag-item" [class.editing]="editingTagId() === tag.id" [class.pinned]="tag.isPinned">
                 @if (editingTagId() === tag.id) {
                   <input
                     type="color"
@@ -96,6 +106,14 @@ import { SoundService } from '../../core/services/sound.service';
                     (keydown.escape)="cancelEdit()"
                     #editInput
                   />
+                  <button
+                    mat-icon-button
+                    [class.pinned]="editingTagPinned"
+                    (click)="editingTagPinned = !editingTagPinned"
+                    [matTooltip]="editingTagPinned ? 'Gepinnt' : 'Nicht gepinnt'"
+                  >
+                    <mat-icon>push_pin</mat-icon>
+                  </button>
                   <button mat-icon-button (click)="saveTag(tag)" matTooltip="Speichern">
                     <mat-icon>check</mat-icon>
                   </button>
@@ -103,8 +121,11 @@ import { SoundService } from '../../core/services/sound.service';
                     <mat-icon>close</mat-icon>
                   </button>
                 } @else {
+                  @if (tag.isPinned) {
+                    <mat-icon class="pin-indicator" matTooltip="Gepinnt">push_pin</mat-icon>
+                  }
                   <span class="tag-color" [style.background]="tag.color"></span>
-                  <span class="tag-name">{{ tag.name }}</span>
+                  <span class="tag-name"><span class="hash">#</span>{{ tag.name }}</span>
                   <span class="tag-count" [matTooltip]="tag.soundCount + ' Sounds verwenden diesen Tag'">
                     {{ tag.soundCount }}
                   </span>
@@ -246,6 +267,23 @@ import { SoundService } from '../../core/services/sound.service';
       background: rgba(147, 51, 234, 0.1);
     }
 
+    .tag-item.pinned {
+      border-left: 2px solid #f97316;
+      background: rgba(249, 115, 22, 0.05);
+    }
+
+    .pin-indicator {
+      color: #f97316;
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    button.pinned mat-icon {
+      color: #f97316;
+    }
+
     .tag-color {
       width: 16px;
       height: 16px;
@@ -326,8 +364,10 @@ export class TagManagerDialogComponent implements OnInit {
 
   newTagName = '';
   newTagColor = '#9333ea';
+  newTagPinned = false;
   editingTagName = '';
   editingTagColor = '#9333ea';
+  editingTagPinned = false;
 
   ngOnInit(): void {
     this.loadTags();
@@ -351,11 +391,12 @@ export class TagManagerDialogComponent implements OnInit {
     if (!name) return;
 
     this.creating.set(true);
-    this.soundService.createTag(name, this.newTagColor).subscribe({
+    this.soundService.createTag(name, this.newTagColor, this.newTagPinned).subscribe({
       next: newTag => {
-        this.tags.update(tags => [...tags, newTag].sort((a, b) => a.name.localeCompare(b.name)));
+        this.tags.update(tags => this.sortTagList([...tags, newTag]));
         this.newTagName = '';
         this.newTagColor = '#9333ea';
+        this.newTagPinned = false;
         this.creating.set(false);
       },
       error: () => {
@@ -364,16 +405,25 @@ export class TagManagerDialogComponent implements OnInit {
     });
   }
 
+  private sortTagList(tags: Tag[]): Tag[] {
+    return tags.sort((a, b) => {
+      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
   startEdit(tag: Tag): void {
     this.editingTagId.set(tag.id);
     this.editingTagName = tag.name;
     this.editingTagColor = tag.color;
+    this.editingTagPinned = tag.isPinned;
   }
 
   cancelEdit(): void {
     this.editingTagId.set(null);
     this.editingTagName = '';
     this.editingTagColor = '#9333ea';
+    this.editingTagPinned = false;
   }
 
   saveTag(tag: Tag): void {
@@ -384,16 +434,14 @@ export class TagManagerDialogComponent implements OnInit {
     }
 
     // Only update if something changed
-    if (name === tag.name && this.editingTagColor === tag.color) {
+    if (name === tag.name && this.editingTagColor === tag.color && this.editingTagPinned === tag.isPinned) {
       this.cancelEdit();
       return;
     }
 
-    this.soundService.updateTag(tag.id, name, this.editingTagColor).subscribe({
+    this.soundService.updateTag(tag.id, name, this.editingTagColor, this.editingTagPinned).subscribe({
       next: updatedTag => {
-        this.tags.update(tags =>
-          tags.map(t => (t.id === tag.id ? updatedTag : t)).sort((a, b) => a.name.localeCompare(b.name))
-        );
+        this.tags.update(tags => this.sortTagList(tags.map(t => (t.id === tag.id ? updatedTag : t))));
         this.cancelEdit();
       },
       error: () => {

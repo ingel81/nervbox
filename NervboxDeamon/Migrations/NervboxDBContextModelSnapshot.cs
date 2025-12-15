@@ -167,6 +167,10 @@ namespace NervboxDeamon.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("color");
 
+                    b.Property<bool>("IsPinned")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("is_pinned");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT")

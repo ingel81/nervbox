@@ -20,6 +20,7 @@ export interface Tag {
   id: number;
   name: string;
   color: string;
+  isPinned: boolean;
   soundCount?: number;
 }
 
@@ -32,11 +33,13 @@ export interface SoundUpdateRequest {
 export interface TagCreateRequest {
   name: string;
   color?: string;
+  isPinned?: boolean;
 }
 
 export interface TagUpdateRequest {
   name: string;
   color?: string;
+  isPinned?: boolean;
 }
 
 export interface SoundPlayedEvent {

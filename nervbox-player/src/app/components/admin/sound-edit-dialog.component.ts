@@ -74,8 +74,13 @@ export interface SoundEditDialogData {
           <div class="tags-label">Tags</div>
           <div class="tags-container">
             @for (tag of tags(); track tag) {
-              <span class="tag-chip">
-                {{ tag }}
+              <span
+                class="tag-chip"
+                [style.background]="getTagBackground(tag)"
+                [style.border-color]="getTagBorderColor(tag)"
+              >
+                <span class="tag-dot" [style.background]="getTagColor(tag)"></span>
+                <span class="hash">#</span>{{ tag }}
                 <button class="remove-tag" (click)="removeTag(tag)">
                   <mat-icon>close</mat-icon>
                 </button>
@@ -92,10 +97,16 @@ export interface SoundEditDialogData {
                 [(ngModel)]="newTag"
                 [matAutocomplete]="auto"
                 (keydown.enter)="addTag()"
+                (input)="updateFilteredTags()"
               />
               <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onTagSelected($event)">
                 @for (tag of filteredTags(); track tag) {
-                  <mat-option [value]="tag">{{ tag }}</mat-option>
+                  <mat-option [value]="tag">
+                    <span class="autocomplete-tag">
+                      <span class="tag-dot-small" [style.background]="getTagColor(tag)"></span>
+                      <span class="hash">#</span>{{ tag }}
+                    </span>
+                  </mat-option>
                 }
               </mat-autocomplete>
             </mat-form-field>
@@ -198,13 +209,32 @@ export interface SoundEditDialogData {
     .tag-chip {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
       background: rgba(147, 51, 234, 0.2);
       border: 1px solid rgba(147, 51, 234, 0.3);
       border-radius: 12px;
-      padding: 4px 8px 4px 12px;
+      padding: 4px 8px 4px 10px;
       font-size: 12px;
       color: rgba(255, 255, 255, 0.9);
+    }
+
+    .tag-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .autocomplete-tag {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tag-dot-small {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
     }
 
     .remove-tag {
@@ -276,6 +306,8 @@ export interface SoundEditDialogData {
     ::ng-deep .mat-mdc-autocomplete-panel {
       background: #1a1b1f !important;
       border: 1px solid rgba(147, 51, 234, 0.3);
+      border-radius: 8px !important;
+      min-width: 250px !important;
     }
 
     ::ng-deep .mat-mdc-option {
@@ -311,7 +343,7 @@ export class SoundEditDialogComponent implements OnInit {
     this.updateFilteredTags();
   }
 
-  private updateFilteredTags(): void {
+  updateFilteredTags(): void {
     const currentTags = this.tags();
     const available = this.data.availableTags.filter(t => !currentTags.includes(t));
     const query = this.newTag.toLowerCase().trim();
@@ -320,6 +352,27 @@ export class SoundEditDialogComponent implements OnInit {
     } else {
       this.filteredTags.set(available);
     }
+  }
+
+  getTagColor(tag: string): string {
+    return this.soundService.tagColorMap()[tag] || '#9333ea';
+  }
+
+  getTagBackground(tag: string): string {
+    const color = this.getTagColor(tag);
+    return this.hexToRgba(color, 0.15);
+  }
+
+  getTagBorderColor(tag: string): string {
+    const color = this.getTagColor(tag);
+    return this.hexToRgba(color, 0.35);
+  }
+
+  private hexToRgba(hex: string, alpha: number): string {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
   addTag(): void {
