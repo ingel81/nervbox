@@ -1,0 +1,19 @@
+# NervBox Mixer Robots.txt
+# Allow all search engines to crawl the site
+
+User-agent: *
+Allow: /
+Sitemap: https://mixer.sgeht.net/sitemap.xml
+
+# Optimize crawl rate for major search engines
+User-agent: Googlebot
+Crawl-delay: 0
+
+User-agent: Bingbot
+Crawl-delay: 0
+
+# Block irrelevant paths
+User-agent: *
+Disallow: /api/
+Disallow: /.git/
+Disallow: /node_modules/

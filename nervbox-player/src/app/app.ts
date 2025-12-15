@@ -10,6 +10,9 @@ import { LoginDialogComponent } from './components/auth/login-dialog.component';
 import { RegisterDialogComponent } from './components/auth/register-dialog.component';
 import { ChangePasswordDialogComponent } from './components/auth/change-password-dialog.component';
 import { StatsDialogComponent } from './components/stats/stats-dialog.component';
+import { SoundEditDialogComponent, SoundEditDialogData } from './components/admin/sound-edit-dialog.component';
+import { DeleteSoundDialogComponent, DeleteSoundDialogData } from './components/admin/delete-sound-dialog.component';
+import { TagManagerDialogComponent } from './components/admin/tag-manager-dialog.component';
 import { ChatSidebarComponent } from './components/chat/chat-sidebar.component';
 import { SoundService } from './core/services/sound.service';
 import { AuthService } from './core/services/auth.service';
@@ -45,6 +48,7 @@ interface Activity {
         (searchChange)="onSearchChange($event)"
         (sortChange)="onSortChange($event)"
         (killAllClick)="onKillAll()"
+        (tagManagerClick)="onTagManagerClick()"
         (statsClick)="onStatsClick()"
         (chatClick)="toggleChat()"
         (loginClick)="onLoginClick()"
@@ -59,6 +63,7 @@ interface Activity {
           @if (soundService.sounds().length > 0) {
             <app-tag-filter
               [tags]="allTags()"
+              [tagColors]="soundService.tagColorMap()"
               (selectedTagsChange)="onTagsChange($event)"
             />
           }
@@ -82,7 +87,11 @@ interface Activity {
               [sounds]="sortedSounds()"
               [searchQuery]="searchQuery()"
               [selectedTags]="selectedTags()"
+              [tagColors]="soundService.tagColorMap()"
               (playSound)="onPlaySound($event)"
+              (editSound)="onEditSound($event)"
+              (toggleSound)="onToggleSound($event)"
+              (deleteSound)="onDeleteSound($event)"
             />
           }
         </main>
@@ -260,7 +269,7 @@ export class App implements OnInit {
   readonly searchQuery = signal('');
   readonly selectedTags = signal<string[]>([]);
   readonly recentActivity = signal<Activity[]>([]);
-  readonly currentSort = signal<SortOption>('name-asc');
+  readonly currentSort = signal<SortOption>('plays-desc');
   readonly showChat = signal(true); // Desktop: Chat defaultmäßig offen
   private activityCounter = 0;
   private processedEventTimes = new Set<string>();
@@ -404,6 +413,13 @@ export class App implements OnInit {
     });
   }
 
+  onTagManagerClick(): void {
+    this.dialog.open(TagManagerDialogComponent, {
+      width: '500px',
+      panelClass: 'dark-dialog',
+    });
+  }
+
   toggleChat(): void {
     this.showChat.update(v => !v);
   }
@@ -462,6 +478,56 @@ export class App implements OnInit {
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         this.snackBar.open('Kennwort wurde geändert', 'OK', { duration: 3000 });
+      }
+    });
+  }
+
+  // === Admin: Sound Management ===
+
+  onEditSound(sound: Sound): void {
+    const dialogRef = this.dialog.open(SoundEditDialogComponent, {
+      width: '500px',
+      panelClass: 'dark-dialog',
+      data: {
+        sound,
+        availableTags: this.allTags(),
+      } as SoundEditDialogData,
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.snackBar.open(`"${result.name}" wurde aktualisiert`, 'OK', { duration: 2000 });
+      }
+    });
+  }
+
+  onToggleSound(sound: Sound): void {
+    this.soundService.toggleSound(sound.hash).subscribe({
+      next: result => {
+        this.snackBar.open(
+          result.enabled ? `"${sound.name}" aktiviert` : `"${sound.name}" deaktiviert`,
+          'OK',
+          { duration: 2000 }
+        );
+      },
+      error: err => {
+        this.snackBar.open(`Fehler: ${err.message || 'Unbekannter Fehler'}`, 'OK', {
+          duration: 3000,
+        });
+      },
+    });
+  }
+
+  onDeleteSound(sound: Sound): void {
+    const dialogRef = this.dialog.open(DeleteSoundDialogComponent, {
+      width: '450px',
+      panelClass: 'dark-dialog',
+      data: { sound } as DeleteSoundDialogData,
+    });
+
+    dialogRef.afterClosed().subscribe(deleted => {
+      if (deleted) {
+        this.snackBar.open(`"${sound.name}" wurde geloescht`, 'OK', { duration: 3000 });
       }
     });
   }

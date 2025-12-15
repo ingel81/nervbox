@@ -163,6 +163,10 @@ namespace NervboxDeamon.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("id");
 
+                    b.Property<string>("Color")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("color");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT")

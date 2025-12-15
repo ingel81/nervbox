@@ -22,7 +22,11 @@ import { SoundCardComponent } from './sound-card.component';
           @for (sound of filteredSounds(); track sound.hash) {
             <app-sound-card
               [sound]="sound"
+              [tagColors]="tagColors()"
               (playClick)="playSound.emit($event)"
+              (editClick)="editSound.emit($event)"
+              (toggleClick)="toggleSound.emit($event)"
+              (deleteClick)="deleteSound.emit($event)"
             />
           }
         </div>
@@ -82,8 +86,12 @@ export class SoundGridComponent {
   readonly sounds = input<Sound[]>([]);
   readonly searchQuery = input<string>('');
   readonly selectedTags = input<string[]>([]);
+  readonly tagColors = input<Record<string, string>>({});
 
   readonly playSound = output<Sound>();
+  readonly editSound = output<Sound>();
+  readonly toggleSound = output<Sound>();
+  readonly deleteSound = output<Sound>();
 
   readonly filteredSounds = computed(() => {
     let result = this.sounds();

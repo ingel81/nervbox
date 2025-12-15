@@ -25,20 +25,16 @@ namespace NervboxDeamon
 {
   public class Startup
   {
-    private readonly ILogger<Startup> Logger;
+    private ILogger<Startup>? _logger;
     public IConfiguration Configuration { get; }
 
-    public Startup(ILogger<Startup> logger, IConfiguration configuration)
+    public Startup(IConfiguration configuration)
     {
-      Logger = logger;
       Configuration = configuration;
-
-      Logger.LogInformation("Starting");
 
       AppDomain.CurrentDomain.ProcessExit += (s, e) =>
       {
-              // shutdown
-              Logger.LogInformation("Going down");
+        _logger?.LogInformation("Going down");
       };
 
       //default serializer settings
@@ -134,8 +130,11 @@ namespace NervboxDeamon
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
     {
+      _logger = logger;
+      _logger.LogInformation("Configuring NervboxDeamon");
+
       app.UseForwardedHeaders(new ForwardedHeadersOptions
       {
         ForwardedHeaders = ForwardedHeaders.All
@@ -148,7 +147,7 @@ namespace NervboxDeamon
       }
       catch (Exception ex)
       {
-        Logger.LogCritical(ex, "Failed to migrate database");
+        _logger.LogCritical(ex, "Failed to migrate database");
       }
 
       if (env.EnvironmentName == "Development")
@@ -204,7 +203,7 @@ namespace NervboxDeamon
                 if (error != ForwarderError.None)
                 {
                   var errorFeature = context.GetForwarderErrorFeature();
-                  Logger.LogWarning($"Mixer proxy error: {error}, {errorFeature?.Exception?.Message}");
+                  _logger?.LogWarning("Mixer proxy error: {Error}, {Message}", error, errorFeature?.Exception?.Message);
                 }
               });
             });
@@ -223,12 +222,12 @@ namespace NervboxDeamon
                 if (error != ForwarderError.None)
                 {
                   var errorFeature = context.GetForwarderErrorFeature();
-                  Logger.LogWarning($"Player proxy error: {error}, {errorFeature?.Exception?.Message}");
+                  _logger?.LogWarning("Player proxy error: {Error}, {Message}", error, errorFeature?.Exception?.Message);
                 }
               });
             });
 
-        Logger.LogInformation("Dev mode: / -> localhost:4200 (Player), /mixer -> localhost:4201 (Mixer)");
+        _logger?.LogInformation("Dev mode: / -> localhost:4200 (Player), /mixer -> localhost:4201 (Mixer)");
       }
       else
       {

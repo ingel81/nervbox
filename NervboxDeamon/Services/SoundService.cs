@@ -27,6 +27,40 @@ namespace NervboxDeamon.Services
     void PlaySound(string soundId, int userId);
     void KillAll();
     void AddSoundToCache(Sound sound);
+    void UpdateSoundEnabledStatus(string hash, bool enabled);
+    void RemoveSoundFromCache(string hash);
+  }
+
+  public static class SoundHelper
+  {
+    /// <summary>
+    /// Ermittelt die Dauer einer Audio-Datei in Millisekunden
+    /// </summary>
+    public static int GetDurationMs(string filePath)
+    {
+      try
+      {
+        var file = TagLib.File.Create(filePath);
+        return (int)file.Properties.Duration.TotalMilliseconds;
+      }
+      catch
+      {
+        return 0;
+      }
+    }
+
+    /// <summary>
+    /// Berechnet den MD5-Hash einer Datei
+    /// </summary>
+    public static string GetFileHash(string filePath)
+    {
+      using (var md5 = MD5.Create())
+      using (var stream = File.OpenRead(filePath))
+      {
+        var hashBytes = md5.ComputeHash(stream);
+        return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+      }
+    }
   }
 
   public class SoundService : ISoundService
@@ -121,30 +155,10 @@ namespace NervboxDeamon.Services
 
       foreach (FileInfo fi in soundFiles)
       {
-        string hash = string.Empty;
         string fileName = fi.Name;
         string name = Path.GetFileNameWithoutExtension(fi.Name);
-
-        using (var md5 = MD5.Create())
-        {
-          using (var stream = File.OpenRead(fi.FullName))
-          {
-            var hBytes = md5.ComputeHash(stream);
-            hash = BitConverter.ToString(hBytes).Replace("-", "").ToLowerInvariant();
-          }
-        }
-
-        // Get duration from file metadata
-        int durationMs = 0;
-        try
-        {
-          var file = TagLib.File.Create(fi.FullName);
-          durationMs = (int)file.Properties.Duration.TotalMilliseconds;
-        }
-        catch (Exception ex)
-        {
-          Logger.LogDebug($"Could not read duration for {fileName}: {ex.Message}");
-        }
+        string hash = SoundHelper.GetFileHash(fi.FullName);
+        int durationMs = SoundHelper.GetDurationMs(fi.FullName);
 
         found.Add(new { Name = name, FileName = fileName, Hash = hash, SizeBytes = fi.Length, DurationMs = durationMs });
       }
@@ -369,6 +383,46 @@ namespace NervboxDeamon.Services
       {
         this.Sounds[sound.Hash] = sound;
         Logger.LogInformation($"Added sound to cache: {sound.Name} ({sound.Hash})");
+      }
+    }
+
+    public void UpdateSoundEnabledStatus(string hash, bool enabled)
+    {
+      if (this.Sounds.TryGetValue(hash, out var sound))
+      {
+        if (enabled)
+        {
+          sound.Enabled = true;
+          Logger.LogInformation($"Enabled sound in cache: {sound.Name} ({hash})");
+        }
+        else
+        {
+          this.Sounds.Remove(hash);
+          Logger.LogInformation($"Removed disabled sound from cache: {sound.Name} ({hash})");
+        }
+      }
+      else if (enabled)
+      {
+        // Sound was disabled and now enabled - need to reload from DB
+        using (var scope = serviceProvider.CreateScope())
+        {
+          var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+          var dbSound = db.Sounds.FirstOrDefault(s => s.Hash == hash);
+          if (dbSound != null)
+          {
+            this.Sounds[hash] = dbSound;
+            Logger.LogInformation($"Re-added enabled sound to cache: {dbSound.Name} ({hash})");
+          }
+        }
+      }
+    }
+
+    public void RemoveSoundFromCache(string hash)
+    {
+      if (this.Sounds.TryGetValue(hash, out var sound))
+      {
+        this.Sounds.Remove(hash);
+        Logger.LogInformation($"Removed sound from cache: {sound.Name} ({hash})");
       }
     }
 

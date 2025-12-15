@@ -1,7 +1,7 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject, signal, computed } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
-import { Sound, TopSound, TopUser } from '../models';
+import { Sound, SoundUpdateRequest, Tag, TopSound, TopUser } from '../models';
 
 @Injectable({
   providedIn: 'root',
@@ -55,5 +55,102 @@ export class SoundService {
       sound.tags?.forEach(tag => tagSet.add(tag));
     });
     return Array.from(tagSet).sort();
+  }
+
+  // === Admin: Sound Management ===
+
+  loadAllSounds(): Observable<Sound[]> {
+    this.loading.set(true);
+    this.error.set(null);
+
+    return this.api.get<Sound[]>('/sound/all').pipe(
+      tap({
+        next: sounds => {
+          this.sounds.set(sounds);
+          this.loading.set(false);
+        },
+        error: err => {
+          this.error.set(err.message || 'Failed to load sounds');
+          this.loading.set(false);
+        },
+      })
+    );
+  }
+
+  updateSound(hash: string, data: SoundUpdateRequest): Observable<Sound> {
+    return this.api.put<Sound>(`/sound/${hash}`, data).pipe(
+      tap(updatedSound => {
+        this.sounds.update(sounds =>
+          sounds.map(s => (s.hash === hash ? updatedSound : s))
+        );
+      })
+    );
+  }
+
+  toggleSound(hash: string): Observable<{ hash: string; enabled: boolean }> {
+    return this.api
+      .put<{ hash: string; enabled: boolean }>(`/sound/${hash}/toggle`, {})
+      .pipe(
+        tap(result => {
+          this.sounds.update(sounds =>
+            sounds.map(s =>
+              s.hash === hash ? { ...s, enabled: result.enabled } : s
+            )
+          );
+        })
+      );
+  }
+
+  deleteSound(hash: string): Observable<void> {
+    return this.api.delete<void>(`/sound/${hash}`).pipe(
+      tap(() => {
+        this.sounds.update(sounds => sounds.filter(s => s.hash !== hash));
+      })
+    );
+  }
+
+  // === Admin: Tag Management ===
+
+  readonly tags = signal<Tag[]>([]);
+  readonly tagColorMap = computed(() => {
+    const map: Record<string, string> = {};
+    for (const tag of this.tags()) {
+      map[tag.name] = tag.color;
+    }
+    return map;
+  });
+
+  loadTags(): Observable<Tag[]> {
+    return this.api.get<Tag[]>('/tag').pipe(
+      tap(tags => {
+        this.tags.set(tags);
+      })
+    );
+  }
+
+  createTag(name: string, color?: string): Observable<Tag> {
+    return this.api.post<Tag>('/tag', { name, color }).pipe(
+      tap(newTag => {
+        this.tags.update(tags => [...tags, newTag].sort((a, b) => a.name.localeCompare(b.name)));
+      })
+    );
+  }
+
+  updateTag(id: number, name: string, color?: string): Observable<Tag> {
+    return this.api.put<Tag>(`/tag/${id}`, { name, color }).pipe(
+      tap(updatedTag => {
+        this.tags.update(tags =>
+          tags.map(t => (t.id === id ? updatedTag : t))
+        );
+      })
+    );
+  }
+
+  deleteTag(id: number): Observable<void> {
+    return this.api.delete<void>(`/tag/${id}`).pipe(
+      tap(() => {
+        this.tags.update(tags => tags.filter(t => t.id !== id));
+      })
+    );
   }
 }
