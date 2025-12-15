@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatRippleModule } from '@angular/material/core';
+import { MatMenuModule } from '@angular/material/menu';
 import { Sound } from '../../core/models';
 import { DurationPipe } from '../../shared/pipes/duration.pipe';
 
@@ -16,6 +17,7 @@ import { DurationPipe } from '../../shared/pipes/duration.pipe';
     MatIconModule,
     MatTooltipModule,
     MatRippleModule,
+    MatMenuModule,
     DurationPipe,
   ],
   template: `
@@ -35,12 +37,20 @@ import { DurationPipe } from '../../shared/pipes/duration.pipe';
       }
       <button
         mat-icon-button
-        class="play-btn"
-        (click)="onPlayClick($event)"
+        class="more-btn"
+        [matMenuTriggerFor]="menu"
+        (click)="$event.stopPropagation()"
       >
-        <mat-icon>play_arrow</mat-icon>
+        <mat-icon>more_vert</mat-icon>
       </button>
     </div>
+
+    <mat-menu #menu="matMenu">
+      <button mat-menu-item (click)="openInMixer()">
+        <mat-icon>tune</mat-icon>
+        <span>Im Mixer öffnen</span>
+      </button>
+    </mat-menu>
   `,
   styles: `
     .sound-card {
@@ -91,32 +101,28 @@ import { DurationPipe } from '../../shared/pipes/duration.pipe';
       flex-shrink: 0;
     }
 
-    .play-btn {
-      width: 26px !important;
-      height: 26px !important;
+    .more-btn {
+      width: 24px !important;
+      height: 24px !important;
       padding: 0 !important;
-      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%) !important;
-      border-radius: 50% !important;
-      transition: all 0.2s ease !important;
+      opacity: 0.4;
+      transition: opacity 0.2s ease !important;
       flex-shrink: 0;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
     }
 
-    .play-btn:hover {
-      transform: scale(1.1);
-      box-shadow: 0 0 12px rgba(147, 51, 234, 0.5);
+    .more-btn:hover {
+      opacity: 1;
     }
 
-    .play-btn mat-icon {
-      color: white;
+    .more-btn mat-icon {
+      color: rgba(255, 255, 255, 0.8);
       font-size: 18px;
       width: 18px;
       height: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    }
+
+    .sound-card:hover .more-btn {
+      opacity: 0.7;
     }
 
     .monospace {
@@ -128,8 +134,7 @@ export class SoundCardComponent {
   readonly sound = input.required<Sound>();
   readonly playClick = output<Sound>();
 
-  onPlayClick(event: Event): void {
-    event.stopPropagation();
-    this.playClick.emit(this.sound());
+  openInMixer(): void {
+    window.open(`/mixer?sounds=${this.sound().hash}`, '_blank');
   }
 }
