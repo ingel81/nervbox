@@ -1,55 +1,65 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
-using Serilog.Formatting.Compact;
-using Serilog.Formatting.Json;
-using Serilog.Sinks.SystemConsole.Themes;
-using NervboxDeamon.Helpers;
-using NervboxDeamon.Models.Settings;
 
 namespace NervboxDeamon
 {
   public class Program
   {
-    public static void Main(string[] args)
+    public static int Main(string[] args)
     {
-      CreateWebHostBuilder(args).Build().Run();
+      // Serilog Bootstrap-Logger für Startfehler
+      Log.Logger = new LoggerConfiguration()
+          .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+          .Enrich.FromLogContext()
+          .WriteTo.Console()
+          .CreateBootstrapLogger();
+
+      try
+      {
+        Log.Information("Starting NervboxDeamon");
+        CreateHostBuilder(args).Build().Run();
+        return 0;
+      }
+      catch (Exception ex)
+      {
+        Log.Fatal(ex, "Host terminated unexpectedly");
+        return 1;
+      }
+      finally
+      {
+        Log.CloseAndFlush();
+      }
     }
 
-    public static IWebHostBuilder CreateWebHostBuilder(string[] args)
+    public static IHostBuilder CreateHostBuilder(string[] args)
     {
+      var contentRoot = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
-      return WebHost.CreateDefaultBuilder(args)
-          //.UseSerilog((ctx, cfg) =>
-          //  {
-          //    Serilog.Debugging.SelfLog.Enable(msg => Console.WriteLine(msg));
-
-          //    var logPath = ctx.Configuration.GetSection("AppSettings").Get<AppSettings>().LogPath;
-
-          //    Console.WriteLine(string.Format("logs are written to: {0}", logPath));
-
-          //    cfg.ReadFrom.Configuration(ctx.Configuration)
-          //    //.WriteTo.RollingFile(logPath, outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} {Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}")              
-          //    //.WriteTo.RollingFile(new CompactJsonFormatter(), logPath)
-          //    .WriteTo.RollingFile(new CompactJsonFormatter(), logPath)
-          //    .Enrich.FromLogContext()
-          //    .WriteTo.Console(outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} {Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}");
-          //  }
-          //)
-          .UseContentRoot(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location))
-          .UseStartup<Startup>().UseUrls("http://0.0.0.0:8080")
-          .UseWebRoot("wwwroot")
-          .ConfigureKestrel((context, options) =>
+      return Host.CreateDefaultBuilder(args)
+          .UseSerilog((ctx, services, cfg) =>
           {
-            options.AllowSynchronousIO = true;
+            cfg.ReadFrom.Configuration(ctx.Configuration)
+               .Enrich.FromLogContext()
+               .Enrich.WithProperty("Application", "NervboxDeamon")
+               .WriteTo.Console(
+                   outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}",
+                   theme: Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme.Code);
+          })
+          .ConfigureWebHostDefaults(webBuilder =>
+          {
+            webBuilder
+                .UseContentRoot(contentRoot)
+                .UseStartup<Startup>()
+                .UseUrls("http://0.0.0.0:8080")
+                .UseWebRoot("wwwroot")
+                .ConfigureKestrel((context, options) =>
+                {
+                  options.AllowSynchronousIO = true;
+                });
           });
     }
   }

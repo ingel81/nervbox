@@ -1,12 +1,14 @@
 using System;
 using System.IO;
 using System.Linq;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using NervboxDeamon.Controllers.Base;
 using NervboxDeamon.Models.Settings;
+using NervboxDeamon.Models.View;
 using NervboxDeamon.Services;
 
 namespace NervboxDeamon.Controllers
@@ -205,14 +207,9 @@ namespace NervboxDeamon.Controllers
           file.CopyTo(stream);
         }
 
-        // Calculate hash
-        string hash;
-        using (var md5 = System.Security.Cryptography.MD5.Create())
-        using (var stream = System.IO.File.OpenRead(filePath))
-        {
-          var hashBytes = md5.ComputeHash(stream);
-          hash = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
-        }
+        // Calculate hash and duration using shared helper
+        string hash = Services.SoundHelper.GetFileHash(filePath);
+        int durationMs = Services.SoundHelper.GetDurationMs(filePath);
 
         // Check if sound with this hash already exists
         var existingSound = this.DbContext.Sounds.FirstOrDefault(s => s.Hash == hash);
@@ -229,7 +226,7 @@ namespace NervboxDeamon.Controllers
           Name = Path.GetFileNameWithoutExtension(file.FileName),
           FileName = fileName,
           SizeBytes = file.Length,
-          DurationMs = 0, // TODO: Calculate duration
+          DurationMs = durationMs,
           Enabled = true,
           CreatedAt = DateTime.UtcNow
         };
@@ -276,6 +273,183 @@ namespace NervboxDeamon.Controllers
       {
         return StatusCode(500, new { Error = ex.Message, Stacktrace = ex.StackTrace });
       }
+    }
+
+    /// <summary>
+    /// PUT /api/sound/{hash} - Sound bearbeiten (Admin only)
+    /// </summary>
+    [HttpPut("{hash}")]
+    [Authorize(Roles = "admin")]
+    public IActionResult UpdateSound(string hash, [FromBody] SoundUpdateModel model)
+    {
+      try
+      {
+        var sound = this.DbContext.Sounds.FirstOrDefault(s => s.Hash == hash);
+        if (sound == null)
+        {
+          return NotFound(new { Error = "Sound not found" });
+        }
+
+        // Update name if provided
+        if (!string.IsNullOrWhiteSpace(model.Name))
+        {
+          sound.Name = model.Name.Trim();
+        }
+
+        // Update enabled status if provided
+        if (model.Enabled.HasValue)
+        {
+          sound.Enabled = model.Enabled.Value;
+          this.SoundService.UpdateSoundEnabledStatus(hash, model.Enabled.Value);
+        }
+
+        // Update tags if provided
+        if (model.Tags != null)
+        {
+          // Remove existing tags
+          var existingSoundTags = this.DbContext.SoundTags.Where(st => st.SoundHash == hash).ToList();
+          this.DbContext.SoundTags.RemoveRange(existingSoundTags);
+
+          // Add new tags
+          foreach (var tagName in model.Tags.Select(t => t.Trim().ToLowerInvariant()).Where(t => !string.IsNullOrEmpty(t)))
+          {
+            var tag = this.DbContext.Tags.FirstOrDefault(t => t.Name == tagName);
+            if (tag == null)
+            {
+              tag = new DbModels.Tag { Name = tagName };
+              this.DbContext.Tags.Add(tag);
+              this.DbContext.SaveChanges();
+            }
+
+            this.DbContext.SoundTags.Add(new DbModels.SoundTag
+            {
+              SoundHash = hash,
+              TagId = tag.Id
+            });
+          }
+        }
+
+        this.DbContext.SaveChanges();
+
+        return Ok(new
+        {
+          sound.Hash,
+          sound.Name,
+          sound.FileName,
+          sound.SizeBytes,
+          sound.DurationMs,
+          sound.Enabled,
+          sound.CreatedAt,
+          Tags = this.DbContext.SoundTags.Where(st => st.SoundHash == hash).Select(st => st.Tag.Name).ToList(),
+          PlayCount = sound.Usages?.Count ?? 0
+        });
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, new { Error = ex.Message });
+      }
+    }
+
+    /// <summary>
+    /// PUT /api/sound/{hash}/toggle - Enabled/Disabled toggle (Admin only)
+    /// </summary>
+    [HttpPut("{hash}/toggle")]
+    [Authorize(Roles = "admin")]
+    public IActionResult ToggleSoundEnabled(string hash)
+    {
+      try
+      {
+        var sound = this.DbContext.Sounds.FirstOrDefault(s => s.Hash == hash);
+        if (sound == null)
+        {
+          return NotFound(new { Error = "Sound not found" });
+        }
+
+        sound.Enabled = !sound.Enabled;
+        this.DbContext.SaveChanges();
+
+        this.SoundService.UpdateSoundEnabledStatus(hash, sound.Enabled);
+
+        return Ok(new
+        {
+          sound.Hash,
+          sound.Enabled
+        });
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, new { Error = ex.Message });
+      }
+    }
+
+    /// <summary>
+    /// DELETE /api/sound/{hash} - Sound löschen (Admin only)
+    /// </summary>
+    [HttpDelete("{hash}")]
+    [Authorize(Roles = "admin")]
+    public IActionResult DeleteSound(string hash)
+    {
+      try
+      {
+        var sound = this.DbContext.Sounds.FirstOrDefault(s => s.Hash == hash);
+        if (sound == null)
+        {
+          return NotFound(new { Error = "Sound not found" });
+        }
+
+        // Remove file from disk
+        var filePath = Path.GetFullPath(Path.Combine(AppSettings.SoundPath, sound.FileName));
+        if (System.IO.File.Exists(filePath))
+        {
+          System.IO.File.Delete(filePath);
+        }
+
+        // Remove from cache
+        this.SoundService.RemoveSoundFromCache(hash);
+
+        // Remove SoundTags
+        var soundTags = this.DbContext.SoundTags.Where(st => st.SoundHash == hash).ToList();
+        this.DbContext.SoundTags.RemoveRange(soundTags);
+
+        // Remove SoundUsages
+        var usages = this.DbContext.SoundUsages.Where(u => u.SoundHash == hash).ToList();
+        this.DbContext.SoundUsages.RemoveRange(usages);
+
+        // Remove Sound
+        this.DbContext.Sounds.Remove(sound);
+        this.DbContext.SaveChanges();
+
+        return Ok(new { Message = "Sound deleted", Hash = hash });
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, new { Error = ex.Message });
+      }
+    }
+
+    /// <summary>
+    /// GET /api/sound/all - Alle Sounds inkl. disabled (Admin only)
+    /// </summary>
+    [HttpGet("all")]
+    [Authorize(Roles = "admin")]
+    public IActionResult GetAllSoundsIncludingDisabled()
+    {
+      var sounds = this.DbContext.Sounds
+        .Select(s => new
+        {
+          s.Hash,
+          s.Name,
+          s.FileName,
+          s.SizeBytes,
+          s.DurationMs,
+          s.Enabled,
+          s.CreatedAt,
+          Tags = s.SoundTags.Select(st => st.Tag.Name).ToList(),
+          PlayCount = s.Usages.Count()
+        })
+        .ToList();
+
+      return Ok(sounds);
     }
   }
 }

@@ -12,8 +12,10 @@ import { MatChipsModule } from '@angular/material/chips';
         <button
           class="tag-chip"
           [class.selected]="isSelected(tag)"
+          [style.--tag-color]="getTagColor(tag)"
           (click)="toggleTag(tag)"
         >
+          <span class="tag-dot" [style.background]="getTagColor(tag)"></span>
           {{ tag }}
         </button>
       }
@@ -30,8 +32,11 @@ import { MatChipsModule } from '@angular/material/chips';
     }
 
     .tag-chip {
-      background: rgba(147, 51, 234, 0.15);
-      border: 1px solid rgba(147, 51, 234, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 16px;
       padding: 6px 14px;
       font-size: 12px;
@@ -43,25 +48,41 @@ import { MatChipsModule } from '@angular/material/chips';
       font-family: Inter, sans-serif;
     }
 
+    .tag-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
     .tag-chip:hover {
-      background: rgba(147, 51, 234, 0.25);
-      border-color: rgba(147, 51, 234, 0.5);
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--tag-color, #9333ea);
     }
 
     .tag-chip.selected {
-      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
+      background: var(--tag-color, #9333ea);
       border-color: transparent;
       color: white;
-      box-shadow: 0 0 10px rgba(147, 51, 234, 0.4);
+      box-shadow: 0 0 10px color-mix(in srgb, var(--tag-color, #9333ea) 40%, transparent);
+    }
+
+    .tag-chip.selected .tag-dot {
+      background: white !important;
     }
   `,
 })
 export class TagFilterComponent {
   readonly tags = input<string[]>([]);
+  readonly tagColors = input<Record<string, string>>({});
   readonly selectedTagsChange = output<string[]>();
 
   private readonly _selectedTags = signal<string[]>([]);
   readonly selectedTags = computed(() => this._selectedTags());
+
+  getTagColor(tag: string): string {
+    return this.tagColors()[tag] || '#9333ea';
+  }
 
   isSelected(tag: string): boolean {
     return this._selectedTags().includes(tag);

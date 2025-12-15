@@ -82,8 +82,16 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
 
       <!-- Action Buttons -->
       <div class="actions">
-        <!-- Kill All (Admin only) -->
+        <!-- Admin Tools -->
         @if (auth.currentUser()?.role === 'admin') {
+          <button
+            mat-icon-button
+            class="action-btn"
+            matTooltip="Tag-Verwaltung"
+            (click)="tagManagerClick.emit()"
+          >
+            <mat-icon>label</mat-icon>
+          </button>
           <button
             mat-icon-button
             class="action-btn"
@@ -359,6 +367,7 @@ export class ToolbarComponent {
   readonly searchChange = output<string>();
   readonly sortChange = output<SortOption>();
   readonly killAllClick = output<void>();
+  readonly tagManagerClick = output<void>();
   readonly statsClick = output<void>();
   readonly chatClick = output<void>();
   readonly loginClick = output<void>();

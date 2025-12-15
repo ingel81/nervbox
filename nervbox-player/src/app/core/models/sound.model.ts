@@ -16,6 +16,29 @@ export interface TopSound {
   count: number;
 }
 
+export interface Tag {
+  id: number;
+  name: string;
+  color: string;
+  soundCount?: number;
+}
+
+export interface SoundUpdateRequest {
+  name?: string;
+  enabled?: boolean;
+  tags?: string[];
+}
+
+export interface TagCreateRequest {
+  name: string;
+  color?: string;
+}
+
+export interface TagUpdateRequest {
+  name: string;
+  color?: string;
+}
+
 export interface SoundPlayedEvent {
   initiator: {
     name: string;

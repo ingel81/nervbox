@@ -15,6 +15,9 @@ namespace NervboxDeamon.DbModels
         [Column("name")]
         public string Name { get; set; }
 
+        [Column("color")]
+        public string Color { get; set; } = "#9333ea";
+
         public virtual ICollection<SoundTag> SoundTags { get; set; } = new List<SoundTag>();
     }
 }
