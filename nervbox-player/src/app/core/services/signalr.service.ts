@@ -8,6 +8,8 @@ export interface ChatMessage {
   userId: number;
   username: string;
   message: string;
+  messageType?: 'text' | 'gif';
+  gifUrl?: string;
   createdAt: string;
 }
 
@@ -108,8 +110,26 @@ export class SignalRService {
     }
   }
 
+  async sendGif(gifUrl: string): Promise<void> {
+    if (!this.chatConnection || !this.auth.isLoggedIn()) return;
+
+    const userId = this.auth.currentUser()?.id;
+    if (!userId) return;
+
+    try {
+      await this.chatConnection.invoke('SendGif', userId, gifUrl);
+    } catch (err) {
+      console.error('Failed to send GIF:', err);
+      throw err;
+    }
+  }
+
   setInitialMessages(messages: ChatMessage[]): void {
     this.chatMessages.set(messages);
+  }
+
+  prependMessages(messages: ChatMessage[]): void {
+    this.chatMessages.update(current => [...messages, ...current]);
   }
 
   disconnect(): void {

@@ -28,12 +28,16 @@ namespace NervboxDeamon.Models.Settings
   }
 
   public class CameraSettings
-  {    
+  {
     public string Host { get; set; }
     public int Port { get; set; }
     public string User { get; set; }
     public string Password { get; set; }
+  }
 
+  public class GiphySettings
+  {
+    public string[] ApiKeys { get; set; } = Array.Empty<string>();
   }
 
 }

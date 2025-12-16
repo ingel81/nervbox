@@ -31,25 +31,25 @@ import { MatInputModule } from '@angular/material/input';
         >
           <span class="tag-dot" [style.background]="isSelected(tag) ? 'white' : getTagColor(tag)"></span>
           <span class="hash">#</span>{{ tag }}
-          <mat-icon class="pin-icon">push_pin</mat-icon>
         </button>
       }
 
-      <!-- Ausgewählte nicht-gepinnte Tags -->
-      @for (tag of selectedNonPinnedTags(); track tag) {
+      <!-- Sichtbare nicht-gepinnte Tags -->
+      @for (tag of visibleNonPinnedTags(); track tag) {
         <button
-          class="tag-chip selected"
+          class="tag-chip"
+          [class.selected]="isSelected(tag)"
           [style.--tag-color]="getTagColor(tag)"
           (click)="toggleTag(tag)"
         >
-          <span class="tag-dot" [style.background]="'white'"></span>
+          <span class="tag-dot" [style.background]="isSelected(tag) ? 'white' : getTagColor(tag)"></span>
           <span class="hash">#</span>{{ tag }}
-          <mat-icon class="remove-icon">close</mat-icon>
+          <mat-icon class="remove-icon" (click)="removeVisibleTag(tag, $event)">close</mat-icon>
         </button>
       }
 
       <!-- Tag-Suche -->
-      <div class="tag-search">
+      <div class="tag-search" #searchOrigin="matAutocompleteOrigin" matAutocompleteOrigin>
         <mat-icon class="search-icon">search</mat-icon>
         <input
           #searchInput
@@ -58,6 +58,7 @@ import { MatInputModule } from '@angular/material/input';
           placeholder="Tag suchen..."
           [(ngModel)]="searchQuery"
           [matAutocomplete]="auto"
+          [matAutocompleteConnectedTo]="searchOrigin"
           (focus)="onSearchFocus()"
         />
         @if (searchQuery) {
@@ -68,6 +69,7 @@ import { MatInputModule } from '@angular/material/input';
         <mat-autocomplete
           #auto="matAutocomplete"
           class="tag-autocomplete"
+          panelClass="tag-autocomplete-panel"
           (optionSelected)="onTagSelected($event)"
         >
           @for (tag of filteredTags(); track tag) {
@@ -137,18 +139,14 @@ import { MatInputModule } from '@angular/material/input';
     }
 
     .tag-chip.pinned {
-      border-color: rgba(249, 115, 22, 0.4);
+      border-color: rgba(249, 115, 22, 0.5);
+      box-shadow: 0 0 8px rgba(249, 115, 22, 0.2);
+      background: rgba(249, 115, 22, 0.08);
     }
 
-    .pin-icon {
-      font-size: 12px;
-      width: 12px;
-      height: 12px;
-      color: #f97316;
-    }
-
-    .tag-chip.selected .pin-icon {
-      color: white;
+    .tag-chip.pinned:hover {
+      border-color: rgba(249, 115, 22, 0.7);
+      box-shadow: 0 0 12px rgba(249, 115, 22, 0.3);
     }
 
     .remove-icon {
@@ -258,7 +256,8 @@ import { MatInputModule } from '@angular/material/input';
   `,
 })
 export class TagFilterComponent implements OnInit {
-  private static readonly STORAGE_KEY = 'nervbox-selected-tags';
+  private static readonly STORAGE_KEY_SELECTED = 'nervbox-selected-tags';
+  private static readonly STORAGE_KEY_VISIBLE = 'nervbox-visible-tags';
 
   readonly tags = input<string[]>([]);
   readonly tagColors = input<Record<string, string>>({});
@@ -268,6 +267,7 @@ export class TagFilterComponent implements OnInit {
   private readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
 
   private readonly _selectedTags = signal<string[]>([]);
+  private readonly _visibleTags = signal<string[]>([]); // Tags that are shown (not pinned)
   readonly selectedTags = computed(() => this._selectedTags());
 
   searchQuery = '';
@@ -276,20 +276,37 @@ export class TagFilterComponent implements OnInit {
     // Persist selected tags to localStorage whenever they change
     effect(() => {
       const tags = this._selectedTags();
-      localStorage.setItem(TagFilterComponent.STORAGE_KEY, JSON.stringify(tags));
+      localStorage.setItem(TagFilterComponent.STORAGE_KEY_SELECTED, JSON.stringify(tags));
+    });
+    // Persist visible tags to localStorage
+    effect(() => {
+      const tags = this._visibleTags();
+      localStorage.setItem(TagFilterComponent.STORAGE_KEY_VISIBLE, JSON.stringify(tags));
     });
   }
 
   ngOnInit(): void {
     // Load saved tags from localStorage
-    const saved = localStorage.getItem(TagFilterComponent.STORAGE_KEY);
-    if (saved) {
+    const savedSelected = localStorage.getItem(TagFilterComponent.STORAGE_KEY_SELECTED);
+    const savedVisible = localStorage.getItem(TagFilterComponent.STORAGE_KEY_VISIBLE);
+
+    if (savedSelected) {
       try {
-        const tags = JSON.parse(saved) as string[];
+        const tags = JSON.parse(savedSelected) as string[];
         if (Array.isArray(tags) && tags.length > 0) {
           this._selectedTags.set(tags);
-          // Emit to parent so it knows about the initial selection
           this.selectedTagsChange.emit(tags);
+        }
+      } catch {
+        // Invalid data, ignore
+      }
+    }
+
+    if (savedVisible) {
+      try {
+        const tags = JSON.parse(savedVisible) as string[];
+        if (Array.isArray(tags)) {
+          this._visibleTags.set(tags);
         }
       } catch {
         // Invalid data, ignore
@@ -297,17 +314,18 @@ export class TagFilterComponent implements OnInit {
     }
   }
 
-  readonly selectedNonPinnedTags = computed(() =>
-    this._selectedTags().filter(t => !this.pinnedTags().includes(t))
+  // Visible non-pinned tags (shown in the filter bar)
+  readonly visibleNonPinnedTags = computed(() =>
+    this._visibleTags().filter(t => !this.pinnedTags().includes(t))
   );
 
   readonly filteredTags = computed(() => {
     const pinned = this.pinnedTags();
-    const selected = this._selectedTags();
+    const visible = this._visibleTags();
     const query = this.searchQuery.toLowerCase();
 
     return this.tags()
-      .filter(t => !pinned.includes(t) && !selected.includes(t))
+      .filter(t => !pinned.includes(t) && !visible.includes(t))
       .filter(t => !query || t.toLowerCase().includes(query))
       .slice(0, 10);
   });
@@ -341,8 +359,25 @@ export class TagFilterComponent implements OnInit {
 
   onTagSelected(event: MatAutocompleteSelectedEvent): void {
     const tag = event.option.value;
-    this.toggleTag(tag);
+    // Add to visible tags and select it
+    if (!this._visibleTags().includes(tag)) {
+      this._visibleTags.update(tags => [...tags, tag]);
+    }
+    if (!this._selectedTags().includes(tag)) {
+      this._selectedTags.update(tags => [...tags, tag]);
+      this.selectedTagsChange.emit(this._selectedTags());
+    }
     this.searchQuery = '';
     this.searchInput()?.nativeElement.blur();
+  }
+
+  removeVisibleTag(tag: string, event: Event): void {
+    event.stopPropagation();
+    // Remove from both visible and selected
+    this._visibleTags.update(tags => tags.filter(t => t !== tag));
+    if (this._selectedTags().includes(tag)) {
+      this._selectedTags.update(tags => tags.filter(t => t !== tag));
+      this.selectedTagsChange.emit(this._selectedTags());
+    }
   }
 }

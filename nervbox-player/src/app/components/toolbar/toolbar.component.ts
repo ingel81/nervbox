@@ -13,7 +13,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatSelectModule } from '@angular/material/select';
 import { AuthService } from '../../core/services/auth.service';
 
-export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'duration-desc' | 'duration-asc';
+export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'duration-desc' | 'duration-asc' | 'random';
 
 @Component({
   selector: 'app-toolbar',
@@ -64,18 +64,21 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       <!-- Sort Dropdown -->
       <div class="sort-container">
         <mat-icon class="sort-icon">sort</mat-icon>
-        <select
+        <mat-select
           class="sort-select"
           [value]="currentSort()"
-          (change)="onSortChange($event)"
+          (selectionChange)="onSortChange($event.value)"
+          panelClass="sort-panel"
+          disableOptionCentering
         >
-          <option value="name-asc">Name A-Z</option>
-          <option value="name-desc">Name Z-A</option>
-          <option value="plays-desc">Beliebteste</option>
-          <option value="newest">Neueste</option>
-          <option value="duration-desc">Längste</option>
-          <option value="duration-asc">Kürzeste</option>
-        </select>
+          <mat-option value="name-asc">Name A-Z</mat-option>
+          <mat-option value="name-desc">Name Z-A</mat-option>
+          <mat-option value="plays-desc">Beliebteste</mat-option>
+          <mat-option value="newest">Neueste</mat-option>
+          <mat-option value="duration-desc">Längste</mat-option>
+          <mat-option value="duration-asc">Kürzeste</mat-option>
+          <mat-option value="random">Zufall</mat-option>
+        </mat-select>
       </div>
 
       <div class="spacer"></div>
@@ -87,6 +90,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
         <button
           mat-icon-button
           class="action-btn"
+          data-tour="selection"
           [class.active]="selectionMode()"
           [matTooltip]="selectionMode() ? 'Auswahl beenden' : 'Mehrfachauswahl'"
           (click)="selectionModeToggle.emit()"
@@ -122,6 +126,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
           <button
             mat-icon-button
             class="action-btn"
+            data-tour="mixer"
             matTooltip="Mixer öffnen"
             (click)="openMixer()"
           >
@@ -133,6 +138,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
         <button
           mat-icon-button
           class="action-btn"
+          data-tour="stats"
           matTooltip="Statistiken"
           (click)="statsClick.emit()"
         >
@@ -143,6 +149,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
         <button
           mat-icon-button
           class="action-btn"
+          data-tour="chat"
           matTooltip="Chat"
           (click)="chatClick.emit()"
         >
@@ -155,6 +162,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
           <button
             mat-icon-button
             class="action-btn admin-btn"
+            data-tour="tag-wizard"
             matTooltip="Tag-Wizard"
             (click)="tagWizardClick.emit()"
           >
@@ -163,6 +171,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
           <button
             mat-icon-button
             class="action-btn admin-btn"
+            data-tour="tag-manager"
             matTooltip="Tag-Verwaltung"
             (click)="tagManagerClick.emit()"
           >
@@ -171,6 +180,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
           <button
             mat-icon-button
             class="action-btn admin-btn"
+            data-tour="kill-all"
             matTooltip="Alle Sounds stoppen"
             (click)="killAllClick.emit()"
           >
@@ -181,7 +191,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
         <!-- PROFILE SECTION -->
         <div class="toolbar-divider"></div>
         @if (auth.isLoggedIn()) {
-          <button mat-icon-button [matMenuTriggerFor]="userMenu" class="user-btn">
+          <button mat-icon-button [matMenuTriggerFor]="userMenu" class="user-btn" data-tour="profile">
             <mat-icon>account_circle</mat-icon>
           </button>
           <mat-menu #userMenu="matMenu">
@@ -194,6 +204,11 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
               <mat-icon>key</mat-icon>
               <span>Kennwort ändern</span>
             </button>
+            <button mat-menu-item (click)="restartTourClick.emit()">
+              <mat-icon>help_outline</mat-icon>
+              <span>Tour starten</span>
+            </button>
+            <mat-divider></mat-divider>
             <button mat-menu-item (click)="auth.logout()">
               <mat-icon>logout</mat-icon>
               <span>Abmelden</span>
@@ -203,6 +218,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
           <button
             mat-icon-button
             class="action-btn"
+            data-tour="profile"
             matTooltip="Anmelden"
             (click)="loginClick.emit()"
           >
@@ -334,19 +350,24 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
     }
 
     .sort-select {
-      background: transparent;
-      border: none;
-      outline: none;
+      width: auto;
+      min-width: 120px;
+    }
+
+    .sort-select ::ng-deep .mat-mdc-select-value {
       color: rgba(255, 255, 255, 0.8);
       font-family: Inter, sans-serif;
       font-size: 13px;
-      cursor: pointer;
-      padding-right: 4px;
+      padding-right: 8px;
     }
 
-    .sort-select option {
-      background: #1a1b1f;
-      color: white;
+    .sort-select ::ng-deep .mat-mdc-select-arrow {
+      color: rgba(255, 255, 255, 0.5);
+      margin-left: 4px;
+    }
+
+    .sort-container:hover .sort-select ::ng-deep .mat-mdc-select-arrow {
+      color: rgba(255, 255, 255, 0.8);
     }
 
     .actions {
@@ -493,6 +514,7 @@ export class ToolbarComponent {
   readonly chatClick = output<void>();
   readonly loginClick = output<void>();
   readonly changePasswordClick = output<void>();
+  readonly restartTourClick = output<void>();
   readonly selectionModeToggle = output<void>();
   readonly openSelectionInMixer = output<void>();
   readonly clearSelection = output<void>();
@@ -506,8 +528,7 @@ export class ToolbarComponent {
     this.searchChange.emit('');
   }
 
-  onSortChange(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value as SortOption;
+  onSortChange(value: SortOption): void {
     this.sortChange.emit(value);
   }
 

@@ -118,6 +118,7 @@ namespace NervboxDeamon
       services.AddSingleton<ISshService, SSHService>();
       services.AddSingleton<ISystemService, SystemService>();
       services.AddSingleton<ISoundService, SoundService>();
+      services.AddSingleton<IGiphyService, GiphyService>();
       // services.AddSingleton<ICamService, CamService>(); // Deaktiviert - nicht benötigt
 
       services.Configure<IISServerOptions>(options =>

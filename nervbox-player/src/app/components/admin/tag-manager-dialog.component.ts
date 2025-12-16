@@ -48,7 +48,7 @@ import { SoundService } from '../../core/services/sound.service';
             type="color"
             class="color-picker"
             [(ngModel)]="newTagColor"
-            matTooltip="Farbe waehlen"
+            matTooltip="Farbe wählen"
           />
           <mat-form-field appearance="outline" class="tag-input">
             <mat-label>Neuer Tag</mat-label>
@@ -97,7 +97,7 @@ import { SoundService } from '../../core/services/sound.service';
                     type="color"
                     class="color-picker"
                     [(ngModel)]="editingTagColor"
-                    matTooltip="Farbe waehlen"
+                    matTooltip="Farbe wählen"
                   />
                   <input
                     class="edit-input"
@@ -135,7 +135,7 @@ import { SoundService } from '../../core/services/sound.service';
                   <button
                     mat-icon-button
                     (click)="deleteTag(tag)"
-                    [matTooltip]="tag.soundCount ? 'Wird von ' + tag.soundCount + ' Sounds verwendet' : 'Loeschen'"
+                    [matTooltip]="tag.soundCount ? 'Wird von ' + tag.soundCount + ' Sounds verwendet' : 'Löschen'"
                     [disabled]="deleting() === tag.id"
                   >
                     @if (deleting() === tag.id) {
@@ -157,7 +157,7 @@ import { SoundService } from '../../core/services/sound.service';
     </mat-dialog-content>
 
     <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Schliessen</button>
+      <button mat-button mat-dialog-close>Schließen</button>
     </mat-dialog-actions>
   `,
   styles: `
@@ -452,7 +452,7 @@ export class TagManagerDialogComponent implements OnInit {
 
   deleteTag(tag: Tag): void {
     if (tag.soundCount && tag.soundCount > 0) {
-      if (!confirm(`Der Tag "${tag.name}" wird von ${tag.soundCount} Sounds verwendet. Trotzdem loeschen?`)) {
+      if (!confirm(`Der Tag "${tag.name}" wird von ${tag.soundCount} Sounds verwendet. Trotzdem löschen?`)) {
         return;
       }
     }

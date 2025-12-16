@@ -100,7 +100,7 @@ import { AuthService } from '../../core/services/auth.service';
         </button>
         <button mat-menu-item class="delete-item" (click)="deleteClick.emit(sound())">
           <mat-icon>delete_forever</mat-icon>
-          <span>Loeschen</span>
+          <span>Löschen</span>
         </button>
       }
     </mat-menu>

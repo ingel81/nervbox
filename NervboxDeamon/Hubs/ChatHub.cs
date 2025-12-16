@@ -20,6 +20,7 @@ namespace NervboxDeamon.Hubs
       {
         UserId = userId,
         Message = message,
+        MessageType = ChatMessageType.Text,
         CreatedAt = DateTime.UtcNow
       };
 
@@ -33,6 +34,35 @@ namespace NervboxDeamon.Hubs
         UserId = userId,
         Username = user?.Username ?? "Unknown",
         Message = message,
+        MessageType = "text",
+        GifUrl = (string)null,
+        CreatedAt = chatMessage.CreatedAt
+      });
+    }
+
+    public Task SendGif(int userId, string gifUrl)
+    {
+      var chatMessage = new ChatMessage
+      {
+        UserId = userId,
+        Message = "[GIF]",
+        MessageType = ChatMessageType.Gif,
+        GifUrl = gifUrl,
+        CreatedAt = DateTime.UtcNow
+      };
+
+      Db.ChatMessages.Add(chatMessage);
+      Db.SaveChanges();
+
+      var user = Db.Users.Find(userId);
+
+      return Clients.All.SendAsync("message", new
+      {
+        UserId = userId,
+        Username = user?.Username ?? "Unknown",
+        Message = "[GIF]",
+        MessageType = "gif",
+        GifUrl = gifUrl,
         CreatedAt = chatMessage.CreatedAt
       });
     }
