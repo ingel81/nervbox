@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, output, signal, ElementRef, viewChild, AfterViewInit } from '@angular/core';
+import { Component, computed, inject, input, output, signal, ElementRef, viewChild, AfterViewInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -13,6 +13,7 @@ import { AuthService } from '../../core/services/auth.service';
 @Component({
   selector: 'app-sound-card',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     MatButtonModule,
@@ -27,12 +28,20 @@ import { AuthService } from '../../core/services/auth.service';
     <div
       class="sound-card"
       [class.disabled]="!sound().enabled"
+      [class.selection-mode]="selectionMode()"
+      [class.selected]="isSelected()"
       matRipple
-      [matRippleColor]="'rgba(147, 51, 234, 0.2)'"
-      (click)="sound().enabled && playClick.emit(sound())"
+      [matRippleColor]="isSelected() ? 'rgba(34, 197, 94, 0.2)' : 'rgba(147, 51, 234, 0.2)'"
+      (click)="handleClick()"
     >
       <div class="card-main">
-        <mat-icon class="sound-icon">{{ sound().enabled ? 'music_note' : 'music_off' }}</mat-icon>
+        @if (selectionMode()) {
+          <mat-icon class="selection-indicator" [class.checked]="isSelected()">
+            {{ isSelected() ? 'check_box' : 'check_box_outline_blank' }}
+          </mat-icon>
+        } @else {
+          <mat-icon class="sound-icon">{{ sound().enabled ? 'music_note' : 'music_off' }}</mat-icon>
+        }
         <span
           class="sound-name"
           #nameEl
@@ -71,6 +80,10 @@ import { AuthService } from '../../core/services/auth.service';
     </div>
 
     <mat-menu #menu="matMenu">
+      <button mat-menu-item (click)="playClick.emit(sound())">
+        <mat-icon>play_arrow</mat-icon>
+        <span>Anhören</span>
+      </button>
       <button mat-menu-item (click)="openInMixer()">
         <mat-icon>tune</mat-icon>
         <span>Im Mixer öffnen</span>
@@ -93,6 +106,12 @@ import { AuthService } from '../../core/services/auth.service';
     </mat-menu>
   `,
   styles: `
+    :host {
+      display: block;
+      min-width: 0;
+      overflow: hidden;
+    }
+
     .sound-card {
       background: linear-gradient(135deg, rgba(26, 27, 31, 0.9) 0%, rgba(20, 10, 25, 0.8) 100%);
       border: 1px solid rgba(147, 51, 234, 0.2);
@@ -104,6 +123,8 @@ import { AuthService } from '../../core/services/auth.service';
       flex-direction: column;
       gap: 4px;
       min-height: 52px;
+      min-width: 0;
+      overflow: hidden;
       user-select: none;
     }
 
@@ -113,14 +134,19 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     .sound-card:hover:not(.disabled) {
-      border-color: rgba(147, 51, 234, 0.5);
-      box-shadow: 0 2px 12px rgba(147, 51, 234, 0.25);
+      border-color: rgba(147, 51, 234, 0.8);
+      box-shadow:
+        0 0 15px rgba(147, 51, 234, 0.5),
+        inset 0 0 20px rgba(147, 51, 234, 0.1);
+      background: linear-gradient(135deg, rgba(50, 30, 60, 0.95) 0%, rgba(30, 15, 40, 0.9) 100%);
     }
 
     .card-main {
       display: flex;
       align-items: center;
       gap: 8px;
+      min-width: 0;
+      overflow: hidden;
     }
 
     .sound-icon {
@@ -215,6 +241,35 @@ import { AuthService } from '../../core/services/auth.service';
     .delete-item mat-icon {
       color: #ef4444 !important;
     }
+
+    /* Selection Mode Styles */
+    .sound-card.selection-mode {
+      cursor: pointer;
+    }
+
+    .sound-card.selection-mode:hover:not(.disabled) {
+      border-color: rgba(34, 197, 94, 0.5);
+      box-shadow: 0 2px 12px rgba(34, 197, 94, 0.25);
+    }
+
+    .sound-card.selected {
+      border-color: rgba(34, 197, 94, 0.8);
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(20, 10, 25, 0.8) 100%);
+      box-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
+    }
+
+    .selection-indicator {
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      transition: color 0.2s ease;
+    }
+
+    .selection-indicator.checked {
+      color: #22c55e;
+    }
   `,
 })
 export class SoundCardComponent implements AfterViewInit {
@@ -222,10 +277,13 @@ export class SoundCardComponent implements AfterViewInit {
 
   readonly sound = input.required<Sound>();
   readonly tagColors = input<Record<string, string>>({});
+  readonly selectionMode = input<boolean>(false);
+  readonly isSelected = input<boolean>(false);
   readonly playClick = output<Sound>();
   readonly editClick = output<Sound>();
   readonly toggleClick = output<Sound>();
   readonly deleteClick = output<Sound>();
+  readonly selectionToggle = output<Sound>();
 
   private readonly nameEl = viewChild<ElementRef<HTMLElement>>('nameEl');
   private readonly nameTruncated = signal(false);
@@ -238,6 +296,16 @@ export class SoundCardComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
     this.checkTruncation();
+  }
+
+  handleClick(): void {
+    if (!this.sound().enabled) return;
+
+    if (this.selectionMode()) {
+      this.selectionToggle.emit(this.sound());
+    } else {
+      this.playClick.emit(this.sound());
+    }
   }
 
   private checkTruncation(): void {

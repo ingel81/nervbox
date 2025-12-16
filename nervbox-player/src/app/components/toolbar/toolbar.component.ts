@@ -82,35 +82,52 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
 
       <!-- Action Buttons -->
       <div class="actions">
-        <!-- Admin Tools -->
-        @if (auth.currentUser()?.role === 'admin') {
-          <button
-            mat-icon-button
-            class="action-btn"
-            matTooltip="Tag-Verwaltung"
-            (click)="tagManagerClick.emit()"
-          >
-            <mat-icon>label</mat-icon>
-          </button>
-          <button
-            mat-icon-button
-            class="action-btn"
-            matTooltip="Alle Sounds stoppen"
-            (click)="killAllClick.emit()"
-          >
-            <mat-icon>stop_circle</mat-icon>
-          </button>
-        }
-
-        <!-- Mixer -->
+        <!-- USER SECTION -->
+        <!-- Selection Mode Toggle -->
         <button
           mat-icon-button
           class="action-btn"
-          matTooltip="Mixer öffnen"
-          (click)="openMixer()"
+          [class.active]="selectionMode()"
+          [matTooltip]="selectionMode() ? 'Auswahl beenden' : 'Mehrfachauswahl'"
+          (click)="selectionModeToggle.emit()"
         >
-          <mat-icon>tune</mat-icon>
+          <mat-icon>{{ selectionMode() ? 'check_box' : 'checklist' }}</mat-icon>
         </button>
+
+        <!-- Selection Actions (nur wenn Selection Mode aktiv UND Sounds ausgewaehlt) -->
+        @if (selectionMode() && selectionCount() > 0) {
+          <div class="selection-actions">
+            <span class="selection-badge">{{ selectionCount() }}</span>
+            <button
+              mat-icon-button
+              class="action-btn mixer-btn"
+              matTooltip="Auswahl im Mixer öffnen"
+              (click)="openSelectionInMixer.emit()"
+            >
+              <mat-icon>tune</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              class="action-btn"
+              matTooltip="Auswahl aufheben"
+              (click)="clearSelection.emit()"
+            >
+              <mat-icon>clear</mat-icon>
+            </button>
+          </div>
+        }
+
+        <!-- Mixer -->
+        @if (!selectionMode()) {
+          <button
+            mat-icon-button
+            class="action-btn"
+            matTooltip="Mixer öffnen"
+            (click)="openMixer()"
+          >
+            <mat-icon>tune</mat-icon>
+          </button>
+        }
 
         <!-- Stats -->
         <button
@@ -132,7 +149,37 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
           <mat-icon>chat</mat-icon>
         </button>
 
-        <!-- User Menu -->
+        <!-- ADMIN SECTION -->
+        @if (auth.currentUser()?.role === 'admin') {
+          <div class="toolbar-divider"></div>
+          <button
+            mat-icon-button
+            class="action-btn admin-btn"
+            matTooltip="Tag-Wizard"
+            (click)="tagWizardClick.emit()"
+          >
+            <mat-icon>auto_fix_high</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            class="action-btn admin-btn"
+            matTooltip="Tag-Verwaltung"
+            (click)="tagManagerClick.emit()"
+          >
+            <mat-icon>label</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            class="action-btn admin-btn"
+            matTooltip="Alle Sounds stoppen"
+            (click)="killAllClick.emit()"
+          >
+            <mat-icon>stop_circle</mat-icon>
+          </button>
+        }
+
+        <!-- PROFILE SECTION -->
+        <div class="toolbar-divider"></div>
         @if (auth.isLoggedIn()) {
           <button mat-icon-button [matMenuTriggerFor]="userMenu" class="user-btn">
             <mat-icon>account_circle</mat-icon>
@@ -308,6 +355,27 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       gap: 4px;
     }
 
+    .toolbar-divider {
+      width: 1px;
+      height: 28px;
+      background: rgba(147, 51, 234, 0.4);
+      margin: 0 8px;
+    }
+
+    .admin-btn {
+      background: rgba(249, 115, 22, 0.1) !important;
+      border-color: rgba(249, 115, 22, 0.3) !important;
+    }
+
+    .admin-btn:hover {
+      background: rgba(249, 115, 22, 0.2) !important;
+      border-color: rgba(249, 115, 22, 0.5) !important;
+    }
+
+    .admin-btn mat-icon {
+      color: #f97316 !important;
+    }
+
     .action-btn, .user-btn {
       width: 40px !important;
       height: 40px !important;
@@ -329,6 +397,56 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
 
     .action-btn:hover mat-icon, .user-btn:hover mat-icon {
       color: #ec4899;
+    }
+
+    /* Selection Mode Active State */
+    .action-btn.active {
+      background: rgba(34, 197, 94, 0.2) !important;
+      border-color: rgba(34, 197, 94, 0.5) !important;
+    }
+
+    .action-btn.active mat-icon {
+      color: #22c55e;
+    }
+
+    .action-btn.active:hover {
+      background: rgba(34, 197, 94, 0.3) !important;
+      border-color: rgba(34, 197, 94, 0.7) !important;
+    }
+
+    /* Selection Actions Container */
+    .selection-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      border-radius: 8px;
+      padding: 4px 8px;
+    }
+
+    .selection-badge {
+      background: #22c55e;
+      color: white;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 12px;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    .mixer-btn {
+      background: rgba(34, 197, 94, 0.2) !important;
+      border-color: rgba(34, 197, 94, 0.5) !important;
+    }
+
+    .mixer-btn mat-icon {
+      color: #22c55e !important;
+    }
+
+    .mixer-btn:hover {
+      background: rgba(34, 197, 94, 0.3) !important;
     }
 
     .menu-header {
@@ -362,16 +480,22 @@ export class ToolbarComponent {
 
   // Inputs
   readonly currentSort = input<SortOption>('name-asc');
+  readonly selectionMode = input<boolean>(false);
+  readonly selectionCount = input<number>(0);
 
   // Outputs
   readonly searchChange = output<string>();
   readonly sortChange = output<SortOption>();
   readonly killAllClick = output<void>();
+  readonly tagWizardClick = output<void>();
   readonly tagManagerClick = output<void>();
   readonly statsClick = output<void>();
   readonly chatClick = output<void>();
   readonly loginClick = output<void>();
   readonly changePasswordClick = output<void>();
+  readonly selectionModeToggle = output<void>();
+  readonly openSelectionInMixer = output<void>();
+  readonly clearSelection = output<void>();
 
   onSearchChange(): void {
     this.searchChange.emit(this.searchQuery);
