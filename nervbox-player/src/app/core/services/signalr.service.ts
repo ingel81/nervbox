@@ -33,6 +33,7 @@ export class SignalRService {
   readonly soundEvents = signal<SoundPlayedEvent[]>([]);
   readonly chatConnected = signal(false);
   readonly soundConnected = signal(false);
+  readonly rateLimitMessage = signal<string | null>(null);
 
   async connectChat(): Promise<void> {
     if (this.chatConnection) return;
@@ -48,6 +49,12 @@ export class SignalRService {
 
     this.chatConnection.on('message', (msg: ChatMessage) => {
       this.chatMessages.update(messages => [...messages, msg]);
+    });
+
+    this.chatConnection.on('rateLimit', (reason: string) => {
+      this.rateLimitMessage.set(reason);
+      // Auto-clear after 3 seconds
+      setTimeout(() => this.rateLimitMessage.set(null), 3000);
     });
 
     this.chatConnection.onclose(() => {
