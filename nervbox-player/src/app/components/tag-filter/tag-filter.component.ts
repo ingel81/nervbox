@@ -1,4 +1,4 @@
-import { Component, input, output, signal, computed, ElementRef, viewChild } from '@angular/core';
+import { Component, input, output, signal, computed, ElementRef, viewChild, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatChipsModule } from '@angular/material/chips';
@@ -257,7 +257,9 @@ import { MatInputModule } from '@angular/material/input';
     }
   `,
 })
-export class TagFilterComponent {
+export class TagFilterComponent implements OnInit {
+  private static readonly STORAGE_KEY = 'nervbox-selected-tags';
+
   readonly tags = input<string[]>([]);
   readonly tagColors = input<Record<string, string>>({});
   readonly pinnedTags = input<string[]>([]);
@@ -269,6 +271,31 @@ export class TagFilterComponent {
   readonly selectedTags = computed(() => this._selectedTags());
 
   searchQuery = '';
+
+  constructor() {
+    // Persist selected tags to localStorage whenever they change
+    effect(() => {
+      const tags = this._selectedTags();
+      localStorage.setItem(TagFilterComponent.STORAGE_KEY, JSON.stringify(tags));
+    });
+  }
+
+  ngOnInit(): void {
+    // Load saved tags from localStorage
+    const saved = localStorage.getItem(TagFilterComponent.STORAGE_KEY);
+    if (saved) {
+      try {
+        const tags = JSON.parse(saved) as string[];
+        if (Array.isArray(tags) && tags.length > 0) {
+          this._selectedTags.set(tags);
+          // Emit to parent so it knows about the initial selection
+          this.selectedTagsChange.emit(tags);
+        }
+      } catch {
+        // Invalid data, ignore
+      }
+    }
+  }
 
   readonly selectedNonPinnedTags = computed(() =>
     this._selectedTags().filter(t => !this.pinnedTags().includes(t))
