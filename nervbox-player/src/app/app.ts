@@ -13,10 +13,12 @@ import { StatsDialogComponent } from './components/stats/stats-dialog.component'
 import { SoundEditDialogComponent, SoundEditDialogData } from './components/admin/sound-edit-dialog.component';
 import { DeleteSoundDialogComponent, DeleteSoundDialogData } from './components/admin/delete-sound-dialog.component';
 import { TagManagerDialogComponent } from './components/admin/tag-manager-dialog.component';
+import { TagWizardDialogComponent } from './components/admin/tag-wizard-dialog.component';
 import { ChatSidebarComponent } from './components/chat/chat-sidebar.component';
 import { SoundService } from './core/services/sound.service';
 import { AuthService } from './core/services/auth.service';
 import { SignalRService } from './core/services/signalr.service';
+import { SelectionService } from './core/services/selection.service';
 import { Sound } from './core/models';
 
 interface Activity {
@@ -45,14 +47,20 @@ interface Activity {
       <!-- Toolbar -->
       <app-toolbar
         [currentSort]="currentSort()"
+        [selectionMode]="selectionService.selectionMode()"
+        [selectionCount]="selectionService.selectionCount()"
         (searchChange)="onSearchChange($event)"
         (sortChange)="onSortChange($event)"
         (killAllClick)="onKillAll()"
+        (tagWizardClick)="onTagWizardClick()"
         (tagManagerClick)="onTagManagerClick()"
         (statsClick)="onStatsClick()"
         (chatClick)="toggleChat()"
         (loginClick)="onLoginClick()"
         (changePasswordClick)="onChangePasswordClick()"
+        (selectionModeToggle)="selectionService.toggleSelectionMode()"
+        (openSelectionInMixer)="selectionService.openInMixer()"
+        (clearSelection)="selectionService.clearSelection()"
       />
 
       <!-- Main Layout -->
@@ -89,10 +97,13 @@ interface Activity {
               [searchQuery]="searchQuery()"
               [selectedTags]="selectedTags()"
               [tagColors]="soundService.tagColorMap()"
+              [selectionMode]="selectionService.selectionMode()"
+              [selectedHashes]="selectionService.selectedSounds()"
               (playSound)="onPlaySound($event)"
               (editSound)="onEditSound($event)"
               (toggleSound)="onToggleSound($event)"
               (deleteSound)="onDeleteSound($event)"
+              (selectionToggle)="selectionService.toggleSelection($event.hash)"
             />
           }
         </main>
@@ -263,6 +274,7 @@ interface Activity {
 export class App implements OnInit {
   readonly soundService = inject(SoundService);
   readonly authService = inject(AuthService);
+  readonly selectionService = inject(SelectionService);
   private readonly signalR = inject(SignalRService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
@@ -419,6 +431,23 @@ export class App implements OnInit {
     this.dialog.open(TagManagerDialogComponent, {
       width: '500px',
       panelClass: 'dark-dialog',
+    });
+  }
+
+  onTagWizardClick(): void {
+    const dialogRef = this.dialog.open(TagWizardDialogComponent, {
+      width: '900px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      panelClass: 'dark-dialog',
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        // Reload sounds to reflect tag changes
+        this.loadSounds();
+        this.snackBar.open('Tags wurden aktualisiert', 'OK', { duration: 2000 });
+      }
     });
   }
 
