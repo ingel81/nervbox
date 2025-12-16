@@ -30,17 +30,17 @@ export interface DeleteSoundDialogData {
   template: `
     <h2 mat-dialog-title>
       <mat-icon class="warn-icon">warning</mat-icon>
-      Sound loeschen
+      Sound löschen
     </h2>
 
     <mat-dialog-content>
       <div class="warning-box">
-        <p>Diese Aktion kann nicht rueckgaengig gemacht werden!</p>
-        <p>Der Sound <strong>"{{ data.sound.name }}"</strong> wird unwiderruflich geloescht.</p>
+        <p>Diese Aktion kann nicht rückgängig gemacht werden!</p>
+        <p>Der Sound <strong>"{{ data.sound.name }}"</strong> wird unwiderruflich gelöscht.</p>
       </div>
 
       <div class="confirm-section">
-        <p>Gib den Namen des Sounds zur Bestaetigung ein:</p>
+        <p>Gib den Namen des Sounds zur Bestätigung ein:</p>
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Sound-Name</mat-label>
           <input
@@ -68,7 +68,7 @@ export interface DeleteSoundDialogData {
         @if (deleting()) {
           <mat-spinner diameter="20"></mat-spinner>
         } @else {
-          Endgueltig loeschen
+          Endgültig löschen
         }
       </button>
     </mat-dialog-actions>
@@ -167,7 +167,7 @@ export class DeleteSoundDialogComponent {
       },
       error: err => {
         this.deleting.set(false);
-        this.error.set(err.error?.Error || err.message || 'Fehler beim Loeschen');
+        this.error.set(err.error?.Error || err.message || 'Fehler beim Löschen');
       },
     });
   }

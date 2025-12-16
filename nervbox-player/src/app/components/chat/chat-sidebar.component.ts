@@ -1,4 +1,14 @@
-import { Component, inject, OnInit, OnDestroy, signal, ElementRef, ViewChild, AfterViewChecked } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  OnDestroy,
+  signal,
+  ElementRef,
+  ViewChild,
+  AfterViewChecked,
+  effect,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,6 +19,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { SignalRService, ChatMessage } from '../../core/services/signalr.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ApiService } from '../../core/services/api.service';
+import { GifPickerComponent } from './gif-picker.component';
 
 @Component({
   selector: 'app-chat-sidebar',
@@ -21,6 +32,7 @@ import { ApiService } from '../../core/services/api.service';
     MatInputModule,
     MatFormFieldModule,
     MatProgressSpinnerModule,
+    GifPickerComponent,
   ],
   template: `
     <div class="chat-sidebar">
@@ -31,43 +43,77 @@ import { ApiService } from '../../core/services/api.service';
       </div>
 
       <div class="chat-content">
+          @if (showGifPicker()) {
+            <app-gif-picker
+              (gifSelected)="onGifSelected($event)"
+              (close)="showGifPicker.set(false)"
+            />
+          }
+
           @if (loading()) {
             <div class="loading">
               <mat-spinner diameter="24"></mat-spinner>
             </div>
           } @else {
             <div class="messages" #messagesContainer>
+              @if (hasMoreMessages()) {
+                <button class="load-older-btn" (click)="loadOlderMessages()" [disabled]="loadingOlder()">
+                  @if (loadingOlder()) {
+                    <mat-spinner diameter="16"></mat-spinner>
+                  } @else {
+                    <mat-icon>expand_less</mat-icon>
+                    Ältere Nachrichten
+                  }
+                </button>
+              }
               @for (msg of signalR.chatMessages(); track msg.id || $index) {
-                <div class="message" [class.own]="msg.userId === auth.currentUser()?.id">
-                  <span class="username">{{ msg.username }}</span>
-                  <span class="text">{{ msg.message }}</span>
+                <div class="message" [class.own]="msg.userId === auth.currentUser()?.id" [class.gif-message]="msg.messageType === 'gif'">
+                  @if (msg.userId !== auth.currentUser()?.id) {
+                    <span class="username">{{ msg.username }}</span>
+                  }
+                  @if (msg.messageType === 'gif' && msg.gifUrl) {
+                    <img class="gif-content" [src]="msg.gifUrl" alt="GIF" loading="lazy" />
+                  } @else {
+                    <span class="text">{{ msg.message }}</span>
+                  }
                   <span class="time">{{ formatTime(msg.createdAt) }}</span>
                 </div>
               }
-              @if (signalR.chatMessages().length === 0) {
+              @if (!signalR.chatMessages()?.length) {
                 <div class="empty">Noch keine Nachrichten</div>
               }
             </div>
           }
 
           @if (auth.isLoggedIn()) {
-            <form class="input-area" (ngSubmit)="sendMessage()">
-              <input
-                type="text"
-                [(ngModel)]="newMessage"
-                name="message"
-                placeholder="Nachricht..."
-                [disabled]="sending()"
-                autocomplete="off"
-              />
-              <button
-                mat-icon-button
-                type="submit"
-                [disabled]="!newMessage.trim() || sending()"
-              >
-                <mat-icon>send</mat-icon>
-              </button>
-            </form>
+            <div class="input-wrapper">
+              <form class="input-area" (ngSubmit)="sendMessage()">
+                <button
+                  mat-icon-button
+                  type="button"
+                  class="gif-btn"
+                  (click)="toggleGifPicker()"
+                  [class.active]="showGifPicker()"
+                >
+                  <mat-icon>gif_box</mat-icon>
+                </button>
+                <input
+                  type="text"
+                  [(ngModel)]="newMessage"
+                  name="message"
+                  placeholder="Nachricht..."
+                  [disabled]="sending()"
+                  autocomplete="off"
+                />
+                <button
+                  mat-icon-button
+                  type="submit"
+                  [disabled]="!newMessage.trim() || sending()"
+                >
+                  <mat-icon>send</mat-icon>
+                </button>
+              </form>
+            </div>
           } @else {
             <div class="login-hint">
               <mat-icon>login</mat-icon>
@@ -79,12 +125,13 @@ import { ApiService } from '../../core/services/api.service';
   `,
   styles: `
     .chat-sidebar {
-      width: 300px;
+      width: clamp(300px, 22vw, 400px);
       height: 100%;
       background: #0f0f12;
       border-left: 1px solid rgba(147, 51, 234, 0.3);
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
     .chat-header {
@@ -128,6 +175,8 @@ import { ApiService } from '../../core/services/api.service';
       display: flex;
       flex-direction: column;
       min-height: 0;
+      overflow: hidden;
+      position: relative;
     }
 
     .loading, .empty {
@@ -148,6 +197,36 @@ import { ApiService } from '../../core/services/api.service';
       gap: 8px;
     }
 
+    .load-older-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 12px;
+      background: rgba(147, 51, 234, 0.1);
+      border: 1px solid rgba(147, 51, 234, 0.3);
+      border-radius: 8px;
+      color: #9333ea;
+      font-size: 12px;
+      cursor: pointer;
+      margin-bottom: 8px;
+    }
+
+    .load-older-btn:hover:not(:disabled) {
+      background: rgba(147, 51, 234, 0.2);
+    }
+
+    .load-older-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .load-older-btn mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
     .message {
       display: flex;
       flex-direction: column;
@@ -156,11 +235,15 @@ import { ApiService } from '../../core/services/api.service';
       background: rgba(255, 255, 255, 0.03);
       border-radius: 8px;
       border-left: 2px solid rgba(147, 51, 234, 0.3);
+      margin-right: 24px;
     }
 
     .message.own {
       background: rgba(147, 51, 234, 0.1);
-      border-left-color: #9333ea;
+      border-left: none;
+      border-right: 2px solid #9333ea;
+      margin-right: 0;
+      margin-left: 24px;
     }
 
     .username {
@@ -171,6 +254,11 @@ import { ApiService } from '../../core/services/api.service';
 
     .message.own .username {
       color: #ec4899;
+      align-self: flex-end;
+    }
+
+    .message.own .time {
+      align-self: flex-start;
     }
 
     .text {
@@ -196,10 +284,11 @@ import { ApiService } from '../../core/services/api.service';
 
     .input-area input {
       flex: 1;
+      min-width: 0;
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(147, 51, 234, 0.3);
       border-radius: 20px;
-      padding: 8px 16px;
+      padding: 8px 12px;
       color: white;
       font-size: 13px;
       outline: none;
@@ -214,19 +303,64 @@ import { ApiService } from '../../core/services/api.service';
     }
 
     .input-area button {
+      flex-shrink: 0;
       width: 36px;
       height: 36px;
       background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
       border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .input-area button mat-icon {
       color: white;
-      font-size: 18px;
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
     }
 
     .input-area button:disabled {
       opacity: 0.4;
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    .gif-btn {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      background: rgba(147, 51, 234, 0.15);
+      border-radius: 50%;
+    }
+
+    .gif-btn mat-icon {
+      color: #9333ea;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    .gif-btn.active,
+    .gif-btn:hover {
+      background: rgba(147, 51, 234, 0.3);
+    }
+
+    .gif-btn.active mat-icon,
+    .gif-btn:hover mat-icon {
+      color: #ec4899;
+    }
+
+    .gif-message {
+      padding: 4px !important;
+    }
+
+    .gif-content {
+      max-width: 100%;
+      border-radius: 6px;
+      display: block;
     }
 
     .login-hint {
@@ -261,10 +395,35 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
   @ViewChild('messagesContainer') messagesContainer?: ElementRef;
 
   readonly loading = signal(true);
+  readonly loadingOlder = signal(false);
   readonly sending = signal(false);
+  readonly showGifPicker = signal(false);
+  readonly hasMoreMessages = signal(false);
   newMessage = '';
 
   private shouldScrollToBottom = false;
+  private skipNextScroll = false;
+  private lastMessageCount = 0;
+
+  constructor() {
+    // Auto-scroll when new messages arrive (at the end, not when prepending)
+    effect(() => {
+      const messages = this.signalR.chatMessages();
+      const count = messages?.length ?? 0;
+
+      if (this.skipNextScroll) {
+        this.skipNextScroll = false;
+        this.lastMessageCount = count;
+        return;
+      }
+
+      // Only scroll if messages were added (not on initial load handled elsewhere)
+      if (count > this.lastMessageCount && this.lastMessageCount > 0) {
+        setTimeout(() => this.scrollToBottom(), 50);
+      }
+      this.lastMessageCount = count;
+    });
+  }
 
   ngOnInit(): void {
     this.loadMessages();
@@ -283,9 +442,10 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
   }
 
   private loadMessages(): void {
-    this.api.get<ChatMessage[]>('/chat').subscribe({
-      next: messages => {
-        this.signalR.setInitialMessages(messages);
+    this.api.get<{ messages: ChatMessage[]; hasMore: boolean }>('/chat?limit=3').subscribe({
+      next: response => {
+        this.signalR.setInitialMessages(response.messages);
+        this.hasMoreMessages.set(response.hasMore);
         this.loading.set(false);
         this.shouldScrollToBottom = true;
       },
@@ -293,6 +453,29 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
         this.loading.set(false);
       },
     });
+  }
+
+  loadOlderMessages(): void {
+    const messages = this.signalR.chatMessages();
+    if (!messages?.length || this.loadingOlder()) return;
+
+    const oldestId = messages[0]?.id;
+    if (!oldestId) return;
+    this.loadingOlder.set(true);
+
+    this.api
+      .get<{ messages: ChatMessage[]; hasMore: boolean }>(`/chat?limit=3&beforeId=${oldestId}`)
+      .subscribe({
+        next: response => {
+          this.skipNextScroll = true;
+          this.signalR.prependMessages(response.messages);
+          this.hasMoreMessages.set(response.hasMore);
+          this.loadingOlder.set(false);
+        },
+        error: () => {
+          this.loadingOlder.set(false);
+        },
+      });
   }
 
   async sendMessage(): Promise<void> {
@@ -313,6 +496,23 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
   formatTime(dateStr: string): string {
     const date = new Date(dateStr);
     return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  toggleGifPicker(): void {
+    this.showGifPicker.update(v => !v);
+  }
+
+  async onGifSelected(gifUrl: string): Promise<void> {
+    this.showGifPicker.set(false);
+    this.sending.set(true);
+    try {
+      await this.signalR.sendGif(gifUrl);
+      this.shouldScrollToBottom = true;
+    } catch {
+      // Error handling in service
+    } finally {
+      this.sending.set(false);
+    }
   }
 
   private scrollToBottom(): void {

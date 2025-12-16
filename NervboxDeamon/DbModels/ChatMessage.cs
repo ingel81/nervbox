@@ -4,6 +4,12 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace NervboxDeamon.DbModels
 {
+    public enum ChatMessageType
+    {
+        Text = 0,
+        Gif = 1
+    }
+
     [Table("chat_messages")]
     public class ChatMessage
     {
@@ -18,6 +24,12 @@ namespace NervboxDeamon.DbModels
         [Required]
         [Column("message")]
         public string Message { get; set; }
+
+        [Column("message_type")]
+        public ChatMessageType MessageType { get; set; } = ChatMessageType.Text;
+
+        [Column("gif_url")]
+        public string GifUrl { get; set; }
 
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -135,7 +135,7 @@ import { SoundService } from '../../core/services/sound.service';
           <!-- Available Tags -->
           <div class="tags-section">
             <div class="tags-label-row">
-              <span class="tags-label">Verfuegbare Tags</span>
+              <span class="tags-label">Verfügbare Tags</span>
               <div class="tag-search">
                 <mat-icon class="search-icon">search</mat-icon>
                 <input
@@ -181,7 +181,7 @@ import { SoundService } from '../../core/services/sound.service';
                 matInput
                 [(ngModel)]="newTagInput"
                 (keydown.enter)="createAndAddTag()"
-                placeholder="Tag eingeben und Enter druecken"
+                placeholder="Tag eingeben und Enter drücken"
               />
             </mat-form-field>
             <button
@@ -189,7 +189,7 @@ import { SoundService } from '../../core/services/sound.service';
               class="add-btn"
               (click)="createAndAddTag()"
               [disabled]="!newTagInput.trim()"
-              matTooltip="Tag hinzufuegen"
+              matTooltip="Tag hinzufügen"
             >
               <mat-icon>add</mat-icon>
             </button>
@@ -199,7 +199,7 @@ import { SoundService } from '../../core/services/sound.service';
     </mat-dialog-content>
 
     <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Schliessen</button>
+      <button mat-button mat-dialog-close>Schließen</button>
       @if (filteredSounds().length > 0) {
         <button
           mat-stroked-button
@@ -207,7 +207,7 @@ import { SoundService } from '../../core/services/sound.service';
           [disabled]="currentIndex() === 0 || saving()"
         >
           <mat-icon>chevron_left</mat-icon>
-          Zurueck
+          Zurück
         </button>
         <button
           mat-stroked-button
@@ -215,7 +215,7 @@ import { SoundService } from '../../core/services/sound.service';
           [disabled]="currentIndex() >= filteredSounds().length - 1"
           matTooltip="Ohne Speichern weiter"
         >
-          Ueberspringen
+          Überspringen
         </button>
         @if (saving()) {
           <button mat-raised-button color="primary" disabled>

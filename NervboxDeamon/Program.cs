@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
@@ -40,6 +41,11 @@ namespace NervboxDeamon
       var contentRoot = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
       return Host.CreateDefaultBuilder(args)
+          .ConfigureAppConfiguration((hostingContext, config) =>
+          {
+            // Lade appsettings.Local.json (nicht eingecheckt, für API-Keys etc.)
+            config.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
+          })
           .UseSerilog((ctx, services, cfg) =>
           {
             cfg.ReadFrom.Configuration(ctx.Configuration)

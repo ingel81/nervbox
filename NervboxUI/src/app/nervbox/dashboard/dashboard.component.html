@@ -1,14 +1,19 @@
 <alert></alert>
 
-<div class="row">
-    <div class="col-xl-8 col-lg-12 col-md-12">
+<div class="resizable-container">
+    <div class="sound-panel" [style.width.%]="soundPanelWidth">
         <play-sounds></play-sounds>
     </div>
 
-    <div class="col-xl-4 col-lg-12 col-md-12">
-        <nervbox-chat></nervbox-chat>
+    <div class="divider"
+         (mousedown)="startResize($event)"
+         (touchstart)="startResizeTouch($event)">
+        <div class="divider-handle"></div>
     </div>
 
+    <div class="chat-panel" [style.width.%]="chatPanelWidth">
+        <nervbox-chat></nervbox-chat>
+    </div>
 </div>
 
 <div class="row">

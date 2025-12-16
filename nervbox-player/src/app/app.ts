@@ -19,6 +19,7 @@ import { SoundService } from './core/services/sound.service';
 import { AuthService } from './core/services/auth.service';
 import { SignalRService } from './core/services/signalr.service';
 import { SelectionService } from './core/services/selection.service';
+import { WelcomeTourService } from './core/services/welcome-tour.service';
 import { Sound } from './core/models';
 
 interface Activity {
@@ -58,6 +59,7 @@ interface Activity {
         (chatClick)="toggleChat()"
         (loginClick)="onLoginClick()"
         (changePasswordClick)="onChangePasswordClick()"
+        (restartTourClick)="welcomeTour.restartTour()"
         (selectionModeToggle)="selectionService.toggleSelectionMode()"
         (openSelectionInMixer)="selectionService.openInMixer()"
         (clearSelection)="selectionService.clearSelection()"
@@ -275,6 +277,7 @@ export class App implements OnInit {
   readonly soundService = inject(SoundService);
   readonly authService = inject(AuthService);
   readonly selectionService = inject(SelectionService);
+  readonly welcomeTour = inject(WelcomeTourService);
   private readonly signalR = inject(SignalRService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
@@ -286,6 +289,7 @@ export class App implements OnInit {
   readonly showChat = signal(true); // Desktop: Chat defaultmäßig offen
   private activityCounter = 0;
   private processedEventTimes = new Set<string>();
+  private randomSeed = Math.random();
 
   constructor() {
     // React to sound events for activity bar
@@ -325,6 +329,13 @@ export class App implements OnInit {
         return sounds.sort((a, b) => b.durationMs - a.durationMs);
       case 'duration-asc':
         return sounds.sort((a, b) => a.durationMs - b.durationMs);
+      case 'random':
+        // Seeded shuffle for stable random order
+        return sounds.sort((a, b) => {
+          const hashA = this.hashCode(a.hash + this.randomSeed);
+          const hashB = this.hashCode(b.hash + this.randomSeed);
+          return hashA - hashB;
+        });
       default:
         return sounds;
     }
@@ -334,6 +345,19 @@ export class App implements OnInit {
     this.loadSounds();
     this.soundService.loadTags().subscribe();
     this.connectSignalR();
+    this.initWelcomeTour();
+  }
+
+  private initWelcomeTour(): void {
+    // Start user tour after sounds are loaded (small delay for DOM to be ready)
+    // Admin tour is triggered automatically via effect when admin logs in
+    if (this.welcomeTour.shouldShowUserTour()) {
+      setTimeout(() => {
+        if (this.soundService.sounds().length > 0) {
+          this.welcomeTour.startUserTour();
+        }
+      }, 1500);
+    }
   }
 
   private connectSignalR(): void {
@@ -357,7 +381,20 @@ export class App implements OnInit {
   }
 
   onSortChange(sort: SortOption): void {
+    if (sort === 'random') {
+      this.randomSeed = Math.random(); // New shuffle on each selection
+    }
     this.currentSort.set(sort);
+  }
+
+  private hashCode(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash;
+    }
+    return hash;
   }
 
   onPlaySound(sound: Sound): void {
@@ -558,7 +595,7 @@ export class App implements OnInit {
 
     dialogRef.afterClosed().subscribe(deleted => {
       if (deleted) {
-        this.snackBar.open(`"${sound.name}" wurde geloescht`, 'OK', { duration: 3000 });
+        this.snackBar.open(`"${sound.name}" wurde gelöscht`, 'OK', { duration: 3000 });
       }
     });
   }

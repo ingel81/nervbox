@@ -91,7 +91,7 @@ export interface SoundEditDialogData {
           <!-- Add Tag -->
           <div class="add-tag-row">
             <mat-form-field appearance="outline" class="tag-input">
-              <mat-label>Tag hinzufuegen</mat-label>
+              <mat-label>Tag hinzufügen</mat-label>
               <input
                 matInput
                 [(ngModel)]="newTag"

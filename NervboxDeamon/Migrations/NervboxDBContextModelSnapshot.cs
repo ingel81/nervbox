@@ -28,10 +28,18 @@ namespace NervboxDeamon.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("GifUrl")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("gif_url");
+
                     b.Property<string>("Message")
                         .IsRequired()
                         .HasColumnType("TEXT")
                         .HasColumnName("message");
+
+                    b.Property<int>("MessageType")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("message_type");
 
                     b.Property<int>("UserId")
                         .HasColumnType("INTEGER")
