@@ -110,9 +110,20 @@ interface Activity {
           }
         </main>
 
+        <!-- Resizable Divider -->
+        @if (showChat()) {
+          <div
+            class="resize-divider"
+            (mousedown)="startResize($event)"
+            (touchstart)="startResizeTouch($event)"
+          >
+            <div class="divider-handle"></div>
+          </div>
+        }
+
         <!-- Chat Sidebar (Desktop) -->
         @if (showChat()) {
-          <app-chat-sidebar />
+          <app-chat-sidebar [style.width.px]="chatWidth()" />
         }
       </div>
 
@@ -271,6 +282,56 @@ interface Activity {
     ::ng-deep .mat-mdc-progress-spinner circle {
       stroke: #9333ea !important;
     }
+
+    /* Resize Divider */
+    .resize-divider {
+      width: 8px;
+      background: rgba(147, 51, 234, 0.1);
+      cursor: col-resize;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .resize-divider:hover {
+      background: rgba(147, 51, 234, 0.3);
+    }
+
+    .resize-divider:active {
+      background: rgba(147, 51, 234, 0.5);
+    }
+
+    .divider-handle {
+      width: 4px;
+      height: 40px;
+      background: rgba(147, 51, 234, 0.5);
+      border-radius: 2px;
+      transition: all 0.2s ease;
+    }
+
+    .resize-divider:hover .divider-handle {
+      background: #9333ea;
+      height: 60px;
+      box-shadow: 0 0 10px rgba(147, 51, 234, 0.5);
+    }
+
+    @media (max-width: 768px) {
+      .resize-divider {
+        display: none;
+      }
+    }
+
+    :host ::ng-deep app-chat-sidebar {
+      display: block;
+    }
+
+    @media (max-width: 768px) {
+      :host ::ng-deep app-chat-sidebar {
+        display: none;
+      }
+    }
   `,
 })
 export class App implements OnInit {
@@ -287,7 +348,11 @@ export class App implements OnInit {
   readonly recentActivity = signal<Activity[]>([]);
   readonly currentSort = signal<SortOption>('plays-desc');
   readonly showChat = signal(true); // Desktop: Chat defaultmäßig offen
+  readonly chatWidth = signal(350); // Default chat width in px
   private activityCounter = 0;
+  private isResizing = false;
+  private readonly minChatWidth = 280;
+  private readonly maxChatWidth = 600;
   private processedEventTimes = new Set<string>();
   private randomSeed = Math.random();
 
@@ -598,5 +663,56 @@ export class App implements OnInit {
         this.snackBar.open(`"${sound.name}" wurde gelöscht`, 'OK', { duration: 3000 });
       }
     });
+  }
+
+  // === Resize Logic ===
+
+  startResize(event: MouseEvent): void {
+    event.preventDefault();
+    this.isResizing = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!this.isResizing) return;
+      const newWidth = window.innerWidth - e.clientX;
+      this.updateChatWidth(newWidth);
+    };
+
+    const onMouseUp = () => {
+      this.isResizing = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }
+
+  startResizeTouch(event: TouchEvent): void {
+    event.preventDefault();
+    this.isResizing = true;
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!this.isResizing || !e.touches[0]) return;
+      const newWidth = window.innerWidth - e.touches[0].clientX;
+      this.updateChatWidth(newWidth);
+    };
+
+    const onTouchEnd = () => {
+      this.isResizing = false;
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend', onTouchEnd);
+    };
+
+    document.addEventListener('touchmove', onTouchMove);
+    document.addEventListener('touchend', onTouchEnd);
+  }
+
+  private updateChatWidth(width: number): void {
+    const clampedWidth = Math.max(this.minChatWidth, Math.min(this.maxChatWidth, width));
+    this.chatWidth.set(clampedWidth);
   }
 }

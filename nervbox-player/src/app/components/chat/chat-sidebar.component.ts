@@ -85,6 +85,13 @@ import { GifPickerComponent } from './gif-picker.component';
             </div>
           }
 
+          @if (signalR.rateLimitMessage()) {
+            <div class="rate-limit-warning">
+              <mat-icon>warning</mat-icon>
+              <span>{{ signalR.rateLimitMessage() }}</span>
+            </div>
+          }
+
           @if (auth.isLoggedIn()) {
             <div class="input-wrapper">
               <form class="input-area" (ngSubmit)="sendMessage()">
@@ -98,6 +105,7 @@ import { GifPickerComponent } from './gif-picker.component';
                   <mat-icon>gif_box</mat-icon>
                 </button>
                 <input
+                  #messageInput
                   type="text"
                   [(ngModel)]="newMessage"
                   name="message"
@@ -125,13 +133,13 @@ import { GifPickerComponent } from './gif-picker.component';
   `,
   styles: `
     .chat-sidebar {
-      width: clamp(300px, 22vw, 400px);
       height: 100%;
       background: #0f0f12;
       border-left: 1px solid rgba(147, 51, 234, 0.3);
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      flex-shrink: 0;
     }
 
     .chat-header {
@@ -359,6 +367,8 @@ import { GifPickerComponent } from './gif-picker.component';
 
     .gif-content {
       max-width: 100%;
+      max-height: 20vh;
+      object-fit: contain;
       border-radius: 6px;
       display: block;
     }
@@ -372,6 +382,29 @@ import { GifPickerComponent } from './gif-picker.component';
       border-top: 1px solid rgba(255, 255, 255, 0.1);
       color: rgba(255, 255, 255, 0.4);
       font-size: 12px;
+    }
+
+    .rate-limit-warning {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(239, 68, 68, 0.15);
+      border-left: 3px solid #ef4444;
+      color: #ef4444;
+      font-size: 12px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .rate-limit-warning mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .login-hint mat-icon {
@@ -393,6 +426,7 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
   private readonly api = inject(ApiService);
 
   @ViewChild('messagesContainer') messagesContainer?: ElementRef;
+  @ViewChild('messageInput') messageInput?: ElementRef<HTMLInputElement>;
 
   readonly loading = signal(true);
   readonly loadingOlder = signal(false);
@@ -490,6 +524,8 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
       // Error handling in service
     } finally {
       this.sending.set(false);
+      // Keep focus on input
+      setTimeout(() => this.messageInput?.nativeElement?.focus(), 0);
     }
   }
 
