@@ -5,6 +5,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$SCRIPT_DIR/NervboxDeamon"
+RELEASE_DIR="$SCRIPT_DIR/Release"
 PLAYER_DIR="$SCRIPT_DIR/nervbox-player"
 MIXER_DIR="$SCRIPT_DIR/../nervbox-mixer"
 PID_FILE="/tmp/nervbox-dev.pids"
@@ -60,11 +61,16 @@ start() {
     echo ""
     echo -e "${CYAN}Strg+C beendet alle Services${NC}"
     echo ""
+    # Backend bauen (für lokale Architektur)
+    echo -e "${GREEN}Baue Backend...${NC}"
+    cd "$BACKEND_DIR"
+    dotnet build -o "$RELEASE_DIR" -c Debug --nologo -v q
+
     echo -e "${YELLOW}=== Backend Log ===${NC}"
 
     # Backend im Vordergrund starten (saubere Serilog-Ausgabe)
-    cd "$BACKEND_DIR"
-    ASPNETCORE_ENVIRONMENT=Development dotnet run &
+    cd "$RELEASE_DIR"
+    ASPNETCORE_ENVIRONMENT=Development dotnet NervboxDeamon.dll &
     BACKEND_PID=$!
 
     # PIDs aktualisieren
@@ -91,7 +97,7 @@ stop() {
     fi
 
     # Sicherheitshalber alle nervbox-Prozesse beenden
-    pkill -f "NervboxDeamon" 2>/dev/null || true
+    pkill -f "NervboxDeamon.dll" 2>/dev/null || true
     pkill -f "ng serve.*nervbox" 2>/dev/null || true
 
     sleep 1
@@ -151,10 +157,12 @@ start_silent() {
         exit 1
     fi
 
-    # Backend starten
-    echo -e "${GREEN}Starte Backend (Port 8080)...${NC}"
+    # Backend bauen und starten
+    echo -e "${GREEN}Baue und starte Backend (Port 8080)...${NC}"
     cd "$BACKEND_DIR"
-    ASPNETCORE_ENVIRONMENT=Development dotnet run > /tmp/nervbox-backend.log 2>&1 &
+    dotnet build -o "$RELEASE_DIR" -c Debug --nologo -v q
+    cd "$RELEASE_DIR"
+    ASPNETCORE_ENVIRONMENT=Development dotnet NervboxDeamon.dll > /tmp/nervbox-backend.log 2>&1 &
     BACKEND_PID=$!
 
     sleep 2
