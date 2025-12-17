@@ -239,19 +239,20 @@ import { GifPickerComponent } from './gif-picker.component';
       display: flex;
       flex-direction: column;
       gap: 2px;
-      padding: 8px 10px;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 8px;
-      border-left: 2px solid rgba(147, 51, 234, 0.3);
-      margin-right: 24px;
+      padding: 8px 12px;
+      background: rgba(30, 30, 35, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px 12px 12px 4px;
+      margin-right: 32px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     }
 
     .message.own {
-      background: rgba(147, 51, 234, 0.1);
-      border-left: none;
-      border-right: 2px solid #9333ea;
+      background: rgba(147, 51, 234, 0.12);
+      border-color: rgba(147, 51, 234, 0.15);
+      border-radius: 12px 12px 4px 12px;
       margin-right: 0;
-      margin-left: 24px;
+      margin-left: 32px;
     }
 
     .username {

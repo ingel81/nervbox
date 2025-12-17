@@ -24,14 +24,20 @@ import { MatInputModule } from '@angular/material/input';
       <!-- Gepinnte Tags -->
       @for (tag of pinnedTags(); track tag) {
         <button
-          class="tag-chip pinned"
+          class="tag-chip"
           [class.selected]="isSelected(tag)"
           [style.--tag-color]="getTagColor(tag)"
           (click)="toggleTag(tag)"
         >
+          <mat-icon class="pin-icon">lock</mat-icon>
           <span class="tag-dot" [style.background]="isSelected(tag) ? 'white' : getTagColor(tag)"></span>
           <span class="hash">#</span>{{ tag }}
         </button>
+      }
+
+      <!-- Divider zwischen gepinnten und eigenen Tags -->
+      @if (pinnedTags().length > 0 && visibleNonPinnedTags().length > 0) {
+        <div class="tag-divider"></div>
       }
 
       <!-- Sichtbare nicht-gepinnte Tags -->
@@ -138,15 +144,24 @@ import { MatInputModule } from '@angular/material/input';
       background: white !important;
     }
 
-    .tag-chip.pinned {
-      border-color: rgba(249, 115, 22, 0.5);
-      box-shadow: 0 0 8px rgba(249, 115, 22, 0.2);
-      background: rgba(249, 115, 22, 0.08);
+    .pin-icon {
+      font-size: 12px;
+      width: 12px;
+      height: 12px;
+      opacity: 0.6;
+      margin-right: -2px;
     }
 
-    .tag-chip.pinned:hover {
-      border-color: rgba(249, 115, 22, 0.7);
-      box-shadow: 0 0 12px rgba(249, 115, 22, 0.3);
+    .tag-chip.selected .pin-icon {
+      opacity: 1;
+      color: white;
+    }
+
+    .tag-divider {
+      width: 1px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.2);
+      flex-shrink: 0;
     }
 
     .remove-icon {

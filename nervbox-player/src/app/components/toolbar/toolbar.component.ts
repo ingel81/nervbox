@@ -83,57 +83,45 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
 
       <div class="spacer"></div>
 
-      <!-- Action Buttons -->
-      <div class="actions">
-        <!-- USER SECTION -->
-        <!-- Selection Mode Toggle -->
+      <!-- MIXER FEATURE GROUP - Das Killer-Feature! -->
+      <div class="mixer-feature-group">
         <button
-          mat-icon-button
-          class="action-btn"
+          class="selection-toggle-btn"
           data-tour="selection"
           [class.active]="selectionMode()"
-          [matTooltip]="selectionMode() ? 'Auswahl beenden' : 'Mehrfachauswahl'"
+          [matTooltip]="selectionMode() ? 'Auswahlmodus beenden' : 'Mehrfachauswahl'"
           (click)="selectionModeToggle.emit()"
         >
           <mat-icon>{{ selectionMode() ? 'check_box' : 'checklist' }}</mat-icon>
         </button>
 
-        <!-- Selection Actions (nur wenn Selection Mode aktiv UND Sounds ausgewaehlt) -->
         @if (selectionMode() && selectionCount() > 0) {
-          <div class="selection-actions">
-            <span class="selection-badge">{{ selectionCount() }}</span>
-            <button
-              mat-icon-button
-              class="action-btn mixer-btn"
-              matTooltip="Auswahl im Mixer öffnen"
-              (click)="openSelectionInMixer.emit()"
-            >
-              <mat-icon>tune</mat-icon>
-            </button>
-            <button
-              mat-icon-button
-              class="action-btn"
-              matTooltip="Auswahl aufheben"
-              (click)="clearSelection.emit()"
-            >
-              <mat-icon>clear</mat-icon>
-            </button>
-          </div>
-        }
-
-        <!-- Mixer -->
-        @if (!selectionMode()) {
+          <span class="selection-badge">{{ selectionCount() }}</span>
           <button
-            mat-icon-button
-            class="action-btn"
-            data-tour="mixer"
-            matTooltip="Mixer öffnen"
-            (click)="openMixer()"
+            class="clear-selection-btn"
+            matTooltip="Alle abwählen"
+            (click)="clearSelection.emit()"
           >
-            <mat-icon>tune</mat-icon>
+            <mat-icon>clear</mat-icon>
           </button>
         }
 
+        <button
+          class="mixer-main-btn"
+          [class.has-selection]="selectionMode() && selectionCount() > 0"
+          data-tour="mixer"
+          [matTooltip]="selectionMode() && selectionCount() > 0 ? 'Auswahl im Mixer öffnen' : 'Mixer öffnen'"
+          (click)="selectionMode() && selectionCount() > 0 ? openSelectionInMixer.emit() : openMixer()"
+        >
+          <mat-icon>{{ selectionMode() && selectionCount() > 0 ? 'arrow_forward' : 'queue_music' }}</mat-icon>
+          <span class="mixer-label">{{ selectionMode() && selectionCount() > 0 ? 'AB IN DEN MIXER' : 'MIXER' }}</span>
+        </button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- Action Buttons -->
+      <div class="actions">
         <!-- Stats -->
         <button
           mat-icon-button
@@ -380,7 +368,188 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       width: 1px;
       height: 28px;
       background: rgba(147, 51, 234, 0.4);
+      margin: 0 4px;
+    }
+
+    .actions .toolbar-divider {
       margin: 0 8px;
+    }
+
+    /* MIXER FEATURE GROUP - Das Killer-Feature! */
+    .mixer-feature-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .selection-toggle-btn {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .selection-toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .selection-toggle-btn mat-icon {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    .selection-toggle-btn.active {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: rgba(34, 197, 94, 0.6);
+    }
+
+    .selection-toggle-btn.active mat-icon {
+      color: #22c55e;
+    }
+
+    .selection-badge {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 10px;
+      min-width: 20px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
+    }
+
+    .clear-selection-btn {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .clear-selection-btn:hover {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: rgba(239, 68, 68, 0.6);
+    }
+
+    .clear-selection-btn mat-icon {
+      color: #ef4444;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+    }
+
+    /* MIXER MAIN BUTTON - Das Highlight! */
+    .mixer-main-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(90deg, #9333ea 0%, #ec4899 50%, #9333ea 100%);
+      background-size: 200% 100%;
+      border: none;
+      border-radius: 10px;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+      animation: mixerGlow 2.5s ease-in-out infinite, mixerGradient 3s linear infinite;
+      box-shadow:
+        0 0 15px rgba(147, 51, 234, 0.6),
+        0 0 30px rgba(236, 72, 153, 0.4);
+    }
+
+    .mixer-main-btn:hover {
+      transform: scale(1.08);
+      animation: mixerGlow 1.5s ease-in-out infinite, mixerGradient 1.5s linear infinite;
+      box-shadow:
+        0 0 25px rgba(147, 51, 234, 0.8),
+        0 0 50px rgba(236, 72, 153, 0.6);
+    }
+
+    .mixer-main-btn mat-icon {
+      color: white;
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    }
+
+    .mixer-label {
+      color: white;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    @keyframes mixerGlow {
+      0%, 100% {
+        box-shadow:
+          0 0 15px rgba(147, 51, 234, 0.6),
+          0 0 30px rgba(236, 72, 153, 0.4);
+      }
+      50% {
+        box-shadow:
+          0 0 25px rgba(147, 51, 234, 0.8),
+          0 0 45px rgba(236, 72, 153, 0.5);
+      }
+    }
+
+    @keyframes mixerGradient {
+      0% {
+        background-position: 0% 50%;
+      }
+      100% {
+        background-position: 100% 50%;
+      }
+    }
+
+    /* Mixer Button mit Auswahl */
+    .mixer-main-btn.has-selection {
+      background: linear-gradient(90deg, #22c55e 0%, #16a34a 50%, #22c55e 100%);
+      box-shadow:
+        0 0 20px rgba(34, 197, 94, 0.7),
+        0 0 40px rgba(22, 163, 74, 0.5);
+    }
+
+    .mixer-main-btn.has-selection:hover {
+      box-shadow:
+        0 0 30px rgba(34, 197, 94, 0.9),
+        0 0 60px rgba(22, 163, 74, 0.7);
+    }
+
+    @keyframes mixerGlowGreen {
+      0%, 100% {
+        box-shadow:
+          0 0 20px rgba(34, 197, 94, 0.7),
+          0 0 40px rgba(22, 163, 74, 0.5);
+      }
+      50% {
+        box-shadow:
+          0 0 30px rgba(34, 197, 94, 0.9),
+          0 0 50px rgba(22, 163, 74, 0.6);
+      }
+    }
+
+    .mixer-main-btn.has-selection {
+      animation: mixerGlowGreen 2s ease-in-out infinite, mixerGradient 3s linear infinite;
     }
 
     .admin-btn {
@@ -418,56 +587,6 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
 
     .action-btn:hover mat-icon, .user-btn:hover mat-icon {
       color: #ec4899;
-    }
-
-    /* Selection Mode Active State */
-    .action-btn.active {
-      background: rgba(34, 197, 94, 0.2) !important;
-      border-color: rgba(34, 197, 94, 0.5) !important;
-    }
-
-    .action-btn.active mat-icon {
-      color: #22c55e;
-    }
-
-    .action-btn.active:hover {
-      background: rgba(34, 197, 94, 0.3) !important;
-      border-color: rgba(34, 197, 94, 0.7) !important;
-    }
-
-    /* Selection Actions Container */
-    .selection-actions {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      background: rgba(34, 197, 94, 0.1);
-      border: 1px solid rgba(34, 197, 94, 0.3);
-      border-radius: 8px;
-      padding: 4px 8px;
-    }
-
-    .selection-badge {
-      background: #22c55e;
-      color: white;
-      font-size: 12px;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 12px;
-      min-width: 20px;
-      text-align: center;
-    }
-
-    .mixer-btn {
-      background: rgba(34, 197, 94, 0.2) !important;
-      border-color: rgba(34, 197, 94, 0.5) !important;
-    }
-
-    .mixer-btn mat-icon {
-      color: #22c55e !important;
-    }
-
-    .mixer-btn:hover {
-      background: rgba(34, 197, 94, 0.3) !important;
     }
 
     .menu-header {
