@@ -71,8 +71,8 @@ import { SoundCardComponent } from './sound-card.component';
 
     .sound-row {
       display: grid;
-      gap: 6px;
-      margin-bottom: 6px;
+      gap: 10px;
+      margin-bottom: 10px;
       margin-right: 6px; /* Abstand zur Scrollbar */
       min-width: 0;
       box-sizing: border-box;
@@ -116,9 +116,9 @@ import { SoundCardComponent } from './sound-card.component';
 })
 export class SoundGridComponent implements AfterViewInit, OnDestroy {
   private static readonly MIN_CARD_WIDTH = 280;
-  private static readonly GAP = 6;
+  private static readonly GAP = 10;
   private static readonly PADDING = 16;
-  private static readonly ROW_HEIGHT = 70;
+  private static readonly ROW_HEIGHT = 80;
 
   readonly sounds = input<Sound[]>([]);
   readonly searchQuery = input<string>('');
