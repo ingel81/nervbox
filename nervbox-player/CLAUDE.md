@@ -65,7 +65,7 @@ src/app/
 ```
 
 ### Backend API
-- Base URL: `/api` (production), `http://localhost:5000/api` (development)
+- Base URL: `/api` (production), `http://localhost:8080/api` (development)
 - Authentication: JWT Bearer tokens (14 days validity)
 - Real-time: SignalR hubs at `/ws/chatHub`, `/ws/soundHub`
 

@@ -79,7 +79,7 @@ import { GifPickerComponent } from './gif-picker.component';
                   <span class="time">{{ formatTime(msg.createdAt) }}</span>
                 </div>
               }
-              @if (!signalR.chatMessages()?.length) {
+              @if (!signalR.chatMessages().length) {
                 <div class="empty">Noch keine Nachrichten</div>
               }
             </div>

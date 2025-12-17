@@ -1,3 +1,0 @@
-kill all sounds
-===============
-sudo pkill -f omxplayer
