@@ -67,8 +67,7 @@ namespace NervboxDeamon
         builder
             .AllowAnyMethod()
             .AllowAnyHeader()
-            .AllowAnyOrigin()
-            .WithOrigins("http://localhost:4200", "http://127.0.0.1:4200")
+            .SetIsOriginAllowed(_ => true)  // Erlaubt alle Origins mit Credentials
             .AllowCredentials();
       }));
 

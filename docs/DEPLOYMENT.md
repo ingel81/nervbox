@@ -128,14 +128,12 @@ sudo nft list ruleset | sudo tee /etc/nftables.conf
 
 ### Kestrel Konfiguration
 
-In `appsettings.json`:
+HTTPS ist nur in Production aktiv. Konfiguration in `appsettings.Production.json`:
 ```json
 {
   "Kestrel": {
     "Endpoints": {
-      "Http": {
-        "Url": "http://0.0.0.0:8080"
-      },
+      "Http": { "Url": "http://0.0.0.0:8080" },
       "Https": {
         "Url": "https://0.0.0.0:8443",
         "Certificate": {
@@ -147,6 +145,11 @@ In `appsettings.json`:
   }
 }
 ```
+
+**Konfigurationsdateien:**
+- `appsettings.json` - Basis (nur HTTP)
+- `appsettings.Development.json` - Lokale Pfade für Entwicklung
+- `appsettings.Production.json` - HTTPS für Pi
 
 ### Zertifikat erneuern (alle 90 Tage)
 
