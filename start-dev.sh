@@ -4,7 +4,7 @@
 # Verwendung: ./start-dev.sh [start|stop|status|logs]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BACKEND_DIR="$SCRIPT_DIR/Release"
+BACKEND_DIR="$SCRIPT_DIR/NervboxDeamon"
 PLAYER_DIR="$SCRIPT_DIR/nervbox-player"
 MIXER_DIR="$SCRIPT_DIR/../nervbox-mixer"
 PID_FILE="/tmp/nervbox-dev.pids"
@@ -64,7 +64,7 @@ start() {
 
     # Backend im Vordergrund starten (saubere Serilog-Ausgabe)
     cd "$BACKEND_DIR"
-    ASPNETCORE_ENVIRONMENT=Development dotnet NervboxDeamon.dll &
+    ASPNETCORE_ENVIRONMENT=Development dotnet run &
     BACKEND_PID=$!
 
     # PIDs aktualisieren
@@ -91,7 +91,7 @@ stop() {
     fi
 
     # Sicherheitshalber alle nervbox-Prozesse beenden
-    pkill -f "NervboxDeamon.dll" 2>/dev/null || true
+    pkill -f "NervboxDeamon" 2>/dev/null || true
     pkill -f "ng serve.*nervbox" 2>/dev/null || true
 
     sleep 1
@@ -154,7 +154,7 @@ start_silent() {
     # Backend starten
     echo -e "${GREEN}Starte Backend (Port 8080)...${NC}"
     cd "$BACKEND_DIR"
-    ASPNETCORE_ENVIRONMENT=Development dotnet NervboxDeamon.dll > /tmp/nervbox-backend.log 2>&1 &
+    ASPNETCORE_ENVIRONMENT=Development dotnet run > /tmp/nervbox-backend.log 2>&1 &
     BACKEND_PID=$!
 
     sleep 2
