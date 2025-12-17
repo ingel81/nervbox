@@ -36,7 +36,8 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
     <mat-toolbar class="toolbar">
       <!-- Logo -->
       <div class="logo">
-        <span class="logo-text">nervbox</span>
+        <span class="logo-text">NervBox</span>
+        <span class="logo-edition">cabd 2025 edition</span>
       </div>
 
       <!-- Search -->
@@ -247,6 +248,16 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       -webkit-text-fill-color: transparent;
       background-clip: text;
       text-shadow: 0 0 30px rgba(147, 51, 234, 0.5);
+    }
+
+    .logo-edition {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.35);
+      margin-left: 8px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
     }
 
     .search-container {
@@ -653,6 +664,6 @@ export class ToolbarComponent {
 
   openMixer(): void {
     // Mixer is served at /mixer (same origin, shares localStorage)
-    window.open('/mixer', '_blank');
+    window.location.href = '/mixer';
   }
 }

@@ -412,7 +412,7 @@ export class SoundCardComponent implements AfterViewInit {
   }
 
   openInMixer(): void {
-    window.open(`/mixer?sounds=${this.sound().hash}`, '_blank');
+    window.location.href = `/mixer?sounds=${this.sound().hash}`;
   }
 
   getTagBackground(tag: string): string {
