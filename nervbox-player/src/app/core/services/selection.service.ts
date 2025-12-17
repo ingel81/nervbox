@@ -53,10 +53,7 @@ export class SelectionService {
   openInMixer(): void {
     const hashes = this.selectedSounds().join(',');
     if (hashes) {
-      window.open(`/mixer?sounds=${hashes}`, '_blank');
-      // Nach Öffnen: Selection-Mode beenden
-      this.selectionMode.set(false);
-      this.clearSelection();
+      window.location.href = `/mixer?sounds=${hashes}`;
     }
   }
 }
