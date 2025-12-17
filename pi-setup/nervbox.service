@@ -1,0 +1,29 @@
+[Unit]
+Description=Nervbox Soundboard Server
+After=network.target
+
+[Service]
+Type=simple
+User=user
+WorkingDirectory=/opt/nervbox
+ExecStart=/opt/nervbox/NervboxDeamon
+Restart=always
+RestartSec=10
+TimeoutStopSec=5
+
+# Environment (Port 8080 intern, 80 via nftables redirect)
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=ASPNETCORE_URLS=http://0.0.0.0:8080
+Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=nervbox
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

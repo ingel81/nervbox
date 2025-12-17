@@ -1,1 +1,0 @@
-"c:\Program Files (x86)\WinSCP\WinSCP.exe" /log="WinSCP.log" /ini=nul /script="deploy.winscpscript

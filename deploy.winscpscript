@@ -1,9 +1,0 @@
-open sftp://pi:raspberry@192.168.0.190/ -hostkey="ssh-ed25519 255 gR3bd6D1KtSx3e2xvWt8RmFOBnzMF0NbqV5JrmiJrUU"
-
-call sudo systemctl stop nervbox
-
-synchronize remote -delete .\release /opt/nervbox
-chmod 755 /opt/nervbox/NervboxDeamon 
-call sudo systemctl start nervbox
-
-exit

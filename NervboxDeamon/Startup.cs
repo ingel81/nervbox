@@ -126,6 +126,13 @@ namespace NervboxDeamon
         options.AllowSynchronousIO = true;
       });
 
+      // HTTPS Redirect konfigurieren (nur Production)
+      services.AddHttpsRedirection(options =>
+      {
+        options.RedirectStatusCode = StatusCodes.Status308PermanentRedirect;
+        options.HttpsPort = 443; // Externer Port (nftables leitet 443 → 8443)
+      });
+
       // Add HTTP Forwarder for dev proxy
       services.AddHttpForwarder();
     }
@@ -154,6 +161,11 @@ namespace NervboxDeamon
       if (env.EnvironmentName == "Development")
       {
         app.UseDeveloperExceptionPage();
+      }
+      else
+      {
+        // Production: HTTP → HTTPS Redirect
+        app.UseHttpsRedirection();
       }
 
       // global cors policy

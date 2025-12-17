@@ -1,0 +1,19 @@
+# Nervbox Deployment Konfiguration
+# Kopieren nach deploy.conf und anpassen
+
+# Raspberry Pi Verbindung
+PI_HOST="192.168.0.188"
+PI_USER="user"
+PI_PASS="PASSWORT_HIER"
+
+# Pfade auf dem Pi
+PI_APP_PATH="/opt/nervbox"
+PI_DATA_PATH="/opt/nervbox-data"
+PI_LOG_PATH="/var/log/nervbox"
+
+# Lokale Pfade (relativ zum Script)
+LOCAL_RELEASE_PATH="Release"
+LOCAL_SOUNDS_PATH="../sounds"
+
+# Anwendungs-Port
+APP_PORT=80

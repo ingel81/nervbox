@@ -346,3 +346,6 @@ healthchecksdbNervboxDeamon/nervbox.db
 
 # Local settings with secrets (API keys, etc.)
 **/appsettings.Local.json
+
+# Deployment config with credentials
+deploy.conf
