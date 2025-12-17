@@ -113,121 +113,200 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     .sound-card {
-      background: linear-gradient(135deg, rgba(26, 27, 31, 0.9) 0%, rgba(20, 10, 25, 0.8) 100%);
-      border: 1px solid rgba(147, 51, 234, 0.2);
-      border-radius: 6px;
-      padding: 6px 10px;
+      position: relative;
+      background: linear-gradient(
+        180deg,
+        rgba(32, 32, 38, 0.9) 0%,
+        rgba(22, 22, 26, 0.95) 100%
+      );
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 10px;
+      padding: 11px 14px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition:
+        transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 0.2s ease;
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      min-height: 52px;
+      gap: 8px;
+      min-height: 54px;
       min-width: 0;
       overflow: hidden;
       user-select: none;
+      box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.2),
+        0 4px 8px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    .sound-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 10px;
+      padding: 1px;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.08) 0%,
+        rgba(255, 255, 255, 0) 50%
+      );
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
     }
 
     .sound-card.disabled {
-      opacity: 0.5;
+      opacity: 0.35;
       cursor: not-allowed;
     }
 
     .sound-card:hover:not(.disabled) {
-      border-color: rgba(147, 51, 234, 0.8);
+      transform: translateY(-2px);
+      border-color: rgba(147, 51, 234, 0.25);
       box-shadow:
-        0 0 15px rgba(147, 51, 234, 0.5),
-        inset 0 0 20px rgba(147, 51, 234, 0.1);
-      background: linear-gradient(135deg, rgba(50, 30, 60, 0.95) 0%, rgba(30, 15, 40, 0.9) 100%);
+        0 2px 4px rgba(0, 0, 0, 0.2),
+        0 8px 24px rgba(0, 0, 0, 0.25),
+        0 12px 32px rgba(147, 51, 234, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    .sound-card:active:not(.disabled) {
+      transform: translateY(0);
+      transition-duration: 0.05s;
     }
 
     .card-main {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
       min-width: 0;
       overflow: hidden;
     }
 
     .sound-icon {
-      color: #9333ea;
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
+      color: rgba(147, 51, 234, 0.6);
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
       flex-shrink: 0;
+      transition: color 0.2s ease, transform 0.2s ease;
+    }
+
+    .sound-card:hover:not(.disabled) .sound-icon {
+      color: rgba(147, 51, 234, 0.9);
+      transform: scale(1.1);
     }
 
     .disabled .sound-icon {
-      color: rgba(147, 51, 234, 0.5);
+      color: rgba(147, 51, 234, 0.25);
     }
 
     .sound-name {
       flex: 1;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 500;
-      color: rgba(255, 255, 255, 0.95);
+      color: rgba(255, 255, 255, 0.88);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       min-width: 0;
+      letter-spacing: -0.01em;
+      transition: color 0.15s ease;
+    }
+
+    .sound-card:hover:not(.disabled) .sound-name {
+      color: rgba(255, 255, 255, 1);
     }
 
     .duration {
-      font-size: 10px;
-      color: rgba(255, 255, 255, 0.4);
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.32);
       flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
     }
 
     .play-count {
-      font-size: 10px;
-      color: rgba(236, 72, 153, 0.7);
+      font-size: 11px;
+      color: rgba(236, 72, 153, 0.55);
       flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
     }
 
     .more-btn {
-      width: 24px !important;
-      height: 24px !important;
+      width: 26px !important;
+      height: 26px !important;
       padding: 0 !important;
-      opacity: 0.4;
-      transition: opacity 0.2s ease !important;
+      margin: -4px -6px -4px 0;
+      opacity: 0;
+      transition: opacity 0.15s ease, background 0.15s ease !important;
       flex-shrink: 0;
+      border-radius: 6px !important;
     }
 
     .more-btn:hover {
-      opacity: 1;
+      opacity: 1 !important;
+      background: rgba(255, 255, 255, 0.08) !important;
     }
 
     .more-btn mat-icon {
-      color: rgba(255, 255, 255, 0.8);
+      color: rgba(255, 255, 255, 0.7);
       font-size: 18px;
       width: 18px;
       height: 18px;
     }
 
     .sound-card:hover .more-btn {
-      opacity: 0.7;
+      opacity: 0.6;
     }
 
     .tag-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
-      padding-left: 24px;
+      gap: 5px;
+      padding-left: 32px;
+      margin-top: -2px;
     }
 
     .tag-chip {
-      background: rgba(147, 51, 234, 0.15);
-      border: 1px solid rgba(147, 51, 234, 0.25);
-      border-radius: 8px;
-      padding: 1px 6px;
-      font-size: 9px;
+      background: rgba(255, 255, 255, 0.035);
+      border: none;
+      border-radius: 5px;
+      padding: 3px 7px;
+      font-size: 10px;
+      font-weight: 450;
+      color: rgba(255, 255, 255, 0.42);
+      letter-spacing: 0.01em;
+      transition: all 0.15s ease;
+    }
+
+    .tag-chip .hash {
+      color: #9333ea;
+      font-weight: 600;
+    }
+
+    .sound-card:hover:not(.disabled) .tag-chip {
+      background: rgba(255, 255, 255, 0.055);
       color: rgba(255, 255, 255, 0.6);
     }
 
+    .sound-card:hover:not(.disabled) .tag-chip .hash {
+      color: #a855f7;
+    }
+
     .tag-more {
-      background: rgba(236, 72, 153, 0.15);
-      border-color: rgba(236, 72, 153, 0.25);
+      background: rgba(236, 72, 153, 0.06);
+      color: rgba(236, 72, 153, 0.55);
       cursor: help;
+    }
+
+    .sound-card:hover:not(.disabled) .tag-more {
+      background: rgba(236, 72, 153, 0.1);
+      color: rgba(236, 72, 153, 0.7);
     }
 
     .monospace {
@@ -248,27 +327,44 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     .sound-card.selection-mode:hover:not(.disabled) {
-      border-color: rgba(34, 197, 94, 0.5);
-      box-shadow: 0 2px 12px rgba(34, 197, 94, 0.25);
+      border-color: rgba(34, 197, 94, 0.2);
+      box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.2),
+        0 8px 24px rgba(0, 0, 0, 0.25),
+        0 12px 32px rgba(34, 197, 94, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
     }
 
     .sound-card.selected {
-      border-color: rgba(34, 197, 94, 0.8);
-      background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(20, 10, 25, 0.8) 100%);
-      box-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
+      background: linear-gradient(
+        180deg,
+        rgba(34, 197, 94, 0.12) 0%,
+        rgba(22, 22, 26, 0.95) 100%
+      );
+      border-color: rgba(34, 197, 94, 0.25);
+      box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.2),
+        0 4px 8px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(34, 197, 94, 0.1),
+        inset 0 1px 0 rgba(34, 197, 94, 0.1);
     }
 
     .selection-indicator {
-      color: rgba(255, 255, 255, 0.4);
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
+      color: rgba(255, 255, 255, 0.28);
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
       flex-shrink: 0;
-      transition: color 0.2s ease;
+      transition: color 0.15s ease, transform 0.15s ease;
     }
 
     .selection-indicator.checked {
       color: #22c55e;
+      transform: scale(1.05);
+    }
+
+    .sound-card:hover:not(.disabled) .selection-indicator:not(.checked) {
+      color: rgba(255, 255, 255, 0.4);
     }
   `,
 })

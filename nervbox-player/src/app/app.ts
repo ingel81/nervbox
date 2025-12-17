@@ -348,7 +348,7 @@ export class App implements OnInit {
   readonly recentActivity = signal<Activity[]>([]);
   readonly currentSort = signal<SortOption>('plays-desc');
   readonly showChat = signal(true); // Desktop: Chat defaultmäßig offen
-  readonly chatWidth = signal(350); // Default chat width in px
+  readonly chatWidth = signal(335); // Default chat width in px
   private activityCounter = 0;
   private isResizing = false;
   private readonly minChatWidth = 280;
