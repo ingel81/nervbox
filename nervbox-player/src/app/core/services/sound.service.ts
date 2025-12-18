@@ -48,6 +48,10 @@ export class SoundService {
     return this.api.get<TopUser[]>('/sound/statistics/topusers');
   }
 
+  getTopFavorites(): Observable<TopSound[]> {
+    return this.api.get<TopSound[]>('/sound/statistics/topfavorites');
+  }
+
   // Helper to get unique tags from all sounds
   getAllTags(): string[] {
     const tagSet = new Set<string>();

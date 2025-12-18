@@ -240,6 +240,27 @@ namespace NervboxDeamon.Migrations
                     b.ToTable("users");
                 });
 
+            modelBuilder.Entity("NervboxDeamon.DbModels.UserFavorite", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("SoundHash")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("sound_hash");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.HasKey("UserId", "SoundHash");
+
+                    b.HasIndex("SoundHash");
+
+                    b.ToTable("user_favorites");
+                });
+
             modelBuilder.Entity("NervboxDeamon.DbModels.ChatMessage", b =>
                 {
                     b.HasOne("NervboxDeamon.DbModels.User", "User")
@@ -287,8 +308,29 @@ namespace NervboxDeamon.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("NervboxDeamon.DbModels.UserFavorite", b =>
+                {
+                    b.HasOne("NervboxDeamon.DbModels.Sound", "Sound")
+                        .WithMany("Favorites")
+                        .HasForeignKey("SoundHash")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NervboxDeamon.DbModels.User", "User")
+                        .WithMany("Favorites")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Sound");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("NervboxDeamon.DbModels.Sound", b =>
                 {
+                    b.Navigation("Favorites");
+
                     b.Navigation("SoundTags");
 
                     b.Navigation("Usages");
@@ -297,6 +339,11 @@ namespace NervboxDeamon.Migrations
             modelBuilder.Entity("NervboxDeamon.DbModels.Tag", b =>
                 {
                     b.Navigation("SoundTags");
+                });
+
+            modelBuilder.Entity("NervboxDeamon.DbModels.User", b =>
+                {
+                    b.Navigation("Favorites");
                 });
 #pragma warning restore 612, 618
         }

@@ -83,6 +83,34 @@ import { TopSound, TopUser } from '../../core/models';
               </div>
             }
           </mat-tab>
+
+          <!-- Top Favorites Tab -->
+          <mat-tab>
+            <ng-template mat-tab-label>
+              <mat-icon>favorite</mat-icon>
+              <span>Top Favoriten</span>
+            </ng-template>
+
+            @if (loadingFavorites()) {
+              <div class="loading">
+                <mat-spinner diameter="32"></mat-spinner>
+              </div>
+            } @else if (topFavorites().length === 0) {
+              <div class="empty">Noch keine Favoriten vorhanden</div>
+            } @else {
+              <div class="stats-list">
+                @for (sound of topFavorites(); track sound.hash; let i = $index) {
+                  <div class="stats-item" [class.top-three]="i < 3">
+                    <span class="rank" [class.gold]="i === 0" [class.silver]="i === 1" [class.bronze]="i === 2">
+                      {{ i + 1 }}
+                    </span>
+                    <span class="name">{{ sound.name }}</span>
+                    <span class="count favorite-count">{{ sound.count }}×</span>
+                  </div>
+                }
+              </div>
+            }
+          </mat-tab>
         </mat-tab-group>
       </mat-dialog-content>
 
@@ -93,7 +121,7 @@ import { TopSound, TopUser } from '../../core/models';
   `,
   styles: `
     .stats-dialog {
-      min-width: 400px;
+      min-width: 550px;
     }
 
     h2[mat-dialog-title] {
@@ -231,6 +259,11 @@ import { TopSound, TopUser } from '../../core/models';
       border-radius: 12px;
     }
 
+    .count.favorite-count {
+      color: #f472b6;
+      background: rgba(244, 114, 182, 0.15);
+    }
+
     mat-dialog-actions {
       padding: 12px 24px !important;
       border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -251,8 +284,10 @@ export class StatsDialogComponent implements OnInit {
 
   readonly topSounds = signal<TopSound[]>([]);
   readonly topUsers = signal<TopUser[]>([]);
+  readonly topFavorites = signal<TopSound[]>([]);
   readonly loadingSounds = signal(true);
   readonly loadingUsers = signal(true);
+  readonly loadingFavorites = signal(true);
 
   ngOnInit(): void {
     this.loadStats();
@@ -276,6 +311,16 @@ export class StatsDialogComponent implements OnInit {
       },
       error: () => {
         this.loadingUsers.set(false);
+      },
+    });
+
+    this.soundService.getTopFavorites().subscribe({
+      next: favorites => {
+        this.topFavorites.set(favorites);
+        this.loadingFavorites.set(false);
+      },
+      error: () => {
+        this.loadingFavorites.set(false);
       },
     });
   }

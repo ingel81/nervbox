@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
@@ -39,5 +40,8 @@ namespace NervboxDeamon.DbModels
 
         [NotMapped]
         public string Token { get; set; }
+
+        [JsonIgnore]
+        public virtual ICollection<UserFavorite> Favorites { get; set; } = new List<UserFavorite>();
     }
 }
