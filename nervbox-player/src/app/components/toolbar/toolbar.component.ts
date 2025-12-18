@@ -12,6 +12,7 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSelectModule } from '@angular/material/select';
 import { AuthService } from '../../core/services/auth.service';
+import { FavoritesService } from '../../core/services/favorites.service';
 
 export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'duration-desc' | 'duration-asc' | 'random';
 
@@ -81,6 +82,18 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
           <mat-option value="random">Zufall</mat-option>
         </mat-select>
       </div>
+
+      <!-- Favorites Filter - nur wenn eingeloggt -->
+      @if (auth.isLoggedIn()) {
+        <button
+          class="favorites-filter-btn"
+          [class.active]="showFavoritesOnly()"
+          (click)="favoritesFilterToggle.emit()"
+          [matTooltip]="showFavoritesOnly() ? 'Alle Sounds anzeigen' : 'Nur Favoriten anzeigen'"
+        >
+          <mat-icon>{{ showFavoritesOnly() ? 'favorite' : 'favorite_border' }}</mat-icon>
+        </button>
+      }
 
       <div class="spacer"></div>
 
@@ -369,6 +382,48 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       color: rgba(255, 255, 255, 0.8);
     }
 
+    /* Favorites Filter Button */
+    .favorites-filter-btn {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(236, 72, 153, 0.3);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .favorites-filter-btn:hover {
+      background: rgba(236, 72, 153, 0.15);
+      border-color: rgba(236, 72, 153, 0.5);
+    }
+
+    .favorites-filter-btn mat-icon {
+      color: rgba(236, 72, 153, 0.6);
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      transition: color 0.2s ease, transform 0.2s ease;
+    }
+
+    .favorites-filter-btn:hover mat-icon {
+      color: #ec4899;
+      transform: scale(1.1);
+    }
+
+    .favorites-filter-btn.active {
+      background: rgba(236, 72, 153, 0.2);
+      border-color: rgba(236, 72, 153, 0.6);
+    }
+
+    .favorites-filter-btn.active mat-icon {
+      color: #ec4899;
+    }
+
     .actions {
       display: flex;
       align-items: center;
@@ -626,6 +681,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
 })
 export class ToolbarComponent {
   readonly auth = inject(AuthService);
+  readonly favorites = inject(FavoritesService);
 
   searchQuery = '';
 
@@ -633,10 +689,12 @@ export class ToolbarComponent {
   readonly currentSort = input<SortOption>('name-asc');
   readonly selectionMode = input<boolean>(false);
   readonly selectionCount = input<number>(0);
+  readonly showFavoritesOnly = input<boolean>(false);
 
   // Outputs
   readonly searchChange = output<string>();
   readonly sortChange = output<SortOption>();
+  readonly favoritesFilterToggle = output<void>();
   readonly killAllClick = output<void>();
   readonly tagWizardClick = output<void>();
   readonly tagManagerClick = output<void>();

@@ -9,6 +9,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { Sound } from '../../core/models';
 import { DurationPipe } from '../../shared/pipes/duration.pipe';
 import { AuthService } from '../../core/services/auth.service';
+import { FavoritesService } from '../../core/services/favorites.service';
 
 @Component({
   selector: 'app-sound-card',
@@ -41,6 +42,17 @@ import { AuthService } from '../../core/services/auth.service';
           </mat-icon>
         } @else {
           <mat-icon class="sound-icon">{{ sound().enabled ? 'music_note' : 'music_off' }}</mat-icon>
+        }
+        @if (auth.isLoggedIn() && !selectionMode()) {
+          <button
+            class="favorite-btn"
+            [class.is-favorite]="isFavorite()"
+            [class.animating]="favoriteAnimating()"
+            (click)="toggleFavorite($event)"
+            [matTooltip]="isFavorite() ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'"
+          >
+            <mat-icon>{{ isFavorite() ? 'favorite' : 'favorite_border' }}</mat-icon>
+          </button>
         }
         <span
           class="sound-name"
@@ -366,10 +378,71 @@ import { AuthService } from '../../core/services/auth.service';
     .sound-card:hover:not(.disabled) .selection-indicator:not(.checked) {
       color: rgba(255, 255, 255, 0.4);
     }
+
+    /* Favorite Button Styles */
+    .favorite-btn {
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      margin: 0 -4px 0 -2px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      border-radius: 50%;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+
+    .favorite-btn:hover {
+      background: rgba(236, 72, 153, 0.15);
+    }
+
+    .favorite-btn mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: rgba(255, 255, 255, 0.3);
+      transition: color 0.15s ease, transform 0.15s ease;
+    }
+
+    .favorite-btn:hover mat-icon {
+      color: rgba(236, 72, 153, 0.7);
+    }
+
+    .favorite-btn.is-favorite mat-icon {
+      color: #ec4899;
+    }
+
+    .favorite-btn.is-favorite:hover mat-icon {
+      color: #f472b6;
+    }
+
+    /* Pop Animation */
+    .favorite-btn.animating mat-icon {
+      animation: favoritePopAnim 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes favoritePopAnim {
+      0% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.35);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
   `,
 })
 export class SoundCardComponent implements AfterViewInit {
-  private readonly auth = inject(AuthService);
+  readonly auth = inject(AuthService);
+  private readonly favoritesService = inject(FavoritesService);
+
+  readonly favoriteAnimating = signal(false);
 
   readonly sound = input.required<Sound>();
   readonly tagColors = input<Record<string, string>>({});
@@ -413,6 +486,17 @@ export class SoundCardComponent implements AfterViewInit {
 
   openInMixer(): void {
     window.location.href = `/mixer?sounds=${this.sound().hash}`;
+  }
+
+  isFavorite(): boolean {
+    return this.favoritesService.isFavorite(this.sound().hash);
+  }
+
+  toggleFavorite(event: Event): void {
+    event.stopPropagation();
+    this.favoriteAnimating.set(true);
+    this.favoritesService.toggleFavorite(this.sound().hash);
+    setTimeout(() => this.favoriteAnimating.set(false), 300);
   }
 
   getTagBackground(tag: string): string {

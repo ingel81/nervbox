@@ -14,6 +14,7 @@ namespace NervboxDeamon
         public DbSet<SoundTag> SoundTags { get; set; }
         public DbSet<SoundUsage> SoundUsages { get; set; }
         public DbSet<ChatMessage> ChatMessages { get; set; }
+        public DbSet<UserFavorite> UserFavorites { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -48,6 +49,21 @@ namespace NervboxDeamon
             modelBuilder.Entity<Tag>()
                 .HasIndex(t => t.Name)
                 .IsUnique();
+
+            // UserFavorite: Composite Primary Key
+            modelBuilder.Entity<UserFavorite>()
+                .HasKey(uf => new { uf.UserId, uf.SoundHash });
+
+            // UserFavorite: Relationships
+            modelBuilder.Entity<UserFavorite>()
+                .HasOne(uf => uf.User)
+                .WithMany(u => u.Favorites)
+                .HasForeignKey(uf => uf.UserId);
+
+            modelBuilder.Entity<UserFavorite>()
+                .HasOne(uf => uf.Sound)
+                .WithMany(s => s.Favorites)
+                .HasForeignKey(uf => uf.SoundHash);
         }
     }
 }

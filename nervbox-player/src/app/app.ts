@@ -20,6 +20,7 @@ import { AuthService } from './core/services/auth.service';
 import { SignalRService } from './core/services/signalr.service';
 import { SelectionService } from './core/services/selection.service';
 import { WelcomeTourService } from './core/services/welcome-tour.service';
+import { FavoritesService } from './core/services/favorites.service';
 import { Sound } from './core/models';
 
 interface Activity {
@@ -50,8 +51,10 @@ interface Activity {
         [currentSort]="currentSort()"
         [selectionMode]="selectionService.selectionMode()"
         [selectionCount]="selectionService.selectionCount()"
+        [showFavoritesOnly]="showFavoritesOnly()"
         (searchChange)="onSearchChange($event)"
         (sortChange)="onSortChange($event)"
+        (favoritesFilterToggle)="toggleFavoritesFilter()"
         (killAllClick)="onKillAll()"
         (tagWizardClick)="onTagWizardClick()"
         (tagManagerClick)="onTagManagerClick()"
@@ -339,6 +342,7 @@ export class App implements OnInit {
   readonly authService = inject(AuthService);
   readonly selectionService = inject(SelectionService);
   readonly welcomeTour = inject(WelcomeTourService);
+  readonly favoritesService = inject(FavoritesService);
   private readonly signalR = inject(SignalRService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
@@ -349,6 +353,7 @@ export class App implements OnInit {
   readonly currentSort = signal<SortOption>('plays-desc');
   readonly showChat = signal(true); // Desktop: Chat defaultmäßig offen
   readonly chatWidth = signal(335); // Default chat width in px
+  readonly showFavoritesOnly = signal(false);
   private activityCounter = 0;
   private isResizing = false;
   private readonly minChatWidth = 280;
@@ -375,11 +380,27 @@ export class App implements OnInit {
         }
       }
     });
+
+    // Load favorites when user logs in
+    effect(() => {
+      if (this.authService.isLoggedIn()) {
+        this.favoritesService.loadFavorites();
+      } else {
+        this.favoritesService.clearFavorites();
+        this.showFavoritesOnly.set(false);
+      }
+    });
   }
 
   readonly sortedSounds = computed(() => {
-    const sounds = [...this.soundService.sounds()];
+    let sounds = [...this.soundService.sounds()];
     const sort = this.currentSort();
+
+    // Apply favorites filter if active
+    if (this.showFavoritesOnly()) {
+      const favorites = this.favoritesService.favorites();
+      sounds = sounds.filter(s => favorites.has(s.hash));
+    }
 
     switch (sort) {
       case 'name-asc':
@@ -524,7 +545,7 @@ export class App implements OnInit {
 
   onStatsClick(): void {
     this.dialog.open(StatsDialogComponent, {
-      width: '500px',
+      width: '600px',
       panelClass: 'dark-dialog',
     });
   }
@@ -555,6 +576,10 @@ export class App implements OnInit {
 
   toggleChat(): void {
     this.showChat.update(v => !v);
+  }
+
+  toggleFavoritesFilter(): void {
+    this.showFavoritesOnly.update(v => !v);
   }
 
   onLoginClick(): void {

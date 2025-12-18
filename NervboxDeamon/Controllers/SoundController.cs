@@ -451,5 +451,121 @@ namespace NervboxDeamon.Controllers
 
       return Ok(sounds);
     }
+
+    /// <summary>
+    /// GET /api/sound/statistics/topfavorites - Top 25 meistfavorisierte Sounds
+    /// </summary>
+    [HttpGet("statistics/topfavorites")]
+    public IActionResult TopFavorites()
+    {
+      try
+      {
+        var topFavorites = this.DbContext.UserFavorites
+          .Join(this.DbContext.Sounds, fav => fav.SoundHash, sound => sound.Hash, (fav, sound) => new { fav, sound })
+          .GroupBy(x => new { x.sound.Hash, x.sound.Name })
+          .Select(g => new
+          {
+            Hash = g.Key.Hash,
+            Name = g.Key.Name,
+            Count = g.Count()
+          })
+          .OrderByDescending(x => x.Count)
+          .Take(25)
+          .ToList();
+
+        return Ok(topFavorites);
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, new
+        {
+          Error = ex.Message,
+          Stacktrace = ex.StackTrace
+        });
+      }
+    }
+
+    /// <summary>
+    /// GET /api/sound/favorites - Alle Favoriten des eingeloggten Users
+    /// </summary>
+    [HttpGet("favorites")]
+    [Authorize]
+    public IActionResult GetFavorites()
+    {
+      var favoriteHashes = this.DbContext.UserFavorites
+        .Where(uf => uf.UserId == this.UserId)
+        .Select(uf => uf.SoundHash)
+        .ToList();
+
+      return Ok(favoriteHashes);
+    }
+
+    /// <summary>
+    /// POST /api/sound/{hash}/favorite - Sound als Favorit hinzufügen
+    /// </summary>
+    [HttpPost("{hash}/favorite")]
+    [Authorize]
+    public IActionResult AddFavorite(string hash)
+    {
+      try
+      {
+        var sound = this.DbContext.Sounds.FirstOrDefault(s => s.Hash == hash);
+        if (sound == null)
+        {
+          return NotFound(new { Error = "Sound not found" });
+        }
+
+        var existingFavorite = this.DbContext.UserFavorites
+          .FirstOrDefault(uf => uf.UserId == this.UserId && uf.SoundHash == hash);
+
+        if (existingFavorite != null)
+        {
+          return Ok(new { Message = "Already a favorite", Hash = hash });
+        }
+
+        this.DbContext.UserFavorites.Add(new DbModels.UserFavorite
+        {
+          UserId = this.UserId,
+          SoundHash = hash,
+          CreatedAt = DateTime.UtcNow
+        });
+
+        this.DbContext.SaveChanges();
+
+        return Ok(new { Message = "Added to favorites", Hash = hash });
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, new { Error = ex.Message });
+      }
+    }
+
+    /// <summary>
+    /// DELETE /api/sound/{hash}/favorite - Favorit entfernen
+    /// </summary>
+    [HttpDelete("{hash}/favorite")]
+    [Authorize]
+    public IActionResult RemoveFavorite(string hash)
+    {
+      try
+      {
+        var favorite = this.DbContext.UserFavorites
+          .FirstOrDefault(uf => uf.UserId == this.UserId && uf.SoundHash == hash);
+
+        if (favorite == null)
+        {
+          return NotFound(new { Error = "Favorite not found" });
+        }
+
+        this.DbContext.UserFavorites.Remove(favorite);
+        this.DbContext.SaveChanges();
+
+        return Ok(new { Message = "Removed from favorites", Hash = hash });
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, new { Error = ex.Message });
+      }
+    }
   }
 }
