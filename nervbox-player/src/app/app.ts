@@ -15,6 +15,7 @@ import { DeleteSoundDialogComponent, DeleteSoundDialogData } from './components/
 import { TagManagerDialogComponent } from './components/admin/tag-manager-dialog.component';
 import { TagWizardDialogComponent } from './components/admin/tag-wizard-dialog.component';
 import { ChatSidebarComponent } from './components/chat/chat-sidebar.component';
+import { EarnCoinsFabComponent } from './components/mini-games/earn-coins-fab.component';
 import { SoundService } from './core/services/sound.service';
 import { AuthService } from './core/services/auth.service';
 import { SignalRService } from './core/services/signalr.service';
@@ -43,6 +44,7 @@ interface Activity {
     SoundGridComponent,
     TagFilterComponent,
     ChatSidebarComponent,
+    EarnCoinsFabComponent,
   ],
   template: `
     <div class="app-container">
@@ -129,6 +131,9 @@ interface Activity {
           <app-chat-sidebar [style.width.px]="chatWidth()" />
         }
       </div>
+
+      <!-- Mini-Games FAB (Admin only) -->
+      <app-earn-coins-fab />
 
       <!-- Activity Bar -->
       @if (recentActivity().length > 0) {
