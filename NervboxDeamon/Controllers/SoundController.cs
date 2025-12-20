@@ -10,6 +10,7 @@ using NervboxDeamon.Controllers.Base;
 using NervboxDeamon.Models.Settings;
 using NervboxDeamon.Models.View;
 using NervboxDeamon.Services;
+using NervboxDeamon.Services.Interfaces;
 
 namespace NervboxDeamon.Controllers
 {
@@ -22,13 +23,15 @@ namespace NervboxDeamon.Controllers
     private ISoundService SoundService { get; }
     private IHttpContextAccessor Accessor { get; }
     private AppSettings AppSettings { get; }
+    private IAchievementService AchievementService { get; }
 
-    public SoundController(ISoundService soundService, IWebHostEnvironment environment, IHttpContextAccessor accessor, IOptions<AppSettings> appSettings)
+    public SoundController(ISoundService soundService, IWebHostEnvironment environment, IHttpContextAccessor accessor, IOptions<AppSettings> appSettings, IAchievementService achievementService)
     {
       this.SoundService = soundService;
       this.Environment = environment;
       this.Accessor = accessor;
       this.AppSettings = appSettings.Value;
+      this.AchievementService = achievementService;
     }
 
     [HttpGet]
@@ -540,6 +543,16 @@ namespace NervboxDeamon.Controllers
         });
 
         this.DbContext.SaveChanges();
+
+        // Check if the sound author should get an achievement (not system user, not self)
+        if (sound.AuthorId.HasValue && sound.AuthorId.Value != this.UserId)
+        {
+          var author = this.DbContext.Users.Find(sound.AuthorId.Value);
+          if (author != null && author.Role != "system")
+          {
+            this.AchievementService.CheckSoundFavoritedAchievement(sound.AuthorId.Value);
+          }
+        }
 
         return Ok(new { Message = "Added to favorites", Hash = hash });
       }

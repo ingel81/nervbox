@@ -61,5 +61,8 @@ namespace NervboxDeamon.DbModels
 
         [JsonIgnore]
         public virtual ICollection<UserFavorite> Favorites { get; set; } = new List<UserFavorite>();
+
+        [JsonIgnore]
+        public virtual ICollection<UserAchievement> Achievements { get; set; } = new List<UserAchievement>();
     }
 }

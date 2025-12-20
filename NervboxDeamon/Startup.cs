@@ -119,6 +119,7 @@ namespace NervboxDeamon
       services.AddSingleton<ISoundService, SoundService>();
       services.AddSingleton<IGiphyService, GiphyService>();
       services.AddSingleton<ICreditService, CreditService>();
+      services.AddSingleton<IAchievementService, AchievementService>();
       // services.AddSingleton<ICamService, CamService>(); // Deaktiviert - nicht benötigt
 
       services.Configure<IISServerOptions>(options =>
@@ -304,6 +305,10 @@ namespace NervboxDeamon
       // configure/start ICreditService
       var creditService = app.ApplicationServices.GetRequiredService<ICreditService>();
       creditService.Init();
+
+      // configure/start IAchievementService
+      var achievementService = app.ApplicationServices.GetRequiredService<IAchievementService>();
+      achievementService.Init();
     }
 
     private static void UpdateDatabase(IApplicationBuilder app)

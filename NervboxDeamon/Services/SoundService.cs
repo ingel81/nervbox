@@ -84,6 +84,7 @@ namespace NervboxDeamon.Services
     private readonly IHubContext<SoundHub> SoundHub;
     private IWebHostEnvironment Environment { get; }
     private ICreditService CreditService { get; set; }
+    private IAchievementService AchievementService { get; set; }
 
     //member
     public ConcurrentDictionary<int, User> UserLookup { private set; get; } = new ConcurrentDictionary<int, User>();
@@ -147,6 +148,7 @@ namespace NervboxDeamon.Services
 
       // Get CreditService from DI (can't inject in constructor due to circular dependency)
       CreditService = serviceProvider.GetRequiredService<ICreditService>();
+      AchievementService = serviceProvider.GetRequiredService<IAchievementService>();
 
       var appSettingsSection = Configuration.GetSection("AppSettings");
       appSettings = appSettingsSection.Get<AppSettings>();
@@ -356,6 +358,22 @@ namespace NervboxDeamon.Services
           SoundHash = sound.Hash,
           FileName = sound.FileName
         });
+
+        // Check sound play achievements
+        try
+        {
+          using (var scope = serviceProvider.CreateScope())
+          {
+            var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+            // +1 because current usage not yet saved
+            var totalPlays = db.SoundUsages.Count(su => su.UserId == userId) + 1;
+            AchievementService?.CheckSoundPlayAchievements(userId, totalPlays);
+          }
+        }
+        catch (Exception ex)
+        {
+          Logger.LogWarning($"Failed to check sound play achievements: {ex.Message}");
+        }
 
       }).Start();
 

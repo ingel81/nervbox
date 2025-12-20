@@ -189,6 +189,27 @@ namespace NervboxDeamon.Services
 
             // Broadcast credit update via SignalR
             BroadcastCreditUpdate(userId, user.Credits);
+
+            // Check achievements
+            try
+            {
+                var achievementService = scope.ServiceProvider.GetService<IAchievementService>();
+                if (achievementService != null)
+                {
+                    // Check admin gift achievement
+                    if (type == CreditTransactionType.AdminGrant)
+                    {
+                        achievementService.CheckAdminCreditAchievement(userId);
+                    }
+
+                    // Check wealth achievements
+                    achievementService.CheckWealthAchievements(userId, user.Credits);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Failed to check credit achievements: {ex.Message}");
+            }
         }
 
         public CreditSettings GetSettings()

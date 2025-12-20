@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using NervboxDeamon.DbModels;
+using NervboxDeamon.Services.Interfaces;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -11,6 +12,7 @@ namespace NervboxDeamon.Hubs
   public class ChatHub : Hub
   {
     private NervboxDBContext Db { get; }
+    private IAchievementService AchievementService { get; }
 
     // Rate limiting: Track message timestamps per user
     private static readonly ConcurrentDictionary<int, List<DateTime>> _userMessageTimes = new();
@@ -21,9 +23,10 @@ namespace NervboxDeamon.Hubs
     private const int MaxGifsPerMinute = 5;
     private const double MinSecondsBetweenMessages = 0.5;
 
-    public ChatHub(NervboxDBContext db)
+    public ChatHub(NervboxDBContext db, IAchievementService achievementService)
     {
       this.Db = db;
+      this.AchievementService = achievementService;
     }
 
     private (bool allowed, string reason) CheckRateLimit(int userId, bool isGif)
@@ -88,6 +91,10 @@ namespace NervboxDeamon.Hubs
 
       var user = Db.Users.Find(userId);
 
+      // Check chat achievements
+      var messageCount = Db.ChatMessages.Count(cm => cm.UserId == userId);
+      AchievementService?.CheckChatAchievements(userId, messageCount, sentGif: false);
+
       return Clients.All.SendAsync("message", new
       {
         UserId = userId,
@@ -121,6 +128,10 @@ namespace NervboxDeamon.Hubs
       Db.SaveChanges();
 
       var user = Db.Users.Find(userId);
+
+      // Check chat achievements (GIF sent)
+      var messageCount = Db.ChatMessages.Count(cm => cm.UserId == userId);
+      AchievementService?.CheckChatAchievements(userId, messageCount, sentGif: true);
 
       return Clients.All.SendAsync("message", new
       {

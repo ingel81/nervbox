@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
+import { AchievementEarnedEvent } from '../models/achievement.model';
 
 export type ChatMessageType = 'text' | 'gif' | 'shekel-transaction';
 
@@ -28,6 +29,9 @@ export interface CreditUpdateEvent {
   timestamp: string;
 }
 
+// Re-export for convenience
+export type { AchievementEarnedEvent };
+
 @Injectable({
   providedIn: 'root',
 })
@@ -40,6 +44,7 @@ export class SignalRService {
   readonly chatMessages = signal<ChatMessage[]>([]);
   readonly soundEvents = signal<SoundPlayedEvent[]>([]);
   readonly creditUpdates = signal<CreditUpdateEvent | null>(null);
+  readonly achievementEarned = signal<AchievementEarnedEvent | null>(null);
   readonly chatConnected = signal(false);
   readonly soundConnected = signal(false);
   readonly rateLimitMessage = signal<string | null>(null);
@@ -98,6 +103,10 @@ export class SignalRService {
 
     this.soundConnection.on('creditUpdate', (event: CreditUpdateEvent) => {
       this.creditUpdates.set(event);
+    });
+
+    this.soundConnection.on('achievementEarned', (event: AchievementEarnedEvent) => {
+      this.achievementEarned.set(event);
     });
 
     this.soundConnection.onclose(() => {

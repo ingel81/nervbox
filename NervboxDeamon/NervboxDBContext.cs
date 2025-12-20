@@ -17,6 +17,8 @@ namespace NervboxDeamon
         public DbSet<UserFavorite> UserFavorites { get; set; }
         public DbSet<CreditSettings> CreditSettings { get; set; }
         public DbSet<CreditTransaction> CreditTransactions { get; set; }
+        public DbSet<Achievement> Achievements { get; set; }
+        public DbSet<UserAchievement> UserAchievements { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -76,6 +78,26 @@ namespace NervboxDeamon
             // Store enum as string
             modelBuilder.Entity<CreditTransaction>()
                 .Property(ct => ct.TransactionType)
+                .HasConversion<string>();
+
+            // UserAchievement: Composite Primary Key
+            modelBuilder.Entity<UserAchievement>()
+                .HasKey(ua => new { ua.UserId, ua.AchievementId });
+
+            // UserAchievement: Relationships
+            modelBuilder.Entity<UserAchievement>()
+                .HasOne(ua => ua.User)
+                .WithMany(u => u.Achievements)
+                .HasForeignKey(ua => ua.UserId);
+
+            modelBuilder.Entity<UserAchievement>()
+                .HasOne(ua => ua.Achievement)
+                .WithMany(a => a.UserAchievements)
+                .HasForeignKey(ua => ua.AchievementId);
+
+            // Achievement: Store enum as string
+            modelBuilder.Entity<Achievement>()
+                .Property(a => a.Category)
                 .HasConversion<string>();
         }
     }

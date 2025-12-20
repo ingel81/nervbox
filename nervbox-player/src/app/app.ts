@@ -19,6 +19,7 @@ import { CreditSettingsDialogComponent } from './components/admin/credit-setting
 import { ChatSidebarComponent } from './components/chat/chat-sidebar.component';
 import { EarnCoinsFabComponent } from './components/mini-games/earn-coins-fab.component';
 import { AvatarUploadDialogComponent } from './components/avatar-upload-dialog/avatar-upload-dialog.component';
+import { AchievementToastComponent } from './components/shared/achievement-toast/achievement-toast.component';
 import { SoundService } from './core/services/sound.service';
 import { AuthService } from './core/services/auth.service';
 import { SignalRService } from './core/services/signalr.service';
@@ -26,6 +27,7 @@ import { SelectionService } from './core/services/selection.service';
 import { WelcomeTourService } from './core/services/welcome-tour.service';
 import { FavoritesService } from './core/services/favorites.service';
 import { AvatarService } from './core/services/avatar.service';
+import { AchievementService } from './core/services/achievement.service';
 import { Sound } from './core/models';
 
 interface Activity {
@@ -49,6 +51,7 @@ interface Activity {
     TagFilterComponent,
     ChatSidebarComponent,
     EarnCoinsFabComponent,
+    AchievementToastComponent,
   ],
   template: `
     <div class="app-container">
@@ -138,6 +141,9 @@ interface Activity {
 
       <!-- Mini-Games FAB (Admin only) -->
       <app-earn-coins-fab />
+
+      <!-- Achievement Toast -->
+      <app-achievement-toast />
 
       <!-- Activity Bar -->
       @if (recentActivity().length > 0) {
@@ -353,6 +359,7 @@ export class App implements OnInit {
   readonly welcomeTour = inject(WelcomeTourService);
   readonly favoritesService = inject(FavoritesService);
   readonly avatarService = inject(AvatarService);
+  readonly achievementService = inject(AchievementService);
   private readonly signalR = inject(SignalRService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
