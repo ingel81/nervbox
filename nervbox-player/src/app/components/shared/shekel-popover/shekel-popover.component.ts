@@ -296,6 +296,14 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
       border-radius: 8px;
       font-weight: 500;
       animation: slideIn 0.3s ease-out;
+      overflow: visible;
+    }
+
+    .result-banner mat-icon {
+      flex-shrink: 0;
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
     }
 
     @keyframes slideIn {
@@ -371,12 +379,24 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
       font-family: 'JetBrains Mono', monospace;
       font-weight: 700;
       font-size: 16px;
-      padding: 12px 24px;
+      padding: 12px 24px !important;
+      height: auto !important;
+      line-height: 1.2 !important;
+      transition: all 0.2s ease;
+    }
+
+    .gamble-btn ::ng-deep .mat-mdc-button-persistent-ripple,
+    .gamble-btn ::ng-deep .mdc-button__label {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      transition: all 0.2s ease;
+    }
+
+    .gamble-btn mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
     }
 
     .gamble-btn:hover:not(:disabled) {
@@ -394,12 +414,24 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
       font-family: 'JetBrains Mono', monospace;
       font-weight: 700;
       font-size: 16px;
-      padding: 12px 24px;
+      padding: 12px 24px !important;
+      height: auto !important;
+      line-height: 1.2 !important;
+      transition: all 0.2s ease;
+    }
+
+    .transfer-btn ::ng-deep .mat-mdc-button-persistent-ripple,
+    .transfer-btn ::ng-deep .mdc-button__label {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      transition: all 0.2s ease;
+    }
+
+    .transfer-btn mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
     }
 
     .transfer-btn:hover:not(:disabled) {
