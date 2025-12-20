@@ -9,6 +9,8 @@ interface JwtPayload {
   unique_name: string; // user id
   userName: string;
   role: string;
+  firstName: string;
+  lastName: string;
   exp: number;
   nbf: number;
   iat: number;
@@ -79,6 +81,8 @@ export class AuthService {
       id: parseInt(payload.unique_name, 10),
       username: payload.userName,
       role: payload.role,
+      firstName: payload.firstName || undefined,
+      lastName: payload.lastName || undefined,
     };
   }
 

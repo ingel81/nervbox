@@ -58,12 +58,17 @@ namespace NervboxDeamon.Services
       // authentication successful so generate jwt token (14 days validity)
       var tokenHandler = new JwtSecurityTokenHandler();
       var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+      var claims = new List<Claim>
+      {
+        new Claim(ClaimTypes.Name, user.Id.ToString()),
+        new Claim("userName", user.Username),
+        new Claim("role", user.Role),
+        new Claim("firstName", user.FirstName ?? ""),
+        new Claim("lastName", user.LastName ?? "")
+      };
       var tokenDescriptor = new SecurityTokenDescriptor
       {
-        Subject = new ClaimsIdentity(new Claim[] {
-                    new Claim(ClaimTypes.Name, user.Id.ToString()),
-                    new Claim("userName", user.Username),
-                    new Claim("role", user.Role) }),
+        Subject = new ClaimsIdentity(claims),
         Expires = DateTime.UtcNow.AddDays(14),
         SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
       };
@@ -110,12 +115,17 @@ namespace NervboxDeamon.Services
         // Generate jwt token (14 days validity)
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+        var claims = new List<Claim>
+        {
+          new Claim(ClaimTypes.Name, user.Id.ToString()),
+          new Claim("userName", user.Username),
+          new Claim("role", user.Role),
+          new Claim("firstName", user.FirstName ?? ""),
+          new Claim("lastName", user.LastName ?? "")
+        };
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-          Subject = new ClaimsIdentity(new Claim[] {
-                    new Claim(ClaimTypes.Name, user.Id.ToString()),
-                    new Claim("userName", user.Username),
-                    new Claim("role", user.Role) }),
+          Subject = new ClaimsIdentity(claims),
           Expires = DateTime.UtcNow.AddDays(14),
           SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };
