@@ -241,9 +241,9 @@ export class WelcomeTourService {
     if (this.userTourActive() || this.adminTourActive()) return;
     if (this.auth.currentUser()?.role !== 'admin') return;
 
-    // Check if admin buttons are visible
-    const tagWizard = document.querySelector('[data-tour="tag-wizard"]');
-    if (!tagWizard) {
+    // Check if admin menu button is visible
+    const adminMenu = document.querySelector('[data-tour="admin-menu"]');
+    if (!adminMenu) {
       // Admin UI not ready yet, retry later
       setTimeout(() => this.startAdminTour(), 500);
       return;
@@ -267,40 +267,26 @@ export class WelcomeTourService {
       id: 'admin-welcome',
       title: 'Admin-Modus!',
       text: 'Du hast die Macht! Hier sind deine Admin-Tools für die volle Kontrolle.',
-      attachTo: { element: '[data-tour="tag-wizard"]', on: 'bottom' },
+      attachTo: { element: '[data-tour="admin-menu"]', on: 'bottom' },
       canClickTarget: false,
       cancelIcon: { enabled: false },
       buttons: [{ text: 'Zeig her!', action: () => this.tour?.next() }],
     });
 
-    // Step 2: Tag Wizard
+    // Step 2: Admin Menu
     this.tour.addStep({
-      id: 'tag-wizard',
-      title: 'Tag-Wizard',
-      text: 'KI-gestützte Tag-Vorschläge! Analysiert Sound-Namen und schlägt passende Tags vor.',
-      attachTo: { element: '[data-tour="tag-wizard"]', on: 'bottom' },
+      id: 'admin-menu',
+      title: 'Admin-Menü',
+      text: `Alle Admin-Funktionen an einem Ort:<br><br>
+        <b>Userverwaltung</b> - User anlegen, deaktivieren, Passwörter zurücksetzen<br>
+        <b>Tag-Verwaltung</b> - Tags erstellen, bearbeiten, löschen<br>
+        <b>Tag-Wizard</b> - Schnelles Taggen vieler Sounds<br>
+        <b>Sounds stoppen</b> - Alle laufenden Sounds beenden`,
+      attachTo: { element: '[data-tour="admin-menu"]', on: 'bottom' },
       buttons: this.getNavButtons(),
     });
 
-    // Step 3: Tag Manager
-    this.tour.addStep({
-      id: 'tag-manager',
-      title: 'Tag-Verwaltung',
-      text: 'Tags erstellen, bearbeiten, löschen. Farben vergeben für bessere Übersicht.',
-      attachTo: { element: '[data-tour="tag-manager"]', on: 'bottom' },
-      buttons: this.getNavButtons(),
-    });
-
-    // Step 4: Kill All
-    this.tour.addStep({
-      id: 'kill-all',
-      title: 'Stille!',
-      text: 'Der Panik-Button! Stoppt ALLE laufenden Sounds sofort. Für den Notfall.',
-      attachTo: { element: '[data-tour="kill-all"]', on: 'bottom' },
-      buttons: this.getNavButtons(),
-    });
-
-    // Step 5: Sound Card Admin Menu
+    // Step 3: Sound Card Admin Menu
     this.tour.addStep({
       id: 'admin-soundcard',
       title: 'Sound-Verwaltung',

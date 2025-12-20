@@ -14,6 +14,7 @@ import { SoundEditDialogComponent, SoundEditDialogData } from './components/admi
 import { DeleteSoundDialogComponent, DeleteSoundDialogData } from './components/admin/delete-sound-dialog.component';
 import { TagManagerDialogComponent } from './components/admin/tag-manager-dialog.component';
 import { TagWizardDialogComponent } from './components/admin/tag-wizard-dialog.component';
+import { UserManagementDialogComponent } from './components/admin/user-management-dialog.component';
 import { ChatSidebarComponent } from './components/chat/chat-sidebar.component';
 import { EarnCoinsFabComponent } from './components/mini-games/earn-coins-fab.component';
 import { SoundService } from './core/services/sound.service';
@@ -58,8 +59,7 @@ interface Activity {
         (sortChange)="onSortChange($event)"
         (favoritesFilterToggle)="toggleFavoritesFilter()"
         (killAllClick)="onKillAll()"
-        (tagWizardClick)="onTagWizardClick()"
-        (tagManagerClick)="onTagManagerClick()"
+        (adminMenuAction)="onAdminMenuAction($event)"
         (statsClick)="onStatsClick()"
         (chatClick)="toggleChat()"
         (loginClick)="onLoginClick()"
@@ -555,28 +555,36 @@ export class App implements OnInit {
     });
   }
 
-  onTagManagerClick(): void {
-    this.dialog.open(TagManagerDialogComponent, {
-      width: '500px',
-      panelClass: 'dark-dialog',
-    });
-  }
-
-  onTagWizardClick(): void {
-    const dialogRef = this.dialog.open(TagWizardDialogComponent, {
-      width: '900px',
-      maxWidth: '95vw',
-      maxHeight: '90vh',
-      panelClass: 'dark-dialog',
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        // Reload sounds to reflect tag changes
-        this.loadSounds();
-        this.snackBar.open('Tags wurden aktualisiert', 'OK', { duration: 2000 });
-      }
-    });
+  onAdminMenuAction(action: 'users' | 'tags' | 'tag-wizard'): void {
+    switch (action) {
+      case 'users':
+        this.dialog.open(UserManagementDialogComponent, {
+          width: '650px',
+          maxWidth: '95vw',
+          panelClass: 'dark-dialog',
+        });
+        break;
+      case 'tags':
+        this.dialog.open(TagManagerDialogComponent, {
+          width: '500px',
+          panelClass: 'dark-dialog',
+        });
+        break;
+      case 'tag-wizard':
+        const dialogRef = this.dialog.open(TagWizardDialogComponent, {
+          width: '900px',
+          maxWidth: '95vw',
+          maxHeight: '90vh',
+          panelClass: 'dark-dialog',
+        });
+        dialogRef.afterClosed().subscribe(result => {
+          if (result) {
+            this.loadSounds();
+            this.snackBar.open('Tags wurden aktualisiert', 'OK', { duration: 2000 });
+          }
+        });
+        break;
+    }
   }
 
   toggleChat(): void {

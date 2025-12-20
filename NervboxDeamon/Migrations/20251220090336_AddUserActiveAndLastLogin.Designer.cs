@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NervboxDeamon;
 
@@ -10,9 +11,11 @@ using NervboxDeamon;
 namespace NervboxDeamon.Migrations
 {
     [DbContext(typeof(NervboxDBContext))]
-    partial class NervboxDBContextModelSnapshot : ModelSnapshot
+    [Migration("20251220090336_AddUserActiveAndLastLogin")]
+    partial class AddUserActiveAndLastLogin
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.0");

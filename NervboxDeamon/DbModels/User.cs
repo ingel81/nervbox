@@ -35,8 +35,14 @@ namespace NervboxDeamon.DbModels
         [Column("role")]
         public string Role { get; set; } = "user";
 
+        [Column("is_active")]
+        public bool IsActive { get; set; } = true;
+
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [Column("last_login_at")]
+        public DateTime? LastLoginAt { get; set; }
 
         [NotMapped]
         public string Token { get; set; }
