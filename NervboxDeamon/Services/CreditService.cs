@@ -441,7 +441,7 @@ namespace NervboxDeamon.Services
                     systemUser = new User
                     {
                         Username = "NERVBOX",
-                        Password = Guid.NewGuid().ToString(), // Random unusable password
+                        PasswordHash = Guid.NewGuid().ToString(), // Random unusable password
                         Role = "system",
                         IsActive = true,
                         CreatedAt = DateTime.UtcNow
