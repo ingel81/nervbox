@@ -708,7 +708,9 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
 
     .user-initials {
       width: 32px;
+      min-width: 32px;
       height: 32px;
+      min-height: 32px;
       border-radius: 50%;
       background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
       display: flex;
@@ -719,6 +721,8 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       color: white;
       font-family: 'JetBrains Mono', monospace;
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      aspect-ratio: 1;
+      flex-shrink: 0;
     }
 
     .menu-initials {
