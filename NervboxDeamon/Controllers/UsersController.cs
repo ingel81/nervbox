@@ -90,5 +90,95 @@ namespace NervboxDeamon.Controllers
             return Ok(new { RowsAffected = result });
         }
 
+        #region Admin Endpoints
+
+        /// <summary>
+        /// Get all users with full details including IP (Admin only)
+        /// </summary>
+        [Authorize(Roles = "admin")]
+        [HttpGet("admin")]
+        public IActionResult GetAllUsersAdmin()
+        {
+            var users = _userService.GetAllUsersAdmin();
+            return Ok(users);
+        }
+
+        /// <summary>
+        /// Create a new user (Admin only, no IP restriction)
+        /// </summary>
+        [Authorize(Roles = "admin")]
+        [HttpPost("admin")]
+        public IActionResult CreateUser([FromBody] AdminCreateUserModel model)
+        {
+            var user = _userService.CreateUserByAdmin(model, out string error);
+
+            if (user == null)
+                return BadRequest(new { message = error });
+
+            return Ok(user);
+        }
+
+        /// <summary>
+        /// Update user details (Admin only)
+        /// </summary>
+        [Authorize(Roles = "admin")]
+        [HttpPut("admin/{id}")]
+        public IActionResult UpdateUser(int id, [FromBody] AdminUpdateUserModel model)
+        {
+            var user = _userService.UpdateUser(id, model, out string error);
+
+            if (user == null)
+                return BadRequest(new { message = error });
+
+            return Ok(user);
+        }
+
+        /// <summary>
+        /// Reset user password (Admin only)
+        /// </summary>
+        [Authorize(Roles = "admin")]
+        [HttpPost("admin/{id}/reset-password")]
+        public IActionResult ResetPassword(int id, [FromBody] AdminResetPasswordModel model)
+        {
+            var result = _userService.ResetPassword(id, model.NewPassword, out string error);
+
+            if (!result)
+                return BadRequest(new { message = error });
+
+            return Ok(new { success = true });
+        }
+
+        /// <summary>
+        /// Toggle user active status (Admin only)
+        /// </summary>
+        [Authorize(Roles = "admin")]
+        [HttpPut("admin/{id}/toggle-active")]
+        public IActionResult ToggleUserActive(int id)
+        {
+            var result = _userService.ToggleUserActive(id, out string error);
+
+            if (!result)
+                return BadRequest(new { message = error });
+
+            return Ok(new { success = true });
+        }
+
+        /// <summary>
+        /// Delete a user (Admin only)
+        /// </summary>
+        [Authorize(Roles = "admin")]
+        [HttpDelete("admin/{id}")]
+        public IActionResult DeleteUser(int id)
+        {
+            var result = _userService.DeleteUser(id, out string error);
+
+            if (!result)
+                return BadRequest(new { message = error });
+
+            return Ok(new { success = true });
+        }
+
+        #endregion
+
     }
 }

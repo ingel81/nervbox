@@ -211,6 +211,14 @@ namespace NervboxDeamon.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("ip_address");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("is_active");
+
+                    b.Property<DateTime?>("LastLoginAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("last_login_at");
+
                     b.Property<string>("LastName")
                         .HasColumnType("TEXT")
                         .HasColumnName("last_name");

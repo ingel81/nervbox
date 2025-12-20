@@ -40,11 +40,19 @@ namespace NervboxDeamon.Services
       {
         var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
         user = db.Users.SingleOrDefault(x => x.Username == username && x.PasswordHash == GetPasswordHash(password));
-      }
 
-      // return null if user not found
-      if (user == null)
-        return null;
+        // return null if user not found
+        if (user == null)
+          return null;
+
+        // Check if user is active
+        if (!user.IsActive)
+          return null;
+
+        // Update last login time
+        user.LastLoginAt = DateTime.UtcNow;
+        db.SaveChanges();
+      }
 
       // authentication successful so generate jwt token (14 days validity)
       var tokenHandler = new JwtSecurityTokenHandler();
@@ -205,15 +213,181 @@ namespace NervboxDeamon.Services
 
     private static string GetPasswordHash(string text)
     {
-      // SHA512 is disposable by inheritance.  
+      // SHA512 is disposable by inheritance.
       using (var sha256 = SHA256.Create())
       {
-        // Send a sample text to hash.  
+        // Send a sample text to hash.
         var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(text));
-        // Get the hashed string.  
+        // Get the hashed string.
         return BitConverter.ToString(hashedBytes).Replace("-", "").ToLower();
       }
     }
+
+    #region Admin Methods
+
+    public IEnumerable<UserAdminDto> GetAllUsersAdmin()
+    {
+      using (var scope = this.ServiceProvider.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+        return db.Users.Select(u => new UserAdminDto
+        {
+          Id = u.Id,
+          Username = u.Username,
+          FirstName = u.FirstName,
+          LastName = u.LastName,
+          IpAddress = u.IpAddress,
+          Role = u.Role,
+          IsActive = u.IsActive,
+          CreatedAt = u.CreatedAt,
+          LastLoginAt = u.LastLoginAt
+        }).ToList();
+      }
+    }
+
+    public User GetUserById(int id)
+    {
+      using (var scope = this.ServiceProvider.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+        return db.Users.FirstOrDefault(u => u.Id == id);
+      }
+    }
+
+    public User CreateUserByAdmin(AdminCreateUserModel model, out string error)
+    {
+      error = string.Empty;
+
+      using (var scope = ServiceProvider.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+
+        // Check if username exists
+        if (db.Users.Any(x => x.Username == model.Username))
+        {
+          error = "User with this name already exists.";
+          return null;
+        }
+
+        var user = new User()
+        {
+          Username = model.Username,
+          FirstName = model.FirstName,
+          LastName = model.LastName,
+          PasswordHash = GetPasswordHash(model.Password),
+          Role = model.Role ?? "user",
+          IsActive = true
+        };
+        db.Users.Add(user);
+        db.SaveChanges();
+
+        return user;
+      }
+    }
+
+    public User UpdateUser(int id, AdminUpdateUserModel model, out string error)
+    {
+      error = string.Empty;
+
+      using (var scope = ServiceProvider.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+        var user = db.Users.FirstOrDefault(u => u.Id == id);
+
+        if (user == null)
+        {
+          error = "User not found.";
+          return null;
+        }
+
+        if (model.FirstName != null)
+          user.FirstName = model.FirstName;
+
+        if (model.LastName != null)
+          user.LastName = model.LastName;
+
+        if (model.Role != null)
+          user.Role = model.Role;
+
+        if (model.IsActive.HasValue)
+          user.IsActive = model.IsActive.Value;
+
+        db.SaveChanges();
+        return user;
+      }
+    }
+
+    public bool ResetPassword(int id, string newPassword, out string error)
+    {
+      error = string.Empty;
+
+      using (var scope = ServiceProvider.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+        var user = db.Users.FirstOrDefault(u => u.Id == id);
+
+        if (user == null)
+        {
+          error = "User not found.";
+          return false;
+        }
+
+        user.PasswordHash = GetPasswordHash(newPassword);
+        db.SaveChanges();
+        return true;
+      }
+    }
+
+    public bool ToggleUserActive(int id, out string error)
+    {
+      error = string.Empty;
+
+      using (var scope = ServiceProvider.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+        var user = db.Users.FirstOrDefault(u => u.Id == id);
+
+        if (user == null)
+        {
+          error = "User not found.";
+          return false;
+        }
+
+        user.IsActive = !user.IsActive;
+        db.SaveChanges();
+        return true;
+      }
+    }
+
+    public bool DeleteUser(int id, out string error)
+    {
+      error = string.Empty;
+
+      using (var scope = ServiceProvider.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+        var user = db.Users.FirstOrDefault(u => u.Id == id);
+
+        if (user == null)
+        {
+          error = "User not found.";
+          return false;
+        }
+
+        // Prevent deleting admin user
+        if (user.Username == "admin")
+        {
+          error = "Cannot delete admin user.";
+          return false;
+        }
+
+        db.Users.Remove(user);
+        db.SaveChanges();
+        return true;
+      }
+    }
+
+    #endregion
 
   }
 }

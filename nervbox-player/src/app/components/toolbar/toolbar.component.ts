@@ -164,30 +164,36 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
           <button
             mat-icon-button
             class="action-btn admin-btn"
-            data-tour="tag-wizard"
-            matTooltip="Tag-Wizard"
-            (click)="tagWizardClick.emit()"
+            [matMenuTriggerFor]="adminMenu"
+            data-tour="admin-menu"
+            matTooltip="Admin"
           >
-            <mat-icon>auto_fix_high</mat-icon>
+            <mat-icon>admin_panel_settings</mat-icon>
           </button>
-          <button
-            mat-icon-button
-            class="action-btn admin-btn"
-            data-tour="tag-manager"
-            matTooltip="Tag-Verwaltung"
-            (click)="tagManagerClick.emit()"
-          >
-            <mat-icon>label</mat-icon>
-          </button>
-          <button
-            mat-icon-button
-            class="action-btn admin-btn"
-            data-tour="kill-all"
-            matTooltip="Alle Sounds stoppen"
-            (click)="killAllClick.emit()"
-          >
-            <mat-icon>stop_circle</mat-icon>
-          </button>
+          <mat-menu #adminMenu="matMenu">
+            <div class="menu-header admin-menu-header">
+              <mat-icon>admin_panel_settings</mat-icon>
+              <span>Administration</span>
+            </div>
+            <mat-divider></mat-divider>
+            <button mat-menu-item (click)="adminMenuAction.emit('users')">
+              <mat-icon>people</mat-icon>
+              <span>Userverwaltung</span>
+            </button>
+            <button mat-menu-item (click)="adminMenuAction.emit('tags')">
+              <mat-icon>label</mat-icon>
+              <span>Tag-Verwaltung</span>
+            </button>
+            <button mat-menu-item (click)="adminMenuAction.emit('tag-wizard')">
+              <mat-icon>auto_fix_high</mat-icon>
+              <span>Tag-Wizard</span>
+            </button>
+            <mat-divider></mat-divider>
+            <button mat-menu-item (click)="killAllClick.emit()" class="danger-item">
+              <mat-icon>stop_circle</mat-icon>
+              <span>Alle Sounds stoppen</span>
+            </button>
+          </mat-menu>
         }
 
         <!-- PROFILE SECTION -->
@@ -668,6 +674,18 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       color: #9333ea;
     }
 
+    .admin-menu-header mat-icon {
+      color: #f97316;
+    }
+
+    ::ng-deep .mat-mdc-menu-panel .danger-item {
+      color: #ef4444;
+    }
+
+    ::ng-deep .mat-mdc-menu-panel .danger-item mat-icon {
+      color: #ef4444;
+    }
+
     @media (max-width: 600px) {
       .search-container {
         max-width: 150px;
@@ -696,8 +714,7 @@ export class ToolbarComponent {
   readonly sortChange = output<SortOption>();
   readonly favoritesFilterToggle = output<void>();
   readonly killAllClick = output<void>();
-  readonly tagWizardClick = output<void>();
-  readonly tagManagerClick = output<void>();
+  readonly adminMenuAction = output<'users' | 'tags' | 'tag-wizard'>();
   readonly statsClick = output<void>();
   readonly chatClick = output<void>();
   readonly loginClick = output<void>();
