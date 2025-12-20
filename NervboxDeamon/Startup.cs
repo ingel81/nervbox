@@ -213,7 +213,7 @@ namespace NervboxDeamon
               appInner.Run(async (context) =>
               {
                 var error = await forwarder.SendAsync(context, "http://localhost:4201", httpClient);
-                if (error != ForwarderError.None)
+                if (error != ForwarderError.None && error != ForwarderError.UpgradeResponseCanceled)
                 {
                   var errorFeature = context.GetForwarderErrorFeature();
                   _logger?.LogWarning("Mixer proxy error: {Error}, {Message}", error, errorFeature?.Exception?.Message);
@@ -232,7 +232,7 @@ namespace NervboxDeamon
               appInner.Run(async (context) =>
               {
                 var error = await forwarder.SendAsync(context, "http://localhost:4200", httpClient);
-                if (error != ForwarderError.None)
+                if (error != ForwarderError.None && error != ForwarderError.UpgradeResponseCanceled)
                 {
                   var errorFeature = context.GetForwarderErrorFeature();
                   _logger?.LogWarning("Player proxy error: {Error}, {Message}", error, errorFeature?.Exception?.Message);
