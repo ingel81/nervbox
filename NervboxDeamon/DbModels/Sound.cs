@@ -33,6 +33,12 @@ namespace NervboxDeamon.DbModels
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        [Column("author_id")]
+        public int? AuthorId { get; set; }
+
+        [ForeignKey("AuthorId")]
+        public virtual User Author { get; set; }
+
         public virtual ICollection<SoundTag> SoundTags { get; set; } = new List<SoundTag>();
         public virtual ICollection<SoundUsage> Usages { get; set; } = new List<SoundUsage>();
         public virtual ICollection<UserFavorite> Favorites { get; set; } = new List<UserFavorite>();

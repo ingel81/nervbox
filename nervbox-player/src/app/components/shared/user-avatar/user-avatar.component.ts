@@ -1,5 +1,6 @@
 import { Component, inject, input, computed, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MatDialog } from '@angular/material/dialog';
 import { UserCacheService } from '../../../core/services/user-cache.service';
 
 type AvatarSize = 'small' | 'medium' | 'large';
@@ -14,17 +15,19 @@ type AvatarSize = 'small' | 'medium' | 'large';
       [class.small]="size() === 'small'"
       [class.medium]="size() === 'medium'"
       [class.large]="size() === 'large'"
-      [title]="userCache.getDisplayName(userId())"
+      [class.clickable]="isClickable()"
+      [title]="displayName()"
+      (click)="onClick($event)"
     >
-      @if (!imageError()) {
+      @if (!imageError() && resolvedAvatarUrl()) {
         <img
-          [src]="avatarUrl()"
+          [src]="resolvedAvatarUrl()"
           class="avatar-img"
           alt="Avatar"
           (error)="onImageError()"
         />
       } @else {
-        <span class="avatar-initials">{{ initials() }}</span>
+        <span class="avatar-initials">{{ resolvedInitials() }}</span>
       }
     </div>
   `,
@@ -37,6 +40,16 @@ type AvatarSize = 'small' | 'medium' | 'large';
       justify-content: center;
       flex-shrink: 0;
       aspect-ratio: 1;
+    }
+
+    .avatar-container.clickable {
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .avatar-container.clickable:hover {
+      transform: scale(1.1);
+      box-shadow: 0 2px 8px rgba(147, 51, 234, 0.3);
     }
 
     /* Sizes */
@@ -95,31 +108,100 @@ type AvatarSize = 'small' | 'medium' | 'large';
 })
 export class UserAvatarComponent implements OnInit {
   readonly userCache = inject(UserCacheService);
+  private readonly dialog = inject(MatDialog);
 
-  // Inputs
-  readonly userId = input.required<number>();
+  // Inputs - either userId OR (imageUrl + initials)
+  readonly userId = input<number>();
   readonly size = input<AvatarSize>('medium');
+  // Direct inputs for when not using userId lookup
+  readonly imageUrl = input<string | null>();
+  readonly initials = input<string>();
+  readonly name = input<string>();
+  // Control clickability (default: true if userId is set)
+  readonly clickable = input<boolean | undefined>(undefined);
 
   // State
   readonly imageError = signal(false);
 
-  // Computed
-  readonly avatarUrl = computed(() => {
-    return `${this.userCache.getAvatarUrl(this.userId())}?t=${Date.now()}`;
+  // Computed - is this avatar clickable?
+  readonly isClickable = computed(() => {
+    const explicitClickable = this.clickable();
+    if (explicitClickable !== undefined) return explicitClickable;
+    // Default: clickable if we have a userId
+    return !!this.userId();
   });
 
-  readonly initials = computed(() => {
-    return this.userCache.getInitials(this.userId());
+  // Computed - resolve avatar URL from either direct input or cache
+  readonly resolvedAvatarUrl = computed(() => {
+    // Direct imageUrl takes precedence
+    const directUrl = this.imageUrl();
+    if (directUrl) return directUrl;
+
+    // Otherwise lookup by userId
+    const id = this.userId();
+    if (id) {
+      return `${this.userCache.getAvatarUrl(id)}?t=${Date.now()}`;
+    }
+
+    return null;
+  });
+
+  // Computed - resolve initials from either direct input or cache
+  readonly resolvedInitials = computed(() => {
+    // Direct initials takes precedence
+    const directInitials = this.initials();
+    if (directInitials) return directInitials;
+
+    // Otherwise lookup by userId
+    const id = this.userId();
+    if (id) {
+      return this.userCache.getInitials(id);
+    }
+
+    return '?';
+  });
+
+  // Computed - display name for title
+  readonly displayName = computed(() => {
+    const directName = this.name();
+    if (directName) return directName;
+
+    const id = this.userId();
+    if (id) {
+      return this.userCache.getDisplayName(id);
+    }
+
+    return '';
   });
 
   ngOnInit(): void {
-    // Ensure users are loaded
-    if (!this.userCache.isLoaded()) {
+    // Ensure users are loaded if using userId mode
+    if (this.userId() && !this.userCache.isLoaded()) {
       this.userCache.loadUsers().subscribe();
     }
   }
 
   onImageError(): void {
     this.imageError.set(true);
+  }
+
+  async onClick(event: Event): Promise<void> {
+    if (!this.isClickable()) return;
+
+    const id = this.userId();
+    if (!id) return;
+
+    event.stopPropagation();
+
+    // Dynamic import to avoid circular dependency
+    const { UserProfileDialogComponent } = await import(
+      '../user-profile-dialog/user-profile-dialog.component'
+    );
+
+    this.dialog.open(UserProfileDialogComponent, {
+      data: { userId: id },
+      panelClass: 'dark-dialog',
+      maxWidth: '450px',
+    });
   }
 }
