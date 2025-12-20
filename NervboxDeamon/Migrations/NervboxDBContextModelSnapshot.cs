@@ -170,6 +170,10 @@ namespace NervboxDeamon.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("hash");
 
+                    b.Property<int?>("AuthorId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("author_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("created_at");
@@ -197,6 +201,8 @@ namespace NervboxDeamon.Migrations
                         .HasColumnName("size_bytes");
 
                     b.HasKey("Hash");
+
+                    b.HasIndex("AuthorId");
 
                     b.ToTable("sounds");
                 });
@@ -281,6 +287,10 @@ namespace NervboxDeamon.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
                         .HasColumnName("id");
+
+                    b.Property<string>("AvatarFileName")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("avatar_file_name");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT")
@@ -380,6 +390,15 @@ namespace NervboxDeamon.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("NervboxDeamon.DbModels.Sound", b =>
+                {
+                    b.HasOne("NervboxDeamon.DbModels.User", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorId");
+
+                    b.Navigation("Author");
                 });
 
             modelBuilder.Entity("NervboxDeamon.DbModels.SoundTag", b =>

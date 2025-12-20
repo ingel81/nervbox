@@ -20,5 +20,11 @@ namespace NervboxDeamon.Services.Interfaces
         bool ResetPassword(int id, string newPassword, out string error);
         bool ToggleUserActive(int id, out string error);
         bool DeleteUser(int id, out string error);
+
+        // Avatar methods
+        bool SaveAvatar(int userId, byte[] imageData, string contentType, out string error);
+        (byte[] data, string contentType)? GetAvatar(int userId);
+        bool DeleteAvatar(int userId, out string error);
+        string GetAvatarUrl(int userId);
     }
 }

@@ -20,6 +20,8 @@ import { SignalRService, ChatMessage } from '../../core/services/signalr.service
 import { AuthService } from '../../core/services/auth.service';
 import { ApiService } from '../../core/services/api.service';
 import { GifPickerComponent } from './gif-picker.component';
+import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component';
+import { UserCacheService } from '../../core/services/user-cache.service';
 
 @Component({
   selector: 'app-chat-sidebar',
@@ -33,6 +35,7 @@ import { GifPickerComponent } from './gif-picker.component';
     MatFormFieldModule,
     MatProgressSpinnerModule,
     GifPickerComponent,
+    UserAvatarComponent,
   ],
   template: `
     <div class="chat-sidebar">
@@ -67,16 +70,24 @@ import { GifPickerComponent } from './gif-picker.component';
                 </button>
               }
               @for (msg of signalR.chatMessages(); track msg.id || $index) {
-                <div class="message" [class.own]="msg.userId === auth.currentUser()?.id" [class.gif-message]="msg.messageType === 'gif'">
+                <div class="message-row" [class.own]="msg.userId === auth.currentUser()?.id">
                   @if (msg.userId !== auth.currentUser()?.id) {
-                    <span class="username">{{ msg.username }}</span>
+                    <app-user-avatar [userId]="msg.userId" size="small" class="message-avatar" />
                   }
-                  @if (msg.messageType === 'gif' && msg.gifUrl) {
-                    <img class="gif-content" [src]="msg.gifUrl" alt="GIF" loading="lazy" />
-                  } @else {
-                    <span class="text">{{ msg.message }}</span>
+                  <div class="message" [class.own]="msg.userId === auth.currentUser()?.id" [class.gif-message]="msg.messageType === 'gif'">
+                    @if (msg.userId !== auth.currentUser()?.id) {
+                      <span class="username">{{ msg.username }}</span>
+                    }
+                    @if (msg.messageType === 'gif' && msg.gifUrl) {
+                      <img class="gif-content" [src]="msg.gifUrl" alt="GIF" loading="lazy" />
+                    } @else {
+                      <span class="text">{{ msg.message }}</span>
+                    }
+                    <span class="time">{{ formatTime(msg.createdAt) }}</span>
+                  </div>
+                  @if (msg.userId === auth.currentUser()?.id) {
+                    <app-user-avatar [userId]="msg.userId" size="small" class="message-avatar" />
                   }
-                  <span class="time">{{ formatTime(msg.createdAt) }}</span>
                 </div>
               }
               @if (!signalR.chatMessages().length) {
@@ -205,6 +216,21 @@ import { GifPickerComponent } from './gif-picker.component';
       gap: 8px;
     }
 
+    .message-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .message-row.own {
+      justify-content: flex-end;
+    }
+
+    .message-avatar {
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
     .load-older-btn {
       display: flex;
       align-items: center;
@@ -243,16 +269,17 @@ import { GifPickerComponent } from './gif-picker.component';
       background: rgba(30, 30, 35, 0.8);
       border: 1px solid rgba(255, 255, 255, 0.06);
       border-radius: 12px 12px 12px 4px;
-      margin-right: 32px;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+      flex: 1;
+      min-width: 0;
+      max-width: calc(100% - 40px);
     }
 
     .message.own {
       background: rgba(147, 51, 234, 0.12);
       border-color: rgba(147, 51, 234, 0.15);
       border-radius: 12px 12px 4px 12px;
-      margin-right: 0;
-      margin-left: 32px;
+      flex: unset;
     }
 
     .username {
@@ -425,6 +452,7 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
   readonly signalR = inject(SignalRService);
   readonly auth = inject(AuthService);
   private readonly api = inject(ApiService);
+  private readonly userCache = inject(UserCacheService);
 
   @ViewChild('messagesContainer') messagesContainer?: ElementRef;
   @ViewChild('messageInput') messageInput?: ElementRef<HTMLInputElement>;
@@ -463,6 +491,8 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
   ngOnInit(): void {
     this.loadMessages();
     this.signalR.connectChat();
+    // Load users for avatar display
+    this.userCache.loadUsers().subscribe();
   }
 
   ngAfterViewChecked(): void {

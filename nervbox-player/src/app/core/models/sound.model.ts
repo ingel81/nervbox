@@ -8,6 +8,7 @@ export interface Sound {
   enabled: boolean;
   createdAt: string;
   playCount?: number;
+  authorId?: number;
 }
 
 export interface TopSound {
