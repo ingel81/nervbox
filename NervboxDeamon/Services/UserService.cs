@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -384,6 +385,172 @@ namespace NervboxDeamon.Services
         db.Users.Remove(user);
         db.SaveChanges();
         return true;
+      }
+    }
+
+    #endregion
+
+    #region Avatar Methods
+
+    private string GetAvatarPath()
+    {
+      var path = _appSettings.AvatarPath;
+      if (!Path.IsPathRooted(path))
+      {
+        path = Path.Combine(AppContext.BaseDirectory, path);
+      }
+      return path;
+    }
+
+    public bool SaveAvatar(int userId, byte[] imageData, string contentType, out string error)
+    {
+      error = string.Empty;
+
+      using (var scope = ServiceProvider.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+        var user = db.Users.FirstOrDefault(u => u.Id == userId);
+
+        if (user == null)
+        {
+          error = "User not found.";
+          return false;
+        }
+
+        try
+        {
+          var avatarDir = GetAvatarPath();
+          if (!Directory.Exists(avatarDir))
+          {
+            Directory.CreateDirectory(avatarDir);
+          }
+
+          // Delete old avatar if exists
+          if (!string.IsNullOrEmpty(user.AvatarFileName))
+          {
+            var oldPath = Path.Combine(avatarDir, user.AvatarFileName);
+            if (File.Exists(oldPath))
+            {
+              File.Delete(oldPath);
+            }
+          }
+
+          // Determine file extension
+          var extension = contentType switch
+          {
+            "image/png" => ".png",
+            "image/gif" => ".gif",
+            "image/webp" => ".webp",
+            _ => ".jpg"
+          };
+
+          // Save new avatar
+          var fileName = $"{userId}_{DateTime.UtcNow.Ticks}{extension}";
+          var filePath = Path.Combine(avatarDir, fileName);
+          File.WriteAllBytes(filePath, imageData);
+
+          user.AvatarFileName = fileName;
+          db.SaveChanges();
+
+          return true;
+        }
+        catch (Exception ex)
+        {
+          error = $"Failed to save avatar: {ex.Message}";
+          return false;
+        }
+      }
+    }
+
+    public (byte[] data, string contentType)? GetAvatar(int userId)
+    {
+      using (var scope = ServiceProvider.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+        var user = db.Users.FirstOrDefault(u => u.Id == userId);
+
+        if (user == null || string.IsNullOrEmpty(user.AvatarFileName))
+        {
+          return null;
+        }
+
+        var avatarDir = GetAvatarPath();
+        var filePath = Path.Combine(avatarDir, user.AvatarFileName);
+
+        if (!File.Exists(filePath))
+        {
+          return null;
+        }
+
+        var data = File.ReadAllBytes(filePath);
+        var contentType = user.AvatarFileName.ToLower() switch
+        {
+          var f when f.EndsWith(".png") => "image/png",
+          var f when f.EndsWith(".gif") => "image/gif",
+          var f when f.EndsWith(".webp") => "image/webp",
+          _ => "image/jpeg"
+        };
+
+        return (data, contentType);
+      }
+    }
+
+    public bool DeleteAvatar(int userId, out string error)
+    {
+      error = string.Empty;
+
+      using (var scope = ServiceProvider.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+        var user = db.Users.FirstOrDefault(u => u.Id == userId);
+
+        if (user == null)
+        {
+          error = "User not found.";
+          return false;
+        }
+
+        if (string.IsNullOrEmpty(user.AvatarFileName))
+        {
+          return true; // No avatar to delete
+        }
+
+        try
+        {
+          var avatarDir = GetAvatarPath();
+          var filePath = Path.Combine(avatarDir, user.AvatarFileName);
+
+          if (File.Exists(filePath))
+          {
+            File.Delete(filePath);
+          }
+
+          user.AvatarFileName = null;
+          db.SaveChanges();
+
+          return true;
+        }
+        catch (Exception ex)
+        {
+          error = $"Failed to delete avatar: {ex.Message}";
+          return false;
+        }
+      }
+    }
+
+    public string GetAvatarUrl(int userId)
+    {
+      using (var scope = ServiceProvider.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+        var user = db.Users.FirstOrDefault(u => u.Id == userId);
+
+        if (user == null || string.IsNullOrEmpty(user.AvatarFileName))
+        {
+          return null;
+        }
+
+        return $"/api/users/{userId}/avatar";
       }
     }
 
