@@ -550,7 +550,7 @@ namespace NervboxDeamon.Services
           return null;
         }
 
-        return $"/api/users/{userId}/avatar";
+        return $"/users/{userId}/avatar";
       }
     }
 
