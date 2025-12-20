@@ -50,6 +50,10 @@ namespace NervboxDeamon.Services
         if (!user.IsActive)
           return null;
 
+        // System users cannot login
+        if (user.Role == "system")
+          return null;
+
         // Update last login time
         user.LastLoginAt = DateTime.UtcNow;
         db.SaveChanges();
@@ -217,7 +221,8 @@ namespace NervboxDeamon.Services
       {
         return new List<User>()
         {
-          new User() { Username = "admin", FirstName = "Admin", LastName = "User", PasswordHash = "admin", Role = "admin" }
+          new User() { Username = "admin", FirstName = "Admin", LastName = "User", PasswordHash = "admin", Role = "admin" },
+          new User() { Username = "NERVBOX", FirstName = "NERVBOX", LastName = "System", PasswordHash = "", Role = "system", IsActive = false }
         };
       }
     }
@@ -311,6 +316,13 @@ namespace NervboxDeamon.Services
           return null;
         }
 
+        // Prevent editing system user
+        if (user.Role == "system")
+        {
+          error = "Cannot edit system user.";
+          return null;
+        }
+
         if (model.FirstName != null)
           user.FirstName = model.FirstName;
 
@@ -343,6 +355,13 @@ namespace NervboxDeamon.Services
           return false;
         }
 
+        // Prevent resetting system user password
+        if (user.Role == "system")
+        {
+          error = "Cannot reset system user password.";
+          return false;
+        }
+
         user.PasswordHash = GetPasswordHash(newPassword);
         db.SaveChanges();
         return true;
@@ -361,6 +380,13 @@ namespace NervboxDeamon.Services
         if (user == null)
         {
           error = "User not found.";
+          return false;
+        }
+
+        // Prevent toggling system user
+        if (user.Role == "system")
+        {
+          error = "Cannot modify system user.";
           return false;
         }
 
@@ -389,6 +415,13 @@ namespace NervboxDeamon.Services
         if (user.Username == "admin")
         {
           error = "Cannot delete admin user.";
+          return false;
+        }
+
+        // Prevent deleting system user
+        if (user.Role == "system")
+        {
+          error = "Cannot delete system user.";
           return false;
         }
 

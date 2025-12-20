@@ -14,6 +14,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { AuthService } from '../../core/services/auth.service';
 import { FavoritesService } from '../../core/services/favorites.service';
 import { AvatarService } from '../../core/services/avatar.service';
+import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component';
 
 export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'duration-desc' | 'duration-asc' | 'random';
 
@@ -33,6 +34,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
     MatBadgeModule,
     MatDividerModule,
     MatSelectModule,
+    UserAvatarComponent,
   ],
   template: `
     <mat-toolbar class="toolbar">
@@ -201,19 +203,21 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
         <div class="toolbar-divider"></div>
         @if (auth.isLoggedIn()) {
           <button mat-icon-button [matMenuTriggerFor]="userMenu" class="user-btn" data-tour="profile">
-            @if (avatarService.currentUserAvatarUrl()) {
-              <img [src]="avatarService.currentUserAvatarUrl()" class="user-avatar-img" alt="Avatar" />
-            } @else {
-              <span class="user-initials">{{ userInitials() }}</span>
-            }
+            <app-user-avatar
+              [imageUrl]="avatarService.currentUserAvatarUrl()"
+              [initials]="userInitials()"
+              [name]="auth.currentUser()?.username"
+              size="medium"
+            />
           </button>
           <mat-menu #userMenu="matMenu">
             <div class="menu-header user-menu-header">
-              @if (avatarService.currentUserAvatarUrl()) {
-                <img [src]="avatarService.currentUserAvatarUrl()" class="menu-avatar-img" alt="Avatar" />
-              } @else {
-                <span class="menu-initials">{{ userInitials() }}</span>
-              }
+              <app-user-avatar
+                [imageUrl]="avatarService.currentUserAvatarUrl()"
+                [initials]="userInitials()"
+                [name]="auth.currentUser()?.username"
+                size="medium"
+              />
               <span>{{ auth.currentUser()?.username }}</span>
             </div>
             <mat-divider></mat-divider>
@@ -688,57 +692,6 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
 
     .menu-header mat-icon {
       color: #9333ea;
-    }
-
-    .user-avatar-img {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid rgba(147, 51, 234, 0.5);
-    }
-
-    .menu-avatar-img {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid #9333ea;
-    }
-
-    .user-initials {
-      width: 32px;
-      min-width: 32px;
-      height: 32px;
-      min-height: 32px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      font-weight: 600;
-      color: white;
-      font-family: 'JetBrains Mono', monospace;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-      aspect-ratio: 1;
-      flex-shrink: 0;
-    }
-
-    .menu-initials {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      font-weight: 600;
-      color: white;
-      font-family: 'JetBrains Mono', monospace;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-      flex-shrink: 0;
     }
 
     .user-menu-header {

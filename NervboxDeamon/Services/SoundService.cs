@@ -170,6 +170,10 @@ namespace NervboxDeamon.Services
         var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
         var existing = db.Sounds.ToList();
 
+        // Get system user for authoring scanned sounds
+        var systemUser = db.Users.FirstOrDefault(u => u.Role == "system");
+        var systemUserId = systemUser?.Id;
+
         var validSounds = existing.Where(e => found.Exists(f => e.Hash.Equals(f.Hash))).ToList();
         var invalidSounds = existing.Where(e => !found.Exists(f => e.Hash.Equals(f.Hash))).ToList();
         var newSounds = found.Where(f => !existing.Exists(e => e.Hash.Equals(f.Hash))).ToList();
@@ -181,7 +185,7 @@ namespace NervboxDeamon.Services
           soundsChanged = true;
         }
 
-        // 2) Add new sounds
+        // 2) Add new sounds (with system user as author)
         foreach (var newSound in newSounds)
         {
           try
@@ -193,7 +197,8 @@ namespace NervboxDeamon.Services
               FileName = newSound.FileName,
               SizeBytes = newSound.SizeBytes,
               DurationMs = newSound.DurationMs,
-              Enabled = true
+              Enabled = true,
+              AuthorId = systemUserId
             });
             soundsChanged = true;
           }
@@ -203,7 +208,19 @@ namespace NervboxDeamon.Services
           }
         }
 
-        // 3) Update filename if changed for valid sounds
+        // 3) Set system user as author for sounds without author
+        var soundsWithoutAuthor = existing.Where(s => s.AuthorId == null).ToList();
+        if (soundsWithoutAuthor.Any() && systemUserId.HasValue)
+        {
+          foreach (var sound in soundsWithoutAuthor)
+          {
+            sound.AuthorId = systemUserId.Value;
+          }
+          soundsChanged = true;
+          Logger.LogInformation($"Set system user as author for {soundsWithoutAuthor.Count} existing sounds");
+        }
+
+        // 4) Update filename if changed for valid sounds
         foreach (var sound in validSounds)
         {
           try

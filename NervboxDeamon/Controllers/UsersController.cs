@@ -268,5 +268,60 @@ namespace NervboxDeamon.Controllers
 
         #endregion
 
+        #region Profile Endpoints
+
+        /// <summary>
+        /// Get public user profile by ID
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("{id}/profile")]
+        public IActionResult GetUserProfile(int id)
+        {
+            var user = this.DbContext.Users.FirstOrDefault(u => u.Id == id);
+
+            if (user == null)
+                return NotFound(new { message = "User not found" });
+
+            // Don't show system user profiles
+            if (user.Role == "system")
+                return NotFound(new { message = "User not found" });
+
+            // Get sounds authored by this user
+            var sounds = this.DbContext.Sounds
+                .Where(s => s.AuthorId == id && s.Enabled)
+                .Select(s => new
+                {
+                    s.Hash,
+                    s.Name,
+                    s.FileName,
+                    s.DurationMs,
+                    s.CreatedAt,
+                    PlayCount = s.Usages.Count()
+                })
+                .OrderByDescending(s => s.CreatedAt)
+                .ToList();
+
+            // Get total play count for user's sounds
+            var totalPlays = this.DbContext.SoundUsages
+                .Count(u => u.UserId == id);
+
+            return Ok(new
+            {
+                Id = user.Id,
+                Username = user.Username,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                CreatedAt = user.CreatedAt,
+                Sounds = sounds,
+                Stats = new
+                {
+                    SoundCount = sounds.Count,
+                    TotalPlays = totalPlays
+                }
+            });
+        }
+
+        #endregion
+
     }
 }

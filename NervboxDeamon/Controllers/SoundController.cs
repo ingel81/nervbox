@@ -34,6 +34,9 @@ namespace NervboxDeamon.Controllers
     [HttpGet]
     public IActionResult GetAllSounds()
     {
+      // Get system user ID to exclude from author display
+      var systemUserId = this.DbContext.Users.FirstOrDefault(u => u.Role == "system")?.Id;
+
       var sounds = this.DbContext.Sounds
         .Where(s => s.Enabled)
         .Select(s => new
@@ -46,7 +49,8 @@ namespace NervboxDeamon.Controllers
           s.Enabled,
           s.CreatedAt,
           Tags = s.SoundTags.Select(st => st.Tag.Name).ToList(),
-          PlayCount = s.Usages.Count()
+          PlayCount = s.Usages.Count(),
+          AuthorId = s.AuthorId != systemUserId ? s.AuthorId : null
         })
         .ToList();
 
@@ -228,7 +232,8 @@ namespace NervboxDeamon.Controllers
           SizeBytes = file.Length,
           DurationMs = durationMs,
           Enabled = true,
-          CreatedAt = DateTime.UtcNow
+          CreatedAt = DateTime.UtcNow,
+          AuthorId = this.UserId
         };
 
         this.DbContext.Sounds.Add(sound);

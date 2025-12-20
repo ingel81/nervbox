@@ -10,6 +10,7 @@ import { Sound } from '../../core/models';
 import { DurationPipe } from '../../shared/pipes/duration.pipe';
 import { AuthService } from '../../core/services/auth.service';
 import { FavoritesService } from '../../core/services/favorites.service';
+import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component';
 
 @Component({
   selector: 'app-sound-card',
@@ -24,6 +25,7 @@ import { FavoritesService } from '../../core/services/favorites.service';
     MatMenuModule,
     MatDividerModule,
     DurationPipe,
+    UserAvatarComponent,
   ],
   template: `
     <div
@@ -40,6 +42,8 @@ import { FavoritesService } from '../../core/services/favorites.service';
           <mat-icon class="selection-indicator" [class.checked]="isSelected()">
             {{ isSelected() ? 'check_box' : 'check_box_outline_blank' }}
           </mat-icon>
+        } @else if (sound().authorId) {
+          <app-user-avatar [userId]="sound().authorId" size="small" class="author-avatar" />
         } @else {
           <mat-icon class="sound-icon">{{ sound().enabled ? 'music_note' : 'music_off' }}</mat-icon>
         }
@@ -212,6 +216,10 @@ import { FavoritesService } from '../../core/services/favorites.service';
     .sound-card:hover:not(.disabled) .sound-icon {
       color: rgba(147, 51, 234, 0.9);
       transform: scale(1.1);
+    }
+
+    .author-avatar {
+      flex-shrink: 0;
     }
 
     .disabled .sound-icon {
