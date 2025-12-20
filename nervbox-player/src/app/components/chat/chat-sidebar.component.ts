@@ -218,7 +218,7 @@ import { UserCacheService } from '../../core/services/user-cache.service';
 
     .message-row {
       display: flex;
-      align-items: flex-end;
+      align-items: flex-start;
       gap: 8px;
     }
 
@@ -228,7 +228,7 @@ import { UserCacheService } from '../../core/services/user-cache.service';
 
     .message-avatar {
       flex-shrink: 0;
-      margin-bottom: 2px;
+      margin-top: 2px;
     }
 
     .load-older-btn {
