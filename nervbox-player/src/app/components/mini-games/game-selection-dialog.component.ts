@@ -21,12 +21,12 @@ interface GameInfo {
     <div class="game-selection-dialog">
       <div class="dialog-header">
         <mat-icon class="title-icon">videogame_asset</mat-icon>
-        <h2>Earn Coins</h2>
+        <h2>Earn N$</h2>
         <span class="beta-badge">BETA</span>
       </div>
 
       <mat-dialog-content>
-        <p class="dialog-subtitle">Spiele Mini-Games und verdiene Coins!</p>
+        <p class="dialog-subtitle">Spiele Mini-Games und verdiene NervBox Shekel!</p>
 
         <div class="games-grid">
           @for (game of availableGames; track game.id) {

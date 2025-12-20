@@ -132,7 +132,7 @@ export class WelcomeTourService {
     }
   }
 
-  private openShekelDialog(tabIndex: number = 0): Promise<void> {
+  private openShekelDialog(tabIndex = 0): Promise<void> {
     return new Promise(resolve => {
       // Close any existing dialog first
       if (this.shekelDialogRef) {
@@ -215,7 +215,7 @@ export class WelcomeTourService {
     this.tour.addStep({
       id: 'welcome',
       title: 'Hey, Willkommen!',
-      text: 'Nervbox – Mental Damage auf Knopfdruck.<br><br>Lass mich dir alles zeigen!',
+      text: 'Nervbox – ADHS auf Knopfdruck.<br><br>Lass mich dir alles zeigen!',
       attachTo: { element: '.logo', on: 'bottom' },
       canClickTarget: false,
       cancelIcon: { enabled: false },
@@ -258,11 +258,11 @@ export class WelcomeTourService {
       buttons: this.getNavButtons(),
     });
 
-    // Step 6: Shekel Casino (Gambling)
+    // Step 6: Shekel Transfer (Tab 0 - Senden)
     this.tour.addStep({
-      id: 'shekel-casino',
-      title: 'Shekel Casino',
-      text: 'Feeling lucky?<br><br>Setze deine N$ ein und verdopple sie - oder verliere alles!<br><br><b>50/50 Chance</b> - Das Haus gewinnt immer... manchmal.',
+      id: 'shekel-transfer',
+      title: 'Shekel senden',
+      text: 'Sei großzügig!<br><br>Sende N$ an bedürftige User.',
       attachTo: { element: '.shekel-popover', on: 'right' },
       buttons: this.getNavButtons(),
       beforeShowPromise: () => {
@@ -271,11 +271,11 @@ export class WelcomeTourService {
       },
     });
 
-    // Step 7: Shekel Transfer
+    // Step 7: Shekel Casino (Tab 1 - Gambeln)
     this.tour.addStep({
-      id: 'shekel-transfer',
-      title: 'Shekel senden',
-      text: 'Sei großzügig!<br><br>Sende N$ an andere User.<br>Perfekt um Freunde zu bestechen... äh, zu beschenken!',
+      id: 'shekel-casino',
+      title: 'Shekel Casino',
+      text: 'Feeling lucky?<br><br>Setze deine N$ ein und verdopple sie - oder verliere alles!<br><br><b>50/50 Chance</b>',
       attachTo: { element: '.shekel-popover', on: 'right' },
       buttons: this.getNavButtons(),
       beforeShowPromise: () => {
@@ -303,8 +303,9 @@ export class WelcomeTourService {
       id: 'soundcard-menu',
       title: 'Sound-Optionen',
       text: `Das Drei-Punkte-Menü bietet:<br><br>
-        • <b>Anhören</b> - Sound abspielen<br>
-        • <b>Im Mixer öffnen</b> - Zum Bearbeiten`,
+        • <b>Auf Nervbox abspielen</b> - Spielt auf dem Pi<br>
+        • <b>Im Browser anhören</b> - Spielt lokal in deinem Browser<br>
+        • <b>Im Mixer öffnen</b> - Zum Bearbeiten und Mixen`,
       attachTo: { element: '.cdk-overlay-pane', on: 'left' },
       buttons: this.getNavButtons(),
       beforeShowPromise: () => {
@@ -350,7 +351,7 @@ export class WelcomeTourService {
     this.tour.addStep({
       id: 'chat',
       title: 'Chat',
-      text: 'Echtzeit-Chat mit allen!<br><br>• Nachrichten schreiben<br>• <b>GIFs senden</b> - Klick auf das GIF-Icon<br>• Sehen wer gerade online ist<br>• Reaktionen auf Sounds',
+      text: 'Echtzeit-Chat mit allen!<br><br>• Nachrichten schreiben<br>• <b>GIFs senden</b> - Klick auf das GIF-Icon<br>',
       attachTo: { element: '[data-tour="chat"]', on: 'bottom' },
       buttons: this.getNavButtons(),
     });
@@ -395,7 +396,7 @@ export class WelcomeTourService {
     this.tour.addStep({
       id: 'finish',
       title: 'Fertig!',
-      text: 'Du kennst jetzt alle Basics!<br><br>Einloggen und loslegen. Viel Spaß beim Nerven!',
+      text: 'Du kennst jetzt alle Basics!<br><br> Viel Spaß!',
       attachTo: { element: '.logo', on: 'bottom' },
       buttons: [
         { text: 'Zurück', action: () => this.tour?.back(), secondary: true },

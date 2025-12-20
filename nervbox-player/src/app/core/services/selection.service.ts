@@ -1,7 +1,9 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
+import { AchievementService } from './achievement.service';
 
 @Injectable({ providedIn: 'root' })
 export class SelectionService {
+  private readonly achievementService = inject(AchievementService);
   /** Selection-Modus aktiv/inaktiv */
   readonly selectionMode = signal(false);
 
@@ -53,6 +55,8 @@ export class SelectionService {
   openInMixer(): void {
     const hashes = this.selectedSounds().join(',');
     if (hashes) {
+      // Grant mixer visit achievement before navigation
+      this.achievementService.markMixerVisited().subscribe();
       window.location.href = `/mixer?sounds=${hashes}`;
     }
   }

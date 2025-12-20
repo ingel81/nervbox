@@ -124,8 +124,8 @@ interface UserProfile {
   `,
   styles: `
     .profile-dialog {
-      min-width: 380px;
-      max-width: 450px;
+      min-width: 500px;
+      max-width: 600px;
     }
 
     .loading-container,

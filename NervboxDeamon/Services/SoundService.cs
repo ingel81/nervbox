@@ -365,8 +365,9 @@ namespace NervboxDeamon.Services
           using (var scope = serviceProvider.CreateScope())
           {
             var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
-            // +1 because current usage not yet saved
-            var totalPlays = db.SoundUsages.Count(su => su.UserId == userId) + 1;
+            // Count pending usages in queue for this user (not yet saved to DB)
+            var pendingForUser = Usages.Count(u => u.UserId == userId);
+            var totalPlays = db.SoundUsages.Count(su => su.UserId == userId) + pendingForUser;
             AchievementService?.CheckSoundPlayAchievements(userId, totalPlays);
           }
         }

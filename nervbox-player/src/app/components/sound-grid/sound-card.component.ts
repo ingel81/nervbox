@@ -10,6 +10,8 @@ import { Sound } from '../../core/models';
 import { DurationPipe } from '../../shared/pipes/duration.pipe';
 import { AuthService } from '../../core/services/auth.service';
 import { FavoritesService } from '../../core/services/favorites.service';
+import { AchievementService } from '../../core/services/achievement.service';
+import { ApiService } from '../../core/services/api.service';
 import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component';
 
 @Component({
@@ -97,8 +99,12 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
 
     <mat-menu #menu="matMenu">
       <button mat-menu-item (click)="playClick.emit(sound())">
-        <mat-icon>play_arrow</mat-icon>
-        <span>Anhören</span>
+        <mat-icon>speaker</mat-icon>
+        <span>Auf Nervbox abspielen</span>
+      </button>
+      <button mat-menu-item (click)="playInBrowser()">
+        <mat-icon>headphones</mat-icon>
+        <span>Im Browser anhören</span>
       </button>
       <button mat-menu-item (click)="openInMixer()">
         <mat-icon>tune</mat-icon>
@@ -454,6 +460,8 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
 export class SoundCardComponent implements AfterViewInit {
   readonly auth = inject(AuthService);
   private readonly favoritesService = inject(FavoritesService);
+  private readonly achievementService = inject(AchievementService);
+  private readonly api = inject(ApiService);
 
   readonly favoriteAnimating = signal(false);
 
@@ -498,7 +506,16 @@ export class SoundCardComponent implements AfterViewInit {
   }
 
   openInMixer(): void {
+    // Grant mixer visit achievement before navigation
+    this.achievementService.markMixerVisited().subscribe();
     window.location.href = `/mixer?sounds=${this.sound().hash}`;
+  }
+
+  playInBrowser(): void {
+    const url = this.api.getFullUrl(`/sound/${this.sound().hash}/file`);
+    const audio = new Audio(url);
+    audio.volume = 0.7;
+    audio.play().catch(err => console.warn('Browser audio playback failed:', err));
   }
 
   isFavorite(): boolean {

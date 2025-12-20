@@ -468,7 +468,7 @@ namespace NervboxDeamon.Services
                 if (achievement.RewardCredits > 0)
                 {
                     _creditService.AddCredits(userId, achievement.RewardCredits,
-                        CreditTransactionType.GameReward,
+                        CreditTransactionType.AchievementReward,
                         $"Achievement: {achievement.Name}",
                         achievementId);
                 }

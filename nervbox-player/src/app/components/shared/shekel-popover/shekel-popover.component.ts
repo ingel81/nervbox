@@ -30,10 +30,10 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
   ],
   template: `
     <div class="shekel-popover">
-      <div class="header" [class.casino-mode]="activeTab() === 0" [class.transfer-mode]="activeTab() === 1">
+      <div class="header" [class.transfer-mode]="activeTab() === 0" [class.casino-mode]="activeTab() === 1">
         <img src="icons/nervbox-coin.svg" alt="Shekel" class="header-coin">
         <div class="header-text">
-          <span class="title">{{ activeTab() === 0 ? 'Shekel Casino' : 'Shekel senden' }}</span>
+          <span class="title">{{ activeTab() === 0 ? 'Shekel senden' : 'Shekel Casino' }}</span>
           <span class="balance">{{ creditService.creditsFormatted() }} N$</span>
         </div>
         <button mat-icon-button class="close-btn" (click)="close()">
@@ -44,7 +44,79 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
       <mat-divider></mat-divider>
 
       <mat-tab-group animationDuration="200ms" class="tabs" (selectedIndexChange)="activeTab.set($event)">
-        <!-- GAMBLING TAB -->
+        <!-- TRANSFER TAB (now first) -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>send</mat-icon>
+            <span>Senden</span>
+          </ng-template>
+
+          <div class="tab-content transfer-tab">
+            <div class="transfer-info">
+              <mat-icon class="send-icon">volunteer_activism</mat-icon>
+              <p>Sende Shekel an andere User!</p>
+            </div>
+
+            @if (transferResult()) {
+              <div class="result-banner" [class.won]="transferResult()!.success" [class.lost]="!transferResult()!.success">
+                <mat-icon>{{ transferResult()!.success ? 'check_circle' : 'error' }}</mat-icon>
+                <span>{{ transferResult()!.message }}</span>
+              </div>
+            }
+
+            @if (isLoadingUsers()) {
+              <div class="loading-users">
+                <mat-spinner diameter="24"></mat-spinner>
+                <span>Lade User...</span>
+              </div>
+            } @else {
+              <mat-form-field appearance="outline" class="user-select">
+                <mat-label>Empfänger</mat-label>
+                <mat-select [(ngModel)]="selectedUserId" panelClass="shekel-select-panel">
+                  @for (user of users(); track user.id) {
+                    <mat-option [value]="user.id">{{ user.username }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="amount-field">
+                <mat-label>Betrag (N$)</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  [(ngModel)]="transferAmount"
+                  [min]="1"
+                  [max]="creditService.credits()"
+                  placeholder="Wie viel willst du senden?"
+                />
+                <mat-hint>Max: {{ creditService.credits() }} N$</mat-hint>
+              </mat-form-field>
+
+              <div class="quick-amounts">
+                <button mat-stroked-button (click)="setTransferAmount(5)" [disabled]="creditService.credits() < 5">5</button>
+                <button mat-stroked-button (click)="setTransferAmount(10)" [disabled]="creditService.credits() < 10">10</button>
+                <button mat-stroked-button (click)="setTransferAmount(25)" [disabled]="creditService.credits() < 25">25</button>
+                <button mat-stroked-button (click)="setTransferAmount(50)" [disabled]="creditService.credits() < 50">50</button>
+              </div>
+
+              <button
+                mat-raised-button
+                class="transfer-btn"
+                [disabled]="isTransferring() || !selectedUserId || transferAmount <= 0 || transferAmount > creditService.credits()"
+                (click)="transfer()"
+              >
+                @if (isTransferring()) {
+                  <mat-spinner diameter="20"></mat-spinner>
+                } @else {
+                  <mat-icon>send</mat-icon>
+                  <span>SENDEN</span>
+                }
+              </button>
+            }
+          </div>
+        </mat-tab>
+
+        <!-- GAMBLING TAB (now second) -->
         <mat-tab>
           <ng-template mat-tab-label>
             <mat-icon>casino</mat-icon>
@@ -101,85 +173,13 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
             </button>
           </div>
         </mat-tab>
-
-        <!-- TRANSFER TAB -->
-        <mat-tab>
-          <ng-template mat-tab-label>
-            <mat-icon>send</mat-icon>
-            <span>Senden</span>
-          </ng-template>
-
-          <div class="tab-content transfer-tab">
-            <div class="transfer-info">
-              <mat-icon class="send-icon">volunteer_activism</mat-icon>
-              <p>Sende Shekel an andere User!</p>
-            </div>
-
-            @if (transferResult()) {
-              <div class="result-banner" [class.won]="transferResult()!.success" [class.lost]="!transferResult()!.success">
-                <mat-icon>{{ transferResult()!.success ? 'check_circle' : 'error' }}</mat-icon>
-                <span>{{ transferResult()!.message }}</span>
-              </div>
-            }
-
-            @if (isLoadingUsers()) {
-              <div class="loading-users">
-                <mat-spinner diameter="24"></mat-spinner>
-                <span>Lade User...</span>
-              </div>
-            } @else {
-              <mat-form-field appearance="outline" class="user-select">
-                <mat-label>Empfänger</mat-label>
-                <mat-select [(ngModel)]="selectedUserId">
-                  @for (user of users(); track user.id) {
-                    <mat-option [value]="user.id">{{ user.username }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline" class="amount-field">
-                <mat-label>Betrag (N$)</mat-label>
-                <input
-                  matInput
-                  type="number"
-                  [(ngModel)]="transferAmount"
-                  [min]="1"
-                  [max]="creditService.credits()"
-                  placeholder="Wie viel willst du senden?"
-                />
-                <mat-hint>Max: {{ creditService.credits() }} N$</mat-hint>
-              </mat-form-field>
-
-              <div class="quick-amounts">
-                <button mat-stroked-button (click)="setTransferAmount(5)" [disabled]="creditService.credits() < 5">5</button>
-                <button mat-stroked-button (click)="setTransferAmount(10)" [disabled]="creditService.credits() < 10">10</button>
-                <button mat-stroked-button (click)="setTransferAmount(25)" [disabled]="creditService.credits() < 25">25</button>
-                <button mat-stroked-button (click)="setTransferAmount(50)" [disabled]="creditService.credits() < 50">50</button>
-              </div>
-
-              <button
-                mat-raised-button
-                class="transfer-btn"
-                [disabled]="isTransferring() || !selectedUserId || transferAmount <= 0 || transferAmount > creditService.credits()"
-                (click)="transfer()"
-              >
-                @if (isTransferring()) {
-                  <mat-spinner diameter="20"></mat-spinner>
-                } @else {
-                  <mat-icon>send</mat-icon>
-                  <span>SENDEN</span>
-                }
-              </button>
-            }
-          </div>
-        </mat-tab>
       </mat-tab-group>
     </div>
   `,
   styles: `
     .shekel-popover {
-      min-width: 320px;
-      max-width: 400px;
+      min-width: 570px;
+      max-width: 650px;
       background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
       border-radius: 16px;
       overflow: hidden;
