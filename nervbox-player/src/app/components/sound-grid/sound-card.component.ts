@@ -125,7 +125,8 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
     :host {
       display: block;
       min-width: 0;
-      overflow: hidden;
+      padding-top: 2px;
+      margin-top: -2px;
     }
 
     .sound-card {
@@ -261,11 +262,14 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
       width: 26px !important;
       height: 26px !important;
       padding: 0 !important;
-      margin: -4px -6px -4px 0;
+      margin: -4px 0;
       opacity: 0;
       transition: opacity 0.15s ease, background 0.15s ease !important;
       flex-shrink: 0;
       border-radius: 6px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
     }
 
     .more-btn:hover {
@@ -278,6 +282,7 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
       font-size: 18px;
       width: 18px;
       height: 18px;
+      line-height: 18px;
     }
 
     .sound-card:hover .more-btn {
