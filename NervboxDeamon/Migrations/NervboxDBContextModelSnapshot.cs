@@ -17,6 +17,89 @@ namespace NervboxDeamon.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.0");
 
+            modelBuilder.Entity("NervboxDeamon.DbModels.CreditSettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<int>("CostPerSoundPlay")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("cost_per_sound_play");
+
+                    b.Property<int>("HourlyCreditsAmount")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("hourly_credits_amount");
+
+                    b.Property<bool>("HourlyCreditsEnabled")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("hourly_credits_enabled");
+
+                    b.Property<int>("InitialCreditsAdmin")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("initial_credits_admin");
+
+                    b.Property<int>("InitialCreditsUser")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("initial_credits_user");
+
+                    b.Property<int>("MaxCreditsUser")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("max_credits_user");
+
+                    b.Property<int>("MinCreditsToPlay")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("min_credits_to_play");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("credit_settings");
+                });
+
+            modelBuilder.Entity("NervboxDeamon.DbModels.CreditTransaction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Amount")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("amount");
+
+                    b.Property<int>("BalanceAfter")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("balance_after");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("description");
+
+                    b.Property<string>("RelatedEntityId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("related_entity_id");
+
+                    b.Property<string>("TransactionType")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("transaction_type");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("credit_transactions");
+                });
+
             modelBuilder.Entity("NervboxDeamon.DbModels.ChatMessage", b =>
                 {
                     b.Property<int>("Id")
@@ -203,6 +286,10 @@ namespace NervboxDeamon.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
+                    b.Property<int>("Credits")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("credits");
+
                     b.Property<string>("FirstName")
                         .HasColumnType("TEXT")
                         .HasColumnName("first_name");
@@ -214,6 +301,10 @@ namespace NervboxDeamon.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER")
                         .HasColumnName("is_active");
+
+                    b.Property<DateTime?>("LastCreditGrantAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("last_credit_grant_at");
 
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("TEXT")
@@ -270,6 +361,17 @@ namespace NervboxDeamon.Migrations
                 });
 
             modelBuilder.Entity("NervboxDeamon.DbModels.ChatMessage", b =>
+                {
+                    b.HasOne("NervboxDeamon.DbModels.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("NervboxDeamon.DbModels.CreditTransaction", b =>
                 {
                     b.HasOne("NervboxDeamon.DbModels.User", "User")
                         .WithMany()

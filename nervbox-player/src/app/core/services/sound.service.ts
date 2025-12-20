@@ -2,12 +2,18 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
 import { Sound, SoundUpdateRequest, Tag, TopSound, TopUser } from '../models';
+import { CreditService } from './credit.service';
+
+interface PlaySoundResponse {
+  creditsRemaining: number;
+}
 
 @Injectable({
   providedIn: 'root',
 })
 export class SoundService {
   private readonly api = inject(ApiService);
+  private readonly creditService = inject(CreditService);
 
   // State
   readonly sounds = signal<Sound[]>([]);
@@ -32,8 +38,14 @@ export class SoundService {
     );
   }
 
-  playSound(hash: string): Observable<void> {
-    return this.api.get<void>(`/sound/${hash}/play`);
+  playSound(hash: string): Observable<PlaySoundResponse> {
+    return this.api.get<PlaySoundResponse>(`/sound/${hash}/play`).pipe(
+      tap(response => {
+        if (response?.creditsRemaining !== undefined) {
+          this.creditService.updateCreditsFromPlayResponse(response.creditsRemaining);
+        }
+      })
+    );
   }
 
   killAll(): Observable<void> {

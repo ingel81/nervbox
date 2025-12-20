@@ -13,6 +13,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatSelectModule } from '@angular/material/select';
 import { AuthService } from '../../core/services/auth.service';
 import { FavoritesService } from '../../core/services/favorites.service';
+import { CreditService } from '../../core/services/credit.service';
 
 export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'duration-desc' | 'duration-asc' | 'random';
 
@@ -93,6 +94,14 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
         >
           <mat-icon>{{ showFavoritesOnly() ? 'favorite' : 'favorite_border' }}</mat-icon>
         </button>
+      }
+
+      <!-- CREDIT DISPLAY - Prominent! -->
+      @if (auth.isLoggedIn()) {
+        <div class="credit-display" [class.low-credits]="!creditService.canPlay()" matTooltip="Deine Credits ({{ creditService.costPerPlay() }} pro Sound)">
+          <mat-icon class="credit-icon">monetization_on</mat-icon>
+          <span class="credit-amount">{{ creditService.creditsFormatted() }}</span>
+        </div>
       }
 
       <div class="spacer"></div>
@@ -187,6 +196,10 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
             <button mat-menu-item (click)="adminMenuAction.emit('tag-wizard')">
               <mat-icon>auto_fix_high</mat-icon>
               <span>Tag-Wizard</span>
+            </button>
+            <button mat-menu-item (click)="adminMenuAction.emit('credits')">
+              <mat-icon>monetization_on</mat-icon>
+              <span>Credit-Einstellungen</span>
             </button>
             <mat-divider></mat-divider>
             <button mat-menu-item (click)="killAllClick.emit()" class="danger-item">
@@ -428,6 +441,77 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
 
     .favorites-filter-btn.active mat-icon {
       color: #ec4899;
+    }
+
+    /* CREDIT DISPLAY - Das Guthaben! */
+    .credit-display {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, rgba(234, 179, 8, 0.15) 0%, rgba(251, 191, 36, 0.1) 100%);
+      border: 1px solid rgba(234, 179, 8, 0.4);
+      border-radius: 20px;
+      padding: 6px 14px;
+      margin-left: 8px;
+      transition: all 0.3s ease;
+      animation: creditGlow 3s ease-in-out infinite;
+    }
+
+    .credit-display:hover {
+      background: linear-gradient(135deg, rgba(234, 179, 8, 0.25) 0%, rgba(251, 191, 36, 0.2) 100%);
+      border-color: rgba(234, 179, 8, 0.6);
+      transform: scale(1.05);
+    }
+
+    .credit-display.low-credits {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.15) 100%);
+      border-color: rgba(239, 68, 68, 0.5);
+      animation: lowCreditPulse 1.5s ease-in-out infinite;
+    }
+
+    .credit-display.low-credits .credit-icon {
+      color: #ef4444;
+    }
+
+    .credit-display.low-credits .credit-amount {
+      color: #fca5a5;
+    }
+
+    .credit-icon {
+      color: #fbbf24;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.5));
+    }
+
+    .credit-amount {
+      color: #fde047;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      text-shadow: 0 0 8px rgba(253, 224, 71, 0.4);
+      min-width: 24px;
+    }
+
+    @keyframes creditGlow {
+      0%, 100% {
+        box-shadow: 0 0 8px rgba(234, 179, 8, 0.3);
+      }
+      50% {
+        box-shadow: 0 0 16px rgba(234, 179, 8, 0.5);
+      }
+    }
+
+    @keyframes lowCreditPulse {
+      0%, 100% {
+        box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 0 16px rgba(239, 68, 68, 0.6);
+        transform: scale(1.02);
+      }
     }
 
     .actions {
@@ -700,6 +784,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
 export class ToolbarComponent {
   readonly auth = inject(AuthService);
   readonly favorites = inject(FavoritesService);
+  readonly creditService = inject(CreditService);
 
   searchQuery = '';
 
@@ -714,7 +799,7 @@ export class ToolbarComponent {
   readonly sortChange = output<SortOption>();
   readonly favoritesFilterToggle = output<void>();
   readonly killAllClick = output<void>();
-  readonly adminMenuAction = output<'users' | 'tags' | 'tag-wizard'>();
+  readonly adminMenuAction = output<'users' | 'tags' | 'tag-wizard' | 'credits'>();
   readonly statsClick = output<void>();
   readonly chatClick = output<void>();
   readonly loginClick = output<void>();

@@ -60,8 +60,12 @@ namespace NervboxDeamon.Controllers
     {
       try
       {
-        this.SoundService.PlaySound(soundId, this.UserId);
-        return Ok();
+        var result = this.SoundService.PlaySound(soundId, this.UserId);
+        if (!result.Success)
+        {
+          return BadRequest(new { Error = result.Error });
+        }
+        return Ok(new { CreditsRemaining = result.CreditsRemaining });
       }
       catch (Exception ex)
       {

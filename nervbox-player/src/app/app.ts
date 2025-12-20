@@ -15,6 +15,7 @@ import { DeleteSoundDialogComponent, DeleteSoundDialogData } from './components/
 import { TagManagerDialogComponent } from './components/admin/tag-manager-dialog.component';
 import { TagWizardDialogComponent } from './components/admin/tag-wizard-dialog.component';
 import { UserManagementDialogComponent } from './components/admin/user-management-dialog.component';
+import { CreditSettingsDialogComponent } from './components/admin/credit-settings-dialog.component';
 import { ChatSidebarComponent } from './components/chat/chat-sidebar.component';
 import { EarnCoinsFabComponent } from './components/mini-games/earn-coins-fab.component';
 import { SoundService } from './core/services/sound.service';
@@ -501,11 +502,9 @@ export class App implements OnInit {
           this.openLoginDialog(() => this.onPlaySound(sound));
           return;
         }
-        this.snackBar.open(
-          `Fehler beim Abspielen: ${err.message || 'Unbekannter Fehler'}`,
-          'OK',
-          { duration: 3000 }
-        );
+        // Show error from backend (e.g., not enough credits)
+        const errorMsg = err.error?.error || err.message || 'Unbekannter Fehler';
+        this.snackBar.open(errorMsg, 'OK', { duration: 4000 });
       },
     });
   }
@@ -555,7 +554,7 @@ export class App implements OnInit {
     });
   }
 
-  onAdminMenuAction(action: 'users' | 'tags' | 'tag-wizard'): void {
+  onAdminMenuAction(action: 'users' | 'tags' | 'tag-wizard' | 'credits'): void {
     switch (action) {
       case 'users':
         this.dialog.open(UserManagementDialogComponent, {
@@ -582,6 +581,13 @@ export class App implements OnInit {
             this.loadSounds();
             this.snackBar.open('Tags wurden aktualisiert', 'OK', { duration: 2000 });
           }
+        });
+        break;
+      case 'credits':
+        this.dialog.open(CreditSettingsDialogComponent, {
+          width: '550px',
+          maxWidth: '95vw',
+          panelClass: 'dark-dialog',
         });
         break;
     }

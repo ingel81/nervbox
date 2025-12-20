@@ -18,13 +18,24 @@ using System.Threading;
 using System.Net;
 using System.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
+using NervboxDeamon.Services.Interfaces;
 
 namespace NervboxDeamon.Services
 {
+  public class PlaySoundResult
+  {
+    public bool Success { get; set; }
+    public string Error { get; set; }
+    public int? CreditsRemaining { get; set; }
+
+    public static PlaySoundResult Ok(int creditsRemaining) => new PlaySoundResult { Success = true, CreditsRemaining = creditsRemaining };
+    public static PlaySoundResult Fail(string error) => new PlaySoundResult { Success = false, Error = error };
+  }
+
   public interface ISoundService
   {
     void Init();
-    void PlaySound(string soundId, int userId);
+    PlaySoundResult PlaySound(string soundId, int userId);
     void KillAll();
     void AddSoundToCache(Sound sound);
     void UpdateSoundEnabledStatus(string hash, bool enabled);
@@ -72,6 +83,7 @@ namespace NervboxDeamon.Services
     private ISshService SshService { get; }
     private readonly IHubContext<SoundHub> SoundHub;
     private IWebHostEnvironment Environment { get; }
+    private ICreditService CreditService { get; set; }
 
     //member
     public ConcurrentDictionary<int, User> UserLookup { private set; get; } = new ConcurrentDictionary<int, User>();
@@ -132,6 +144,9 @@ namespace NervboxDeamon.Services
     public void Init()
     {
       InitUserLookup();
+
+      // Get CreditService from DI (can't inject in constructor due to circular dependency)
+      CreditService = serviceProvider.GetRequiredService<ICreditService>();
 
       var appSettingsSection = Configuration.GetSection("AppSettings");
       appSettings = appSettingsSection.Get<AppSettings>();
@@ -254,16 +269,36 @@ namespace NervboxDeamon.Services
       }
     }
 
-    public void PlaySound(string soundId, int userId)
+    public PlaySoundResult PlaySound(string soundId, int userId)
     {
+      if (!this.Sounds.TryGetValue(soundId, out var sound))
+      {
+        Logger.LogWarning($"Sound not found: {soundId}");
+        return PlaySoundResult.Fail("Sound not found");
+      }
+
+      // Check and deduct credits
+      var settings = CreditService.GetSettings();
+      var cost = settings.CostPerSoundPlay;
+
+      if (!CreditService.HasEnoughCredits(userId, cost))
+      {
+        var currentCredits = CreditService.GetUserCredits(userId);
+        Logger.LogDebug($"User {userId} has insufficient credits ({currentCredits} < {cost})");
+        return PlaySoundResult.Fail($"Nicht genug Credits. Du hast {currentCredits}, brauchst aber {cost}.");
+      }
+
+      // Deduct credits (this also broadcasts the update via SignalR)
+      if (!CreditService.DeductCredits(userId, cost, DbModels.CreditTransactionType.SoundPlay, $"Sound: {sound.Name}", sound.Hash))
+      {
+        return PlaySoundResult.Fail("Fehler beim Abbuchen der Credits");
+      }
+
+      var creditsRemaining = CreditService.GetUserCredits(userId);
+
+      // Play the sound asynchronously
       new Task(() =>
       {
-        if (!this.Sounds.TryGetValue(soundId, out var sound))
-        {
-          Logger.LogWarning($"Sound not found: {soundId}");
-          return;
-        }
-
         if (appSettings.SSH?.Enabled == true)
         {
           // Remote via SSH auf Raspberry Pi
@@ -306,6 +341,8 @@ namespace NervboxDeamon.Services
         });
 
       }).Start();
+
+      return PlaySoundResult.Ok(creditsRemaining);
     }
 
     private void PlayLocal(string filePath)
