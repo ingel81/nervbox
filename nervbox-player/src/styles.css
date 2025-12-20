@@ -542,3 +542,13 @@ body {
   background: rgba(0, 0, 0, 0.7) !important;
   backdrop-filter: blur(4px) !important;
 }
+
+/* During tour: lower z-index so Shepherd appears above the dialog */
+body.shepherd-menu-step-active .cdk-overlay-container {
+  z-index: 9998 !important;
+}
+
+body.shepherd-menu-step-active .shekel-popover-backdrop {
+  background: rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: none !important;
+}
