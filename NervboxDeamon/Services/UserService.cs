@@ -130,6 +130,10 @@ namespace NervboxDeamon.Services
         });
         db.SaveChanges();
 
+        // Grant registration achievement
+        var achievementService = scope.ServiceProvider.GetService<IAchievementService>();
+        achievementService?.CheckRegistrationAchievements(user.Id);
+
         message = string.Empty;
 
         // Generate jwt token (14 days validity)

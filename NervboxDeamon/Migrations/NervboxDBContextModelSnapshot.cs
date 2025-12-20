@@ -17,6 +17,56 @@ namespace NervboxDeamon.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.0");
 
+            modelBuilder.Entity("NervboxDeamon.DbModels.Achievement", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("category");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Icon")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("icon");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
+
+                    b.Property<int>("RewardCredits")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("reward_credits");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("sort_order");
+
+                    b.Property<int>("Threshold")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("threshold");
+
+                    b.Property<int>("Tier")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("tier");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("achievements");
+                });
+
             modelBuilder.Entity("NervboxDeamon.DbModels.CreditSettings", b =>
                 {
                     b.Property<int>("Id")
@@ -349,6 +399,31 @@ namespace NervboxDeamon.Migrations
                     b.ToTable("users");
                 });
 
+            modelBuilder.Entity("NervboxDeamon.DbModels.UserAchievement", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("AchievementId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("achievement_id");
+
+                    b.Property<DateTime>("EarnedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("earned_at");
+
+                    b.Property<int>("ProgressValue")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("progress_value");
+
+                    b.HasKey("UserId", "AchievementId");
+
+                    b.HasIndex("AchievementId");
+
+                    b.ToTable("user_achievements");
+                });
+
             modelBuilder.Entity("NervboxDeamon.DbModels.UserFavorite", b =>
                 {
                     b.Property<int>("UserId")
@@ -437,6 +512,25 @@ namespace NervboxDeamon.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("NervboxDeamon.DbModels.UserAchievement", b =>
+                {
+                    b.HasOne("NervboxDeamon.DbModels.Achievement", "Achievement")
+                        .WithMany("UserAchievements")
+                        .HasForeignKey("AchievementId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NervboxDeamon.DbModels.User", "User")
+                        .WithMany("Achievements")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Achievement");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("NervboxDeamon.DbModels.UserFavorite", b =>
                 {
                     b.HasOne("NervboxDeamon.DbModels.Sound", "Sound")
@@ -456,6 +550,11 @@ namespace NervboxDeamon.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("NervboxDeamon.DbModels.Achievement", b =>
+                {
+                    b.Navigation("UserAchievements");
+                });
+
             modelBuilder.Entity("NervboxDeamon.DbModels.Sound", b =>
                 {
                     b.Navigation("Favorites");
@@ -472,6 +571,8 @@ namespace NervboxDeamon.Migrations
 
             modelBuilder.Entity("NervboxDeamon.DbModels.User", b =>
                 {
+                    b.Navigation("Achievements");
+
                     b.Navigation("Favorites");
                 });
 #pragma warning restore 612, 618

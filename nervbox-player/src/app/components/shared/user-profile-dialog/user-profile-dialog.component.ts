@@ -7,6 +7,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ApiService } from '../../../core/services/api.service';
 import { UserAvatarComponent } from '../user-avatar/user-avatar.component';
+import { AchievementDisplayComponent } from '../achievement-display/achievement-display.component';
 import { DurationPipe } from '../../../shared/pipes/duration.pipe';
 
 interface ProfileSound {
@@ -43,6 +44,7 @@ interface UserProfile {
     MatProgressSpinnerModule,
     MatTooltipModule,
     UserAvatarComponent,
+    AchievementDisplayComponent,
     DurationPipe,
   ],
   template: `
@@ -113,6 +115,10 @@ interface UserProfile {
             <span>Noch keine eigenen Sounds</span>
           </div>
         }
+
+        <div class="achievements-section">
+          <app-achievement-display [userId]="data.userId" />
+        </div>
       }
     </div>
   `,
@@ -322,6 +328,11 @@ interface UserProfile {
 
     .monospace {
       font-family: 'JetBrains Mono', monospace;
+    }
+
+    .achievements-section {
+      padding: 16px 24px 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
   `,
 })
