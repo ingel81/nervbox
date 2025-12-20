@@ -2,6 +2,7 @@ import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import Shepherd from 'shepherd.js';
 import { offset } from '@floating-ui/dom';
 import { AuthService } from './auth.service';
+import { AchievementService } from './achievement.service';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { ShekelPopoverComponent } from '../../components/shared/shekel-popover/shekel-popover.component';
 
@@ -21,6 +22,7 @@ interface TourButton {
 @Injectable({ providedIn: 'root' })
 export class WelcomeTourService {
   private readonly auth = inject(AuthService);
+  private readonly achievementService = inject(AchievementService);
   private readonly dialog = inject(MatDialog);
 
   private readonly USER_STORAGE_KEY = 'nervbox-welcome-tour';
@@ -417,6 +419,9 @@ export class WelcomeTourService {
     this.userTourCompleted.set(true);
     this.userTourActive.set(false);
     this.tour = null;
+
+    // Grant tour completed achievement
+    this.achievementService.markTourCompleted().subscribe();
 
     // If admin and admin tour not seen, start admin tour after short delay
     if (this.shouldShowAdminTour()) {
