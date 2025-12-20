@@ -48,6 +48,27 @@ export class SoundService {
     );
   }
 
+  /**
+   * Plays a sound in the browser using the stream endpoint.
+   * Does NOT play on the Pi system, only locally in the browser.
+   * Useful for games, previews, etc.
+   */
+  playInBrowser(hash: string): void {
+    const audio = new Audio(this.api.getFullUrl(`/sound/${hash}/stream`));
+    audio.play().catch(err => console.warn('Browser audio playback failed:', err));
+  }
+
+  /**
+   * Preloads a sound for faster browser playback.
+   * Returns the Audio element for later use.
+   */
+  preloadForBrowser(hash: string): HTMLAudioElement {
+    const audio = new Audio(this.api.getFullUrl(`/sound/${hash}/stream`));
+    audio.preload = 'auto';
+    audio.load();
+    return audio;
+  }
+
   killAll(): Observable<void> {
     return this.api.get<void>('/sound/killAll');
   }

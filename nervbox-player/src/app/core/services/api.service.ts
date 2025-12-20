@@ -29,4 +29,12 @@ export class ApiService {
   delete<T>(endpoint: string): Observable<T> {
     return this.http.delete<T>(`${this.baseUrl}${endpoint}`);
   }
+
+  /**
+   * Returns the full URL for an endpoint.
+   * Useful for direct browser access (e.g., audio streaming).
+   */
+  getFullUrl(endpoint: string): string {
+    return `${this.baseUrl}${endpoint}`;
+  }
 }

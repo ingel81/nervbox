@@ -99,11 +99,12 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
         </button>
       }
 
-      <!-- CREDIT DISPLAY - Prominent! -->
+      <!-- SHEKEL DISPLAY - Prominent! -->
       @if (auth.isLoggedIn()) {
-        <div class="credit-display" [class.low-credits]="!creditService.canPlay()" matTooltip="Deine Credits ({{ creditService.costPerPlay() }} pro Sound)">
-          <mat-icon class="credit-icon">monetization_on</mat-icon>
+        <div class="credit-display" [class.low-credits]="!creditService.canPlay()" matTooltip="Deine Nervbox Shekel ({{ creditService.costPerPlay() }} N$ pro Sound)">
+          <img src="icons/nervbox-coin.svg" alt="Shekel" class="coin-icon">
           <span class="credit-amount">{{ creditService.creditsFormatted() }}</span>
+          <span class="credit-currency">N$</span>
         </div>
       }
 
@@ -201,8 +202,8 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
               <span>Tag-Wizard</span>
             </button>
             <button mat-menu-item (click)="adminMenuAction.emit('credits')">
-              <mat-icon>monetization_on</mat-icon>
-              <span>Credit-Einstellungen</span>
+              <img src="icons/nervbox-coin.svg" alt="" class="menu-coin-icon">
+              <span>Shekel-Einstellungen</span>
             </button>
             <mat-divider></mat-divider>
             <button mat-menu-item (click)="killAllClick.emit()" class="danger-item">
@@ -486,20 +487,27 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       animation: lowCreditPulse 1.5s ease-in-out infinite;
     }
 
-    .credit-display.low-credits .credit-icon {
-      color: #ef4444;
+    .credit-display.low-credits .coin-icon {
+      filter: grayscale(100%) brightness(0.8);
     }
 
     .credit-display.low-credits .credit-amount {
       color: #fca5a5;
     }
 
-    .credit-icon {
-      color: #fbbf24;
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
+    .coin-icon {
+      width: 32px;
+      height: 32px;
       filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.5));
+    }
+
+    .menu-coin-icon {
+      width: 24px;
+      height: 24px;
+      margin-right: 16px;
+      vertical-align: middle;
+      position: relative;
+      top: -2px;
     }
 
     .credit-amount {
@@ -509,6 +517,13 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       font-weight: 700;
       text-shadow: 0 0 8px rgba(253, 224, 71, 0.4);
       min-width: 24px;
+    }
+
+    .credit-currency {
+      color: #fbbf24;
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0.85;
     }
 
     @keyframes creditGlow {

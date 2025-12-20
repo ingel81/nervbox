@@ -24,6 +24,7 @@ interface UserProfile {
   firstName?: string;
   lastName?: string;
   createdAt: string;
+  credits: number;
   sounds: ProfileSound[];
   stats: {
     soundCount: number;
@@ -79,6 +80,13 @@ interface UserProfile {
           <div class="stat">
             <span class="stat-value">{{ profile()!.stats.totalPlays }}</span>
             <span class="stat-label">Plays</span>
+          </div>
+          <div class="stat credits-stat">
+            <span class="stat-value credits-value">
+              <img src="icons/nervbox-coin.svg" alt="" class="profile-coin">
+              {{ formatCredits(profile()!.credits) }}
+            </span>
+            <span class="stat-label">Shekel</span>
           </div>
         </div>
 
@@ -212,6 +220,19 @@ interface UserProfile {
       letter-spacing: 0.5px;
     }
 
+    .credits-stat .credits-value {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #fbbf24;
+      text-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+    }
+
+    .profile-coin {
+      width: 28px;
+      height: 28px;
+    }
+
     .sounds-section {
       padding: 16px 24px 24px;
     }
@@ -339,5 +360,12 @@ export class UserProfileDialogComponent implements OnInit {
       month: 'long',
       year: 'numeric',
     });
+  }
+
+  formatCredits(credits: number): string {
+    if (credits >= 999999999) {
+      return '∞';
+    }
+    return credits.toLocaleString('de-DE');
   }
 }
