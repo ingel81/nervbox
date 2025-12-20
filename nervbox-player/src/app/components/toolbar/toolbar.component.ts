@@ -11,11 +11,13 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSelectModule } from '@angular/material/select';
+import { MatDialog } from '@angular/material/dialog';
 import { AuthService } from '../../core/services/auth.service';
 import { FavoritesService } from '../../core/services/favorites.service';
 import { CreditService } from '../../core/services/credit.service';
 import { AvatarService } from '../../core/services/avatar.service';
 import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component';
+import { ShekelPopoverComponent } from '../shared/shekel-popover/shekel-popover.component';
 
 export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'duration-desc' | 'duration-asc' | 'random';
 
@@ -101,7 +103,12 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
 
       <!-- SHEKEL DISPLAY - Prominent! -->
       @if (auth.isLoggedIn()) {
-        <div class="credit-display" [class.low-credits]="!creditService.canPlay()" matTooltip="Deine Nervbox Shekel ({{ creditService.costPerPlay() }} N$ pro Sound)">
+        <div
+          class="credit-display clickable"
+          [class.low-credits]="!creditService.canPlay()"
+          matTooltip="Klicken für Shekel Casino"
+          (click)="openShekelPopover()"
+        >
           <img src="icons/nervbox-coin.svg" alt="Shekel" class="coin-icon">
           <span class="credit-amount">{{ creditService.creditsFormatted() }}</span>
           <span class="credit-currency">N$</span>
@@ -475,6 +482,10 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       animation: creditGlow 3s ease-in-out infinite;
     }
 
+    .credit-display.clickable {
+      cursor: pointer;
+    }
+
     .credit-display:hover {
       background: linear-gradient(135deg, rgba(234, 179, 8, 0.25) 0%, rgba(251, 191, 36, 0.2) 100%);
       border-color: rgba(234, 179, 8, 0.6);
@@ -825,6 +836,7 @@ export class ToolbarComponent {
   readonly favorites = inject(FavoritesService);
   readonly creditService = inject(CreditService);
   readonly avatarService = inject(AvatarService);
+  private readonly dialog = inject(MatDialog);
 
   searchQuery = '';
 
@@ -887,5 +899,13 @@ export class ToolbarComponent {
   openMixer(): void {
     // Mixer is served at /mixer (same origin, shares localStorage)
     window.location.href = '/mixer';
+  }
+
+  openShekelPopover(): void {
+    this.dialog.open(ShekelPopoverComponent, {
+      panelClass: 'shekel-popover-dialog',
+      backdropClass: 'shekel-popover-backdrop',
+      autoFocus: false,
+    });
   }
 }

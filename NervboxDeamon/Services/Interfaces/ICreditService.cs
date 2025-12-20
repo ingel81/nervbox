@@ -64,5 +64,15 @@ namespace NervboxDeamon.Services.Interfaces
         /// Check and grant hourly credits to a specific user if eligible
         /// </summary>
         bool TryGrantHourlyCredits(int userId);
+
+        /// <summary>
+        /// Gamble credits - 50/50 chance to double or lose all
+        /// </summary>
+        (bool won, int newBalance, string message) Gamble(int userId, int amount);
+
+        /// <summary>
+        /// Transfer credits from one user to another
+        /// </summary>
+        (bool success, string message) TransferCredits(int fromUserId, int toUserId, int amount);
     }
 }

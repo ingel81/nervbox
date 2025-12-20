@@ -11,7 +11,11 @@ namespace NervboxDeamon.DbModels
         HourlyBonus,    // Hourly credit grant
         GameReward,     // Reward from mini-games
         AdminGrant,     // Admin manually granted credits
-        AdminDeduct     // Admin manually deducted credits
+        AdminDeduct,    // Admin manually deducted credits
+        GambleWin,      // Won credits from gambling
+        GambleLoss,     // Lost credits from gambling
+        TransferSent,   // Sent credits to another user
+        TransferReceived // Received credits from another user
     }
 
     [Table("credit_transactions")]
