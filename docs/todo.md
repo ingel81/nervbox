@@ -8,7 +8,8 @@
 
 # ideen:
 
-  - Simple Userverwaltung für Admins (anlegen, passwort setzen, deaktieren, ansehen) als cards mit einer Suche oben
+  - Userverwaltung für Admins (anlegen, passwort neu setzen, deaktieren, ansehen, raum für erweiterungen) als material grid mit einer Suche oben
+    es soll auch die IP anzeigt werden
     - 
   - credit system für abspielvorgänge (admins nicht berücksichtigen)
     - minispiele um credits wieder aufzufüllen (arkanoid, irgendwas moorhuhn artiges, flappy bird,...)

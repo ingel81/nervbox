@@ -39,14 +39,14 @@ start() {
     # Player starten (im Hintergrund)
     echo -e "${GREEN}Starte Player (Port 4200)...${NC}"
     cd "$PLAYER_DIR"
-    npx ng serve --host 0.0.0.0 > /tmp/nervbox-player.log 2>&1 &
+    npx ng serve --host 0.0.0.0 --allowed-hosts=all > /tmp/nervbox-player.log 2>&1 &
     PLAYER_PID=$!
     echo "  Player PID: $PLAYER_PID"
 
     # Mixer starten (im Hintergrund)
     echo -e "${GREEN}Starte Mixer (Port 4201)...${NC}"
     cd "$MIXER_DIR"
-    npx ng serve --port 4201 --host 0.0.0.0 --configuration lan --serve-path /mixer > /tmp/nervbox-mixer.log 2>&1 &
+    npx ng serve --port 4201 --host 0.0.0.0 --allowed-hosts=all --configuration lan --serve-path /mixer > /tmp/nervbox-mixer.log 2>&1 &
     MIXER_PID=$!
     echo "  Mixer PID: $MIXER_PID"
 
@@ -174,13 +174,13 @@ start_silent() {
     # Player starten
     echo -e "${GREEN}Starte Player (Port 4200)...${NC}"
     cd "$PLAYER_DIR"
-    npx ng serve --host 0.0.0.0 > /tmp/nervbox-player.log 2>&1 &
+    npx ng serve --host 0.0.0.0 --allowed-hosts=all > /tmp/nervbox-player.log 2>&1 &
     PLAYER_PID=$!
 
     # Mixer starten
     echo -e "${GREEN}Starte Mixer (Port 4201)...${NC}"
     cd "$MIXER_DIR"
-    npx ng serve --port 4201 --host 0.0.0.0 --configuration lan --serve-path /mixer > /tmp/nervbox-mixer.log 2>&1 &
+    npx ng serve --port 4201 --host 0.0.0.0 --allowed-hosts=all --configuration lan --serve-path /mixer > /tmp/nervbox-mixer.log 2>&1 &
     MIXER_PID=$!
 
     echo "$BACKEND_PID $PLAYER_PID $MIXER_PID" > "$PID_FILE"
