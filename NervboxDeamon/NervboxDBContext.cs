@@ -15,6 +15,8 @@ namespace NervboxDeamon
         public DbSet<SoundUsage> SoundUsages { get; set; }
         public DbSet<ChatMessage> ChatMessages { get; set; }
         public DbSet<UserFavorite> UserFavorites { get; set; }
+        public DbSet<CreditSettings> CreditSettings { get; set; }
+        public DbSet<CreditTransaction> CreditTransactions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -64,6 +66,17 @@ namespace NervboxDeamon
                 .HasOne(uf => uf.Sound)
                 .WithMany(s => s.Favorites)
                 .HasForeignKey(uf => uf.SoundHash);
+
+            // CreditTransaction: Relationship with User
+            modelBuilder.Entity<CreditTransaction>()
+                .HasOne(ct => ct.User)
+                .WithMany()
+                .HasForeignKey(ct => ct.UserId);
+
+            // Store enum as string
+            modelBuilder.Entity<CreditTransaction>()
+                .Property(ct => ct.TransactionType)
+                .HasConversion<string>();
         }
     }
 }

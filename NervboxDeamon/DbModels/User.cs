@@ -44,6 +44,12 @@ namespace NervboxDeamon.DbModels
         [Column("last_login_at")]
         public DateTime? LastLoginAt { get; set; }
 
+        [Column("credits")]
+        public int Credits { get; set; } = 0;
+
+        [Column("last_credit_grant_at")]
+        public DateTime? LastCreditGrantAt { get; set; }
+
         [NotMapped]
         public string Token { get; set; }
 

@@ -20,6 +20,12 @@ export interface SoundPlayedEvent {
   time: string;
 }
 
+export interface CreditUpdateEvent {
+  userId: number;
+  credits: number;
+  timestamp: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -31,6 +37,7 @@ export class SignalRService {
 
   readonly chatMessages = signal<ChatMessage[]>([]);
   readonly soundEvents = signal<SoundPlayedEvent[]>([]);
+  readonly creditUpdates = signal<CreditUpdateEvent | null>(null);
   readonly chatConnected = signal(false);
   readonly soundConnected = signal(false);
   readonly rateLimitMessage = signal<string | null>(null);
@@ -85,6 +92,10 @@ export class SignalRService {
 
     this.soundConnection.on('soundPlayed', (event: SoundPlayedEvent) => {
       this.soundEvents.update(events => [event, ...events].slice(0, 10));
+    });
+
+    this.soundConnection.on('creditUpdate', (event: CreditUpdateEvent) => {
+      this.creditUpdates.set(event);
     });
 
     this.soundConnection.onclose(() => {

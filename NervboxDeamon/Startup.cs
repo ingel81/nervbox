@@ -118,6 +118,7 @@ namespace NervboxDeamon
       services.AddSingleton<ISystemService, SystemService>();
       services.AddSingleton<ISoundService, SoundService>();
       services.AddSingleton<IGiphyService, GiphyService>();
+      services.AddSingleton<ICreditService, CreditService>();
       // services.AddSingleton<ICamService, CamService>(); // Deaktiviert - nicht benötigt
 
       services.Configure<IISServerOptions>(options =>
@@ -299,6 +300,10 @@ namespace NervboxDeamon
       // configure/start ISoundService
       var soundService = app.ApplicationServices.GetRequiredService<ISoundService>();
       soundService.Init();
+
+      // configure/start ICreditService
+      var creditService = app.ApplicationServices.GetRequiredService<ICreditService>();
+      creditService.Init();
     }
 
     private static void UpdateDatabase(IApplicationBuilder app)

@@ -92,6 +92,10 @@ namespace NervboxDeamon.Services
           return null;
         }
 
+        // Get credit settings for initial credits
+        var creditSettings = db.CreditSettings.FirstOrDefault();
+        var initialCredits = creditSettings?.InitialCreditsUser ?? 50;
+
         User user = new User()
         {
           Username = model.Username,
@@ -99,9 +103,21 @@ namespace NervboxDeamon.Services
           LastName = model.Lastname,
           PasswordHash = GetPasswordHash(model.Password),
           Role = "user",
-          IpAddress = ip
+          IpAddress = ip,
+          Credits = initialCredits
         };
         db.Users.Add(user);
+        db.SaveChanges();
+
+        // Record initial credits transaction
+        db.CreditTransactions.Add(new CreditTransaction
+        {
+          UserId = user.Id,
+          Amount = initialCredits,
+          TransactionType = CreditTransactionType.Initial,
+          Description = "Initial credits upon registration",
+          BalanceAfter = initialCredits
+        });
         db.SaveChanges();
 
         message = string.Empty;
