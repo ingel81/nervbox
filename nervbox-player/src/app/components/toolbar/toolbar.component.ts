@@ -13,6 +13,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatSelectModule } from '@angular/material/select';
 import { AuthService } from '../../core/services/auth.service';
 import { FavoritesService } from '../../core/services/favorites.service';
+import { AvatarService } from '../../core/services/avatar.service';
 
 export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'duration-desc' | 'duration-asc' | 'random';
 
@@ -200,14 +201,26 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
         <div class="toolbar-divider"></div>
         @if (auth.isLoggedIn()) {
           <button mat-icon-button [matMenuTriggerFor]="userMenu" class="user-btn" data-tour="profile">
-            <mat-icon>account_circle</mat-icon>
+            @if (avatarService.currentUserAvatarUrl()) {
+              <img [src]="avatarService.currentUserAvatarUrl()" class="user-avatar-img" alt="Avatar" />
+            } @else {
+              <mat-icon>account_circle</mat-icon>
+            }
           </button>
           <mat-menu #userMenu="matMenu">
-            <div class="menu-header">
-              <mat-icon>person</mat-icon>
+            <div class="menu-header user-menu-header">
+              @if (avatarService.currentUserAvatarUrl()) {
+                <img [src]="avatarService.currentUserAvatarUrl()" class="menu-avatar-img" alt="Avatar" />
+              } @else {
+                <mat-icon>person</mat-icon>
+              }
               <span>{{ auth.currentUser()?.username }}</span>
             </div>
             <mat-divider></mat-divider>
+            <button mat-menu-item (click)="changeAvatarClick.emit()">
+              <mat-icon>photo_camera</mat-icon>
+              <span>Avatar ändern</span>
+            </button>
             <button mat-menu-item (click)="changePasswordClick.emit()">
               <mat-icon>key</mat-icon>
               <span>Kennwort ändern</span>
@@ -674,6 +687,26 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       color: #9333ea;
     }
 
+    .user-avatar-img {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(147, 51, 234, 0.5);
+    }
+
+    .menu-avatar-img {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #9333ea;
+    }
+
+    .user-menu-header {
+      min-width: 180px;
+    }
+
     .admin-menu-header mat-icon {
       color: #f97316;
     }
@@ -700,6 +733,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
 export class ToolbarComponent {
   readonly auth = inject(AuthService);
   readonly favorites = inject(FavoritesService);
+  readonly avatarService = inject(AvatarService);
 
   searchQuery = '';
 
@@ -719,6 +753,7 @@ export class ToolbarComponent {
   readonly chatClick = output<void>();
   readonly loginClick = output<void>();
   readonly changePasswordClick = output<void>();
+  readonly changeAvatarClick = output<void>();
   readonly restartTourClick = output<void>();
   readonly selectionModeToggle = output<void>();
   readonly openSelectionInMixer = output<void>();

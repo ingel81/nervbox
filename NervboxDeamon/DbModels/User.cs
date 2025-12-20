@@ -44,8 +44,14 @@ namespace NervboxDeamon.DbModels
         [Column("last_login_at")]
         public DateTime? LastLoginAt { get; set; }
 
+        [Column("avatar_file_name")]
+        public string AvatarFileName { get; set; }
+
         [NotMapped]
         public string Token { get; set; }
+
+        [NotMapped]
+        public string AvatarUrl { get; set; }
 
         [JsonIgnore]
         public virtual ICollection<UserFavorite> Favorites { get; set; } = new List<UserFavorite>();

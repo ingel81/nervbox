@@ -180,5 +180,93 @@ namespace NervboxDeamon.Controllers
 
         #endregion
 
+        #region Avatar Endpoints
+
+        /// <summary>
+        /// Upload or update user avatar (authenticated user)
+        /// </summary>
+        [Authorize]
+        [HttpPost("avatar")]
+        public async Task<IActionResult> UploadAvatar(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest(new { message = "No file uploaded" });
+
+            // Validate file type
+            var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp" };
+            if (!allowedTypes.Contains(file.ContentType.ToLower()))
+                return BadRequest(new { message = "Invalid file type. Allowed: JPEG, PNG, GIF, WebP" });
+
+            // Validate file size (max 5MB)
+            if (file.Length > 5 * 1024 * 1024)
+                return BadRequest(new { message = "File too large. Maximum size: 5MB" });
+
+            var userId = int.Parse(this.User.Identity.Name);
+
+            using var memoryStream = new MemoryStream();
+            await file.CopyToAsync(memoryStream);
+            var imageData = memoryStream.ToArray();
+
+            var result = _userService.SaveAvatar(userId, imageData, file.ContentType, out string error);
+
+            if (!result)
+                return BadRequest(new { message = error });
+
+            return Ok(new {
+                success = true,
+                avatarUrl = _userService.GetAvatarUrl(userId)
+            });
+        }
+
+        /// <summary>
+        /// Get user avatar by ID (public)
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("{id}/avatar")]
+        public IActionResult GetAvatar(int id)
+        {
+            var avatar = _userService.GetAvatar(id);
+
+            if (avatar == null)
+                return NotFound();
+
+            // Set cache headers for 1 hour
+            Response.Headers.Append("Cache-Control", "public, max-age=3600");
+
+            return File(avatar.Value.data, avatar.Value.contentType);
+        }
+
+        /// <summary>
+        /// Delete user avatar (authenticated user)
+        /// </summary>
+        [Authorize]
+        [HttpDelete("avatar")]
+        public IActionResult DeleteAvatar()
+        {
+            var userId = int.Parse(this.User.Identity.Name);
+
+            var result = _userService.DeleteAvatar(userId, out string error);
+
+            if (!result)
+                return BadRequest(new { message = error });
+
+            return Ok(new { success = true });
+        }
+
+        /// <summary>
+        /// Get current user's avatar URL
+        /// </summary>
+        [Authorize]
+        [HttpGet("avatar")]
+        public IActionResult GetMyAvatarUrl()
+        {
+            var userId = int.Parse(this.User.Identity.Name);
+            var avatarUrl = _userService.GetAvatarUrl(userId);
+
+            return Ok(new { avatarUrl });
+        }
+
+        #endregion
+
     }
 }
