@@ -3,12 +3,14 @@ import * as signalR from '@microsoft/signalr';
 import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
 
+export type ChatMessageType = 'text' | 'gif' | 'shekel-transaction';
+
 export interface ChatMessage {
   id?: number;
   userId: number;
   username: string;
   message: string;
-  messageType?: 'text' | 'gif';
+  messageType?: ChatMessageType;
   gifUrl?: string;
   createdAt: string;
 }

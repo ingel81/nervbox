@@ -7,7 +7,8 @@ namespace NervboxDeamon.DbModels
     public enum ChatMessageType
     {
         Text = 0,
-        Gif = 1
+        Gif = 1,
+        ShekelTransaction = 2
     }
 
     [Table("chat_messages")]

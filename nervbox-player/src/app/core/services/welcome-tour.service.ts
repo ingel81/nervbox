@@ -2,6 +2,8 @@ import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import Shepherd from 'shepherd.js';
 import { offset } from '@floating-ui/dom';
 import { AuthService } from './auth.service';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { ShekelPopoverComponent } from '../../components/shared/shekel-popover/shekel-popover.component';
 
 interface TourProgress {
   completed: boolean;
@@ -19,13 +21,15 @@ interface TourButton {
 @Injectable({ providedIn: 'root' })
 export class WelcomeTourService {
   private readonly auth = inject(AuthService);
+  private readonly dialog = inject(MatDialog);
 
   private readonly USER_STORAGE_KEY = 'nervbox-welcome-tour';
   private readonly ADMIN_STORAGE_KEY = 'nervbox-admin-tour';
-  private readonly TOUR_VERSION = '2.0.0'; // Bumped for new tour content
+  private readonly TOUR_VERSION = '2.1.0'; // Bumped for Shekel Casino tour
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private tour: any = null;
+  private shekelDialogRef: MatDialogRef<ShekelPopoverComponent> | null = null;
 
   // User tour state
   readonly userTourCompleted = signal(false);
@@ -126,6 +130,41 @@ export class WelcomeTourService {
     }
   }
 
+  private openShekelDialog(tabIndex: number = 0): Promise<void> {
+    return new Promise(resolve => {
+      // Close any existing dialog first
+      if (this.shekelDialogRef) {
+        this.shekelDialogRef.close();
+      }
+
+      this.shekelDialogRef = this.dialog.open(ShekelPopoverComponent, {
+        panelClass: 'shekel-popover-dialog',
+        backdropClass: 'shekel-popover-backdrop',
+        autoFocus: false,
+        disableClose: true, // Prevent closing during tour
+      });
+
+      // Wait for dialog to open, then switch to the right tab
+      setTimeout(() => {
+        if (tabIndex > 0) {
+          // Find the tab group and click the second tab
+          const tabs = document.querySelectorAll('.shekel-popover .mat-mdc-tab');
+          if (tabs[tabIndex]) {
+            (tabs[tabIndex] as HTMLElement).click();
+          }
+        }
+        setTimeout(resolve, 200);
+      }, 300);
+    });
+  }
+
+  private closeShekelDialog(): void {
+    if (this.shekelDialogRef) {
+      this.shekelDialogRef.close();
+      this.shekelDialogRef = null;
+    }
+  }
+
   /**
    * Prevents CDK backdrop from closing menus during the tour.
    * We disable pointer-events on the backdrop when a menu step is shown.
@@ -212,12 +251,43 @@ export class WelcomeTourService {
     this.tour.addStep({
       id: 'shekel',
       title: 'Nervbox Shekel (N$)',
-      text: 'Deine Währung! Jeder Sound kostet N$.<br><br>• Du bekommst stündlich neue N$<br>• Wird rot wenn fast leer',
+      text: 'Deine Währung! Jeder Sound kostet N$.<br><br>• Du bekommst stündlich neue N$<br>• Wird rot wenn fast leer<br>• Klick drauf für mehr Optionen!',
       attachTo: { element: '.credit-display', on: 'bottom' },
       buttons: this.getNavButtons(),
     });
 
-    // Step 6: Sound Card
+    // Step 6: Shekel Casino (Gambling)
+    this.tour.addStep({
+      id: 'shekel-casino',
+      title: 'Shekel Casino',
+      text: 'Feeling lucky?<br><br>Setze deine N$ ein und verdopple sie - oder verliere alles!<br><br><b>50/50 Chance</b> - Das Haus gewinnt immer... manchmal.',
+      attachTo: { element: '.shekel-popover', on: 'right' },
+      buttons: this.getNavButtons(),
+      beforeShowPromise: () => {
+        this.setMenuStepActive(true);
+        return this.openShekelDialog(0);
+      },
+    });
+
+    // Step 7: Shekel Transfer
+    this.tour.addStep({
+      id: 'shekel-transfer',
+      title: 'Shekel senden',
+      text: 'Sei großzügig!<br><br>Sende N$ an andere User.<br>Perfekt um Freunde zu bestechen... äh, zu beschenken!',
+      attachTo: { element: '.shekel-popover', on: 'right' },
+      buttons: this.getNavButtons(),
+      beforeShowPromise: () => {
+        return this.openShekelDialog(1);
+      },
+      when: {
+        hide: () => {
+          this.setMenuStepActive(false);
+          this.closeShekelDialog();
+        },
+      },
+    });
+
+    // Step 8: Sound Card
     this.tour.addStep({
       id: 'soundcard',
       title: 'Sound abspielen',

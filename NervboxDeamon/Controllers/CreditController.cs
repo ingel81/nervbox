@@ -225,6 +225,103 @@ namespace NervboxDeamon.Controllers
                 return StatusCode(500, new { Error = ex.Message });
             }
         }
+
+        /// <summary>
+        /// POST /api/credit/gamble - Gamble credits (50/50 double or nothing)
+        /// </summary>
+        [HttpPost("gamble")]
+        [Authorize]
+        public IActionResult Gamble([FromBody] GambleRequest request)
+        {
+            try
+            {
+                if (request.Amount <= 0)
+                {
+                    return BadRequest(new { Error = "Einsatz muss größer als 0 sein" });
+                }
+
+                var (won, newBalance, message) = _creditService.Gamble(UserId, request.Amount);
+
+                return Ok(new
+                {
+                    Won = won,
+                    NewBalance = newBalance,
+                    Message = message,
+                    BetAmount = request.Amount
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// POST /api/credit/transfer - Transfer credits to another user
+        /// </summary>
+        [HttpPost("transfer")]
+        [Authorize]
+        public IActionResult Transfer([FromBody] TransferRequest request)
+        {
+            try
+            {
+                if (request.Amount <= 0)
+                {
+                    return BadRequest(new { Error = "Betrag muss größer als 0 sein" });
+                }
+
+                if (request.ToUserId <= 0)
+                {
+                    return BadRequest(new { Error = "Ungültiger Empfänger" });
+                }
+
+                var (success, message) = _creditService.TransferCredits(UserId, request.ToUserId, request.Amount);
+
+                if (!success)
+                {
+                    return BadRequest(new { Error = message });
+                }
+
+                var newBalance = _creditService.GetUserCredits(UserId);
+                return Ok(new
+                {
+                    Success = true,
+                    Message = message,
+                    NewBalance = newBalance
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// GET /api/credit/users - Get list of users for transfer (active users only)
+        /// </summary>
+        [HttpGet("users")]
+        [Authorize]
+        public IActionResult GetUsersForTransfer()
+        {
+            try
+            {
+                var users = DbContext.Users
+                    .Where(u => u.IsActive && u.Id != UserId && u.Role != "system")
+                    .OrderBy(u => u.Username)
+                    .Select(u => new
+                    {
+                        u.Id,
+                        u.Username
+                    })
+                    .ToList();
+
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Error = ex.Message });
+            }
+        }
     }
 
     public class CreditGrantRequest
@@ -232,5 +329,16 @@ namespace NervboxDeamon.Controllers
         public int UserId { get; set; }
         public int Amount { get; set; }
         public string Reason { get; set; }
+    }
+
+    public class GambleRequest
+    {
+        public int Amount { get; set; }
+    }
+
+    public class TransferRequest
+    {
+        public int ToUserId { get; set; }
+        public int Amount { get; set; }
     }
 }
