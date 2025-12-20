@@ -38,6 +38,13 @@ export interface CreditGrantRequest {
   reason?: string;
 }
 
+export interface CreditGrantResponse {
+  userId: number;
+  username: string;
+  amountGranted: number;
+  newBalance: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -116,8 +123,8 @@ export class CreditService {
     return this.api.put<CreditSettings>('/credit/settings', settings);
   }
 
-  grantCredits(request: CreditGrantRequest): Observable<unknown> {
-    return this.api.post('/credit/grant', request);
+  grantCredits(request: CreditGrantRequest): Observable<CreditGrantResponse> {
+    return this.api.post<CreditGrantResponse>('/credit/grant', request);
   }
 
   getUserCredits(userId: number): Observable<{ userId: number; username: string; credits: number; role: string }> {

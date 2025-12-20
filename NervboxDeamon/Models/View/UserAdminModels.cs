@@ -17,6 +17,7 @@ namespace NervboxDeamon.Models.View
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? LastLoginAt { get; set; }
+        public int Credits { get; set; }
     }
 
     /// <summary>

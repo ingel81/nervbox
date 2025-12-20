@@ -11,6 +11,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { UserService } from '../../core/services/user.service';
+import { CreditService } from '../../core/services/credit.service';
 import { UserAdmin } from '../../core/models/user.model';
 import { UserCreateDialogComponent } from './user-create-dialog.component';
 import { UserEditDialogComponent } from './user-edit-dialog.component';
@@ -91,6 +92,8 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
                         <span class="separator">|</span>
                       }
                       <span class="ip" matTooltip="IP-Adresse">{{ user.ipAddress || 'Keine IP' }}</span>
+                      <span class="separator">|</span>
+                      <span class="credits" matTooltip="Credits">{{ user.credits }} N$</span>
                     </div>
                     <div class="user-dates">
                       <span class="date">Erstellt: {{ formatDate(user.createdAt) }}</span>
@@ -103,6 +106,24 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
                 </div>
                 <div class="user-actions">
                   @if (user.role !== 'system') {
+                    <button
+                      mat-stroked-button
+                      class="credit-btn"
+                      (click)="onGrantCredits(user, 1)"
+                      matTooltip="+1 Credit"
+                      [disabled]="actionInProgress() === user.id"
+                    >
+                      +1 N$
+                    </button>
+                    <button
+                      mat-stroked-button
+                      class="credit-btn"
+                      (click)="onGrantCredits(user, 5)"
+                      matTooltip="+5 Credits"
+                      [disabled]="actionInProgress() === user.id"
+                    >
+                      +5 N$
+                    </button>
                     <button
                       mat-icon-button
                       (click)="onEditUser(user)"
@@ -183,8 +204,8 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
 
     mat-dialog-content {
       padding: 0 24px;
-      min-width: 500px;
-      max-width: 600px;
+      min-width: 800px;
+      max-width: 900px;
       min-height: 400px;
       display: flex;
       flex-direction: column;
@@ -334,9 +355,17 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
       font-size: 11px;
     }
 
+    .credits {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #fbbf24;
+      font-weight: 500;
+    }
+
     .user-actions {
       display: flex;
       gap: 4px;
+      align-items: center;
     }
 
     .user-actions button {
@@ -345,6 +374,22 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
 
     .user-item:hover .user-actions button {
       opacity: 1;
+    }
+
+    .credit-btn {
+      min-width: 44px;
+      height: 28px;
+      padding: 0 8px;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 28px;
+      border-color: rgba(251, 191, 36, 0.3);
+      color: #fbbf24;
+    }
+
+    .credit-btn:hover:not([disabled]) {
+      background: rgba(251, 191, 36, 0.15);
+      border-color: #fbbf24;
     }
 
     .user-actions mat-icon.active {
@@ -389,6 +434,7 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
 export class UserManagementDialogComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<UserManagementDialogComponent>);
   private readonly userService = inject(UserService);
+  private readonly creditService = inject(CreditService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
 
@@ -516,6 +562,21 @@ export class UserManagementDialogComponent implements OnInit {
         this.users.update(users => users.filter(u => u.id !== user.id));
         this.snackBar.open(`User "${user.username}" wurde gelöscht`, 'OK', { duration: 2000 });
       }
+    });
+  }
+
+  onGrantCredits(user: UserAdmin, amount: number): void {
+    this.actionInProgress.set(user.id);
+    this.creditService.grantCredits({ userId: user.id, amount, reason: 'Admin-Bonus' }).subscribe({
+      next: response => {
+        this.users.update(users => users.map(u => (u.id === user.id ? { ...u, credits: response.newBalance } : u)));
+        this.actionInProgress.set(null);
+        this.snackBar.open(`+${amount} Credits für "${user.username}"`, 'OK', { duration: 2000 });
+      },
+      error: () => {
+        this.actionInProgress.set(null);
+        this.snackBar.open('Fehler beim Vergeben der Credits', 'OK', { duration: 3000 });
+      },
     });
   }
 }
