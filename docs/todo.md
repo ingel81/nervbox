@@ -2,17 +2,7 @@
 
 # backend:
 
-1) Auto increment Credits
-
-[15:10:21 ERR] Error processing hourly credits
-System.ObjectDisposedException: Cannot access a disposed object.
-Object name: 'IServiceProvider'.
-   at Microsoft.Extensions.DependencyInjection.ServiceLookup.ThrowHelper.ThrowObjectDisposedException()
-   at Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService(IServiceProvider provider, Type serviceType)
-   at Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.CreateScope(IServiceProvider provider)
-   at NervboxDeamon.Services.CreditService.ProcessHourlyCredits()
-
-2) wenn man einen browser reloaded bricht duie websocket verbindung natürlich zusammen (impolizit) wir loggen das als WRN. können wir diese eine sache loswerden...möchte das nicht in den logs:
+2) wenn man einen browser reloaded bricht die websocket verbindung natürlich zusammen (impolizit) wir loggen das aber als WRN. können wir diese eine Sache loswerden...möchte das nicht in den logs:
 
 [15:15:57 WRN] UpgradeResponseCanceled: Copying the upgraded response body was canceled.
 System.Threading.Tasks.TaskCanceledException: The operation was canceled.
