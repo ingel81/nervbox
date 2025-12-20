@@ -9,6 +9,9 @@ export interface Sound {
   createdAt: string;
   playCount?: number;
   authorId?: number;
+  upVotes?: number;
+  downVotes?: number;
+  score?: number;
 }
 
 export interface TopSound {

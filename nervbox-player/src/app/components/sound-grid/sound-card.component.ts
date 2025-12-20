@@ -12,6 +12,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { FavoritesService } from '../../core/services/favorites.service';
 import { AchievementService } from '../../core/services/achievement.service';
 import { ApiService } from '../../core/services/api.service';
+import { VoteService } from '../../core/services/vote.service';
 import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component';
 
 @Component({
@@ -93,6 +94,35 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
           @if (hiddenTagCount() > 0) {
             <span class="tag-chip tag-more" [matTooltip]="hiddenTags()">+{{ hiddenTagCount() }}</span>
           }
+        </div>
+      }
+      @if (!selectionMode()) {
+        <div class="stats-row">
+          <div class="vote-controls">
+            <button
+              class="vote-btn upvote"
+              [class.active]="isUpvoted()"
+              [class.animating]="upvoteAnimating()"
+              [disabled]="!auth.isLoggedIn()"
+              (click)="onUpvote($event)"
+              [matTooltip]="auth.isLoggedIn() ? (isUpvoted() ? 'Upvote entfernen' : 'Upvote') : 'Einloggen zum Voten'"
+            >
+              <mat-icon>thumb_up</mat-icon>
+            </button>
+            <span class="vote-score" [class.positive]="(sound().score ?? 0) > 0" [class.negative]="(sound().score ?? 0) < 0">
+              {{ sound().score ?? 0 }}
+            </span>
+            <button
+              class="vote-btn downvote"
+              [class.active]="isDownvoted()"
+              [class.animating]="downvoteAnimating()"
+              [disabled]="!auth.isLoggedIn()"
+              (click)="onDownvote($event)"
+              [matTooltip]="auth.isLoggedIn() ? (isDownvoted() ? 'Downvote entfernen' : 'Downvote') : 'Einloggen zum Voten'"
+            >
+              <mat-icon>thumb_down</mat-icon>
+            </button>
+          </div>
         </div>
       }
     </div>
@@ -344,6 +374,99 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
       font-family: 'JetBrains Mono', monospace;
     }
 
+    /* Vote Controls */
+    .stats-row {
+      display: flex;
+      align-items: center;
+      padding-left: 32px;
+      margin-top: 2px;
+    }
+
+    .vote-controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .vote-btn {
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .vote-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.4;
+    }
+
+    .vote-btn:not(:disabled):hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .vote-btn mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      color: rgba(255, 255, 255, 0.35);
+      transition: color 0.15s ease, transform 0.15s ease;
+    }
+
+    .vote-btn:not(:disabled):hover mat-icon {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .vote-btn.upvote.active mat-icon {
+      color: #22c55e;
+    }
+
+    .vote-btn.upvote:not(:disabled):hover mat-icon {
+      color: #22c55e;
+    }
+
+    .vote-btn.downvote.active mat-icon {
+      color: #ef4444;
+    }
+
+    .vote-btn.downvote:not(:disabled):hover mat-icon {
+      color: #ef4444;
+    }
+
+    .vote-btn.animating mat-icon {
+      animation: votePopAnim 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes votePopAnim {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.35); }
+      100% { transform: scale(1); }
+    }
+
+    .vote-score {
+      font-size: 11px;
+      font-weight: 600;
+      min-width: 20px;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.45);
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .vote-score.positive {
+      color: #22c55e;
+    }
+
+    .vote-score.negative {
+      color: #ef4444;
+    }
+
     .delete-item {
       color: #ef4444 !important;
     }
@@ -462,8 +585,11 @@ export class SoundCardComponent implements AfterViewInit {
   private readonly favoritesService = inject(FavoritesService);
   private readonly achievementService = inject(AchievementService);
   private readonly api = inject(ApiService);
+  private readonly voteService = inject(VoteService);
 
   readonly favoriteAnimating = signal(false);
+  readonly upvoteAnimating = signal(false);
+  readonly downvoteAnimating = signal(false);
 
   readonly sound = input.required<Sound>();
   readonly tagColors = input<Record<string, string>>({});
@@ -483,6 +609,10 @@ export class SoundCardComponent implements AfterViewInit {
   readonly displayedTags = computed(() => this.sound().tags?.slice(0, 3) ?? []);
   readonly hiddenTagCount = computed(() => Math.max(0, (this.sound().tags?.length ?? 0) - 3));
   readonly hiddenTags = computed(() => this.sound().tags?.slice(3).map(t => `#${t}`).join(', ') ?? '');
+
+  readonly userVote = computed(() => this.voteService.getUserVote(this.sound().hash));
+  readonly isUpvoted = computed(() => this.userVote() === 1);
+  readonly isDownvoted = computed(() => this.userVote() === -1);
 
   ngAfterViewInit(): void {
     this.checkTruncation();
@@ -527,6 +657,24 @@ export class SoundCardComponent implements AfterViewInit {
     this.favoriteAnimating.set(true);
     this.favoritesService.toggleFavorite(this.sound().hash);
     setTimeout(() => this.favoriteAnimating.set(false), 300);
+  }
+
+  onUpvote(event: Event): void {
+    event.stopPropagation();
+    if (!this.auth.isLoggedIn()) return;
+
+    this.upvoteAnimating.set(true);
+    this.voteService.toggleVote(this.sound().hash, 1).subscribe();
+    setTimeout(() => this.upvoteAnimating.set(false), 300);
+  }
+
+  onDownvote(event: Event): void {
+    event.stopPropagation();
+    if (!this.auth.isLoggedIn()) return;
+
+    this.downvoteAnimating.set(true);
+    this.voteService.toggleVote(this.sound().hash, -1).subscribe();
+    setTimeout(() => this.downvoteAnimating.set(false), 300);
   }
 
   getTagBackground(tag: string): string {

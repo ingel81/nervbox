@@ -26,6 +26,7 @@ import { SignalRService } from './core/services/signalr.service';
 import { SelectionService } from './core/services/selection.service';
 import { WelcomeTourService } from './core/services/welcome-tour.service';
 import { FavoritesService } from './core/services/favorites.service';
+import { VoteService } from './core/services/vote.service';
 import { AvatarService } from './core/services/avatar.service';
 import { AchievementService } from './core/services/achievement.service';
 import { Sound } from './core/models';
@@ -358,6 +359,7 @@ export class App implements OnInit {
   readonly selectionService = inject(SelectionService);
   readonly welcomeTour = inject(WelcomeTourService);
   readonly favoritesService = inject(FavoritesService);
+  readonly voteService = inject(VoteService);
   readonly avatarService = inject(AvatarService);
   readonly achievementService = inject(AchievementService);
   private readonly signalR = inject(SignalRService);
@@ -398,13 +400,15 @@ export class App implements OnInit {
       }
     });
 
-    // Load favorites and avatar when user logs in
+    // Load favorites, votes, and avatar when user logs in
     effect(() => {
       if (this.authService.isLoggedIn()) {
         this.favoritesService.loadFavorites();
+        this.voteService.loadUserVotes().subscribe();
         this.avatarService.getMyAvatarUrl().subscribe();
       } else {
         this.favoritesService.clearFavorites();
+        this.voteService.clearUserVotes();
         this.avatarService.clearCache();
         this.showFavoritesOnly.set(false);
       }
@@ -434,6 +438,10 @@ export class App implements OnInit {
         return sounds.sort((a, b) => b.durationMs - a.durationMs);
       case 'duration-asc':
         return sounds.sort((a, b) => a.durationMs - b.durationMs);
+      case 'votes-desc':
+        return sounds.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+      case 'votes-asc':
+        return sounds.sort((a, b) => (a.score ?? 0) - (b.score ?? 0));
       case 'random':
         // Seeded shuffle for stable random order
         return sounds.sort((a, b) => {

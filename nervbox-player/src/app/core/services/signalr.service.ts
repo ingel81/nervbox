@@ -3,6 +3,7 @@ import * as signalR from '@microsoft/signalr';
 import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
 import { AchievementEarnedEvent } from '../models/achievement.model';
+import { VoteUpdateEvent } from '../models/vote.model';
 
 export type ChatMessageType = 'text' | 'gif' | 'shekel-transaction';
 
@@ -30,7 +31,7 @@ export interface CreditUpdateEvent {
 }
 
 // Re-export for convenience
-export type { AchievementEarnedEvent };
+export type { AchievementEarnedEvent, VoteUpdateEvent };
 
 @Injectable({
   providedIn: 'root',
@@ -45,6 +46,7 @@ export class SignalRService {
   readonly soundEvents = signal<SoundPlayedEvent[]>([]);
   readonly creditUpdates = signal<CreditUpdateEvent | null>(null);
   readonly achievementEarned = signal<AchievementEarnedEvent | null>(null);
+  readonly voteUpdates = signal<VoteUpdateEvent | null>(null);
   readonly chatConnected = signal(false);
   readonly soundConnected = signal(false);
   readonly rateLimitMessage = signal<string | null>(null);
@@ -107,6 +109,10 @@ export class SignalRService {
 
     this.soundConnection.on('achievementEarned', (event: AchievementEarnedEvent) => {
       this.achievementEarned.set(event);
+    });
+
+    this.soundConnection.on('voteUpdate', (event: VoteUpdateEvent) => {
+      this.voteUpdates.set(event);
     });
 
     this.soundConnection.onclose(() => {

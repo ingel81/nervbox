@@ -53,7 +53,10 @@ namespace NervboxDeamon.Controllers
           s.CreatedAt,
           Tags = s.SoundTags.Select(st => st.Tag.Name).ToList(),
           PlayCount = s.Usages.Count(),
-          AuthorId = s.AuthorId != systemUserId ? s.AuthorId : null
+          AuthorId = s.AuthorId != systemUserId ? s.AuthorId : null,
+          UpVotes = s.Votes.Count(v => v.VoteValue == 1),
+          DownVotes = s.Votes.Count(v => v.VoteValue == -1),
+          Score = s.Votes.Count(v => v.VoteValue == 1) - s.Votes.Count(v => v.VoteValue == -1)
         })
         .ToList();
 
@@ -468,7 +471,10 @@ namespace NervboxDeamon.Controllers
           s.Enabled,
           s.CreatedAt,
           Tags = s.SoundTags.Select(st => st.Tag.Name).ToList(),
-          PlayCount = s.Usages.Count()
+          PlayCount = s.Usages.Count(),
+          UpVotes = s.Votes.Count(v => v.VoteValue == 1),
+          DownVotes = s.Votes.Count(v => v.VoteValue == -1),
+          Score = s.Votes.Count(v => v.VoteValue == 1) - s.Votes.Count(v => v.VoteValue == -1)
         })
         .ToList();
 

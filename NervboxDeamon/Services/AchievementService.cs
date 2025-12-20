@@ -37,6 +37,7 @@ namespace NervboxDeamon.Services
             public const string MixerVisited = "mixer_visited";
             public const string MixerCreated = "mixer_created";
             public const string SoundFavorited = "sound_favorited";
+            public const string SoundUpvoted = "sound_upvoted";
 
             // Minigames
             public const string Minigame1 = "minigame_1";
@@ -219,6 +220,16 @@ namespace NervboxDeamon.Services
                     Category = AchievementCategory.SoundCreation,
                     SortOrder = 3,
                     RewardCredits = 15
+                },
+                new Achievement
+                {
+                    Id = AchievementIds.SoundUpvoted,
+                    Name = "Daumen hoch!",
+                    Description = "Einer deiner Sounds hat ein Upvote erhalten",
+                    Icon = "thumb_up",
+                    Category = AchievementCategory.SoundCreation,
+                    SortOrder = 4,
+                    RewardCredits = 5
                 },
 
                 // Minigames
