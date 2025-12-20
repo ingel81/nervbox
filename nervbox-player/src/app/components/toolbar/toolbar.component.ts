@@ -20,7 +20,7 @@ import { AchievementService } from '../../core/services/achievement.service';
 import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component';
 import { ShekelPopoverComponent } from '../shared/shekel-popover/shekel-popover.component';
 
-export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'duration-desc' | 'duration-asc' | 'random';
+export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'duration-desc' | 'duration-asc' | 'votes-desc' | 'votes-asc' | 'random';
 
 @Component({
   selector: 'app-toolbar',
@@ -82,7 +82,9 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
         >
           <mat-option value="name-asc">Name A-Z</mat-option>
           <mat-option value="name-desc">Name Z-A</mat-option>
-          <mat-option value="plays-desc">Beliebteste</mat-option>
+          <mat-option value="plays-desc">Meistgespielt</mat-option>
+          <mat-option value="votes-desc">Beste Bewertung</mat-option>
+          <mat-option value="votes-asc">Schlechteste Bewertung</mat-option>
           <mat-option value="newest">Neueste</mat-option>
           <mat-option value="duration-desc">Längste</mat-option>
           <mat-option value="duration-asc">Kürzeste</mat-option>

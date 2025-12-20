@@ -42,5 +42,6 @@ namespace NervboxDeamon.DbModels
         public virtual ICollection<SoundTag> SoundTags { get; set; } = new List<SoundTag>();
         public virtual ICollection<SoundUsage> Usages { get; set; } = new List<SoundUsage>();
         public virtual ICollection<UserFavorite> Favorites { get; set; } = new List<UserFavorite>();
+        public virtual ICollection<SoundVote> Votes { get; set; } = new List<SoundVote>();
     }
 }

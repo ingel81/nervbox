@@ -19,6 +19,7 @@ namespace NervboxDeamon
         public DbSet<CreditTransaction> CreditTransactions { get; set; }
         public DbSet<Achievement> Achievements { get; set; }
         public DbSet<UserAchievement> UserAchievements { get; set; }
+        public DbSet<SoundVote> SoundVotes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -99,6 +100,21 @@ namespace NervboxDeamon
             modelBuilder.Entity<Achievement>()
                 .Property(a => a.Category)
                 .HasConversion<string>();
+
+            // SoundVote: Composite Primary Key
+            modelBuilder.Entity<SoundVote>()
+                .HasKey(sv => new { sv.UserId, sv.SoundHash });
+
+            // SoundVote: Relationships
+            modelBuilder.Entity<SoundVote>()
+                .HasOne(sv => sv.User)
+                .WithMany(u => u.SoundVotes)
+                .HasForeignKey(sv => sv.UserId);
+
+            modelBuilder.Entity<SoundVote>()
+                .HasOne(sv => sv.Sound)
+                .WithMany(s => s.Votes)
+                .HasForeignKey(sv => sv.SoundHash);
         }
     }
 }

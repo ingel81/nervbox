@@ -16,7 +16,8 @@ namespace NervboxDeamon.DbModels
         GambleWin,      // Won credits from gambling
         GambleLoss,     // Lost credits from gambling
         TransferSent,   // Sent credits to another user
-        TransferReceived // Received credits from another user
+        TransferReceived, // Received credits from another user
+        SoundUpvoteReceived // Received credits when own sound got upvoted
     }
 
     [Table("credit_transactions")]

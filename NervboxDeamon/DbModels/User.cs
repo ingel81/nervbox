@@ -64,5 +64,8 @@ namespace NervboxDeamon.DbModels
 
         [JsonIgnore]
         public virtual ICollection<UserAchievement> Achievements { get; set; } = new List<UserAchievement>();
+
+        [JsonIgnore]
+        public virtual ICollection<SoundVote> SoundVotes { get; set; } = new List<SoundVote>();
     }
 }

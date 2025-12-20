@@ -120,6 +120,7 @@ namespace NervboxDeamon
       services.AddSingleton<IGiphyService, GiphyService>();
       services.AddSingleton<ICreditService, CreditService>();
       services.AddSingleton<IAchievementService, AchievementService>();
+      services.AddSingleton<IVoteService, VoteService>();
       // services.AddSingleton<ICamService, CamService>(); // Deaktiviert - nicht benötigt
 
       services.Configure<IISServerOptions>(options =>
