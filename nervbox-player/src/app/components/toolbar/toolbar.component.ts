@@ -658,6 +658,9 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       border: 1px solid rgba(147, 51, 234, 0.3) !important;
       border-radius: 8px !important;
       transition: all 0.2s ease !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
     }
 
     .action-btn:hover, .user-btn:hover {
