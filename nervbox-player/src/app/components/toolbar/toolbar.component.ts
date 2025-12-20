@@ -1,4 +1,4 @@
-import { Component, inject, output, input } from '@angular/core';
+import { Component, inject, output, input, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -204,7 +204,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
             @if (avatarService.currentUserAvatarUrl()) {
               <img [src]="avatarService.currentUserAvatarUrl()" class="user-avatar-img" alt="Avatar" />
             } @else {
-              <mat-icon>account_circle</mat-icon>
+              <span class="user-initials">{{ userInitials() }}</span>
             }
           </button>
           <mat-menu #userMenu="matMenu">
@@ -212,7 +212,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
               @if (avatarService.currentUserAvatarUrl()) {
                 <img [src]="avatarService.currentUserAvatarUrl()" class="menu-avatar-img" alt="Avatar" />
               } @else {
-                <mat-icon>person</mat-icon>
+                <span class="menu-initials">{{ userInitials() }}</span>
               }
               <span>{{ auth.currentUser()?.username }}</span>
             </div>
@@ -706,6 +706,37 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       border: 2px solid #9333ea;
     }
 
+    .user-initials {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: white;
+      font-family: 'JetBrains Mono', monospace;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .menu-initials {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: white;
+      font-family: 'JetBrains Mono', monospace;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      flex-shrink: 0;
+    }
+
     .user-menu-header {
       min-width: 180px;
     }
@@ -739,6 +770,27 @@ export class ToolbarComponent {
   readonly avatarService = inject(AvatarService);
 
   searchQuery = '';
+
+  // Computed: Initialen des Benutzers für Avatar-Fallback
+  readonly userInitials = computed(() => {
+    const user = this.auth.currentUser();
+    if (!user) return '?';
+
+    // Versuche zuerst Vor- und Nachname
+    if (user.firstName && user.lastName) {
+      return (user.firstName[0] + user.lastName[0]).toUpperCase();
+    }
+    if (user.firstName) {
+      return user.firstName.substring(0, 2).toUpperCase();
+    }
+
+    // Fallback: Benutzername
+    if (user.username) {
+      return user.username.substring(0, 2).toUpperCase();
+    }
+
+    return '?';
+  });
 
   // Inputs
   readonly currentSort = input<SortOption>('name-asc');
