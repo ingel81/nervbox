@@ -553,6 +553,18 @@ namespace NervboxDeamon.Services
                 BroadcastCreditUpdate(userId, newBalance);
                 BroadcastSystemChatMessage($"🎰 {user.Username} hat beim Gamblen {amount} N$ eingesetzt und GEWONNEN! 💰 +{winAmount} N$ 🎉");
 
+                // Check gambling achievements
+                try
+                {
+                    var achievementService = scope.ServiceProvider.GetService<IAchievementService>();
+                    achievementService?.CheckGamblingAchievements(userId, won: true, winAmount);
+                    achievementService?.CheckWealthAchievements(userId, newBalance);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"Failed to check gambling achievements: {ex.Message}");
+                }
+
                 _logger.LogInformation($"User {userId} won gambling: bet {amount}, won {winAmount}");
                 return (true, newBalance, $"JACKPOT! Du hast {winAmount} N$ gewonnen!");
             }
@@ -574,8 +586,19 @@ namespace NervboxDeamon.Services
                 BroadcastCreditUpdate(userId, user.Credits);
                 BroadcastSystemChatMessage($"🎰 {user.Username} hat beim Gamblen {amount} N$ verzockt! 💸 Alles weg! 😂");
 
+                // Check gambling achievements (losing)
+                try
+                {
+                    var achievementService = scope.ServiceProvider.GetService<IAchievementService>();
+                    achievementService?.CheckGamblingAchievements(userId, won: false, amount);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"Failed to check gambling achievements: {ex.Message}");
+                }
+
                 _logger.LogInformation($"User {userId} lost gambling: bet {amount}");
-                return (false, user.Credits, $"Pech gehabt! {amount} N$ verloren. Das Haus gewinnt immer!");
+                return (false, user.Credits, $"Pech gehabt! {amount} N$ verloren.");
             }
         }
 
@@ -666,6 +689,23 @@ namespace NervboxDeamon.Services
             BroadcastCreditUpdate(toUserId, toUser.Credits);
             BroadcastSystemChatMessage($"💸 {fromUser.Username} hat {amount} N$ an {toUser.Username} gesendet! 🤝");
 
+            // Check transfer achievements
+            try
+            {
+                var achievementService = scope.ServiceProvider.GetService<IAchievementService>();
+                if (achievementService != null)
+                {
+                    achievementService.CheckTransferAchievements(fromUserId, sentMoney: true, receivedMoney: false);
+                    achievementService.CheckTransferAchievements(toUserId, sentMoney: false, receivedMoney: true);
+                    // Check wealth achievements for receiver
+                    achievementService.CheckWealthAchievements(toUserId, toUser.Credits);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Failed to check transfer achievements: {ex.Message}");
+            }
+
             _logger.LogInformation($"User {fromUserId} transferred {amount} credits to user {toUserId}");
 
             if (amountToAdd < amount)
@@ -674,6 +714,78 @@ namespace NervboxDeamon.Services
             }
 
             return (true, $"{amount} N$ an {toUser.Username} gesendet!");
+        }
+
+        public (int reward, int newBalance) ClaimMinigameReward(int userId, string gameName, int level)
+        {
+            // Calculate reward: 5 * 2^(level-1) = 5, 10, 20, 40, 80, ...
+            int reward = 5 * (int)Math.Pow(2, level - 1);
+
+            using var scope = _serviceProvider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+
+            var user = db.Users.Find(userId);
+            if (user == null)
+            {
+                _logger.LogWarning($"User {userId} not found for minigame reward");
+                return (0, 0);
+            }
+
+            var settings = GetSettings();
+
+            // Apply max credits cap for non-admins
+            var actualReward = reward;
+            if (user.Role != "admin")
+            {
+                var newBalance = user.Credits + reward;
+                if (newBalance > settings.MaxCreditsUser)
+                {
+                    actualReward = settings.MaxCreditsUser - user.Credits;
+                    if (actualReward <= 0)
+                    {
+                        _logger.LogDebug($"User {userId} at max credits, no minigame reward given");
+                        return (0, user.Credits);
+                    }
+                }
+            }
+
+            user.Credits += actualReward;
+            var transaction = new CreditTransaction
+            {
+                UserId = userId,
+                Amount = actualReward,
+                TransactionType = CreditTransactionType.GameReward,
+                Description = $"{gameName} Level {level} abgeschlossen",
+                BalanceAfter = user.Credits,
+                RelatedEntityId = $"{gameName}:{level}"
+            };
+            db.CreditTransactions.Add(transaction);
+            db.SaveChanges();
+
+            BroadcastCreditUpdate(userId, user.Credits);
+            BroadcastSystemChatMessage($"🎮 {user.Username} hat {gameName} Level {level} geschafft! 🏆 +{actualReward} N$");
+
+            // Check minigame achievements
+            try
+            {
+                var achievementService = scope.ServiceProvider.GetService<IAchievementService>();
+                if (achievementService != null)
+                {
+                    // Count total minigame completions for this user
+                    var totalCompletions = db.CreditTransactions
+                        .Count(t => t.UserId == userId && t.TransactionType == CreditTransactionType.GameReward);
+
+                    achievementService.CheckMinigameAchievements(userId, totalCompletions);
+                    achievementService.CheckWealthAchievements(userId, user.Credits);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Failed to check minigame achievements: {ex.Message}");
+            }
+
+            _logger.LogInformation($"User {userId} claimed minigame reward: {gameName} level {level}, +{actualReward} credits");
+            return (actualReward, user.Credits);
         }
 
         public void Dispose()

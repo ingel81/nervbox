@@ -322,6 +322,42 @@ namespace NervboxDeamon.Controllers
                 return StatusCode(500, new { Error = ex.Message });
             }
         }
+
+        /// <summary>
+        /// POST /api/credit/minigame-reward - Claim reward for completing a minigame level
+        /// </summary>
+        [HttpPost("minigame-reward")]
+        [Authorize]
+        public IActionResult ClaimMinigameReward([FromBody] MinigameRewardRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(request.GameName))
+                {
+                    return BadRequest(new { Error = "Game name is required" });
+                }
+
+                if (request.Level < 1)
+                {
+                    return BadRequest(new { Error = "Level must be at least 1" });
+                }
+
+                var (reward, newBalance) = _creditService.ClaimMinigameReward(UserId, request.GameName, request.Level);
+
+                return Ok(new
+                {
+                    Success = true,
+                    GameName = request.GameName,
+                    Level = request.Level,
+                    Reward = reward,
+                    NewBalance = newBalance
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Error = ex.Message });
+            }
+        }
     }
 
     public class CreditGrantRequest
@@ -340,5 +376,11 @@ namespace NervboxDeamon.Controllers
     {
         public int ToUserId { get; set; }
         public int Amount { get; set; }
+    }
+
+    public class MinigameRewardRequest
+    {
+        public string GameName { get; set; }
+        public int Level { get; set; }
     }
 }

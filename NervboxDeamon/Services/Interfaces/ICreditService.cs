@@ -74,5 +74,11 @@ namespace NervboxDeamon.Services.Interfaces
         /// Transfer credits from one user to another
         /// </summary>
         (bool success, string message) TransferCredits(int fromUserId, int toUserId, int amount);
+
+        /// <summary>
+        /// Claim reward for completing a minigame level
+        /// Formula: 5 * 2^(level-1) = 5, 10, 20, 40, ...
+        /// </summary>
+        (int reward, int newBalance) ClaimMinigameReward(int userId, string gameName, int level);
     }
 }

@@ -9,7 +9,8 @@ namespace NervboxDeamon.DbModels
         Initial,        // Initial credits when account created
         SoundPlay,      // Deducted for playing a sound
         HourlyBonus,    // Hourly credit grant
-        GameReward,     // Reward from mini-games
+        GameReward,     // Reward from mini-games (level completion)
+        AchievementReward, // Reward from earning an achievement
         AdminGrant,     // Admin manually granted credits
         AdminDeduct,    // Admin manually deducted credits
         GambleWin,      // Won credits from gambling

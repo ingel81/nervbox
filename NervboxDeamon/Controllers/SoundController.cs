@@ -272,6 +272,17 @@ namespace NervboxDeamon.Controllers
         // Add to SoundService cache for immediate playback
         this.SoundService.AddSoundToCache(sound);
 
+        // Grant mixer_created achievement for uploading a sound
+        try
+        {
+          this.AchievementService.CheckMixerAchievements(this.UserId, visitedMixer: false, createdSound: true);
+        }
+        catch (Exception achEx)
+        {
+          // Log but don't fail the upload
+          Console.WriteLine($"Failed to check mixer achievements: {achEx.Message}");
+        }
+
         return Ok(new
         {
           sound.Hash,

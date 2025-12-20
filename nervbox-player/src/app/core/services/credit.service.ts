@@ -58,6 +58,14 @@ export interface TransferResponse {
   newBalance: number;
 }
 
+export interface MinigameRewardResponse {
+  success: boolean;
+  gameName: string;
+  level: number;
+  reward: number;
+  newBalance: number;
+}
+
 export interface TransferableUser {
   id: number;
   username: string;
@@ -165,6 +173,17 @@ export class CreditService {
 
   transfer(toUserId: number, amount: number): Observable<TransferResponse> {
     return this.api.post<TransferResponse>('/credit/transfer', { toUserId, amount }).pipe(
+      tap(response => {
+        if (response.success) {
+          this.credits.set(response.newBalance);
+        }
+      })
+    );
+  }
+
+  // Minigame rewards
+  claimMinigameReward(gameName: string, level: number): Observable<MinigameRewardResponse> {
+    return this.api.post<MinigameRewardResponse>('/credit/minigame-reward', { gameName, level }).pipe(
       tap(response => {
         if (response.success) {
           this.credits.set(response.newBalance);

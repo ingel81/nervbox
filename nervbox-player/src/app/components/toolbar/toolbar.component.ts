@@ -16,6 +16,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { FavoritesService } from '../../core/services/favorites.service';
 import { CreditService } from '../../core/services/credit.service';
 import { AvatarService } from '../../core/services/avatar.service';
+import { AchievementService } from '../../core/services/achievement.service';
 import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component';
 import { ShekelPopoverComponent } from '../shared/shekel-popover/shekel-popover.component';
 
@@ -106,7 +107,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
         <div
           class="credit-display clickable"
           [class.low-credits]="!creditService.canPlay()"
-          matTooltip="Klicken für Shekel Casino"
+          matTooltip="Shekel Funktionen"
           (click)="openShekelPopover()"
         >
           <img src="icons/nervbox-coin.svg" alt="Shekel" class="coin-icon">
@@ -837,6 +838,7 @@ export class ToolbarComponent {
   readonly creditService = inject(CreditService);
   readonly avatarService = inject(AvatarService);
   private readonly dialog = inject(MatDialog);
+  private readonly achievementService = inject(AchievementService);
 
   searchQuery = '';
 
@@ -897,6 +899,8 @@ export class ToolbarComponent {
   }
 
   openMixer(): void {
+    // Grant mixer visit achievement before navigation
+    this.achievementService.markMixerVisited().subscribe();
     // Mixer is served at /mixer (same origin, shares localStorage)
     window.location.href = '/mixer';
   }

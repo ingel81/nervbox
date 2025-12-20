@@ -44,7 +44,7 @@ namespace NervboxDeamon.DbModels
         /// Maximum credits a regular user can have (admins have no limit)
         /// </summary>
         [Column("max_credits_user")]
-        public int MaxCreditsUser { get; set; } = 500;
+        public int MaxCreditsUser { get; set; } = 999999;
 
         /// <summary>
         /// Minimum credits required to play a sound (if user has less, they cannot play)

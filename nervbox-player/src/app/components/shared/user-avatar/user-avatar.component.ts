@@ -201,7 +201,7 @@ export class UserAvatarComponent implements OnInit {
     this.dialog.open(UserProfileDialogComponent, {
       data: { userId: id },
       panelClass: 'dark-dialog',
-      maxWidth: '450px',
+      maxWidth: '600px',
     });
   }
 }

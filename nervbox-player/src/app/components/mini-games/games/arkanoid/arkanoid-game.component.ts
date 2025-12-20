@@ -14,7 +14,8 @@ import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ArkanoidEngine, GameState } from './arkanoid-engine';
-import { SoundService } from '../../../../core/services/sound.service';
+import { ApiService } from '../../../../core/services/api.service';
+import { CreditService } from '../../../../core/services/credit.service';
 
 @Component({
   selector: 'app-arkanoid-game',
@@ -109,6 +110,9 @@ import { SoundService } from '../../../../core/services/sound.service';
             <mat-icon class="overlay-icon win">emoji_events</mat-icon>
             <h3>Level geschafft!</h3>
             <p class="final-score">Score: {{ score() }}</p>
+            @if (levelReward() > 0) {
+              <p class="reward-display">+{{ levelReward() }} N$</p>
+            }
             <div class="overlay-actions">
               <button mat-raised-button color="primary" (click)="nextLevel()">
                 <mat-icon>arrow_forward</mat-icon>
@@ -336,6 +340,28 @@ import { SoundService } from '../../../../core/services/sound.service';
       margin-bottom: 24px;
     }
 
+    .reward-display {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 28px;
+      font-weight: 700;
+      color: #22c55e;
+      margin: 8px 0 16px;
+      text-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+      animation: reward-pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes reward-pulse {
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.1);
+        opacity: 0.9;
+      }
+    }
+
     .overlay-actions {
       display: flex;
       flex-direction: column;
@@ -420,15 +446,17 @@ export class ArkanoidGameComponent implements AfterViewInit, OnDestroy {
   @ViewChild('gameCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
 
   private readonly dialogRef = inject(MatDialogRef<ArkanoidGameComponent>);
-  private readonly soundService = inject(SoundService);
+  private readonly api = inject(ApiService);
+  private readonly creditService = inject(CreditService);
 
   private readonly BRICK_SOUND_HASH = 'd2f9a5de833dcc12171ec0e101250425';
-  private brickSound: HTMLAudioElement | null = null;
+  private brickSoundUrl = '';
 
   readonly score = signal(0);
   readonly lives = signal(3);
   readonly level = signal(1);
   readonly gameState = signal<GameState>('ready');
+  readonly levelReward = signal(0);
 
   readonly livesArray = computed(() => Array(this.lives()).fill(0));
 
@@ -527,8 +555,8 @@ export class ArkanoidGameComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    // Preload brick sound for fast playback
-    this.brickSound = this.soundService.preloadForBrowser(this.BRICK_SOUND_HASH);
+    // Set up brick sound URL
+    this.brickSoundUrl = this.api.getFullUrl(`/sound/${this.BRICK_SOUND_HASH}/file`);
 
     const ctx = this.canvasRef.nativeElement.getContext('2d');
     if (ctx) {
@@ -541,14 +569,23 @@ export class ArkanoidGameComponent implements AfterViewInit, OnDestroy {
       };
       this.engine.onLevelComplete = () => {
         this.stopGameLoop();
+        // Claim reward for completing the level
+        this.creditService.claimMinigameReward('Arkanoid', this.level()).subscribe({
+          next: response => {
+            this.levelReward.set(response.reward);
+          },
+          error: () => {
+            // Still show win even if reward claim fails
+            this.levelReward.set(0);
+          },
+        });
         this.gameState.set('won');
       };
       this.engine.onBrickDestroyed = () => {
-        // Play sound in browser only (not on Pi system)
-        if (this.brickSound) {
-          this.brickSound.currentTime = 0;
-          this.brickSound.play().catch(() => {});
-        }
+        // Play sound in browser - create new Audio for each hit to allow rapid playback
+        const audio = new Audio(this.brickSoundUrl);
+        audio.volume = 0.5;
+        audio.play().catch(() => {});
       };
       this.engine.init();
     }
@@ -602,6 +639,7 @@ export class ArkanoidGameComponent implements AfterViewInit, OnDestroy {
     this.score.set(0);
     this.lives.set(3);
     this.level.set(1);
+    this.levelReward.set(0);
     this.engine.reset();
     this.gameState.set('ready');
   }
@@ -609,6 +647,7 @@ export class ArkanoidGameComponent implements AfterViewInit, OnDestroy {
   nextLevel(): void {
     const newLevel = this.level() + 1;
     this.level.set(newLevel);
+    this.levelReward.set(0);
     this.engine.nextLevel(newLevel);
     this.gameState.set('ready');
   }
