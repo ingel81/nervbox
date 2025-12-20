@@ -16,6 +16,7 @@ import { UserCreateDialogComponent } from './user-create-dialog.component';
 import { UserEditDialogComponent } from './user-edit-dialog.component';
 import { PasswordResetDialogComponent } from './password-reset-dialog.component';
 import { DeleteUserDialogComponent } from './delete-user-dialog.component';
+import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component';
 
 @Component({
   selector: 'app-user-management-dialog',
@@ -32,6 +33,7 @@ import { DeleteUserDialogComponent } from './delete-user-dialog.component';
     MatTooltipModule,
     MatChipsModule,
     MatSnackBarModule,
+    UserAvatarComponent,
   ],
   template: `
     <h2 mat-dialog-title>
@@ -70,7 +72,11 @@ import { DeleteUserDialogComponent } from './delete-user-dialog.component';
             @for (user of filteredUsers(); track user.id) {
               <div class="user-item" [class.inactive]="!user.isActive">
                 <div class="user-main">
-                  <mat-icon class="user-avatar">person</mat-icon>
+                  <app-user-avatar
+                    [userId]="user.id"
+                    size="medium"
+                    [clickable]="user.role !== 'system'"
+                  />
                   <div class="user-info">
                     <div class="user-header">
                       <span class="username">{{ user.username }}</span>
@@ -96,44 +102,46 @@ import { DeleteUserDialogComponent } from './delete-user-dialog.component';
                   </div>
                 </div>
                 <div class="user-actions">
-                  <button
-                    mat-icon-button
-                    (click)="onEditUser(user)"
-                    matTooltip="Bearbeiten"
-                    [disabled]="actionInProgress() === user.id"
-                  >
-                    <mat-icon>edit</mat-icon>
-                  </button>
-                  <button
-                    mat-icon-button
-                    (click)="onResetPassword(user)"
-                    matTooltip="Passwort zurücksetzen"
-                    [disabled]="actionInProgress() === user.id"
-                  >
-                    <mat-icon>key</mat-icon>
-                  </button>
-                  <button
-                    mat-icon-button
-                    (click)="onToggleActive(user)"
-                    [matTooltip]="user.isActive ? 'Deaktivieren' : 'Aktivieren'"
-                    [disabled]="actionInProgress() === user.id || user.username === 'admin'"
-                  >
-                    @if (actionInProgress() === user.id) {
-                      <mat-spinner diameter="18"></mat-spinner>
-                    } @else {
-                      <mat-icon [class.active]="user.isActive">
-                        {{ user.isActive ? 'person' : 'person_off' }}
-                      </mat-icon>
-                    }
-                  </button>
-                  <button
-                    mat-icon-button
-                    (click)="onDeleteUser(user)"
-                    matTooltip="Löschen"
-                    [disabled]="actionInProgress() === user.id || user.username === 'admin'"
-                  >
-                    <mat-icon class="delete-icon">delete</mat-icon>
-                  </button>
+                  @if (user.role !== 'system') {
+                    <button
+                      mat-icon-button
+                      (click)="onEditUser(user)"
+                      matTooltip="Bearbeiten"
+                      [disabled]="actionInProgress() === user.id"
+                    >
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button
+                      mat-icon-button
+                      (click)="onResetPassword(user)"
+                      matTooltip="Passwort zurücksetzen"
+                      [disabled]="actionInProgress() === user.id"
+                    >
+                      <mat-icon>key</mat-icon>
+                    </button>
+                    <button
+                      mat-icon-button
+                      (click)="onToggleActive(user)"
+                      [matTooltip]="user.isActive ? 'Deaktivieren' : 'Aktivieren'"
+                      [disabled]="actionInProgress() === user.id || user.username === 'admin'"
+                    >
+                      @if (actionInProgress() === user.id) {
+                        <mat-spinner diameter="18"></mat-spinner>
+                      } @else {
+                        <mat-icon [class.active]="user.isActive">
+                          {{ user.isActive ? 'person' : 'person_off' }}
+                        </mat-icon>
+                      }
+                    </button>
+                    <button
+                      mat-icon-button
+                      (click)="onDeleteUser(user)"
+                      matTooltip="Löschen"
+                      [disabled]="actionInProgress() === user.id || user.username === 'admin'"
+                    >
+                      <mat-icon class="delete-icon">delete</mat-icon>
+                    </button>
+                  }
                 </div>
               </div>
             }
@@ -252,13 +260,6 @@ import { DeleteUserDialogComponent } from './delete-user-dialog.component';
       min-width: 0;
     }
 
-    .user-avatar {
-      font-size: 32px;
-      width: 32px;
-      height: 32px;
-      color: rgba(147, 51, 234, 0.6);
-    }
-
     .user-info {
       flex: 1;
       min-width: 0;
@@ -293,6 +294,11 @@ import { DeleteUserDialogComponent } from './delete-user-dialog.component';
     .role-badge.role-user {
       background: rgba(147, 51, 234, 0.2);
       color: #9333ea;
+    }
+
+    .role-badge.role-system {
+      background: rgba(100, 116, 139, 0.2);
+      color: #94a3b8;
     }
 
     .status-badge {

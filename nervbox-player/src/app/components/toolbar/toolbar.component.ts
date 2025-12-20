@@ -1,4 +1,4 @@
-import { Component, inject, output, input } from '@angular/core';
+import { Component, inject, output, input, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -14,6 +14,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { AuthService } from '../../core/services/auth.service';
 import { FavoritesService } from '../../core/services/favorites.service';
 import { CreditService } from '../../core/services/credit.service';
+import { AvatarService } from '../../core/services/avatar.service';
+import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component';
 
 export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'duration-desc' | 'duration-asc' | 'random';
 
@@ -33,6 +35,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
     MatBadgeModule,
     MatDividerModule,
     MatSelectModule,
+    UserAvatarComponent,
   ],
   template: `
     <mat-toolbar class="toolbar">
@@ -213,14 +216,28 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
         <div class="toolbar-divider"></div>
         @if (auth.isLoggedIn()) {
           <button mat-icon-button [matMenuTriggerFor]="userMenu" class="user-btn" data-tour="profile">
-            <mat-icon>account_circle</mat-icon>
+            <app-user-avatar
+              [imageUrl]="avatarService.currentUserAvatarUrl()"
+              [initials]="userInitials()"
+              [name]="auth.currentUser()?.username"
+              size="medium"
+            />
           </button>
           <mat-menu #userMenu="matMenu">
-            <div class="menu-header">
-              <mat-icon>person</mat-icon>
+            <div class="menu-header user-menu-header">
+              <app-user-avatar
+                [imageUrl]="avatarService.currentUserAvatarUrl()"
+                [initials]="userInitials()"
+                [name]="auth.currentUser()?.username"
+                size="medium"
+              />
               <span>{{ auth.currentUser()?.username }}</span>
             </div>
             <mat-divider></mat-divider>
+            <button mat-menu-item (click)="changeAvatarClick.emit()">
+              <mat-icon>photo_camera</mat-icon>
+              <span>Avatar ändern</span>
+            </button>
             <button mat-menu-item (click)="changePasswordClick.emit()">
               <mat-icon>key</mat-icon>
               <span>Kennwort ändern</span>
@@ -729,6 +746,9 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       border: 1px solid rgba(147, 51, 234, 0.3) !important;
       border-radius: 8px !important;
       transition: all 0.2s ease !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
     }
 
     .action-btn:hover, .user-btn:hover {
@@ -758,6 +778,10 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       color: #9333ea;
     }
 
+    .user-menu-header {
+      min-width: 180px;
+    }
+
     .admin-menu-header mat-icon {
       color: #f97316;
     }
@@ -785,8 +809,30 @@ export class ToolbarComponent {
   readonly auth = inject(AuthService);
   readonly favorites = inject(FavoritesService);
   readonly creditService = inject(CreditService);
+  readonly avatarService = inject(AvatarService);
 
   searchQuery = '';
+
+  // Computed: Initialen des Benutzers für Avatar-Fallback
+  readonly userInitials = computed(() => {
+    const user = this.auth.currentUser();
+    if (!user) return '?';
+
+    // Versuche zuerst Vor- und Nachname
+    if (user.firstName && user.lastName) {
+      return (user.firstName[0] + user.lastName[0]).toUpperCase();
+    }
+    if (user.firstName) {
+      return user.firstName.substring(0, 2).toUpperCase();
+    }
+
+    // Fallback: Benutzername
+    if (user.username) {
+      return user.username.substring(0, 2).toUpperCase();
+    }
+
+    return '?';
+  });
 
   // Inputs
   readonly currentSort = input<SortOption>('name-asc');
@@ -804,6 +850,7 @@ export class ToolbarComponent {
   readonly chatClick = output<void>();
   readonly loginClick = output<void>();
   readonly changePasswordClick = output<void>();
+  readonly changeAvatarClick = output<void>();
   readonly restartTourClick = output<void>();
   readonly selectionModeToggle = output<void>();
   readonly openSelectionInMixer = output<void>();

@@ -18,12 +18,14 @@ import { UserManagementDialogComponent } from './components/admin/user-managemen
 import { CreditSettingsDialogComponent } from './components/admin/credit-settings-dialog.component';
 import { ChatSidebarComponent } from './components/chat/chat-sidebar.component';
 import { EarnCoinsFabComponent } from './components/mini-games/earn-coins-fab.component';
+import { AvatarUploadDialogComponent } from './components/avatar-upload-dialog/avatar-upload-dialog.component';
 import { SoundService } from './core/services/sound.service';
 import { AuthService } from './core/services/auth.service';
 import { SignalRService } from './core/services/signalr.service';
 import { SelectionService } from './core/services/selection.service';
 import { WelcomeTourService } from './core/services/welcome-tour.service';
 import { FavoritesService } from './core/services/favorites.service';
+import { AvatarService } from './core/services/avatar.service';
 import { Sound } from './core/models';
 
 interface Activity {
@@ -65,6 +67,7 @@ interface Activity {
         (chatClick)="toggleChat()"
         (loginClick)="onLoginClick()"
         (changePasswordClick)="onChangePasswordClick()"
+        (changeAvatarClick)="onChangeAvatarClick()"
         (restartTourClick)="welcomeTour.restartTour()"
         (selectionModeToggle)="selectionService.toggleSelectionMode()"
         (openSelectionInMixer)="selectionService.openInMixer()"
@@ -349,6 +352,7 @@ export class App implements OnInit {
   readonly selectionService = inject(SelectionService);
   readonly welcomeTour = inject(WelcomeTourService);
   readonly favoritesService = inject(FavoritesService);
+  readonly avatarService = inject(AvatarService);
   private readonly signalR = inject(SignalRService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
@@ -387,12 +391,14 @@ export class App implements OnInit {
       }
     });
 
-    // Load favorites when user logs in
+    // Load favorites and avatar when user logs in
     effect(() => {
       if (this.authService.isLoggedIn()) {
         this.favoritesService.loadFavorites();
+        this.avatarService.getMyAvatarUrl().subscribe();
       } else {
         this.favoritesService.clearFavorites();
+        this.avatarService.clearCache();
         this.showFavoritesOnly.set(false);
       }
     });
@@ -655,6 +661,19 @@ export class App implements OnInit {
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         this.snackBar.open('Kennwort wurde geändert', 'OK', { duration: 3000 });
+      }
+    });
+  }
+
+  onChangeAvatarClick(): void {
+    const dialogRef = this.dialog.open(AvatarUploadDialogComponent, {
+      width: '500px',
+      panelClass: 'dark-dialog',
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result?.success) {
+        this.snackBar.open('Avatar wurde aktualisiert', 'OK', { duration: 3000 });
       }
     });
   }

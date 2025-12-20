@@ -6,6 +6,7 @@ export interface User {
   role: string;
   createdAt?: string;
   token?: string;
+  avatarUrl?: string;
 }
 
 export interface LoginRequest {

@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -49,6 +50,10 @@ namespace NervboxDeamon.Services
         if (!user.IsActive)
           return null;
 
+        // System users cannot login
+        if (user.Role == "system")
+          return null;
+
         // Update last login time
         user.LastLoginAt = DateTime.UtcNow;
         db.SaveChanges();
@@ -57,12 +62,17 @@ namespace NervboxDeamon.Services
       // authentication successful so generate jwt token (14 days validity)
       var tokenHandler = new JwtSecurityTokenHandler();
       var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+      var claims = new List<Claim>
+      {
+        new Claim(ClaimTypes.Name, user.Id.ToString()),
+        new Claim("userName", user.Username),
+        new Claim("role", user.Role),
+        new Claim("firstName", user.FirstName ?? ""),
+        new Claim("lastName", user.LastName ?? "")
+      };
       var tokenDescriptor = new SecurityTokenDescriptor
       {
-        Subject = new ClaimsIdentity(new Claim[] {
-                    new Claim(ClaimTypes.Name, user.Id.ToString()),
-                    new Claim("userName", user.Username),
-                    new Claim("role", user.Role) }),
+        Subject = new ClaimsIdentity(claims),
         Expires = DateTime.UtcNow.AddDays(14),
         SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
       };
@@ -125,12 +135,17 @@ namespace NervboxDeamon.Services
         // Generate jwt token (14 days validity)
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+        var claims = new List<Claim>
+        {
+          new Claim(ClaimTypes.Name, user.Id.ToString()),
+          new Claim("userName", user.Username),
+          new Claim("role", user.Role),
+          new Claim("firstName", user.FirstName ?? ""),
+          new Claim("lastName", user.LastName ?? "")
+        };
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-          Subject = new ClaimsIdentity(new Claim[] {
-                    new Claim(ClaimTypes.Name, user.Id.ToString()),
-                    new Claim("userName", user.Username),
-                    new Claim("role", user.Role) }),
+          Subject = new ClaimsIdentity(claims),
           Expires = DateTime.UtcNow.AddDays(14),
           SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };
@@ -222,7 +237,8 @@ namespace NervboxDeamon.Services
       {
         return new List<User>()
         {
-          new User() { Username = "admin", FirstName = "Admin", LastName = "User", PasswordHash = "admin", Role = "admin" }
+          new User() { Username = "admin", FirstName = "Admin", LastName = "User", PasswordHash = "admin", Role = "admin" },
+          new User() { Username = "NERVBOX", FirstName = "NERVBOX", LastName = "System", PasswordHash = "", Role = "system", IsActive = false }
         };
       }
     }
@@ -316,6 +332,13 @@ namespace NervboxDeamon.Services
           return null;
         }
 
+        // Prevent editing system user
+        if (user.Role == "system")
+        {
+          error = "Cannot edit system user.";
+          return null;
+        }
+
         if (model.FirstName != null)
           user.FirstName = model.FirstName;
 
@@ -348,6 +371,13 @@ namespace NervboxDeamon.Services
           return false;
         }
 
+        // Prevent resetting system user password
+        if (user.Role == "system")
+        {
+          error = "Cannot reset system user password.";
+          return false;
+        }
+
         user.PasswordHash = GetPasswordHash(newPassword);
         db.SaveChanges();
         return true;
@@ -366,6 +396,13 @@ namespace NervboxDeamon.Services
         if (user == null)
         {
           error = "User not found.";
+          return false;
+        }
+
+        // Prevent toggling system user
+        if (user.Role == "system")
+        {
+          error = "Cannot modify system user.";
           return false;
         }
 
@@ -397,9 +434,182 @@ namespace NervboxDeamon.Services
           return false;
         }
 
+        // Prevent deleting system user
+        if (user.Role == "system")
+        {
+          error = "Cannot delete system user.";
+          return false;
+        }
+
         db.Users.Remove(user);
         db.SaveChanges();
         return true;
+      }
+    }
+
+    #endregion
+
+    #region Avatar Methods
+
+    private string GetAvatarPath()
+    {
+      var path = _appSettings.AvatarPath;
+      if (!Path.IsPathRooted(path))
+      {
+        path = Path.Combine(AppContext.BaseDirectory, path);
+      }
+      return path;
+    }
+
+    public bool SaveAvatar(int userId, byte[] imageData, string contentType, out string error)
+    {
+      error = string.Empty;
+
+      using (var scope = ServiceProvider.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+        var user = db.Users.FirstOrDefault(u => u.Id == userId);
+
+        if (user == null)
+        {
+          error = "User not found.";
+          return false;
+        }
+
+        try
+        {
+          var avatarDir = GetAvatarPath();
+          if (!Directory.Exists(avatarDir))
+          {
+            Directory.CreateDirectory(avatarDir);
+          }
+
+          // Delete old avatar if exists
+          if (!string.IsNullOrEmpty(user.AvatarFileName))
+          {
+            var oldPath = Path.Combine(avatarDir, user.AvatarFileName);
+            if (File.Exists(oldPath))
+            {
+              File.Delete(oldPath);
+            }
+          }
+
+          // Determine file extension
+          var extension = contentType switch
+          {
+            "image/png" => ".png",
+            "image/gif" => ".gif",
+            "image/webp" => ".webp",
+            _ => ".jpg"
+          };
+
+          // Save new avatar
+          var fileName = $"{userId}_{DateTime.UtcNow.Ticks}{extension}";
+          var filePath = Path.Combine(avatarDir, fileName);
+          File.WriteAllBytes(filePath, imageData);
+
+          user.AvatarFileName = fileName;
+          db.SaveChanges();
+
+          return true;
+        }
+        catch (Exception ex)
+        {
+          error = $"Failed to save avatar: {ex.Message}";
+          return false;
+        }
+      }
+    }
+
+    public (byte[] data, string contentType)? GetAvatar(int userId)
+    {
+      using (var scope = ServiceProvider.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+        var user = db.Users.FirstOrDefault(u => u.Id == userId);
+
+        if (user == null || string.IsNullOrEmpty(user.AvatarFileName))
+        {
+          return null;
+        }
+
+        var avatarDir = GetAvatarPath();
+        var filePath = Path.Combine(avatarDir, user.AvatarFileName);
+
+        if (!File.Exists(filePath))
+        {
+          return null;
+        }
+
+        var data = File.ReadAllBytes(filePath);
+        var contentType = user.AvatarFileName.ToLower() switch
+        {
+          var f when f.EndsWith(".png") => "image/png",
+          var f when f.EndsWith(".gif") => "image/gif",
+          var f when f.EndsWith(".webp") => "image/webp",
+          _ => "image/jpeg"
+        };
+
+        return (data, contentType);
+      }
+    }
+
+    public bool DeleteAvatar(int userId, out string error)
+    {
+      error = string.Empty;
+
+      using (var scope = ServiceProvider.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+        var user = db.Users.FirstOrDefault(u => u.Id == userId);
+
+        if (user == null)
+        {
+          error = "User not found.";
+          return false;
+        }
+
+        if (string.IsNullOrEmpty(user.AvatarFileName))
+        {
+          return true; // No avatar to delete
+        }
+
+        try
+        {
+          var avatarDir = GetAvatarPath();
+          var filePath = Path.Combine(avatarDir, user.AvatarFileName);
+
+          if (File.Exists(filePath))
+          {
+            File.Delete(filePath);
+          }
+
+          user.AvatarFileName = null;
+          db.SaveChanges();
+
+          return true;
+        }
+        catch (Exception ex)
+        {
+          error = $"Failed to delete avatar: {ex.Message}";
+          return false;
+        }
+      }
+    }
+
+    public string GetAvatarUrl(int userId)
+    {
+      using (var scope = ServiceProvider.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+        var user = db.Users.FirstOrDefault(u => u.Id == userId);
+
+        if (user == null || string.IsNullOrEmpty(user.AvatarFileName))
+        {
+          return null;
+        }
+
+        return $"/users/{userId}/avatar";
       }
     }
 
