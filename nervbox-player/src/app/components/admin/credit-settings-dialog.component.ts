@@ -31,8 +31,8 @@ import { CreditService, CreditSettings } from '../../core/services/credit.servic
   template: `
     <div class="dialog-container">
       <div class="dialog-header">
-        <mat-icon class="header-icon">settings</mat-icon>
-        <h2>Credit-Einstellungen</h2>
+        <img src="icons/nervbox-coin.svg" alt="Shekel" class="header-coin">
+        <h2>Shekel-Einstellungen</h2>
       </div>
 
       @if (loading()) {
@@ -43,18 +43,18 @@ import { CreditService, CreditSettings } from '../../core/services/credit.servic
         <div class="settings-content">
           <div class="settings-section">
             <h3>
-              <mat-icon>account_balance_wallet</mat-icon>
-              Start-Credits
+              <img src="icons/nervbox-coin.svg" alt="" class="section-coin">
+              Start-N$
             </h3>
             <mat-form-field appearance="outline">
-              <mat-label>Credits für neue User</mat-label>
+              <mat-label>N$ für neue User</mat-label>
               <input matInput type="number" [(ngModel)]="settings()!.initialCreditsUser" min="0">
-              <mat-hint>Initiale Credits bei Registrierung</mat-hint>
+              <mat-hint>Initiale N$ bei Registrierung</mat-hint>
             </mat-form-field>
             <mat-form-field appearance="outline">
-              <mat-label>Credits für Admins</mat-label>
+              <mat-label>N$ für Admins</mat-label>
               <input matInput type="number" [(ngModel)]="settings()!.initialCreditsAdmin" min="0">
-              <mat-hint>Admins haben quasi unbegrenzte Credits</mat-hint>
+              <mat-hint>Admins haben quasi unbegrenzte N$</mat-hint>
             </mat-form-field>
           </div>
 
@@ -68,10 +68,10 @@ import { CreditService, CreditSettings } from '../../core/services/credit.servic
             <mat-form-field appearance="outline">
               <mat-label>Kosten pro Sound</mat-label>
               <input matInput type="number" [(ngModel)]="settings()!.costPerSoundPlay" min="0">
-              <mat-hint>Credits die pro Abspielen abgezogen werden</mat-hint>
+              <mat-hint>N$ die pro Abspielen abgezogen werden</mat-hint>
             </mat-form-field>
             <mat-form-field appearance="outline">
-              <mat-label>Min. Credits zum Spielen</mat-label>
+              <mat-label>Min. N$ zum Spielen</mat-label>
               <input matInput type="number" [(ngModel)]="settings()!.minCreditsToPlay" min="0">
               <mat-hint>Mindestguthaben um abspielen zu können</mat-hint>
             </mat-form-field>
@@ -82,16 +82,16 @@ import { CreditService, CreditSettings } from '../../core/services/credit.servic
           <div class="settings-section">
             <h3>
               <mat-icon>schedule</mat-icon>
-              Stündliche Bonus-Credits
+              Stündliche Bonus-N$
             </h3>
             <div class="toggle-row">
               <mat-slide-toggle [(ngModel)]="settings()!.hourlyCreditsEnabled">
-                Stündliche Credits aktiviert
+                Stündliche N$ aktiviert
               </mat-slide-toggle>
             </div>
             @if (settings()!.hourlyCreditsEnabled) {
               <mat-form-field appearance="outline">
-                <mat-label>Credits pro Stunde</mat-label>
+                <mat-label>N$ pro Stunde</mat-label>
                 <input matInput type="number" [(ngModel)]="settings()!.hourlyCreditsAmount" min="1">
                 <mat-hint>Automatische Gutschrift jede Stunde</mat-hint>
               </mat-form-field>
@@ -106,7 +106,7 @@ import { CreditService, CreditSettings } from '../../core/services/credit.servic
               Limits
             </h3>
             <mat-form-field appearance="outline">
-              <mat-label>Maximale Credits (User)</mat-label>
+              <mat-label>Maximale N$ (User)</mat-label>
               <input matInput type="number" [(ngModel)]="settings()!.maxCreditsUser" min="1">
               <mat-hint>Obergrenze für normale User</mat-hint>
             </mat-form-field>
@@ -142,11 +142,15 @@ import { CreditService, CreditSettings } from '../../core/services/credit.servic
       border-bottom: 1px solid rgba(234, 179, 8, 0.3);
     }
 
-    .header-icon {
-      color: #fbbf24;
-      font-size: 28px;
-      width: 28px;
-      height: 28px;
+    .header-coin {
+      width: 40px;
+      height: 40px;
+      filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
+    }
+
+    .section-coin {
+      width: 18px;
+      height: 18px;
     }
 
     .dialog-header h2 {

@@ -312,6 +312,7 @@ namespace NervboxDeamon.Controllers
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 CreatedAt = user.CreatedAt,
+                Credits = user.Credits,
                 Sounds = sounds,
                 Stats = new
                 {

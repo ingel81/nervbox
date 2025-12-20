@@ -423,6 +423,7 @@ export class ArkanoidGameComponent implements AfterViewInit, OnDestroy {
   private readonly soundService = inject(SoundService);
 
   private readonly BRICK_SOUND_HASH = 'd2f9a5de833dcc12171ec0e101250425';
+  private brickSound: HTMLAudioElement | null = null;
 
   readonly score = signal(0);
   readonly lives = signal(3);
@@ -526,6 +527,9 @@ export class ArkanoidGameComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
+    // Preload brick sound for fast playback
+    this.brickSound = this.soundService.preloadForBrowser(this.BRICK_SOUND_HASH);
+
     const ctx = this.canvasRef.nativeElement.getContext('2d');
     if (ctx) {
       this.engine = new ArkanoidEngine(ctx, this.canvasWidth, this.canvasHeight);
@@ -540,7 +544,11 @@ export class ArkanoidGameComponent implements AfterViewInit, OnDestroy {
         this.gameState.set('won');
       };
       this.engine.onBrickDestroyed = () => {
-        this.soundService.playSound(this.BRICK_SOUND_HASH).subscribe();
+        // Play sound in browser only (not on Pi system)
+        if (this.brickSound) {
+          this.brickSound.currentTime = 0;
+          this.brickSound.play().catch(() => {});
+        }
       };
       this.engine.init();
     }

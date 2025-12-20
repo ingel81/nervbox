@@ -11,7 +11,7 @@ using NervboxDeamon.Services.Interfaces;
 
 namespace NervboxDeamon.Services
 {
-    public class CreditService : ICreditService
+    public class CreditService : ICreditService, IDisposable
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<CreditService> _logger;
@@ -19,6 +19,7 @@ namespace NervboxDeamon.Services
         private CreditSettings _cachedSettings;
         private readonly object _settingsLock = new object();
         private Timer _hourlyTimer;
+        private bool _disposed;
 
         public CreditService(
             IServiceProvider serviceProvider,
@@ -264,6 +265,12 @@ namespace NervboxDeamon.Services
 
         public void ProcessHourlyCredits()
         {
+            // Don't process if disposed
+            if (_disposed)
+            {
+                return;
+            }
+
             var settings = GetSettings();
             if (!settings.HourlyCreditsEnabled)
             {
@@ -402,6 +409,19 @@ namespace NervboxDeamon.Services
             {
                 _logger.LogWarning(ex, "Failed to broadcast credit update");
             }
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            _hourlyTimer?.Dispose();
+            _hourlyTimer = null;
+            _logger.LogInformation("CreditService disposed");
         }
     }
 }
