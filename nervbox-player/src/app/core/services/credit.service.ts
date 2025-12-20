@@ -45,6 +45,24 @@ export interface CreditGrantResponse {
   newBalance: number;
 }
 
+export interface GambleResponse {
+  won: boolean;
+  newBalance: number;
+  message: string;
+  betAmount: number;
+}
+
+export interface TransferResponse {
+  success: boolean;
+  message: string;
+  newBalance: number;
+}
+
+export interface TransferableUser {
+  id: number;
+  username: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -129,5 +147,29 @@ export class CreditService {
 
   getUserCredits(userId: number): Observable<{ userId: number; username: string; credits: number; role: string }> {
     return this.api.get(`/credit/user/${userId}`);
+  }
+
+  // Gambling
+  gamble(amount: number): Observable<GambleResponse> {
+    return this.api.post<GambleResponse>('/credit/gamble', { amount }).pipe(
+      tap(response => {
+        this.credits.set(response.newBalance);
+      })
+    );
+  }
+
+  // Transfer
+  getTransferableUsers(): Observable<TransferableUser[]> {
+    return this.api.get<TransferableUser[]>('/credit/users');
+  }
+
+  transfer(toUserId: number, amount: number): Observable<TransferResponse> {
+    return this.api.post<TransferResponse>('/credit/transfer', { toUserId, amount }).pipe(
+      tap(response => {
+        if (response.success) {
+          this.credits.set(response.newBalance);
+        }
+      })
+    );
   }
 }
