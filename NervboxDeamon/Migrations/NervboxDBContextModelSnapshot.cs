@@ -199,6 +199,10 @@ namespace NervboxDeamon.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("id");
 
+                    b.Property<string>("AvatarFileName")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("avatar_file_name");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("created_at");
