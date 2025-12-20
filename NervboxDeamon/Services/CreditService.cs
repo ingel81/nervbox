@@ -16,19 +16,23 @@ namespace NervboxDeamon.Services
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<CreditService> _logger;
         private readonly IHubContext<SoundHub> _soundHub;
+        private readonly IHubContext<ChatHub> _chatHub;
         private CreditSettings _cachedSettings;
         private readonly object _settingsLock = new object();
         private Timer _hourlyTimer;
         private bool _disposed;
+        private static readonly Random _random = new Random();
 
         public CreditService(
             IServiceProvider serviceProvider,
             ILogger<CreditService> logger,
-            IHubContext<SoundHub> soundHub)
+            IHubContext<SoundHub> soundHub,
+            IHubContext<ChatHub> chatHub)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
             _soundHub = soundHub;
+            _chatHub = chatHub;
         }
 
         public void Init()
@@ -420,6 +424,235 @@ namespace NervboxDeamon.Services
             {
                 _logger.LogWarning(ex, "Failed to broadcast credit update");
             }
+        }
+
+        private void BroadcastSystemChatMessage(string message, int? relatedUserId = null)
+        {
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+
+                // Get or create system user (userId = 0 or a dedicated system user)
+                var systemUser = db.Users.FirstOrDefault(u => u.Username == "NERVBOX");
+                if (systemUser == null)
+                {
+                    // Create system user if not exists
+                    systemUser = new User
+                    {
+                        Username = "NERVBOX",
+                        PasswordHash = Guid.NewGuid().ToString(), // Random unusable password
+                        Role = "system",
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    db.Users.Add(systemUser);
+                    db.SaveChanges();
+                }
+
+                // Store in database
+                var chatMessage = new ChatMessage
+                {
+                    UserId = systemUser.Id,
+                    Message = message,
+                    MessageType = ChatMessageType.ShekelTransaction,
+                    CreatedAt = DateTime.UtcNow
+                };
+                db.ChatMessages.Add(chatMessage);
+                db.SaveChanges();
+
+                // Broadcast via SignalR
+                _chatHub.Clients.All.SendAsync("message", new
+                {
+                    Id = chatMessage.Id,
+                    UserId = systemUser.Id,
+                    Username = "NERVBOX",
+                    Message = message,
+                    MessageType = "shekel-transaction",
+                    GifUrl = (string)null,
+                    CreatedAt = chatMessage.CreatedAt
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to broadcast system chat message");
+            }
+        }
+
+        public (bool won, int newBalance, string message) Gamble(int userId, int amount)
+        {
+            if (amount <= 0)
+            {
+                return (false, 0, "Einsatz muss größer als 0 sein");
+            }
+
+            using var scope = _serviceProvider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+
+            var user = db.Users.Find(userId);
+            if (user == null)
+            {
+                return (false, 0, "Benutzer nicht gefunden");
+            }
+
+            if (user.Credits < amount)
+            {
+                return (false, user.Credits, "Nicht genug Shekel zum Gamblen");
+            }
+
+            // 50/50 chance
+            bool won = _random.Next(2) == 1;
+
+            if (won)
+            {
+                // Double the bet
+                var settings = GetSettings();
+                var winAmount = amount;
+                var newBalance = user.Credits + winAmount;
+
+                // Cap at max credits for non-admins
+                if (user.Role != "admin" && newBalance > settings.MaxCreditsUser)
+                {
+                    winAmount = settings.MaxCreditsUser - user.Credits;
+                    newBalance = settings.MaxCreditsUser;
+                }
+
+                user.Credits = newBalance;
+                var transaction = new CreditTransaction
+                {
+                    UserId = userId,
+                    Amount = winAmount,
+                    TransactionType = CreditTransactionType.GambleWin,
+                    Description = $"Gambling gewonnen: {amount} N$ eingesetzt, {winAmount} N$ gewonnen",
+                    BalanceAfter = newBalance
+                };
+                db.CreditTransactions.Add(transaction);
+                db.SaveChanges();
+
+                BroadcastCreditUpdate(userId, newBalance);
+                BroadcastSystemChatMessage($"🎰 {user.Username} hat beim Gamblen {amount} N$ eingesetzt und GEWONNEN! 💰 +{winAmount} N$ 🎉");
+
+                _logger.LogInformation($"User {userId} won gambling: bet {amount}, won {winAmount}");
+                return (true, newBalance, $"JACKPOT! Du hast {winAmount} N$ gewonnen!");
+            }
+            else
+            {
+                // Lose everything
+                user.Credits -= amount;
+                var transaction = new CreditTransaction
+                {
+                    UserId = userId,
+                    Amount = -amount,
+                    TransactionType = CreditTransactionType.GambleLoss,
+                    Description = $"Gambling verloren: {amount} N$ eingesetzt",
+                    BalanceAfter = user.Credits
+                };
+                db.CreditTransactions.Add(transaction);
+                db.SaveChanges();
+
+                BroadcastCreditUpdate(userId, user.Credits);
+                BroadcastSystemChatMessage($"🎰 {user.Username} hat beim Gamblen {amount} N$ verzockt! 💸 Alles weg! 😂");
+
+                _logger.LogInformation($"User {userId} lost gambling: bet {amount}");
+                return (false, user.Credits, $"Pech gehabt! {amount} N$ verloren. Das Haus gewinnt immer!");
+            }
+        }
+
+        public (bool success, string message) TransferCredits(int fromUserId, int toUserId, int amount)
+        {
+            if (amount <= 0)
+            {
+                return (false, "Betrag muss größer als 0 sein");
+            }
+
+            if (fromUserId == toUserId)
+            {
+                return (false, "Du kannst dir nicht selbst Shekel senden");
+            }
+
+            using var scope = _serviceProvider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+
+            var fromUser = db.Users.Find(fromUserId);
+            var toUser = db.Users.Find(toUserId);
+
+            if (fromUser == null)
+            {
+                return (false, "Sender nicht gefunden");
+            }
+
+            if (toUser == null)
+            {
+                return (false, "Empfänger nicht gefunden");
+            }
+
+            if (!toUser.IsActive)
+            {
+                return (false, "Empfänger ist nicht aktiv");
+            }
+
+            if (fromUser.Credits < amount)
+            {
+                return (false, "Nicht genug Shekel zum Senden");
+            }
+
+            var settings = GetSettings();
+
+            // Deduct from sender
+            fromUser.Credits -= amount;
+            var senderTransaction = new CreditTransaction
+            {
+                UserId = fromUserId,
+                Amount = -amount,
+                TransactionType = CreditTransactionType.TransferSent,
+                Description = $"Shekel an {toUser.Username} gesendet",
+                BalanceAfter = fromUser.Credits,
+                RelatedEntityId = toUserId.ToString()
+            };
+            db.CreditTransactions.Add(senderTransaction);
+
+            // Add to receiver (respect max credits)
+            var amountToAdd = amount;
+            if (toUser.Role != "admin")
+            {
+                var newBalance = toUser.Credits + amount;
+                if (newBalance > settings.MaxCreditsUser)
+                {
+                    amountToAdd = settings.MaxCreditsUser - toUser.Credits;
+                    if (amountToAdd <= 0)
+                    {
+                        return (false, $"{toUser.Username} hat bereits das Maximum an Shekel");
+                    }
+                }
+            }
+
+            toUser.Credits += amountToAdd;
+            var receiverTransaction = new CreditTransaction
+            {
+                UserId = toUserId,
+                Amount = amountToAdd,
+                TransactionType = CreditTransactionType.TransferReceived,
+                Description = $"Shekel von {fromUser.Username} erhalten",
+                BalanceAfter = toUser.Credits,
+                RelatedEntityId = fromUserId.ToString()
+            };
+            db.CreditTransactions.Add(receiverTransaction);
+
+            db.SaveChanges();
+
+            // Broadcast updates
+            BroadcastCreditUpdate(fromUserId, fromUser.Credits);
+            BroadcastCreditUpdate(toUserId, toUser.Credits);
+            BroadcastSystemChatMessage($"💸 {fromUser.Username} hat {amount} N$ an {toUser.Username} gesendet! 🤝");
+
+            _logger.LogInformation($"User {fromUserId} transferred {amount} credits to user {toUserId}");
+
+            if (amountToAdd < amount)
+            {
+                return (true, $"{amount} N$ an {toUser.Username} gesendet. {toUser.Username} konnte nur {amountToAdd} N$ empfangen (Maximum erreicht).");
+            }
+
+            return (true, $"{amount} N$ an {toUser.Username} gesendet!");
         }
 
         public void Dispose()
