@@ -30,10 +30,10 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
   ],
   template: `
     <div class="shekel-popover">
-      <div class="header">
+      <div class="header" [class.casino-mode]="activeTab() === 0" [class.transfer-mode]="activeTab() === 1">
         <img src="icons/nervbox-coin.svg" alt="Shekel" class="header-coin">
         <div class="header-text">
-          <span class="title">Shekel Casino</span>
+          <span class="title">{{ activeTab() === 0 ? 'Shekel Casino' : 'Shekel senden' }}</span>
           <span class="balance">{{ creditService.creditsFormatted() }} N$</span>
         </div>
         <button mat-icon-button class="close-btn" (click)="close()">
@@ -43,7 +43,7 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
 
       <mat-divider></mat-divider>
 
-      <mat-tab-group animationDuration="200ms" class="tabs">
+      <mat-tab-group animationDuration="200ms" class="tabs" (selectedIndexChange)="activeTab.set($event)">
         <!-- GAMBLING TAB -->
         <mat-tab>
           <ng-template mat-tab-label>
@@ -191,6 +191,25 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
       gap: 12px;
       padding: 16px;
       background: linear-gradient(135deg, rgba(234, 179, 8, 0.15) 0%, rgba(251, 191, 36, 0.1) 100%);
+      transition: background 0.3s ease;
+    }
+
+    .header.casino-mode {
+      background: linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(234, 179, 8, 0.1) 100%);
+    }
+
+    .header.transfer-mode {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(22, 163, 74, 0.1) 100%);
+    }
+
+    .header.transfer-mode .title {
+      background: linear-gradient(135deg, #86efac 0%, #22c55e 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+
+    .header.transfer-mode .header-coin {
+      filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.5));
     }
 
     .header-coin {
@@ -198,6 +217,7 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
       height: 48px;
       filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.5));
       animation: coinSpin 3s ease-in-out infinite;
+      transition: filter 0.3s ease;
     }
 
     @keyframes coinSpin {
@@ -464,6 +484,9 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
 export class ShekelPopoverComponent implements OnInit {
   readonly creditService = inject(CreditService);
   private readonly dialogRef = inject(MatDialogRef<ShekelPopoverComponent>);
+
+  // Tab state
+  readonly activeTab = signal(0);
 
   // Gambling state
   gambleAmount = 10;
