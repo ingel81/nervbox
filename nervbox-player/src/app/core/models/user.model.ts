@@ -46,6 +46,7 @@ export interface UserAdmin {
   isActive: boolean;
   createdAt: string;
   lastLoginAt?: string;
+  credits: number;
 }
 
 export interface AdminCreateUserRequest {

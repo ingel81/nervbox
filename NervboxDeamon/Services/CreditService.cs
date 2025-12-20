@@ -279,6 +279,12 @@ namespace NervboxDeamon.Services
 
             try
             {
+                // Double-check disposed state right before creating scope (race condition protection)
+                if (_disposed)
+                {
+                    return;
+                }
+
                 using var scope = _serviceProvider.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
 
@@ -322,6 +328,11 @@ namespace NervboxDeamon.Services
                     db.SaveChanges();
                     _logger.LogDebug($"Granted hourly credits to {eligibleUsers.Count} users");
                 }
+            }
+            catch (ObjectDisposedException)
+            {
+                // Service is shutting down, ignore
+                _logger.LogDebug("Hourly credits processing skipped - service is disposing");
             }
             catch (Exception ex)
             {
@@ -419,8 +430,16 @@ namespace NervboxDeamon.Services
             }
 
             _disposed = true;
-            _hourlyTimer?.Dispose();
-            _hourlyTimer = null;
+
+            // Stop the timer first (prevent new callbacks)
+            if (_hourlyTimer != null)
+            {
+                // Disable the timer before disposing
+                _hourlyTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                _hourlyTimer.Dispose();
+                _hourlyTimer = null;
+            }
+
             _logger.LogInformation("CreditService disposed");
         }
     }

@@ -564,7 +564,7 @@ export class App implements OnInit {
     switch (action) {
       case 'users':
         this.dialog.open(UserManagementDialogComponent, {
-          width: '650px',
+          width: '900px',
           maxWidth: '95vw',
           panelClass: 'dark-dialog',
         });

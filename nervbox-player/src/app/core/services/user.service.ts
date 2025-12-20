@@ -50,6 +50,7 @@ export class UserService {
           role: newUser.role,
           isActive: true,
           createdAt: newUser.createdAt || new Date().toISOString(),
+          credits: 0,
         };
         this.users.update(users => [...users, userAdmin]);
       })

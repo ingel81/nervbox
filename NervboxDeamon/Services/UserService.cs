@@ -272,7 +272,8 @@ namespace NervboxDeamon.Services
           Role = u.Role,
           IsActive = u.IsActive,
           CreatedAt = u.CreatedAt,
-          LastLoginAt = u.LastLoginAt
+          LastLoginAt = u.LastLoginAt,
+          Credits = u.Credits
         }).ToList();
       }
     }
