@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using NervboxDeamon.Controllers.Base;
 using NervboxDeamon.Models;
 using NervboxDeamon.Services.Interfaces;
 
@@ -9,15 +10,13 @@ namespace NervboxDeamon.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class VoteController : ControllerBase
+    public class VoteController : NervboxBaseController<VoteController>
     {
         private readonly IVoteService _voteService;
-        private readonly IUserService _userService;
 
-        public VoteController(IVoteService voteService, IUserService userService)
+        public VoteController(IVoteService voteService)
         {
             _voteService = voteService;
-            _userService = userService;
         }
 
         /// <summary>
@@ -27,13 +26,7 @@ namespace NervboxDeamon.Controllers
         [Authorize]
         public async Task<ActionResult<VoteResult>> Vote(string soundHash, [FromBody] VoteRequest request)
         {
-            var userId = _userService.GetCurrentUserId();
-            if (userId == null)
-            {
-                return Unauthorized();
-            }
-
-            var result = await _voteService.VoteAsync(userId.Value, soundHash, request.VoteValue);
+            var result = await _voteService.VoteAsync(UserId, soundHash, request.VoteValue);
             if (!result.Success)
             {
                 return BadRequest(result);
@@ -49,13 +42,7 @@ namespace NervboxDeamon.Controllers
         [Authorize]
         public async Task<ActionResult<VoteResult>> RemoveVote(string soundHash)
         {
-            var userId = _userService.GetCurrentUserId();
-            if (userId == null)
-            {
-                return Unauthorized();
-            }
-
-            var result = await _voteService.RemoveVoteAsync(userId.Value, soundHash);
+            var result = await _voteService.RemoveVoteAsync(UserId, soundHash);
             return Ok(result);
         }
 
@@ -76,13 +63,7 @@ namespace NervboxDeamon.Controllers
         [Authorize]
         public async Task<ActionResult<Dictionary<string, int>>> GetUserVotes()
         {
-            var userId = _userService.GetCurrentUserId();
-            if (userId == null)
-            {
-                return Unauthorized();
-            }
-
-            var votes = await _voteService.GetUserVotesAsync(userId.Value);
+            var votes = await _voteService.GetUserVotesAsync(UserId);
             return Ok(votes);
         }
 

@@ -27,7 +27,7 @@ export class WelcomeTourService {
 
   private readonly USER_STORAGE_KEY = 'nervbox-welcome-tour';
   private readonly ADMIN_STORAGE_KEY = 'nervbox-admin-tour';
-  private readonly TOUR_VERSION = '2.1.0'; // Bumped for Shekel Casino tour
+  private readonly TOUR_VERSION = '2.2.0'; // Added "Mein Profil" menu item
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private tour: any = null;
@@ -235,7 +235,7 @@ export class WelcomeTourService {
     this.tour.addStep({
       id: 'sort',
       title: 'Sortieren',
-      text: 'Sounds sortieren nach:<br><br>• Name (A-Z / Z-A)<br>• Beliebteste (meistgespielt)<br>• Neueste<br>• Länge<br>• Zufall',
+      text: 'Sounds sortieren nach:<br><br>• Name (A-Z / Z-A)<br>• Beliebteste (meistgespielt)<br>• Beste Bewertungen<br>• Neueste<br>• Länge<br>• Zufall',
       attachTo: { element: '.sort-container', on: 'bottom' },
       buttons: this.getNavButtons(),
     });
@@ -374,6 +374,7 @@ export class WelcomeTourService {
       id: 'profile-menu',
       title: 'Profil-Menü',
       text: `Im Profil-Menü kannst du:<br><br>
+        • <b>Mein Profil</b> - Deine Stats & Achievements<br>
         • <b>Avatar ändern</b> - Dein Profilbild<br>
         • <b>Kennwort ändern</b> - Sicherheit<br>
         • <b>Tour starten</b> - Diese Tour nochmal<br>

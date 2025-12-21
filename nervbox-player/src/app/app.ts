@@ -72,6 +72,7 @@ interface Activity {
         (loginClick)="onLoginClick()"
         (changePasswordClick)="onChangePasswordClick()"
         (changeAvatarClick)="onChangeAvatarClick()"
+        (profileClick)="onProfileClick()"
         (restartTourClick)="welcomeTour.restartTour()"
         (selectionModeToggle)="selectionService.toggleSelectionMode()"
         (openSelectionInMixer)="selectionService.openInMixer()"
@@ -690,6 +691,21 @@ export class App implements OnInit {
       if (result?.success) {
         this.snackBar.open('Avatar wurde aktualisiert', 'OK', { duration: 3000 });
       }
+    });
+  }
+
+  async onProfileClick(): Promise<void> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return;
+
+    const { UserProfileDialogComponent } = await import(
+      './components/shared/user-profile-dialog/user-profile-dialog.component'
+    );
+
+    this.dialog.open(UserProfileDialogComponent, {
+      data: { userId },
+      panelClass: 'dark-dialog',
+      maxWidth: '600px',
     });
   }
 

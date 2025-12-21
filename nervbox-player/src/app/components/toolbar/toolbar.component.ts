@@ -245,6 +245,10 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
               <span>{{ auth.currentUser()?.username }}</span>
             </div>
             <mat-divider></mat-divider>
+            <button mat-menu-item (click)="profileClick.emit()">
+              <mat-icon>person</mat-icon>
+              <span>Mein Profil</span>
+            </button>
             <button mat-menu-item (click)="changeAvatarClick.emit()">
               <mat-icon>photo_camera</mat-icon>
               <span>Avatar ändern</span>
@@ -882,6 +886,7 @@ export class ToolbarComponent {
   readonly loginClick = output<void>();
   readonly changePasswordClick = output<void>();
   readonly changeAvatarClick = output<void>();
+  readonly profileClick = output<void>();
   readonly restartTourClick = output<void>();
   readonly selectionModeToggle = output<void>();
   readonly openSelectionInMixer = output<void>();
