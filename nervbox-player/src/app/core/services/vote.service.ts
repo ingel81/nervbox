@@ -1,6 +1,7 @@
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
+import { SoundService } from './sound.service';
 import { VoteResult, SoundWithVotes } from '../models';
 
 @Injectable({
@@ -8,6 +9,7 @@ import { VoteResult, SoundWithVotes } from '../models';
 })
 export class VoteService {
   private readonly api = inject(ApiService);
+  private readonly soundService = inject(SoundService);
 
   // User's votes: soundHash -> voteValue (1 or -1)
   private readonly _userVotes = signal<Record<string, number>>({});
@@ -40,6 +42,8 @@ export class VoteService {
             ...votes,
             [soundHash]: voteValue
           }));
+          // Update sound score immediately
+          this.soundService.updateSoundVotes(soundHash, result.upVotes, result.downVotes, result.score);
         }
       })
     );
@@ -57,6 +61,8 @@ export class VoteService {
             delete newVotes[soundHash];
             return newVotes;
           });
+          // Update sound score immediately
+          this.soundService.updateSoundVotes(soundHash, result.upVotes, result.downVotes, result.score);
         }
       })
     );

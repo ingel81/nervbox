@@ -153,6 +153,17 @@ export class SoundService {
     );
   }
 
+  /**
+   * Update vote data for a sound (called after voting)
+   */
+  updateSoundVotes(hash: string, upVotes: number, downVotes: number, score: number): void {
+    this.sounds.update(sounds =>
+      sounds.map(s =>
+        s.hash === hash ? { ...s, upVotes, downVotes, score } : s
+      )
+    );
+  }
+
   // === Admin: Tag Management ===
 
   readonly tags = signal<Tag[]>([]);
