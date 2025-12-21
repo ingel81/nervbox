@@ -97,32 +97,30 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
         </div>
       }
       @if (!selectionMode()) {
-        <div class="stats-row">
-          <div class="vote-controls">
-            <button
-              class="vote-btn upvote"
-              [class.active]="isUpvoted()"
-              [class.animating]="upvoteAnimating()"
-              [disabled]="!auth.isLoggedIn()"
-              (click)="onUpvote($event)"
-              [matTooltip]="auth.isLoggedIn() ? (isUpvoted() ? 'Upvote entfernen' : 'Upvote') : 'Einloggen zum Voten'"
-            >
-              <mat-icon>thumb_up</mat-icon>
-            </button>
-            <span class="vote-score" [class.positive]="(sound().score ?? 0) > 0" [class.negative]="(sound().score ?? 0) < 0">
-              {{ sound().score ?? 0 }}
-            </span>
-            <button
-              class="vote-btn downvote"
-              [class.active]="isDownvoted()"
-              [class.animating]="downvoteAnimating()"
-              [disabled]="!auth.isLoggedIn()"
-              (click)="onDownvote($event)"
-              [matTooltip]="auth.isLoggedIn() ? (isDownvoted() ? 'Downvote entfernen' : 'Downvote') : 'Einloggen zum Voten'"
-            >
-              <mat-icon>thumb_down</mat-icon>
-            </button>
-          </div>
+        <div class="vote-stack">
+          <button
+            class="vote-btn upvote"
+            [class.active]="isUpvoted()"
+            [class.animating]="upvoteAnimating()"
+            [disabled]="!auth.isLoggedIn()"
+            (click)="onUpvote($event)"
+            [matTooltip]="auth.isLoggedIn() ? (isUpvoted() ? 'Upvote entfernen' : 'Upvote') : 'Einloggen zum Voten'"
+          >
+            <mat-icon>thumb_up</mat-icon>
+          </button>
+          <span class="vote-score" [class.positive]="(sound().score ?? 0) > 0" [class.negative]="(sound().score ?? 0) < 0">
+            {{ sound().score ?? 0 }}
+          </span>
+          <button
+            class="vote-btn downvote"
+            [class.active]="isDownvoted()"
+            [class.animating]="downvoteAnimating()"
+            [disabled]="!auth.isLoggedIn()"
+            (click)="onDownvote($event)"
+            [matTooltip]="auth.isLoggedIn() ? (isDownvoted() ? 'Downvote entfernen' : 'Downvote') : 'Einloggen zum Voten'"
+          >
+            <mat-icon>thumb_down</mat-icon>
+          </button>
         </div>
       }
     </div>
@@ -239,6 +237,7 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
       gap: 12px;
       min-width: 0;
       overflow: hidden;
+      padding-right: 32px;
     }
 
     .sound-icon {
@@ -327,10 +326,12 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
 
     .tag-row {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       gap: 5px;
       padding-left: 32px;
+      padding-right: 36px;
       margin-top: -2px;
+      overflow: hidden;
     }
 
     .tag-chip {
@@ -343,6 +344,8 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
       color: rgba(255, 255, 255, 0.42);
       letter-spacing: 0.01em;
       transition: all 0.15s ease;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
 
     .tag-chip .hash {
@@ -374,23 +377,31 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
       font-family: 'JetBrains Mono', monospace;
     }
 
-    /* Vote Controls */
-    .stats-row {
+    /* Vote Stack - Right Side */
+    .vote-stack {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
       display: flex;
+      flex-direction: column;
       align-items: center;
-      padding-left: 32px;
-      margin-top: 2px;
+      gap: 0;
+      background: transparent;
+      border-radius: 6px;
+      padding: 2px;
+      opacity: 0.4;
+      transition: opacity 0.15s ease, background 0.15s ease;
     }
 
-    .vote-controls {
-      display: flex;
-      align-items: center;
-      gap: 4px;
+    .sound-card:hover .vote-stack {
+      opacity: 1;
+      background: rgba(0, 0, 0, 0.3);
     }
 
     .vote-btn {
-      width: 24px;
-      height: 24px;
+      width: 22px;
+      height: 20px;
       padding: 0;
       background: transparent;
       border: none;
@@ -399,31 +410,39 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
       align-items: center;
       justify-content: center;
       border-radius: 4px;
-      transition: background 0.15s ease, transform 0.15s ease;
+      transition: background 0.15s ease;
     }
 
     .vote-btn:disabled {
       cursor: not-allowed;
-      opacity: 0.4;
+      opacity: 0.5;
     }
 
     .vote-btn:not(:disabled):hover {
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.1);
     }
 
     .vote-btn mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-      color: rgba(255, 255, 255, 0.35);
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+      color: rgba(255, 255, 255, 0.25);
       transition: color 0.15s ease, transform 0.15s ease;
     }
 
+    .sound-card:hover .vote-btn mat-icon {
+      color: rgba(255, 255, 255, 0.45);
+    }
+
     .vote-btn:not(:disabled):hover mat-icon {
-      color: rgba(255, 255, 255, 0.6);
+      color: rgba(255, 255, 255, 0.7);
     }
 
     .vote-btn.upvote.active mat-icon {
+      color: rgba(34, 197, 94, 0.6);
+    }
+
+    .sound-card:hover .vote-btn.upvote.active mat-icon {
       color: #22c55e;
     }
 
@@ -432,6 +451,10 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
     }
 
     .vote-btn.downvote.active mat-icon {
+      color: rgba(239, 68, 68, 0.6);
+    }
+
+    .sound-card:hover .vote-btn.downvote.active mat-icon {
       color: #ef4444;
     }
 
@@ -445,25 +468,39 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
 
     @keyframes votePopAnim {
       0% { transform: scale(1); }
-      50% { transform: scale(1.35); }
+      50% { transform: scale(1.3); }
       100% { transform: scale(1); }
     }
 
     .vote-score {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 600;
-      min-width: 20px;
+      min-width: 18px;
       text-align: center;
-      color: rgba(255, 255, 255, 0.45);
+      color: rgba(255, 255, 255, 0.3);
       font-family: 'JetBrains Mono', monospace;
       font-variant-numeric: tabular-nums;
+      line-height: 14px;
+      transition: color 0.15s ease;
+    }
+
+    .sound-card:hover .vote-score {
+      color: rgba(255, 255, 255, 0.55);
     }
 
     .vote-score.positive {
+      color: rgba(34, 197, 94, 0.5);
+    }
+
+    .sound-card:hover .vote-score.positive {
       color: #22c55e;
     }
 
     .vote-score.negative {
+      color: rgba(239, 68, 68, 0.5);
+    }
+
+    .sound-card:hover .vote-score.negative {
       color: #ef4444;
     }
 
