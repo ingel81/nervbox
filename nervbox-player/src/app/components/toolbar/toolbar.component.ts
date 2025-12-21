@@ -116,6 +116,12 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
           <span class="credit-amount">{{ creditService.creditsFormatted() }}</span>
           <span class="credit-currency">N$</span>
         </div>
+
+        <!-- LOGS - ??? -->
+        <div class="logs-display" matTooltip="Erst ab Runde 30">
+          <img src="icons/nervbox-log.svg" alt="" class="log-icon">
+          <span class="log-amount">10</span>
+        </div>
       }
 
       <div class="spacer"></div>
@@ -562,6 +568,34 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
         box-shadow: 0 0 16px rgba(239, 68, 68, 0.6);
         transform: scale(1.02);
       }
+    }
+
+    /* LOGS - Mysteriös */
+    .logs-display {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, rgba(46, 125, 50, 0.15) 0%, rgba(27, 94, 32, 0.1) 100%);
+      border: 1px solid rgba(46, 125, 50, 0.3);
+      border-radius: 20px;
+      padding: 6px 14px;
+      margin-left: 8px;
+      cursor: default;
+      user-select: none;
+    }
+
+    .log-icon {
+      width: 22px;
+      height: 22px;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    }
+
+    .log-amount {
+      color: rgba(129, 199, 132, 0.95);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      text-shadow: 0 0 8px rgba(129, 199, 132, 0.3);
     }
 
     .actions {

@@ -390,12 +390,10 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
       background: transparent;
       border-radius: 6px;
       padding: 2px;
-      opacity: 0.4;
-      transition: opacity 0.15s ease, background 0.15s ease;
+      transition: background 0.15s ease;
     }
 
     .sound-card:hover .vote-stack {
-      opacity: 1;
       background: rgba(0, 0, 0, 0.3);
     }
 
@@ -431,35 +429,35 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
     }
 
     .sound-card:hover .vote-btn mat-icon {
-      color: rgba(255, 255, 255, 0.45);
+      color: rgba(255, 255, 255, 0.5);
     }
 
     .vote-btn:not(:disabled):hover mat-icon {
-      color: rgba(255, 255, 255, 0.7);
+      color: rgba(255, 255, 255, 0.8);
     }
 
     .vote-btn.upvote.active mat-icon {
-      color: rgba(34, 197, 94, 0.6);
+      color: rgba(74, 222, 128, 0.6);
     }
 
     .sound-card:hover .vote-btn.upvote.active mat-icon {
-      color: #22c55e;
+      color: #4ade80;
     }
 
     .vote-btn.upvote:not(:disabled):hover mat-icon {
-      color: #22c55e;
+      color: #4ade80;
     }
 
     .vote-btn.downvote.active mat-icon {
-      color: rgba(239, 68, 68, 0.6);
+      color: rgba(248, 113, 113, 0.6);
     }
 
     .sound-card:hover .vote-btn.downvote.active mat-icon {
-      color: #ef4444;
+      color: #f87171;
     }
 
     .vote-btn.downvote:not(:disabled):hover mat-icon {
-      color: #ef4444;
+      color: #f87171;
     }
 
     .vote-btn.animating mat-icon {
@@ -473,35 +471,22 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
     }
 
     .vote-score {
-      font-size: 10px;
-      font-weight: 600;
+      font-size: 11px;
+      font-weight: 700;
       min-width: 18px;
       text-align: center;
-      color: rgba(255, 255, 255, 0.3);
+      color: rgba(255, 255, 255, 0.7);
       font-family: 'JetBrains Mono', monospace;
       font-variant-numeric: tabular-nums;
       line-height: 14px;
-      transition: color 0.15s ease;
-    }
-
-    .sound-card:hover .vote-score {
-      color: rgba(255, 255, 255, 0.55);
     }
 
     .vote-score.positive {
-      color: rgba(34, 197, 94, 0.5);
-    }
-
-    .sound-card:hover .vote-score.positive {
-      color: #22c55e;
+      color: #4ade80;
     }
 
     .vote-score.negative {
-      color: rgba(239, 68, 68, 0.5);
-    }
-
-    .sound-card:hover .vote-score.negative {
-      color: #ef4444;
+      color: #f87171;
     }
 
     .delete-item {
