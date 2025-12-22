@@ -1,6 +1,6 @@
 # nervbox - Projektstatus
 
-**Stand:** 2025-12-17
+**Stand:** 2025-12-22
 
 ---
 
@@ -44,6 +44,21 @@
 - HTTPS mit Let's Encrypt (nervbox.sgeht.net)
 - nftables Port-Redirect (80→8080, 443→8443)
 - Altes Angular 8 Frontend entfernt
+
+### Phase 5: Mixer Instrument-Tab (2025-12-22)
+- **Dual Sound Browser** im LAN-Modus:
+  - Tab "Nervbox": Sounds von der API (dynamisch, mit Tags, Votes, Favoriten)
+  - Tab "Instrumente": Lokale statische Sounds (Bass, Drums, Synth)
+- **Instrument-Library** (`instrument-library.ts`):
+  - 222 Sounds (8 Bass, 191 Drums, 23 Synth)
+  - FX-Kategorie bewusst ausgeschlossen (kommt von Nervbox API)
+- **Assets-Konfiguration**:
+  - Instrumente unter `/assets/instruments/` (getrennt von Nervbox-Sounds)
+  - Deploy-Script kopiert aus `../instruments/` Ordner
+- **UI-Anpassungen**:
+  - Tab-Toggle mit Icons + Text (Nervbox/Instrumente)
+  - Kategorie-Dropdown für Instrumente (All/Bass/Drums/Synth)
+  - Gestyled passend zum Dark Theme
 
 ### Zusätzliche Features
 - **Tag-Verwaltung**: CRUD für Tags und Sounds (Admin)
