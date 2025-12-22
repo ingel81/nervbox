@@ -122,6 +122,15 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
           <img src="icons/nervbox-log.svg" alt="" class="log-icon">
           <span class="log-amount">10</span>
         </div>
+
+        <!-- INCOME/h -->
+        @if (creditService.hourlyCreditsEnabled()) {
+          <div class="income-display" matTooltip="Stündliches Einkommen">
+            <span class="income-label">Income</span>
+            <span class="income-amount">+{{ creditService.hourlyCreditsAmount() }}</span>
+            <span class="income-unit">N$/h</span>
+          </div>
+        }
       }
 
       <div class="spacer"></div>
@@ -596,6 +605,39 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       font-size: 14px;
       font-weight: 700;
       text-shadow: 0 0 8px rgba(129, 199, 132, 0.3);
+    }
+
+    .income-display {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      padding: 6px 14px;
+      margin-left: 8px;
+      cursor: default;
+      user-select: none;
+    }
+
+    .income-label {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 13px;
+      font-weight: 400;
+    }
+
+    .income-amount {
+      color: rgba(255, 255, 255, 0.8);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .income-unit {
+      color: rgba(255, 255, 255, 0.5);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
     }
 
     .actions {

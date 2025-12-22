@@ -121,6 +121,18 @@ if [ -d "$MIXER_PATH" ]; then
         cp -r dist/nervbox-mixer/* "$RELEASE_PATH/wwwroot/mixer/"
     fi
 
+    # Instrument-Assets: Nur lokal vorbereiten, NICHT jedes Mal kopieren
+    # (werden separat beim ersten Deployment uebertragen)
+    INSTRUMENTS_PATH="$SCRIPT_DIR/../instruments"
+    if [ ! -d "$RELEASE_PATH/wwwroot/mixer/assets/instruments" ] && [ -d "$INSTRUMENTS_PATH" ]; then
+        echo "Kopiere Instrument-Assets lokal (einmalig)..."
+        mkdir -p "$RELEASE_PATH/wwwroot/mixer/assets/instruments"
+        cp -r "$INSTRUMENTS_PATH/"* "$RELEASE_PATH/wwwroot/mixer/assets/instruments/"
+        print_status "Instrument-Assets lokal kopiert"
+    else
+        print_status "Instrument-Assets bereits vorhanden, ueberspringe..."
+    fi
+
     print_status "nervbox-mixer Build komplett"
 else
     print_warning "nervbox-mixer nicht gefunden, ueberspringe..."
@@ -170,9 +182,25 @@ print_status "Service gestoppt"
 # ============================================
 print_header "5/6 Dateien uebertragen"
 
-# Anwendung uebertragen (ohne DB - die liegt in /opt/nervbox-data)
+# Anwendung uebertragen (ohne DB und ohne Instrumente - die bleiben auf dem Pi)
 echo "Uebertrage Anwendung..."
-sshpass -p "$PI_PASS" rsync -avz --progress --exclude='nervbox.db' -e "ssh -o StrictHostKeyChecking=no" "$RELEASE_PATH/" "$PI_USER@$PI_HOST:$PI_APP_PATH/"
+sshpass -p "$PI_PASS" rsync -avz --progress --exclude='nervbox.db' --exclude='wwwroot/mixer/assets/instruments' -e "ssh -o StrictHostKeyChecking=no" "$RELEASE_PATH/" "$PI_USER@$PI_HOST:$PI_APP_PATH/"
+
+# Instrumente: NUR beim ersten Deployment!
+INSTRUMENTS_EXIST=$(ssh_cmd "test -d $PI_APP_PATH/wwwroot/mixer/assets/instruments && ls -A $PI_APP_PATH/wwwroot/mixer/assets/instruments | head -1")
+if [ -z "$INSTRUMENTS_EXIST" ]; then
+    if [ -d "$RELEASE_PATH/wwwroot/mixer/assets/instruments" ]; then
+        echo "Erstes Deployment: Uebertrage Instrumente..."
+        rsync_to_pi "$RELEASE_PATH/wwwroot/mixer/assets/instruments/" "$PI_APP_PATH/wwwroot/mixer/assets/instruments/"
+        print_status "Instrumente uebertragen"
+    fi
+elif [ "$1" == "--force-instruments" ]; then
+    print_warning "ACHTUNG: Ueberschreibe Instrumente!"
+    rsync_to_pi "$RELEASE_PATH/wwwroot/mixer/assets/instruments/" "$PI_APP_PATH/wwwroot/mixer/assets/instruments/"
+    print_status "Instrumente ueberschrieben"
+else
+    print_status "Instrumente bleiben erhalten (--force-instruments zum Ueberschreiben)"
+fi
 
 # Sounds: NUR beim ersten Deployment!
 # Live-Sounds werden NIEMALS ueberschrieben (ausser mit --force-sounds)

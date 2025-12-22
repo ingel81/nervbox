@@ -17,10 +17,10 @@ namespace NervboxDeamon.DbModels
         public int InitialCreditsUser { get; set; } = 50;
 
         /// <summary>
-        /// Initial credits for admin users (essentially unlimited)
+        /// Initial credits for admin users
         /// </summary>
         [Column("initial_credits_admin")]
-        public int InitialCreditsAdmin { get; set; } = 999999999;
+        public int InitialCreditsAdmin { get; set; } = 10000;
 
         /// <summary>
         /// Cost per sound play
@@ -44,7 +44,7 @@ namespace NervboxDeamon.DbModels
         /// Maximum credits a regular user can have (admins have no limit)
         /// </summary>
         [Column("max_credits_user")]
-        public int MaxCreditsUser { get; set; } = 999999;
+        public int MaxCreditsUser { get; set; } = 1000000;
 
         /// <summary>
         /// Minimum credits required to play a sound (if user has less, they cannot play)

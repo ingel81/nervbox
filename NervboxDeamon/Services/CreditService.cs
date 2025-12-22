@@ -96,24 +96,6 @@ namespace NervboxDeamon.Services
                 return false;
             }
 
-            // Admins have unlimited credits (but we still track for stats)
-            if (user.Role == "admin")
-            {
-                // Just create transaction record but don't actually deduct
-                var adminTransaction = new CreditTransaction
-                {
-                    UserId = userId,
-                    Amount = -amount,
-                    TransactionType = type,
-                    Description = description,
-                    BalanceAfter = user.Credits,
-                    RelatedEntityId = relatedEntityId
-                };
-                db.CreditTransactions.Add(adminTransaction);
-                db.SaveChanges();
-                return true;
-            }
-
             if (user.Credits < amount)
             {
                 _logger.LogDebug($"User {userId} has insufficient credits ({user.Credits} < {amount})");
@@ -156,7 +138,7 @@ namespace NervboxDeamon.Services
 
             var settings = GetSettings();
 
-            // For non-admins, cap at max credits
+            // For non-admins, cap at max credits (admins have no limit)
             if (user.Role != "admin")
             {
                 var newBalance = user.Credits + amount;
@@ -315,16 +297,17 @@ namespace NervboxDeamon.Services
 
                 var oneHourAgo = DateTime.UtcNow.AddHours(-1);
                 var eligibleUsers = db.Users
-                    .Where(u => u.IsActive && u.Role != "admin")
+                    .Where(u => u.IsActive && u.Role != "system")
                     .Where(u => u.LastCreditGrantAt == null || u.LastCreditGrantAt < oneHourAgo)
-                    .Where(u => u.Credits < settings.MaxCreditsUser)
+                    .Where(u => u.Role == "admin" || u.Credits < settings.MaxCreditsUser)
                     .ToList();
 
                 foreach (var user in eligibleUsers)
                 {
                     var amountToGrant = settings.HourlyCreditsAmount;
                     var newBalance = user.Credits + amountToGrant;
-                    if (newBalance > settings.MaxCreditsUser)
+                    // Non-admins have a credit cap
+                    if (user.Role != "admin" && newBalance > settings.MaxCreditsUser)
                     {
                         amountToGrant = settings.MaxCreditsUser - user.Credits;
                     }
@@ -382,7 +365,7 @@ namespace NervboxDeamon.Services
             var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
 
             var user = db.Users.Find(userId);
-            if (user == null || !user.IsActive || user.Role == "admin")
+            if (user == null || !user.IsActive || user.Role == "system")
             {
                 return false;
             }
@@ -393,14 +376,15 @@ namespace NervboxDeamon.Services
                 return false;
             }
 
-            if (user.Credits >= settings.MaxCreditsUser)
+            // Non-admins have a credit cap
+            if (user.Role != "admin" && user.Credits >= settings.MaxCreditsUser)
             {
                 return false;
             }
 
             var amountToGrant = settings.HourlyCreditsAmount;
             var newBalance = user.Credits + amountToGrant;
-            if (newBalance > settings.MaxCreditsUser)
+            if (user.Role != "admin" && newBalance > settings.MaxCreditsUser)
             {
                 amountToGrant = settings.MaxCreditsUser - user.Credits;
             }
@@ -655,7 +639,7 @@ namespace NervboxDeamon.Services
             };
             db.CreditTransactions.Add(senderTransaction);
 
-            // Add to receiver (respect max credits)
+            // Add to receiver (respect max credits for non-admins)
             var amountToAdd = amount;
             if (toUser.Role != "admin")
             {
