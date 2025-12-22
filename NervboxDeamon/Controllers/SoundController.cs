@@ -24,14 +24,16 @@ namespace NervboxDeamon.Controllers
     private IHttpContextAccessor Accessor { get; }
     private AppSettings AppSettings { get; }
     private IAchievementService AchievementService { get; }
+    private IRecommendationService RecommendationService { get; }
 
-    public SoundController(ISoundService soundService, IWebHostEnvironment environment, IHttpContextAccessor accessor, IOptions<AppSettings> appSettings, IAchievementService achievementService)
+    public SoundController(ISoundService soundService, IWebHostEnvironment environment, IHttpContextAccessor accessor, IOptions<AppSettings> appSettings, IAchievementService achievementService, IRecommendationService recommendationService)
     {
       this.SoundService = soundService;
       this.Environment = environment;
       this.Accessor = accessor;
       this.AppSettings = appSettings.Value;
       this.AchievementService = achievementService;
+      this.RecommendationService = recommendationService;
     }
 
     [HttpGet]
@@ -604,6 +606,49 @@ namespace NervboxDeamon.Controllers
       catch (Exception ex)
       {
         return StatusCode(500, new { Error = ex.Message });
+      }
+    }
+
+    /// <summary>
+    /// GET /api/sound/{hash}/recommendations - Ähnliche Sounds basierend auf Collaborative Filtering
+    /// </summary>
+    [HttpGet("{hash}/recommendations")]
+    public IActionResult GetSimilarSounds(string hash)
+    {
+      try
+      {
+        var sound = this.DbContext.Sounds.FirstOrDefault(s => s.Hash == hash);
+        if (sound == null)
+        {
+          return NotFound(new { Error = "Sound not found" });
+        }
+
+        var recommendations = this.RecommendationService.GetSimilarSounds(hash, limit: 10);
+
+        return Ok(recommendations);
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, new { Error = ex.Message, Stacktrace = ex.StackTrace });
+      }
+    }
+
+    /// <summary>
+    /// GET /api/sound/recommendations - Personalisierte Sound-Empfehlungen für eingeloggten User
+    /// </summary>
+    [HttpGet("recommendations")]
+    [Authorize]
+    public IActionResult GetPersonalizedRecommendations()
+    {
+      try
+      {
+        var recommendations = this.RecommendationService.GetPersonalizedRecommendations(this.UserId, limit: 10);
+
+        return Ok(recommendations);
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, new { Error = ex.Message, Stacktrace = ex.StackTrace });
       }
     }
   }

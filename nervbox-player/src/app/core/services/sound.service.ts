@@ -1,7 +1,7 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
-import { Sound, SoundUpdateRequest, Tag, TopSound, TopUser } from '../models';
+import { Sound, SoundUpdateRequest, Tag, TopSound, TopUser, SoundRecommendation } from '../models';
 import { CreditService } from './credit.service';
 
 interface PlaySoundResponse {
@@ -215,5 +215,22 @@ export class SoundService {
         this.tags.update(tags => tags.filter(t => t.id !== id));
       })
     );
+  }
+
+  // === AI-Powered Recommendations ===
+
+  /**
+   * Get similar sounds based on collaborative filtering
+   * (users who played this sound also played these sounds)
+   */
+  getSimilarSounds(hash: string): Observable<SoundRecommendation[]> {
+    return this.api.get<SoundRecommendation[]>(`/sound/${hash}/recommendations`);
+  }
+
+  /**
+   * Get personalized sound recommendations for the current user
+   */
+  getPersonalizedRecommendations(): Observable<SoundRecommendation[]> {
+    return this.api.get<SoundRecommendation[]>('/sound/recommendations');
   }
 }

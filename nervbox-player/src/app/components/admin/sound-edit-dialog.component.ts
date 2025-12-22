@@ -14,8 +14,10 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Sound } from '../../core/models';
 import { SoundService } from '../../core/services/sound.service';
+import { AudioClassifierService, TagSuggestion } from '../../core/services/audio-classifier.service';
 
 export interface SoundEditDialogData {
   sound: Sound;
@@ -37,6 +39,7 @@ export interface SoundEditDialogData {
     MatSlideToggleModule,
     MatAutocompleteModule,
     MatProgressSpinnerModule,
+    MatTooltipModule,
   ],
   template: `
     <h2 mat-dialog-title>
@@ -113,6 +116,54 @@ export interface SoundEditDialogData {
             <button mat-icon-button color="primary" (click)="addTag()" [disabled]="!newTag.trim()">
               <mat-icon>add</mat-icon>
             </button>
+          </div>
+
+          <!-- AI Tag Suggestions -->
+          <div class="ai-suggestions-section">
+            <button
+              mat-stroked-button
+              class="ai-button"
+              (click)="analyzeWithAI()"
+              [disabled]="analyzingAI()"
+              matTooltip="KI analysiert Sound und schlägt passende Tags vor"
+            >
+              <mat-icon>psychology</mat-icon>
+              @if (analyzingAI()) {
+                <span>Analysiere...</span>
+                <mat-spinner diameter="16"></mat-spinner>
+              } @else {
+                <span>KI-Vorschläge</span>
+              }
+            </button>
+
+            @if (aiSuggestions().length > 0) {
+              <div class="ai-suggestions-list">
+                <div class="ai-suggestions-header">
+                  <mat-icon class="ai-icon">auto_awesome</mat-icon>
+                  <span>KI-Vorschläge ({{ aiSuggestions().length }})</span>
+                </div>
+                @for (suggestion of aiSuggestions(); track suggestion.tag) {
+                  <button
+                    class="ai-suggestion-chip"
+                    (click)="addAISuggestion(suggestion.tag)"
+                    [disabled]="tags().includes(suggestion.tag)"
+                    [matTooltip]="'Konfidenz: ' + (suggestion.confidence * 100).toFixed(0) + '%'"
+                  >
+                    <span class="tag-content">
+                      <span class="hash">#</span>{{ suggestion.tag }}
+                    </span>
+                    <span class="confidence-bar">
+                      <span class="confidence-fill" [style.width.%]="suggestion.confidence * 100"></span>
+                    </span>
+                    @if (!tags().includes(suggestion.tag)) {
+                      <mat-icon class="add-icon">add_circle</mat-icon>
+                    } @else {
+                      <mat-icon class="check-icon">check_circle</mat-icon>
+                    }
+                  </button>
+                }
+              </div>
+            }
           </div>
         </div>
       </div>
@@ -321,12 +372,135 @@ export interface SoundEditDialogData {
     ::ng-deep .mat-mdc-option.mdc-list-item--selected {
       background: rgba(147, 51, 234, 0.3) !important;
     }
+
+    /* AI Suggestions Styles */
+    .ai-suggestions-section {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .ai-button {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-color: rgba(147, 51, 234, 0.5);
+      color: rgba(255, 255, 255, 0.9);
+      transition: all 0.3s;
+    }
+
+    .ai-button:hover:not(:disabled) {
+      background: rgba(147, 51, 234, 0.1);
+      border-color: rgba(147, 51, 234, 0.8);
+    }
+
+    .ai-button mat-icon {
+      color: #9333ea;
+    }
+
+    .ai-button mat-spinner {
+      margin-left: 8px;
+    }
+
+    .ai-suggestions-list {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .ai-suggestions-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 4px;
+    }
+
+    .ai-suggestions-header .ai-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #fbbf24;
+    }
+
+    .ai-suggestion-chip {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(147, 51, 234, 0.08);
+      border: 1px solid rgba(147, 51, 234, 0.25);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.9);
+      cursor: pointer;
+      transition: all 0.2s;
+      overflow: hidden;
+    }
+
+    .ai-suggestion-chip:not(:disabled):hover {
+      background: rgba(147, 51, 234, 0.15);
+      border-color: rgba(147, 51, 234, 0.4);
+      transform: translateX(4px);
+    }
+
+    .ai-suggestion-chip:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .ai-suggestion-chip .tag-content {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      z-index: 1;
+    }
+
+    .ai-suggestion-chip .confidence-bar {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+      background: transparent;
+    }
+
+    .ai-suggestion-chip .confidence-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, rgba(147, 51, 234, 0.15), rgba(236, 72, 153, 0.15));
+      transition: width 0.5s ease-out;
+    }
+
+    .ai-suggestion-chip .add-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #22c55e;
+      z-index: 1;
+    }
+
+    .ai-suggestion-chip .check-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: rgba(255, 255, 255, 0.3);
+      z-index: 1;
+    }
   `,
 })
 export class SoundEditDialogComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<SoundEditDialogComponent>);
   readonly data = inject<SoundEditDialogData>(MAT_DIALOG_DATA);
   private readonly soundService = inject(SoundService);
+  private readonly audioClassifier = inject(AudioClassifierService);
 
   name = '';
   enabled = true;
@@ -335,6 +509,8 @@ export class SoundEditDialogComponent implements OnInit {
   readonly saving = signal(false);
 
   readonly filteredTags = signal<string[]>([]);
+  readonly aiSuggestions = signal<TagSuggestion[]>([]);
+  readonly analyzingAI = signal(false);
 
   ngOnInit(): void {
     this.name = this.data.sound.name;
@@ -417,5 +593,34 @@ export class SoundEditDialogComponent implements OnInit {
         console.error('Failed to update sound:', err);
       },
     });
+  }
+
+  async analyzeWithAI(): Promise<void> {
+    try {
+      this.analyzingAI.set(true);
+      this.aiSuggestions.set([]);
+
+      // Load sound file from backend
+      const audioUrl = this.soundService.getBrowserAudioUrl(this.data.sound.hash);
+      const response = await fetch(audioUrl);
+      const blob = await response.blob();
+      const file = new File([blob], this.data.sound.fileName, { type: 'audio/mpeg' });
+
+      // Analyze with AI
+      const suggestions = await this.audioClassifier.analyzeAudio(file);
+
+      this.aiSuggestions.set(suggestions);
+      this.analyzingAI.set(false);
+    } catch (error) {
+      console.error('AI analysis failed:', error);
+      this.analyzingAI.set(false);
+    }
+  }
+
+  addAISuggestion(tag: string): void {
+    if (!this.tags().includes(tag)) {
+      this.tags.update(tags => [...tags, tag]);
+      this.updateFilteredTags();
+    }
   }
 }

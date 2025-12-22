@@ -55,3 +55,10 @@ export interface SoundPlayedEvent {
   soundHash: string;
   fileName: string;
 }
+
+export interface SoundRecommendation {
+  soundHash: string;
+  soundName: string;
+  score: number; // 0-100%
+  reason: string;
+}
