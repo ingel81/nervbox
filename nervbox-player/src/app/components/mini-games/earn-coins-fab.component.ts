@@ -12,62 +12,52 @@ import { GameSelectionDialogComponent } from './game-selection-dialog.component'
   standalone: true,
   imports: [CommonModule, MatButtonModule, MatIconModule, MatTooltipModule],
   template: `
-    @if (auth.currentUser()?.role === 'admin') {
+    @if (auth.currentUser()) {
       <button
         class="earn-coins-fab"
-        matTooltip="Earn Coins - Mini-Games (BETA)"
+        matTooltip="Mini-Games"
         matTooltipPosition="right"
         (click)="openGameSelection()"
       >
         <mat-icon>videogame_asset</mat-icon>
-        <span class="fab-label">BETA</span>
       </button>
     }
   `,
   styles: `
     .earn-coins-fab {
       position: fixed;
-      bottom: 24px;
-      left: 24px;
+      top: 50%;
+      left: 0;
+      transform: translateY(-50%);
       z-index: 50;
-      width: 56px;
-      height: 56px;
-      border-radius: 16px;
+      width: 40px;
+      height: 40px;
+      border-radius: 0 12px 12px 0;
       background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
       border: none;
       cursor: pointer;
-      box-shadow: 0 4px 20px rgba(147, 51, 234, 0.4);
+      box-shadow: 4px 0 20px rgba(147, 51, 234, 0.4);
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 2px;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       animation: pulse-glow 2s ease-in-out infinite;
     }
 
     .earn-coins-fab:hover {
-      transform: scale(1.1) translateY(-2px);
-      box-shadow: 0 8px 30px rgba(147, 51, 234, 0.6);
+      transform: translateY(-50%) translateX(4px);
+      box-shadow: 6px 0 30px rgba(147, 51, 234, 0.6);
     }
 
     .earn-coins-fab:active {
-      transform: scale(0.95);
+      transform: translateY(-50%) scale(0.95);
     }
 
     .earn-coins-fab mat-icon {
       color: white;
-      font-size: 26px;
-      width: 26px;
-      height: 26px;
-    }
-
-    .fab-label {
-      font-size: 8px;
-      font-weight: 700;
-      color: rgba(255, 255, 255, 0.9);
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
     }
 
     @keyframes pulse-glow {
@@ -84,20 +74,14 @@ import { GameSelectionDialogComponent } from './game-selection-dialog.component'
 
     @media (max-width: 768px) {
       .earn-coins-fab {
-        bottom: 16px;
-        left: 16px;
-        width: 48px;
-        height: 48px;
+        width: 36px;
+        height: 36px;
       }
 
       .earn-coins-fab mat-icon {
-        font-size: 22px;
-        width: 22px;
-        height: 22px;
-      }
-
-      .fab-label {
-        font-size: 7px;
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
       }
     }
   `,
