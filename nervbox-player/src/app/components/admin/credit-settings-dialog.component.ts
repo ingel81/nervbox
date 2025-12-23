@@ -119,8 +119,7 @@ import { CreditService, CreditSettings } from '../../core/services/credit.servic
             @if (saving()) {
               <mat-spinner diameter="20"></mat-spinner>
             } @else {
-              <mat-icon>save</mat-icon>
-              Speichern
+              <ng-container><mat-icon>save</mat-icon> Speichern</ng-container>
             }
           </button>
         </div>

@@ -46,20 +46,39 @@ This file provides guidance to Claude Code when working with code in this reposi
 ### File Structure
 ```
 src/app/
-├── app.component.ts              # Root + Main Layout
+├── app.ts                        # Root + Main Layout
 ├── app.config.ts                 # Provider configuration
 ├── core/
-│   ├── services/                 # API, Auth, Sound, Chat, SignalR
+│   ├── services/                 # API, Auth, Sound, Chat, SignalR, Achievements, etc.
+│   │   ├── achievement.service.ts
+│   │   ├── api.service.ts
+│   │   ├── auth.service.ts
+│   │   ├── avatar.service.ts
+│   │   ├── credit.service.ts
+│   │   ├── favorites.service.ts
+│   │   ├── selection.service.ts
+│   │   ├── signalr.service.ts
+│   │   ├── sound.service.ts
+│   │   ├── user-cache.service.ts
+│   │   ├── user.service.ts
+│   │   ├── vote.service.ts
+│   │   └── welcome-tour.service.ts
 │   ├── interceptors/             # JWT interceptor
 │   └── models/                   # TypeScript interfaces
 ├── components/
-│   ├── toolbar/                  # Header toolbar
-│   ├── sound-grid/               # Sound list + cards
-│   ├── tag-filter/               # Tag chip filters
-│   ├── chat-widget/              # Chat overlay
+│   ├── admin/                    # Admin Panel
+│   ├── auth/                     # Login/Register dialogs
+│   ├── avatar-upload-dialog/     # Avatar upload
+│   ├── chat/                     # Chat component
+│   ├── chat-widget/              # Chat overlay widget
+│   ├── mini-games/               # Minispiele
 │   ├── now-playing/              # Live playback indicator
+│   ├── shared/                   # Shared components
+│   ├── sound-grid/               # Sound list + cards
+│   ├── stats/                    # Stats component
 │   ├── stats-popup/              # Top sounds/users dialog
-│   └── auth/                     # Login/Register dialogs
+│   ├── tag-filter/               # Tag chip filters
+│   └── toolbar/                  # Header toolbar
 └── shared/
     └── pipes/                    # Duration pipe, etc.
 ```

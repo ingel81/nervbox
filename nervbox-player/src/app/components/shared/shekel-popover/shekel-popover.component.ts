@@ -108,8 +108,7 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
                 @if (isTransferring()) {
                   <mat-spinner diameter="20"></mat-spinner>
                 } @else {
-                  <mat-icon>send</mat-icon>
-                  <span>SENDEN</span>
+                  <ng-container><mat-icon>send</mat-icon> <span>SENDEN</span></ng-container>
                 }
               </button>
             }
@@ -167,8 +166,7 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
               @if (isGambling()) {
                 <mat-spinner diameter="20"></mat-spinner>
               } @else {
-                <mat-icon>casino</mat-icon>
-                <span>GAMBLEN!</span>
+                <ng-container><mat-icon>casino</mat-icon> <span>GAMBLEN!</span></ng-container>
               }
             </button>
           </div>

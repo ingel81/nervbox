@@ -21,6 +21,8 @@ using NervboxDeamon.Services.Interfaces;
 using Microsoft.AspNetCore.HttpOverrides;
 using Yarp.ReverseProxy.Forwarder;
 
+#nullable enable
+
 namespace NervboxDeamon
 {
   public class Startup
@@ -56,8 +58,9 @@ namespace NervboxDeamon
     {
       // Configure SQLite with path from AppSettings
       var appSettingsSection = Configuration.GetSection("AppSettings");
-      var appSettings = appSettingsSection.Get<AppSettings>();
-      var dbPath = appSettings?.DatabasePath ?? "nervbox.db";
+      var appSettings = appSettingsSection.Get<AppSettings>()
+          ?? throw new InvalidOperationException("AppSettings section is missing in configuration");
+      var dbPath = appSettings.DatabasePath ?? "nervbox.db";
 
       services.AddDbContext<NervboxDBContext>(options =>
           options.UseSqlite($"Data Source={dbPath}"));
@@ -121,8 +124,6 @@ namespace NervboxDeamon
       services.AddSingleton<ICreditService, CreditService>();
       services.AddSingleton<IAchievementService, AchievementService>();
       services.AddSingleton<IVoteService, VoteService>();
-      // services.AddSingleton<ICamService, CamService>(); // Deaktiviert - nicht benötigt
-
       services.Configure<IISServerOptions>(options =>
       {
         options.AllowSynchronousIO = true;
@@ -182,7 +183,6 @@ namespace NervboxDeamon
       {
         endpoints.MapHub<SoundHub>("/ws/soundHub");
         endpoints.MapHub<SshHub>("/ws/sshHub");
-        endpoints.MapHub<CamHub>("/ws/camHub");
         endpoints.MapHub<ChatHub>("/ws/chatHub");
         endpoints.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
       });
@@ -314,21 +314,15 @@ namespace NervboxDeamon
 
     private static void UpdateDatabase(IApplicationBuilder app)
     {
-      using (var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope())
-      {
-        using (var context = serviceScope.ServiceProvider.GetService<NervboxDBContext>())
-        {
-          context.Database.Migrate();
-        }
-      }
+      using var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope();
+      var context = serviceScope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+      context.Database.Migrate();
     }
 
     private static void CheckUsers(IApplicationBuilder app)
     {
-      using (var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope())
-      {
-        serviceScope.ServiceProvider.GetService<IUserService>().CheckUsers();
-      }
+      using var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope();
+      serviceScope.ServiceProvider.GetRequiredService<IUserService>().CheckUsers();
     }
 
   }

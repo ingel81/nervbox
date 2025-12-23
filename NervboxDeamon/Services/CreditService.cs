@@ -68,7 +68,7 @@ namespace NervboxDeamon.Services
         {
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
-            return db.CreditSettings.First();
+            return db.CreditSettings.OrderBy(c => c.Id).First();
         }
 
         public int GetUserCredits(int userId)
@@ -211,7 +211,7 @@ namespace NervboxDeamon.Services
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
 
-            var settings = db.CreditSettings.First();
+            var settings = db.CreditSettings.OrderBy(c => c.Id).First();
             settings.InitialCreditsUser = newSettings.InitialCreditsUser;
             settings.InitialCreditsAdmin = newSettings.InitialCreditsAdmin;
             settings.CostPerSoundPlay = newSettings.CostPerSoundPlay;
