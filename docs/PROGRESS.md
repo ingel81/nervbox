@@ -1,6 +1,6 @@
 # nervbox - Projektstatus
 
-**Stand:** 2025-12-22
+**Stand:** 2025-12-23
 
 ---
 
@@ -60,9 +60,20 @@
   - Kategorie-Dropdown für Instrumente (All/Bass/Drums/Synth)
   - Gestyled passend zum Dark Theme
 
+### Phase 6: Player Erweiterungen
+- **Admin Panel**: Verwaltung von Tags, Sounds
+- **Avatar System**: Upload und Cropping von Benutzeravataren
+- **Mini-Games**: Spiele zum Aufladen von Credits
+- **Welcome Tour**: Shepherd.js Guided Tour für neue Benutzer
+- **Achievement System**: Backend-Infrastruktur für Achievements
+- **Credit System**: N$-Währung für Soundabspielungen
+- **Favorites/Voting**: Sounds favorisieren und bewerten
+
 ### Zusätzliche Features
 - **Tag-Verwaltung**: CRUD für Tags und Sounds (Admin)
 - **Audio Effects**: Tuna.js Integration im Mixer (Echo, Pitch)
+- **Mixer Effects Panel**: UI für Audio-Effekte
+- **Grid Controls**: Snap-to-Grid Funktionalität im Mixer
 
 ---
 

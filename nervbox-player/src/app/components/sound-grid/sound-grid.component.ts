@@ -10,6 +10,7 @@ import { SoundCardComponent } from './sound-card.component';
   imports: [CommonModule, ScrollingModule, SoundCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <div class="cabd-watermark">CABD</div>
     @if (filteredSounds().length === 0) {
       <div class="no-sounds">
         <span class="no-sounds-icon">🔇</span>
@@ -55,6 +56,7 @@ import { SoundCardComponent } from './sound-card.component';
       flex: 1;
       min-height: 0;
       overflow: hidden;
+      position: relative;
     }
 
     .grid-wrapper {
@@ -62,9 +64,28 @@ import { SoundCardComponent } from './sound-card.component';
       min-height: 0;
       padding: 16px;
       padding-right: 6px; /* Weniger Abstand zum Chat */
+      position: relative;
+    }
+
+    .cabd-watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: clamp(200px, 38vw, 500px);
+      font-weight: 900;
+      color: rgba(255, 255, 255, 0.02);
+      letter-spacing: -0.02em;
+      pointer-events: none;
+      user-select: none;
+      white-space: nowrap;
+      z-index: 0;
     }
 
     .sound-grid-viewport {
+      position: relative;
+      z-index: 1;
       height: 100%;
       overflow-x: hidden !important;
     }

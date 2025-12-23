@@ -167,11 +167,11 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
       position: relative;
       background: linear-gradient(
         180deg,
-        rgba(32, 32, 38, 0.9) 0%,
-        rgba(22, 22, 26, 0.95) 100%
+        rgba(32, 32, 38, 0.55) 0%,
+        rgba(22, 22, 26, 0.62) 100%
       );
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
       border: 1px solid rgba(255, 255, 255, 0.07);
       border-radius: 10px;
       padding: 11px 14px;

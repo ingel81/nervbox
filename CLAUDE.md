@@ -33,7 +33,6 @@ parent/
 | Datei | Inhalt |
 |-------|--------|
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Pi Deployment Anleitung |
-| [docs/PROJEKT-PLAN.md](docs/PROJEKT-PLAN.md) | Ursprünglicher Projektplan |
 | [docs/PROGRESS.md](docs/PROGRESS.md) | Entwicklungsfortschritt |
 | [docs/todo.md](docs/todo.md) | Offene Ideen |
 | [nervbox-player/CLAUDE.md](nervbox-player/CLAUDE.md) | Player-spezifische Infos |

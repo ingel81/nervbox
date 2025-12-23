@@ -118,7 +118,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
         </div>
 
         <!-- LOGS - ??? -->
-        <div class="logs-display" matTooltip="Erst ab Runde 30">
+        <div class="logs-display" matTooltip="Mysteriöses Holz">
           <img src="icons/nervbox-log.svg" alt="" class="log-icon">
           <span class="log-amount">10</span>
         </div>
