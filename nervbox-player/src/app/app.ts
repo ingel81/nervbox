@@ -235,6 +235,7 @@ interface Activity {
       bottom: 0;
       left: 0;
       right: 0;
+      z-index: 1000;
       background: rgba(10, 10, 10, 0.95);
       border-top: 2px solid rgba(147, 51, 234, 0.5);
       box-shadow: 0 -4px 20px rgba(147, 51, 234, 0.3);

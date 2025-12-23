@@ -702,8 +702,18 @@ namespace NervboxDeamon.Services
 
         public (int reward, int newBalance) ClaimMinigameReward(int userId, string gameName, int level)
         {
-            // Calculate reward: 5 * 2^(level-1) = 5, 10, 20, 40, 80, ...
-            int reward = 5 * (int)Math.Pow(2, level - 1);
+            // Calculate reward based on game type
+            int reward;
+            if (gameName == "HotdogKatapult")
+            {
+                // HotdogKatapult: 1 Treffer = 1 N$ (level = Anzahl Treffer)
+                reward = level;
+            }
+            else
+            {
+                // Arkanoid etc.: 5 * 2^(level-1) = 5, 10, 20, 40, 80, ...
+                reward = 5 * (int)Math.Pow(2, level - 1);
+            }
 
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
@@ -734,12 +744,27 @@ namespace NervboxDeamon.Services
             }
 
             user.Credits += actualReward;
+
+            // Description and chat message based on game type
+            string description;
+            string chatMessage;
+            if (gameName == "HotdogKatapult")
+            {
+                description = $"Hotdog Katapult: {level} Treffer";
+                chatMessage = $"🌭 {user.Username} hat beim Hotdog Katapult {level} Mäuler gestopft! 🎯 +{actualReward} N$";
+            }
+            else
+            {
+                description = $"{gameName} Level {level} abgeschlossen";
+                chatMessage = $"🎮 {user.Username} hat {gameName} Level {level} geschafft! 🏆 +{actualReward} N$";
+            }
+
             var transaction = new CreditTransaction
             {
                 UserId = userId,
                 Amount = actualReward,
                 TransactionType = CreditTransactionType.GameReward,
-                Description = $"{gameName} Level {level} abgeschlossen",
+                Description = description,
                 BalanceAfter = user.Credits,
                 RelatedEntityId = $"{gameName}:{level}"
             };
@@ -747,7 +772,7 @@ namespace NervboxDeamon.Services
             db.SaveChanges();
 
             BroadcastCreditUpdate(userId, user.Credits);
-            BroadcastSystemChatMessage($"🎮 {user.Username} hat {gameName} Level {level} geschafft! 🏆 +{actualReward} N$");
+            BroadcastSystemChatMessage(chatMessage);
 
             // Check minigame achievements
             try

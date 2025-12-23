@@ -63,6 +63,7 @@ import { SoundCardComponent } from './sound-card.component';
       flex: 1;
       min-height: 0;
       padding: 16px;
+      padding-left: 48px; /* Platz für FAB-Button */
       padding-right: 6px; /* Weniger Abstand zum Chat */
       position: relative;
     }
