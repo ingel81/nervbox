@@ -1,0 +1,452 @@
+import { Injectable } from '@angular/core';
+
+export interface StreetNode {
+  id: number;
+  lat: number;
+  lon: number;
+}
+
+export interface Street {
+  id: number;
+  name: string;
+  type: string; // residential, primary, secondary, etc.
+  nodes: StreetNode[];
+}
+
+export interface StreetNetwork {
+  streets: Street[];
+  nodes: Map<number, StreetNode>;
+  bounds: {
+    minLat: number;
+    maxLat: number;
+    minLon: number;
+    maxLon: number;
+  };
+}
+
+@Injectable({
+  providedIn: 'root',
+})
+export class OsmStreetService {
+  // Multiple Overpass API servers for fallback
+  private readonly OVERPASS_SERVERS = [
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://overpass-api.de/api/interpreter',
+    'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+  ];
+
+  private readonly CACHE_PREFIX = 'td_streets_';
+  private readonly CACHE_VERSION = 1;
+
+  /**
+   * Load street network for a given bounding box around coordinates
+   * Uses localStorage cache to avoid repeated API calls
+   */
+  async loadStreets(
+    centerLat: number,
+    centerLon: number,
+    radiusMeters: number = 500
+  ): Promise<StreetNetwork> {
+    // Try to load from cache first
+    const cacheKey = this.getCacheKey(centerLat, centerLon, radiusMeters);
+    const cached = this.loadFromCache(cacheKey);
+    if (cached) {
+      console.log('[OSM] Loaded street network from cache');
+      return cached;
+    }
+
+    // Calculate bounding box (approximate)
+    const latDelta = radiusMeters / 111320; // 1 degree lat ≈ 111.32 km
+    const lonDelta = radiusMeters / (111320 * Math.cos((centerLat * Math.PI) / 180));
+
+    const bounds = {
+      minLat: centerLat - latDelta,
+      maxLat: centerLat + latDelta,
+      minLon: centerLon - lonDelta,
+      maxLon: centerLon + lonDelta,
+    };
+
+    // Overpass QL query for streets
+    const query = `
+      [out:json][timeout:25];
+      (
+        way["highway"~"^(residential|primary|secondary|tertiary|unclassified|living_street|service|pedestrian|footway|path)$"]
+          (${bounds.minLat},${bounds.minLon},${bounds.maxLat},${bounds.maxLon});
+      );
+      out body;
+      >;
+      out skel qt;
+    `;
+
+    // Try each server until one works
+    let lastError: Error | null = null;
+
+    for (const server of this.OVERPASS_SERVERS) {
+      try {
+        console.log(`[OSM] Trying Overpass server: ${server}`);
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
+        const response = await fetch(server, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: `data=${encodeURIComponent(query)}`,
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`OSM API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log(`[OSM] Successfully loaded from ${server}`);
+        const network = this.parseOverpassResponse(data, bounds);
+
+        // Cache the result
+        this.saveToCache(cacheKey, network);
+
+        return network;
+      } catch (error) {
+        console.warn(`[OSM] Failed with ${server}:`, error);
+        lastError = error instanceof Error ? error : new Error(String(error));
+        // Continue to next server
+      }
+    }
+
+    console.error('[OSM] All Overpass servers failed');
+    throw lastError || new Error('All Overpass servers failed');
+  }
+
+  private getCacheKey(lat: number, lon: number, radius: number): string {
+    // Round coordinates to avoid floating point issues
+    const roundedLat = Math.round(lat * 10000) / 10000;
+    const roundedLon = Math.round(lon * 10000) / 10000;
+    return `${this.CACHE_PREFIX}v${this.CACHE_VERSION}_${roundedLat}_${roundedLon}_${radius}`;
+  }
+
+  private loadFromCache(key: string): StreetNetwork | null {
+    try {
+      const cached = localStorage.getItem(key);
+      if (!cached) return null;
+
+      const data = JSON.parse(cached);
+
+      // Reconstruct the Map from the cached array
+      const nodes = new Map<number, StreetNode>();
+      for (const [id, node] of data.nodesArray) {
+        nodes.set(id, node);
+      }
+
+      return {
+        streets: data.streets,
+        nodes,
+        bounds: data.bounds,
+      };
+    } catch (e) {
+      console.warn('[OSM] Failed to load from cache:', e);
+      return null;
+    }
+  }
+
+  private saveToCache(key: string, network: StreetNetwork): void {
+    try {
+      // Convert Map to array for JSON serialization
+      const data = {
+        streets: network.streets,
+        nodesArray: Array.from(network.nodes.entries()),
+        bounds: network.bounds,
+      };
+
+      localStorage.setItem(key, JSON.stringify(data));
+      console.log(`[OSM] Cached street network (${(JSON.stringify(data).length / 1024).toFixed(1)} KB)`);
+    } catch (e) {
+      console.warn('[OSM] Failed to save to cache:', e);
+    }
+  }
+
+  private parseOverpassResponse(
+    data: {
+      elements: Array<{
+        type: string;
+        id: number;
+        lat?: number;
+        lon?: number;
+        nodes?: number[];
+        tags?: { name?: string; highway?: string };
+      }>;
+    },
+    bounds: StreetNetwork['bounds']
+  ): StreetNetwork {
+    const nodes = new Map<number, StreetNode>();
+    const streets: Street[] = [];
+
+    // First pass: collect all nodes
+    for (const element of data.elements) {
+      if (element.type === 'node') {
+        nodes.set(element.id, {
+          id: element.id,
+          lat: element.lat!,
+          lon: element.lon!,
+        });
+      }
+    }
+
+    // Second pass: build streets from ways
+    for (const element of data.elements) {
+      if (element.type === 'way' && element.nodes) {
+        const streetNodes: StreetNode[] = [];
+
+        for (const nodeId of element.nodes) {
+          const node = nodes.get(nodeId);
+          if (node) {
+            streetNodes.push(node);
+          }
+        }
+
+        if (streetNodes.length >= 2) {
+          streets.push({
+            id: element.id,
+            name: element.tags?.name || 'Unnamed Street',
+            type: element.tags?.highway || 'unknown',
+            nodes: streetNodes,
+          });
+        }
+      }
+    }
+
+    console.log(`Loaded ${streets.length} streets with ${nodes.size} nodes`);
+
+    return { streets, nodes, bounds };
+  }
+
+  /**
+   * Find the nearest point on any street segment to given coordinates
+   * This checks distance to line segments, not just nodes
+   */
+  findNearestStreetPoint(
+    network: StreetNetwork,
+    lat: number,
+    lon: number
+  ): { street: Street; nodeIndex: number; distance: number } | null {
+    let nearest: { street: Street; nodeIndex: number; distance: number } | null = null;
+
+    for (const street of network.streets) {
+      // Check distance to each segment (line between consecutive nodes)
+      for (let i = 0; i < street.nodes.length - 1; i++) {
+        const node1 = street.nodes[i];
+        const node2 = street.nodes[i + 1];
+        const dist = this.distanceToSegment(lat, lon, node1.lat, node1.lon, node2.lat, node2.lon);
+
+        if (!nearest || dist < nearest.distance) {
+          nearest = { street, nodeIndex: i, distance: dist };
+        }
+      }
+    }
+
+    return nearest;
+  }
+
+  /**
+   * Calculate perpendicular distance from a point to a line segment
+   */
+  private distanceToSegment(
+    pLat: number,
+    pLon: number,
+    aLat: number,
+    aLon: number,
+    bLat: number,
+    bLon: number
+  ): number {
+    const segmentLength = this.haversineDistance(aLat, aLon, bLat, bLon);
+    if (segmentLength === 0) {
+      return this.haversineDistance(pLat, pLon, aLat, aLon);
+    }
+
+    // Project point onto line segment (using simple approximation for small distances)
+    const dxSeg = bLon - aLon;
+    const dySeg = bLat - aLat;
+    const dxPoint = pLon - aLon;
+    const dyPoint = pLat - aLat;
+
+    // Parameter t represents position along segment (0 = at A, 1 = at B)
+    let t = (dxPoint * dxSeg + dyPoint * dySeg) / (dxSeg * dxSeg + dySeg * dySeg);
+    t = Math.max(0, Math.min(1, t)); // Clamp to segment
+
+    // Closest point on segment
+    const closestLon = aLon + t * dxSeg;
+    const closestLat = aLat + t * dySeg;
+
+    return this.haversineDistance(pLat, pLon, closestLat, closestLon);
+  }
+
+  /**
+   * Simple pathfinding: find path from start to end along streets
+   * Uses A* algorithm on the street network
+   */
+  findPath(
+    network: StreetNetwork,
+    startLat: number,
+    startLon: number,
+    endLat: number,
+    endLon: number
+  ): StreetNode[] {
+    // Find nearest street points to start and end
+    const startPoint = this.findNearestStreetPoint(network, startLat, startLon);
+    const endPoint = this.findNearestStreetPoint(network, endLat, endLon);
+
+    if (!startPoint || !endPoint) {
+      console.warn('Could not find street points for pathfinding');
+      return [];
+    }
+
+    // Build adjacency graph from street network
+    const graph = this.buildGraph(network);
+
+    // A* pathfinding
+    const path = this.astar(
+      graph,
+      startPoint.street.nodes[startPoint.nodeIndex],
+      endPoint.street.nodes[endPoint.nodeIndex],
+      endLat,
+      endLon
+    );
+
+    return path;
+  }
+
+  private buildGraph(network: StreetNetwork): Map<number, { node: StreetNode; neighbors: number[] }> {
+    const graph = new Map<number, { node: StreetNode; neighbors: number[] }>();
+
+    // Add all nodes from streets
+    for (const street of network.streets) {
+      for (let i = 0; i < street.nodes.length; i++) {
+        const node = street.nodes[i];
+
+        if (!graph.has(node.id)) {
+          graph.set(node.id, { node, neighbors: [] });
+        }
+
+        // Connect to previous and next node in street
+        if (i > 0) {
+          const prevNode = street.nodes[i - 1];
+          const entry = graph.get(node.id)!;
+          if (!entry.neighbors.includes(prevNode.id)) {
+            entry.neighbors.push(prevNode.id);
+          }
+        }
+
+        if (i < street.nodes.length - 1) {
+          const nextNode = street.nodes[i + 1];
+          const entry = graph.get(node.id)!;
+          if (!entry.neighbors.includes(nextNode.id)) {
+            entry.neighbors.push(nextNode.id);
+          }
+        }
+      }
+    }
+
+    return graph;
+  }
+
+  private astar(
+    graph: Map<number, { node: StreetNode; neighbors: number[] }>,
+    start: StreetNode,
+    end: StreetNode,
+    endLat: number,
+    endLon: number
+  ): StreetNode[] {
+    const openSet = new Set<number>([start.id]);
+    const cameFrom = new Map<number, number>();
+    const gScore = new Map<number, number>();
+    const fScore = new Map<number, number>();
+
+    gScore.set(start.id, 0);
+    fScore.set(start.id, this.haversineDistance(start.lat, start.lon, endLat, endLon));
+
+    while (openSet.size > 0) {
+      // Find node in openSet with lowest fScore
+      let current: number | null = null;
+      let lowestF = Infinity;
+
+      for (const nodeId of openSet) {
+        const f = fScore.get(nodeId) ?? Infinity;
+        if (f < lowestF) {
+          lowestF = f;
+          current = nodeId;
+        }
+      }
+
+      if (current === null) break;
+
+      if (current === end.id) {
+        // Reconstruct path
+        const path: StreetNode[] = [];
+        let curr: number | undefined = current;
+
+        while (curr !== undefined) {
+          const entry = graph.get(curr);
+          if (entry) path.unshift(entry.node);
+          curr = cameFrom.get(curr);
+        }
+
+        return path;
+      }
+
+      openSet.delete(current);
+      const currentEntry = graph.get(current);
+
+      if (!currentEntry) continue;
+
+      for (const neighborId of currentEntry.neighbors) {
+        const neighborEntry = graph.get(neighborId);
+        if (!neighborEntry) continue;
+
+        const tentativeG =
+          (gScore.get(current) ?? Infinity) +
+          this.haversineDistance(
+            currentEntry.node.lat,
+            currentEntry.node.lon,
+            neighborEntry.node.lat,
+            neighborEntry.node.lon
+          );
+
+        if (tentativeG < (gScore.get(neighborId) ?? Infinity)) {
+          cameFrom.set(neighborId, current);
+          gScore.set(neighborId, tentativeG);
+          fScore.set(
+            neighborId,
+            tentativeG + this.haversineDistance(neighborEntry.node.lat, neighborEntry.node.lon, endLat, endLon)
+          );
+
+          openSet.add(neighborId);
+        }
+      }
+    }
+
+    // No path found - return direct line
+    console.warn('No path found, returning start and end only');
+    return [start, end];
+  }
+
+  /**
+   * Calculate distance between two coordinates in meters (Haversine formula)
+   */
+  haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371000; // Earth radius in meters
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+}
