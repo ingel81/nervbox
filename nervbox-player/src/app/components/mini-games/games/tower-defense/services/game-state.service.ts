@@ -8,6 +8,7 @@ import { EntityPoolService } from './entity-pool.service';
 import { TowerRenderer } from '../renderers/tower.renderer';
 import { EnemyRenderer } from '../renderers/enemy.renderer';
 import { BloodRenderer } from '../renderers/blood.renderer';
+import { FireRenderer, FireIntensity } from '../renderers/fire.renderer';
 
 @Injectable()
 export class GameStateService {
@@ -15,6 +16,7 @@ export class GameStateService {
   readonly waveNumber = signal(0);
   readonly baseHealth = signal(100);
   readonly credits = signal(100);
+  readonly showGameOverScreen = signal(false);
 
   private _towers = signal<Tower[]>([]);
   private _enemies = signal<Enemy[]>([]);
@@ -41,19 +43,25 @@ export class GameStateService {
   private onDebugLog: ((message: string) => void) | null = null;
 
   private zombieModelUrl = '/assets/models/zombie_alternative.glb';
+  private onGameOver: ((lon: number, lat: number) => void) | null = null;
+  private basePosition: { lon: number; lat: number } | null = null;
 
   initialize(
     viewer: Cesium.Viewer,
     entityPool: EntityPoolService,
     distanceCalculator: DistanceCalculator,
     onProjectileFired?: () => void,
-    onDebugLog?: (message: string) => void
+    onDebugLog?: (message: string) => void,
+    basePosition?: { lon: number; lat: number },
+    onGameOver?: (lon: number, lat: number) => void
   ): void {
     this.viewer = viewer;
     this.entityPool = entityPool;
     this.distanceCalculator = distanceCalculator;
     this.onProjectileFired = onProjectileFired ?? null;
     this.onDebugLog = onDebugLog ?? null;
+    this.basePosition = basePosition ?? null;
+    this.onGameOver = onGameOver ?? null;
   }
 
   addTower(tower: Tower): void {
@@ -88,7 +96,25 @@ export class GameStateService {
     this.selectTower(null);
   }
 
-  spawnEnemy(path: GeoPosition[], maxHp: number, speed: number): Enemy | null {
+  /**
+   * Spawnt einen Gegner am Startpunkt seines Pfades.
+   *
+   * Wave-Ablauf (2 Phasen):
+   * 1. SAMMEL-PHASE: Alle Gegner spawnen mit paused=true
+   *    - Gegner erscheinen nacheinander (100ms Delay zwischen Spawns)
+   *    - Stehen still (speed=0), keine Walk-Animation
+   *    - Model wird asynchron geladen (verteilt GPU-Last)
+   *
+   * 2. START-PHASE: startAllEnemies() wird aufgerufen
+   *    - Gegner laufen einzeln los (300ms Delay zwischen jedem)
+   *    - Walk-Animation startet erst hier
+   *
+   * @param path - Wegpunkte mit vorberechneten Terrain-Höhen
+   * @param maxHp - Maximale Lebenspunkte
+   * @param speed - Geschwindigkeit in m/s (wird bei paused=true gespeichert)
+   * @param paused - true = Gegner steht still bis startAllEnemies()
+   */
+  spawnEnemy(path: GeoPosition[], maxHp: number, speed: number, paused = false): Enemy | null {
     if (!this.entityPool || !this.viewer) return null;
 
     const startPos = path[0];
@@ -101,6 +127,7 @@ export class GameStateService {
 
     const position = Cesium.Cartesian3.fromDegrees(startPos.lon, startPos.lat, terrainHeight);
 
+    // Placeholder-Entity für Position-Tracking (Model ist separate Primitive)
     const placeholderEntity = this.viewer.entities.add({
       position: position,
       point: { pixelSize: 1, color: Cesium.Color.TRANSPARENT },
@@ -112,20 +139,21 @@ export class GameStateService {
       terrainHeight + 5
     );
 
-    const enemy = new Enemy(path, placeholderEntity, healthBarEntity, maxHp, speed);
+    // Bei paused=true: speed=0, echte Speed in _targetSpeed speichern
+    const enemy = new Enemy(path, placeholderEntity, healthBarEntity, maxHp, paused ? 0 : speed);
     enemy.terrainHeight = terrainHeight;
+    if (paused) {
+      (enemy as unknown as { _targetSpeed: number })._targetSpeed = speed;
+    }
 
-    // Load model on-demand
+    // Model async laden (Cesium lädt jedes Model separat - keine Instancing-Unterstützung)
     const viewer = this.viewer;
     Cesium.Model.fromGltfAsync({
       url: this.zombieModelUrl,
       scale: 2.0,
       minimumPixelSize: 64,
     }).then((model) => {
-      if (!enemy.alive) {
-        // Enemy died before model loaded
-        return;
-      }
+      if (!enemy.alive) return;
 
       viewer.scene.primitives.add(model);
       enemy.model = model;
@@ -133,19 +161,44 @@ export class GameStateService {
       const hpr = new Cesium.HeadingPitchRoll(0, 0, 0);
       model.modelMatrix = Cesium.Transforms.headingPitchRollToFixedFrame(position, hpr);
 
-      // Wait for model ready before starting animation
-      if (model.ready) {
-        this.startWalkAnimation(model);
-      } else {
-        model.readyEvent.addEventListener(() => {
+      // Animation nur starten wenn NICHT pausiert (sonst in startAllEnemies)
+      if (!paused) {
+        if (model.ready) {
           this.startWalkAnimation(model);
-        });
+        } else {
+          model.readyEvent.addEventListener(() => this.startWalkAnimation(model));
+        }
       }
     });
 
     this.viewer.clock.shouldAnimate = true;
     this._enemies.update((enemies) => [...enemies, enemy]);
     return enemy;
+  }
+
+  /**
+   * Startet alle pausierten Gegner mit zeitlichem Versatz.
+   * Wird nach der Sammel-Phase aufgerufen.
+   *
+   * @param delayBetween - Millisekunden zwischen jedem Gegner-Start (default: 300ms)
+   */
+  startAllEnemies(delayBetween = 300): void {
+    const enemies = this._enemies().filter((e) => {
+      const targetSpeed = (e as unknown as { _targetSpeed?: number })._targetSpeed;
+      return targetSpeed !== undefined && e.speedMps === 0;
+    });
+
+    enemies.forEach((enemy, index) => {
+      setTimeout(() => {
+        const targetSpeed = (enemy as unknown as { _targetSpeed?: number })._targetSpeed;
+        if (targetSpeed !== undefined && enemy.alive) {
+          enemy.speedMps = targetSpeed;
+          if (enemy.model) {
+            this.startWalkAnimation(enemy.model);
+          }
+        }
+      }, index * delayBetween);
+    });
   }
 
   private startWalkAnimation(model: Cesium.Model): void {
@@ -316,8 +369,16 @@ export class GameStateService {
 
     enemiesToRemove.forEach((e) => this.removeEnemy(e));
 
-    if (this.baseHealth() <= 0) {
-      this.phase.set('gameover');
+    // Fire intensity based on health
+    const health = this.baseHealth();
+    if (health <= 0 && this.phase() !== 'gameover') {
+      this.triggerGameOver();
+    } else if (health <= 20 && health > 0 && this.basePosition && this.viewer) {
+      // Start small fire when health is low
+      const currentIntensity = FireRenderer.getCurrentIntensity();
+      if (!currentIntensity) {
+        FireRenderer.startFire(this.viewer, this.basePosition.lon, this.basePosition.lat, 'small');
+      }
     }
   }
 
@@ -435,7 +496,31 @@ export class GameStateService {
     return this.enemiesAlive() === 0 && this.phase() === 'wave';
   }
 
+  private triggerGameOver(): void {
+    this.phase.set('gameover');
+    // Clear all enemies
+    this.clearAllEnemies();
+    // Start inferno fire on HQ
+    if (this.basePosition && this.viewer) {
+      FireRenderer.startFire(this.viewer, this.basePosition.lon, this.basePosition.lat, 'inferno');
+      this.onGameOver?.(this.basePosition.lon, this.basePosition.lat);
+    }
+    // Show game over screen after 5 seconds of burning
+    setTimeout(() => {
+      this.showGameOverScreen.set(true);
+    }, 5000);
+  }
+
+  stopFire(): void {
+    if (this.viewer) {
+      FireRenderer.stopFire(this.viewer);
+    }
+  }
+
   reset(): void {
+    // Stop fire if running
+    this.stopFire();
+
     this._enemies().forEach((e) => this.removeEnemy(e));
     this._projectiles().forEach((p) => this.removeProjectile(p));
 
@@ -464,5 +549,6 @@ export class GameStateService {
     this.baseHealth.set(100);
     this.credits.set(100);
     this.selectedTowerId.set(null);
+    this.showGameOverScreen.set(false);
   }
 }
