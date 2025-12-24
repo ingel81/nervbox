@@ -1112,10 +1112,10 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     const spawns = this.spawnPoints();
     if (spawns.length === 0) return;
 
+    const totalEnemies = this.enemyCount();
+
     this.gameState.startWave();
 
-    // Debug-Einstellungen verwenden
-    const totalEnemies = this.enemyCount();
     const mode = this.spawnMode();
     let spawnedCount = 0;
     let allSpawned = false;
@@ -1129,10 +1129,8 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
       let currentSpawn: SpawnPoint;
       if (mode === 'each') {
-        // Round-Robin durch alle Spawn-Punkte
         currentSpawn = spawns[spawnedCount % spawns.length];
       } else {
-        // Zufälliger Spawn-Punkt
         currentSpawn = spawns[Math.floor(Math.random() * spawns.length)];
       }
 
