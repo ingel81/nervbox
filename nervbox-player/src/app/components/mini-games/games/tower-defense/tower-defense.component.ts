@@ -144,7 +144,7 @@ export interface SpawnPoint {
                 <span>{{ buildMode() ? 'Abbrechen' : 'Tower' }}</span>
               </button>
               <div class="control-divider"></div>
-              <button class="control-btn wave-btn" (click)="startWave()" [disabled]="waveActive() || buildMode()">
+              <button class="control-btn wave-btn" (click)="startWave()" [disabled]="waveActive() || buildMode() || isGameOver()">
                 <mat-icon>{{ waveActive() ? 'hourglass_empty' : 'play_arrow' }}</mat-icon>
                 <span>{{ waveActive() ? 'Welle...' : 'Start' }}</span>
               </button>
@@ -192,6 +192,28 @@ export interface SpawnPoint {
           <div class="controls-hint">
             <span>LMB: Move | Ctrl: Rotate | Scroll: Zoom</span>
           </div>
+
+          <!-- Gathering Phase Info -->
+          @if (gatheringPhase()) {
+            <div class="gathering-overlay">
+              <mat-icon>groups</mat-icon>
+              <span>Gegner sammeln sich...</span>
+            </div>
+          }
+
+          <!-- Game Over Overlay -->
+          @if (gameState.showGameOverScreen()) {
+            <div class="gameover-overlay">
+              <div class="gameover-content">
+                <h1>GAME OVER</h1>
+                <p>Das HQ wurde zerstört!</p>
+                <button mat-flat-button color="primary" class="restart-btn" (click)="restartGame()">
+                  <mat-icon>replay</mat-icon>
+                  NEUSTART
+                </button>
+              </div>
+            </div>
+          }
         }
       </div>
     </div>
@@ -233,18 +255,7 @@ export interface SpawnPoint {
     }
 
     .header-glow {
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(34, 197, 94, 0.2) 0%, transparent 50%);
-      animation: rotate-glow 15s linear infinite;
-    }
-
-    @keyframes rotate-glow {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
+      display: none;
     }
 
     .title-icon {
@@ -263,18 +274,11 @@ export interface SpawnPoint {
       font-weight: 800;
       letter-spacing: 3px;
       background: linear-gradient(135deg, #fff 0%, #22c55e 50%, #9333ea 100%);
-      background-size: 200% 200%;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      animation: gradient-shift 3s ease infinite;
       position: relative;
       z-index: 1;
-    }
-
-    @keyframes gradient-shift {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
     }
 
     .subtitle {
@@ -579,6 +583,121 @@ export interface SpawnPoint {
       font-size: 10px !important;
       opacity: 0.5;
     }
+
+    .gathering-overlay {
+      position: absolute;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 24px;
+      background: rgba(0, 0, 0, 0.85);
+      border: 2px solid #f97316;
+      border-radius: 12px;
+      z-index: 10;
+      animation: pulse-gathering 1s ease-in-out infinite;
+    }
+
+    .gathering-overlay mat-icon {
+      color: #f97316;
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+
+    .gathering-overlay span {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 600;
+      color: #f97316;
+      letter-spacing: 1px;
+    }
+
+    @keyframes pulse-gathering {
+      0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
+      50% { opacity: 0.8; transform: translateX(-50%) scale(1.02); }
+    }
+
+    .gameover-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 20;
+      animation: fade-in 0.5s ease;
+    }
+
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .gameover-content {
+      text-align: center;
+      padding: 40px 60px;
+      background: rgba(10, 10, 10, 0.95);
+      border: 3px solid #ef4444;
+      border-radius: 16px;
+      box-shadow: 0 0 60px rgba(239, 68, 68, 0.5);
+    }
+
+    .gameover-content h1 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 64px;
+      font-weight: 900;
+      color: #ef4444;
+      margin: 0 0 16px 0;
+      letter-spacing: 8px;
+      text-shadow: 0 0 30px rgba(239, 68, 68, 0.8);
+      animation: shake 0.5s ease-in-out;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+
+    .gameover-content p {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.7);
+      margin: 0 0 32px 0;
+    }
+
+    .restart-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
+      color: white !important;
+      border-radius: 8px;
+    }
+
+    .restart-btn:hover {
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+      transform: scale(1.05);
+    }
+
+    .restart-btn mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
   `,
 })
 export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -618,6 +737,9 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly buildMode = signal(false);
 
   readonly waveActive = computed(() => this.gameState.phase() === 'wave');
+  readonly isGameOver = computed(() => this.gameState.phase() === 'gameover');
+  readonly gatheringPhase = signal(false);
+  readonly gatheringCountdown = signal(0);
 
   private clickHandler: Cesium.ScreenSpaceEventHandler | null = null;
   private animationFrameId: number | null = null;
@@ -694,6 +816,20 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
       try {
         const tileset = await Cesium.createGooglePhotorealistic3DTileset();
+
+        // Performance: Increase error tolerance = load less detail at distance
+        tileset.maximumScreenSpaceError = 24; // default 16, higher = less detail loaded
+
+        // Don't load tiles while camera is moving fast
+        tileset.cullRequestsWhileMoving = true;
+        tileset.cullRequestsWhileMovingMultiplier = 60;
+
+        // Prefer loading final detail tiles over intermediate ones
+        tileset.preferLeaves = true;
+
+        // Reduce tile cache size
+        tileset.cacheBytes = 256 * 1024 * 1024; // 256 MB cache
+
         this.viewer.scene.primitives.add(tileset);
       } catch {
         console.warn('Google 3D Tiles not available');
@@ -710,19 +846,22 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       // Smoother and finer zoom with mouse wheel
       this.viewer.scene.screenSpaceCameraController.zoomFactor = 1.5; // Default is 3.0
       this.viewer.scene.screenSpaceCameraController.minimumZoomDistance = 50;
-      this.viewer.scene.screenSpaceCameraController.maximumZoomDistance = 2000;
+      this.viewer.scene.screenSpaceCameraController.maximumZoomDistance = 1200; // Limit zoom out to reduce tile loading
 
       // Set up sound URL
       this.projectileSoundUrl = this.api.getFullUrl(`/sound/${this.PROJECTILE_SOUND_HASH}/file`);
 
       // Initialize services
       this.entityPool.initialize(this.viewer);
+      const base = this.baseCoords();
       this.gameState.initialize(
         this.viewer,
         this.entityPool,
         (p1, p2) => this.osmService.haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon),
         () => this.playProjectileSound(),
-        (msg) => this.appendDebugLog(msg)
+        (msg) => this.appendDebugLog(msg),
+        { lon: base.longitude, lat: base.latitude },
+        () => this.onGameOver()
       );
 
       // Setup click handler and build preview
@@ -942,7 +1081,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     this.baseEntity = this.viewer.entities.add({
       position: Cesium.Cartesian3.fromDegrees(base.longitude, base.latitude, 0),
       billboard: {
-        image: this.createMarkerCanvas('BASIS', '#22c55e', 60),
+        image: this.createMarkerCanvas('HQ', '#22c55e', 60),
         verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
         heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
         scale: 1.0,
@@ -959,7 +1098,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     const entity = this.viewer.entities.add({
       position: Cesium.Cartesian3.fromDegrees(lon, lat, 0),
       billboard: {
-        image: this.createMarkerCanvas(`SPAWN: ${name}`, color.toCssColorString(), 50),
+        image: this.createMarkerCanvas(`SPAWN: ${name}`, color.toCssColorString(), 80),
         verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
         heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
         scale: 1.0,
@@ -1106,27 +1245,48 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  /**
+   * Startet eine neue Welle mit dem 2-Phasen-System:
+   *
+   * PHASE 1 - SAMMELN (ca. N * 100ms):
+   * - Gegner spawnen nacheinander (100ms Delay)
+   * - Stehen still am Spawn-Punkt (paused=true)
+   * - Models werden asynchron geladen → verteilt GPU-Last
+   *
+   * PHASE 2 - ANGRIFF (nach 500ms Pause):
+   * - Gegner laufen einzeln los (300ms Delay zwischen jedem)
+   * - Walk-Animation startet
+   * - Game-Loop beginnt
+   */
   startWave(): void {
-    if (!this.viewer || this.waveActive()) return;
+    if (!this.viewer || this.waveActive() || this.isGameOver()) return;
 
     const spawns = this.spawnPoints();
     if (spawns.length === 0) return;
 
     const totalEnemies = this.enemyCount();
+    const mode = this.spawnMode();
+    const speed = this.enemySpeed();
 
     this.gameState.startWave();
+    this.gatheringPhase.set(true);
 
-    const mode = this.spawnMode();
+    // === PHASE 1: SAMMELN ===
     let spawnedCount = 0;
-    let allSpawned = false;
+    const spawnDelay = 100; // ms zwischen Spawns
 
-    const spawnInterval = setInterval(() => {
+    const spawnNext = () => {
       if (spawnedCount >= totalEnemies) {
-        clearInterval(spawnInterval);
-        allSpawned = true;
+        // === PHASE 2: ANGRIFF ===
+        setTimeout(() => {
+          this.gatheringPhase.set(false);
+          this.gameState.startAllEnemies(300); // 300ms zwischen jedem Start
+          this.startGameLoop();
+        }, 500); // Kurze Pause nach Sammeln
         return;
       }
 
+      // Spawn-Punkt auswählen (Round-Robin oder Zufällig)
       let currentSpawn: SpawnPoint;
       if (mode === 'each') {
         currentSpawn = spawns[spawnedCount % spawns.length];
@@ -1137,15 +1297,17 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       const spawnPath = this.cachedPaths.get(currentSpawn.id);
 
       if (spawnPath && spawnPath.length > 1) {
-        this.gameState.spawnEnemy(spawnPath, 100, this.enemySpeed());
+        this.gameState.spawnEnemy(spawnPath, 100, speed, true); // paused=true
         spawnedCount++;
       }
-    }, 800);
 
-    this.startGameLoop(() => allSpawned);
+      setTimeout(spawnNext, spawnDelay);
+    };
+
+    spawnNext();
   }
 
-  private startGameLoop(allSpawnedCheck: () => boolean): void {
+  private startGameLoop(): void {
     const animate = () => {
       if (!this.viewer || this.gameState.phase() === 'gameover') {
         this.animationFrameId = null;
@@ -1155,15 +1317,10 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       const currentTime = performance.now();
       this.gameState.update(currentTime);
 
-      if (this.gameState.checkWaveComplete() && allSpawnedCheck()) {
+      if (this.gameState.checkWaveComplete()) {
         this.gameState.endWave();
-        this.viewer.scene.requestRender(); // Render final state with all enemies removed
+        this.viewer.scene.requestRender();
         this.animationFrameId = null;
-        return;
-      }
-
-      if (this.gameState.enemiesAlive() === 0 && !allSpawnedCheck()) {
-        this.animationFrameId = requestAnimationFrame(animate);
         return;
       }
 
@@ -1270,6 +1427,19 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
   get isDialog(): boolean {
     return !!this.dialogRef;
+  }
+
+  private onGameOver(): void {
+    // Stop game loop
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+  }
+
+  restartGame(): void {
+    this.gameState.reset();
+    this.viewer?.scene.requestRender();
   }
 
   private playProjectileSound(): void {
