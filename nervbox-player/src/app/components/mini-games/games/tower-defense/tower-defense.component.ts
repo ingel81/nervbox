@@ -23,6 +23,7 @@ import { Tower } from './models/tower.model';
 import { GeoPosition } from './models/game.types';
 import { TowerRenderer } from './renderers/tower.renderer';
 import { ApiService } from '../../../../core/services/api.service';
+import { DebugPanelComponent } from './components/debug-panel.component';
 
 import * as Cesium from 'cesium';
 
@@ -70,18 +71,21 @@ export interface SpawnPoint {
     MatIconModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
+    DebugPanelComponent,
   ],
   providers: [GameStateService, EntityPoolService],
   template: `
-    <div class="tower-defense-container">
+    <div class="tower-defense-container" [class.fullscreen]="!isDialog">
       <div class="game-header">
         <div class="header-glow"></div>
         <mat-icon class="title-icon">cell_tower</mat-icon>
         <h2>TOWER DEFENSE</h2>
         <span class="subtitle">Erlenbach</span>
-        <button mat-icon-button class="close-btn" (click)="close()">
-          <mat-icon>close</mat-icon>
-        </button>
+        @if (isDialog) {
+          <button mat-icon-button class="close-btn" (click)="close()">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
       </div>
 
       <div class="game-content">
@@ -132,23 +136,22 @@ export interface SpawnPoint {
             }
           </div>
 
-          <!-- Build Control (top center) -->
-          <div class="build-control">
-            <button mat-fab extended [color]="buildMode() ? 'accent' : 'primary'" (click)="toggleBuildMode()">
-              <mat-icon>{{ buildMode() ? 'close' : 'add_location' }}</mat-icon>
-              {{ buildMode() ? 'Abbrechen' : 'Tower' }}
-            </button>
+          <!-- Game Controls (bottom center) -->
+          <div class="game-controls">
+            <div class="controls-box">
+              <button class="control-btn tower-btn" [class.active]="buildMode()" (click)="toggleBuildMode()">
+                <mat-icon>{{ buildMode() ? 'close' : 'add_location' }}</mat-icon>
+                <span>{{ buildMode() ? 'Abbrechen' : 'Tower' }}</span>
+              </button>
+              <div class="control-divider"></div>
+              <button class="control-btn wave-btn" (click)="startWave()" [disabled]="waveActive() || buildMode()">
+                <mat-icon>{{ waveActive() ? 'hourglass_empty' : 'play_arrow' }}</mat-icon>
+                <span>{{ waveActive() ? 'Welle...' : 'Start' }}</span>
+              </button>
+            </div>
             @if (buildMode()) {
               <div class="build-hint">Klicke neben Strasse</div>
             }
-          </div>
-
-          <!-- Wave Control (bottom center) -->
-          <div class="wave-control">
-            <button mat-fab extended color="warn" (click)="startWave()" [disabled]="waveActive() || buildMode()">
-              <mat-icon>play_arrow</mat-icon>
-              {{ waveActive() ? 'Welle...' : 'Start' }}
-            </button>
           </div>
 
           <!-- Camera Controls (bottom right) -->
@@ -164,31 +167,25 @@ export interface SpawnPoint {
             </button>
           </div>
 
-          <!-- Debug Panel (top right, collapsible) -->
+          <!-- Debug Panel -->
           @if (debugMode()) {
-            <div class="debug-panel">
-              <div class="debug-title">Debug</div>
-              <div class="debug-item">
-                <span>Strassen:</span>
-                <span>{{ streetCount() }}</span>
-              </div>
-              <div class="debug-item">
-                <span>Speed:</span>
-                <span>{{ enemySpeed().toFixed(3) }}</span>
-              </div>
-              <input type="range" min="0.005" max="0.05" step="0.001"
-                     [value]="enemySpeed()"
-                     (input)="onSpeedChange($event)"
-                     class="debug-slider" />
-              <div class="debug-buttons">
-                <button mat-stroked-button (click)="toggleStreets()" [class.active]="streetsVisible()">
-                  <mat-icon>route</mat-icon> Strassen
-                </button>
-                <button mat-stroked-button (click)="toggleRoutes()" [class.active]="routesVisible()">
-                  <mat-icon>timeline</mat-icon> Routen
-                </button>
-              </div>
-            </div>
+            <app-td-debug-panel
+              [streetCount]="streetCount()"
+              [enemyCount]="enemyCount()"
+              [enemySpeed]="enemySpeed()"
+              [spawnMode]="spawnMode()"
+              [streetsVisible]="streetsVisible()"
+              [routesVisible]="routesVisible()"
+              [waveActive]="waveActive()"
+              [debugLog]="debugLog()"
+              (enemyCountChange)="onEnemyCountChange($event)"
+              (enemySpeedChange)="onSpeedChange($event)"
+              (toggleSpawnMode)="toggleSpawnMode()"
+              (toggleStreets)="toggleStreets()"
+              (toggleRoutes)="toggleRoutes()"
+              (killAll)="killAllEnemies()"
+              (clearLog)="clearDebugLog()"
+            />
           }
 
           <!-- Controls Hint (bottom left, minimal) -->
@@ -200,6 +197,10 @@ export interface SpawnPoint {
     </div>
   `,
   styles: `
+    :host {
+      display: contents;
+    }
+
     .tower-defense-container {
       display: flex;
       flex-direction: column;
@@ -210,6 +211,14 @@ export interface SpawnPoint {
       background: #0a0a0a;
       border-radius: 12px;
       overflow: hidden;
+    }
+
+    .tower-defense-container.fullscreen {
+      width: 100vw;
+      max-width: 100vw;
+      height: 100vh;
+      max-height: 100vh;
+      border-radius: 0;
     }
 
     .game-header {
@@ -423,50 +432,100 @@ export interface SpawnPoint {
     .status-item.enemies mat-icon { color: #f97316; }
     .status-item.enemies span { color: #f97316; }
 
-    .build-control {
+    .game-controls {
       position: absolute;
-      top: 12px;
+      bottom: 16px;
       left: 50%;
       transform: translateX(-50%);
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       z-index: 5;
     }
 
-    .build-control button {
-      font-family: 'JetBrains Mono', monospace !important;
-      font-weight: 600 !important;
-      font-size: 12px !important;
+    .controls-box {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: rgba(10, 10, 10, 0.95);
+      border: 2px solid rgba(147, 51, 234, 0.5);
+      border-radius: 12px;
+      padding: 4px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 30px rgba(147, 51, 234, 0.2);
     }
 
-    .build-hint {
-      padding: 4px 10px;
-      background: rgba(147, 51, 234, 0.9);
-      border-radius: 4px;
+    .control-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .control-btn mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    .tower-btn {
+      background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
       color: white;
     }
 
-    .wave-control {
-      position: absolute;
-      bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 5;
+    .tower-btn:hover {
+      background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+      transform: scale(1.02);
     }
 
-    .wave-control button {
-      background: linear-gradient(135deg, #ef4444 0%, #f97316 100%) !important;
-      font-family: 'JetBrains Mono', monospace !important;
-      font-weight: 600 !important;
-      font-size: 12px !important;
+    .tower-btn.active {
+      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
     }
 
-    .wave-control button:disabled {
-      background: rgba(100, 100, 100, 0.5) !important;
+    .control-divider {
+      width: 2px;
+      height: 32px;
+      background: rgba(147, 51, 234, 0.4);
+      margin: 0 4px;
+    }
+
+    .wave-btn {
+      background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+      color: white;
+    }
+
+    .wave-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
+      transform: scale(1.02);
+    }
+
+    .wave-btn:disabled {
+      background: rgba(100, 100, 100, 0.4);
+      color: rgba(255, 255, 255, 0.4);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .build-hint {
+      padding: 6px 12px;
+      background: rgba(147, 51, 234, 0.9);
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: white;
+      animation: pulse-hint 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse-hint {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
     }
 
     .camera-controls {
@@ -499,64 +558,6 @@ export interface SpawnPoint {
       height: 18px;
     }
 
-    .debug-panel {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      padding: 10px 14px;
-      background: rgba(0, 0, 0, 0.9);
-      border: 1px solid rgba(34, 197, 94, 0.5);
-      border-radius: 8px;
-      z-index: 5;
-    }
-
-    .debug-title {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      font-weight: 600;
-      color: #22c55e;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 8px;
-    }
-
-    .debug-item {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.7);
-      margin-bottom: 8px;
-    }
-
-    .debug-buttons {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .debug-buttons button {
-      font-family: 'JetBrains Mono', monospace !important;
-      font-size: 10px !important;
-      height: 28px !important;
-      color: rgba(255, 255, 255, 0.7) !important;
-      border-color: rgba(255, 255, 255, 0.3) !important;
-    }
-
-    .debug-buttons button.active {
-      background: rgba(34, 197, 94, 0.3) !important;
-      border-color: #22c55e !important;
-      color: #22c55e !important;
-    }
-
-    .debug-buttons button mat-icon {
-      font-size: 14px;
-      width: 14px;
-      height: 14px;
-      margin-right: 4px;
-    }
-
     .controls-hint {
       position: absolute;
       bottom: 12px;
@@ -565,12 +566,6 @@ export interface SpawnPoint {
       font-size: 9px;
       color: rgba(255, 255, 255, 0.4);
       z-index: 5;
-    }
-
-    .debug-slider {
-      width: 100%;
-      margin: 8px 0;
-      accent-color: #22c55e;
     }
 
     :host ::ng-deep .cesium-viewer-toolbar,
@@ -589,7 +584,7 @@ export interface SpawnPoint {
 export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('cesiumContainer') cesiumContainer!: ElementRef<HTMLDivElement>;
 
-  private readonly dialogRef = inject(MatDialogRef<TowerDefenseComponent>);
+  private readonly dialogRef = inject(MatDialogRef<TowerDefenseComponent>, { optional: true });
   private readonly osmService = inject(OsmStreetService);
   private readonly api = inject(ApiService);
   readonly gameState = inject(GameStateService);
@@ -612,8 +607,12 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly streetsVisible = signal(false);
   readonly routesVisible = signal(false);
   readonly debugMode = signal(false);
-  readonly enemySpeed = signal(0.005);
+  readonly enemySpeed = signal(5); // Meter pro Sekunde
   readonly streetCount = signal(0);
+  // Debug: Spawn-Einstellungen
+  readonly enemyCount = signal(2);
+  readonly spawnMode = signal<'each' | 'random'>('each'); // each = einer pro Spawn, random = zufällig
+  readonly debugLog = signal('');
   readonly spawnPoints = signal<SpawnPoint[]>([]);
   readonly baseCoords = signal(BASE_COORDS);
   readonly buildMode = signal(false);
@@ -722,7 +721,8 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         this.viewer,
         this.entityPool,
         (p1, p2) => this.osmService.haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon),
-        () => this.playProjectileSound()
+        () => this.playProjectileSound(),
+        (msg) => this.appendDebugLog(msg)
       );
 
       // Setup click handler and build preview
@@ -1112,25 +1112,31 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     const spawns = this.spawnPoints();
     if (spawns.length === 0) return;
 
-    const spawn = spawns[0];
-    const path = this.cachedPaths.get(spawn.id);
-    if (!path || path.length < 2) return;
-
     this.gameState.startWave();
 
-    const enemyCount = 5;
+    // Debug-Einstellungen verwenden
+    const totalEnemies = this.enemyCount();
+    const mode = this.spawnMode();
     let spawnedCount = 0;
     let allSpawned = false;
 
     const spawnInterval = setInterval(() => {
-      if (spawnedCount >= enemyCount) {
+      if (spawnedCount >= totalEnemies) {
         clearInterval(spawnInterval);
         allSpawned = true;
         return;
       }
 
-      const randomSpawn = spawns[Math.floor(Math.random() * spawns.length)];
-      const spawnPath = this.cachedPaths.get(randomSpawn.id);
+      let currentSpawn: SpawnPoint;
+      if (mode === 'each') {
+        // Round-Robin durch alle Spawn-Punkte
+        currentSpawn = spawns[spawnedCount % spawns.length];
+      } else {
+        // Zufälliger Spawn-Punkt
+        currentSpawn = spawns[Math.floor(Math.random() * spawns.length)];
+      }
+
+      const spawnPath = this.cachedPaths.get(currentSpawn.id);
 
       if (spawnPath && spawnPath.length > 1) {
         this.gameState.spawnEnemy(spawnPath, 100, this.enemySpeed());
@@ -1219,17 +1225,53 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     this.debugMode.update((v) => !v);
   }
 
-  onSpeedChange(event: Event): void {
-    const value = parseFloat((event.target as HTMLInputElement).value);
+  onSpeedChange(value: number): void {
     this.enemySpeed.set(value);
-    // Update all existing enemies live
+    // Update all existing enemies live (m/s)
     for (const enemy of this.gameState.enemies()) {
-      enemy.speed = value;
+      enemy.speedMps = value;
     }
   }
 
+  onEnemyCountChange(value: number): void {
+    this.enemyCount.set(value);
+  }
+
+  toggleSpawnMode(): void {
+    this.spawnMode.update((mode) => (mode === 'each' ? 'random' : 'each'));
+  }
+
+  killAllEnemies(): void {
+    // Alle lebenden Gegner töten
+    const enemies = this.gameState.enemies();
+    for (const enemy of enemies) {
+      if (enemy.alive) {
+        this.gameState.killEnemy(enemy);
+      }
+    }
+  }
+
+  clearDebugLog(): void {
+    this.debugLog.set('');
+  }
+
+  appendDebugLog(message: string): void {
+    this.debugLog.update((log) => {
+      const lines = log.split('\n');
+      // Max 50 Zeilen behalten
+      if (lines.length > 50) {
+        lines.shift();
+      }
+      return [...lines, message].join('\n');
+    });
+  }
+
   close(): void {
-    this.dialogRef.close();
+    this.dialogRef?.close();
+  }
+
+  get isDialog(): boolean {
+    return !!this.dialogRef;
   }
 
   private playProjectileSound(): void {

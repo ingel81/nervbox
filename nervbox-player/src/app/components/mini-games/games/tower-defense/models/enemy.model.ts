@@ -5,7 +5,8 @@ export class Enemy implements EnemyData {
   readonly id: string;
   readonly path: GeoPosition[];
   readonly maxHp: number;
-  speed: number;
+  // Speed in Meter pro Sekunde
+  speedMps: number;
 
   position: GeoPosition;
   currentIndex = 0;
@@ -21,6 +22,17 @@ export class Enemy implements EnemyData {
   // Terrain height at spawn position
   terrainHeight = 235;
 
+  // Vorberechnete Segmentlängen in Metern
+  private segmentLengths: number[] = [];
+
+  // Für Kompatibilität mit Debug-Output
+  get speed(): number {
+    return this.speedMps;
+  }
+  set speed(value: number) {
+    this.speedMps = value;
+  }
+
   private static idCounter = 0;
 
   constructor(
@@ -28,7 +40,7 @@ export class Enemy implements EnemyData {
     entity: Cesium.Entity,
     healthBarEntity: Cesium.Entity,
     maxHp = 100,
-    speed = 0.02
+    speedMps = 5 // 5 Meter pro Sekunde
   ) {
     this.id = `enemy-${++Enemy.idCounter}`;
     this.path = path;
@@ -36,8 +48,37 @@ export class Enemy implements EnemyData {
     this.healthBarEntity = healthBarEntity;
     this.maxHp = maxHp;
     this.hp = maxHp;
-    this.speed = speed;
+    this.speedMps = speedMps;
     this.position = { ...path[0] };
+
+    // Segmentlängen vorberechnen
+    this.precomputeSegmentLengths();
+  }
+
+  private precomputeSegmentLengths(): void {
+    for (let i = 0; i < this.path.length - 1; i++) {
+      const dist = this.haversineDistance(
+        this.path[i].lat,
+        this.path[i].lon,
+        this.path[i + 1].lat,
+        this.path[i + 1].lon
+      );
+      this.segmentLengths.push(dist);
+    }
+  }
+
+  private haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371000; // Erdradius in Metern
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
   }
 
   update(deltaTimeMs: number): 'moving' | 'reached_base' {
@@ -45,8 +86,16 @@ export class Enemy implements EnemyData {
 
     // Cap deltaTime to prevent huge jumps after tab switch or lag
     const cappedDelta = Math.min(deltaTimeMs, 100);
-    // Speed is now per second, so divide by 1000
-    this.progress += this.speed * (cappedDelta / 1000) * 60;
+    const deltaSeconds = cappedDelta / 1000;
+
+    // Bewegung in Metern pro Frame
+    const metersThisFrame = this.speedMps * deltaSeconds;
+
+    // Aktuelle Segmentlänge
+    const segmentLength = this.segmentLengths[this.currentIndex] || 1;
+
+    // Progress basierend auf tatsächlicher Segmentlänge
+    this.progress += metersThisFrame / segmentLength;
 
     // Handle segment transitions, keeping overflow for smooth movement
     while (this.progress >= 1) {

@@ -17,7 +17,7 @@ import { AuthService } from '../../core/services/auth.service';
       <div class="dialog-header">
         <div class="header-glow"></div>
         <mat-icon class="title-icon spinning">videogame_asset</mat-icon>
-        <h2>ARCADE</h2>
+        <h2>MINI GAMES</h2>
         <div class="coin-display">
           <img src="icons/nervbox-coin.svg" alt="" class="coin-icon bouncing">
           <span>Earn N$</span>
@@ -215,7 +215,7 @@ import { AuthService } from '../../core/services/auth.service';
     /* Games Grid */
     .games-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 16px;
       margin-bottom: 24px;
     }
@@ -412,7 +412,7 @@ import { AuthService } from '../../core/services/auth.service';
 
     .coming-soon-games {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 12px;
     }
 

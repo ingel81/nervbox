@@ -38,17 +38,20 @@ export class GameStateService {
   private distanceCalculator: DistanceCalculator | null = null;
   private lastUpdateTime = 0;
   private onProjectileFired: (() => void) | null = null;
+  private onDebugLog: ((message: string) => void) | null = null;
 
   initialize(
     viewer: Cesium.Viewer,
     entityPool: EntityPoolService,
     distanceCalculator: DistanceCalculator,
-    onProjectileFired?: () => void
+    onProjectileFired?: () => void,
+    onDebugLog?: (message: string) => void
   ): void {
     this.viewer = viewer;
     this.entityPool = entityPool;
     this.distanceCalculator = distanceCalculator;
     this.onProjectileFired = onProjectileFired ?? null;
+    this.onDebugLog = onDebugLog ?? null;
   }
 
   addTower(tower: Tower): void {
@@ -169,6 +172,22 @@ export class GameStateService {
     this._enemies.update((enemies) => enemies.filter((e) => e.id !== enemy.id));
   }
 
+  killEnemy(enemy: Enemy): void {
+    if (!enemy.alive) return;
+
+    enemy.alive = false;
+    this.credits.update((c) => c + 10);
+
+    // Play death animation
+    this.playEnemyDeathAnimation(enemy);
+    enemy.healthBarEntity.show = false;
+
+    // Remove after animation
+    setTimeout(() => {
+      this.removeEnemy(enemy);
+    }, 2000);
+  }
+
   private playEnemyDeathAnimation(enemy: Enemy): void {
     if (!enemy.model || !enemy.model.ready) {
       console.warn('[Animation] Model not ready for death animation');
@@ -254,15 +273,31 @@ export class GameStateService {
       // Model faces -Y in local coords, so subtract PI/2 to align with movement direction
       const heading = Math.atan2(dLon, dLat) - Math.PI / 2;
 
-      // Interpolate terrain height from path waypoints
-      const currentWaypoint = enemy.path[enemy.currentIndex];
-      const nextWaypoint = enemy.path[Math.min(enemy.currentIndex + 1, enemy.path.length - 1)];
-      const currentHeight = currentWaypoint.height ?? enemy.terrainHeight;
-      const nextHeight = nextWaypoint.height ?? currentHeight;
-      const interpolatedHeight = currentHeight + (nextHeight - currentHeight) * enemy.progress;
-      enemy.terrainHeight = interpolatedHeight;
+      // Get terrain height from globe (more reliable than clampToHeight)
+      let groundHeight = enemy.terrainHeight;
+      if (this.viewer) {
+        const cartographic = Cesium.Cartographic.fromDegrees(enemy.position.lon, enemy.position.lat);
+        const terrainHeight = this.viewer.scene.globe.getHeight(cartographic);
+        if (terrainHeight !== undefined) {
+          groundHeight = terrainHeight;
+          enemy.terrainHeight = groundHeight;
+        }
+      }
 
-      const position = Cesium.Cartesian3.fromDegrees(enemy.position.lon, enemy.position.lat, interpolatedHeight);
+      // Detailliertes Logging für die ersten 2 Gegner
+      if (this.onDebugLog && (enemy.id === 'enemy-1' || enemy.id === 'enemy-2')) {
+        const timeStr = (performance.now() / 1000).toFixed(1).padStart(6, ' ');
+        this.onDebugLog(
+          `${timeStr}s [${enemy.id}] ` +
+          `lat=${enemy.position.lat.toFixed(5)} lon=${enemy.position.lon.toFixed(5)} ` +
+          `h=${groundHeight.toFixed(1)}m ` +
+          `spd=${enemy.speed}m/s ` +
+          `prog=${enemy.progress.toFixed(2)} ` +
+          `seg=${enemy.currentIndex}/${enemy.path.length - 1}`
+        );
+      }
+
+      const position = Cesium.Cartesian3.fromDegrees(enemy.position.lon, enemy.position.lat, groundHeight);
 
       // Update model primitive position and rotation
       if (enemy.model) {
@@ -276,7 +311,7 @@ export class GameStateService {
       (enemy.healthBarEntity.position as unknown) = Cesium.Cartesian3.fromDegrees(
         enemy.position.lon,
         enemy.position.lat,
-        interpolatedHeight + 5
+        groundHeight + 5
       );
     }
 
