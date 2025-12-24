@@ -1,6 +1,9 @@
 /* Nervbox Player - Global Styles */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
+/* Cesium Widget Styles */
+@import 'cesium/Build/Cesium/Widgets/widgets.css';
+
 /* Shepherd.js Tour Styles */
 @import 'shepherd.js/dist/css/shepherd.css';
 
