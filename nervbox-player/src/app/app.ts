@@ -1,5 +1,6 @@
 import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router, RouterOutlet } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -44,6 +45,7 @@ interface Activity {
   standalone: true,
   imports: [
     CommonModule,
+    RouterOutlet,
     MatSnackBarModule,
     MatProgressSpinnerModule,
     MatDialogModule,
@@ -55,6 +57,10 @@ interface Activity {
     AchievementToastComponent,
   ],
   template: `
+    <!-- Dev Routes (fullscreen) -->
+    @if (isDevRoute()) {
+      <router-outlet />
+    } @else {
     <div class="app-container">
       <!-- Toolbar -->
       <app-toolbar
@@ -161,6 +167,7 @@ interface Activity {
         </div>
       }
     </div>
+    }
   `,
   styles: `
     .app-container {
@@ -367,6 +374,9 @@ export class App implements OnInit {
   private readonly signalR = inject(SignalRService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
+  private readonly router = inject(Router);
+
+  readonly isDevRoute = signal(window.location.pathname.startsWith('/dev/'));
 
   readonly searchQuery = signal('');
   readonly selectedTags = signal<string[]>([]);

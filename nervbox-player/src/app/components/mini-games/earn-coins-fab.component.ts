@@ -92,7 +92,8 @@ export class EarnCoinsFabComponent {
 
   openGameSelection(): void {
     this.dialog.open(GameSelectionDialogComponent, {
-      width: '450px',
+      width: '900px',
+      maxWidth: '95vw',
       panelClass: 'dark-dialog',
     });
   }

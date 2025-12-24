@@ -82,18 +82,19 @@ export class TowerRenderer {
     viewer: Cesium.Viewer,
     position: GeoPosition,
     range: number,
-    visible = false
+    selected = false
   ): Cesium.Entity {
     const positions = TowerRenderer.createRangeCirclePositions(position.lat, position.lon, range);
 
+    // Gefülltes Polygon das auf Terrain UND 3D Tiles gezeichnet wird
+    // Nur sichtbar wenn Tower selektiert ist
     return viewer.entities.add({
-      polyline: {
-        positions,
-        width: visible ? 4 : 2,
-        material: visible ? Cesium.Color.GREEN.withAlpha(0.8) : Cesium.Color.GREEN.withAlpha(0.3),
-        clampToGround: true,
+      polygon: {
+        hierarchy: new Cesium.PolygonHierarchy(positions),
+        material: Cesium.Color.GREEN.withAlpha(0.35),
+        classificationType: Cesium.ClassificationType.BOTH,
       },
-      show: true,
+      show: selected,
     });
   }
 
@@ -109,13 +110,9 @@ export class TowerRenderer {
       );
     }
 
-    if (rangeEntity?.polyline) {
-      (rangeEntity.polyline.width as Cesium.Property) = new Cesium.ConstantProperty(
-        selected ? 4 : 2
-      );
-      rangeEntity.polyline.material = new Cesium.ColorMaterialProperty(
-        selected ? Cesium.Color.GREEN.withAlpha(0.8) : Cesium.Color.GREEN.withAlpha(0.3)
-      );
+    // Range nur anzeigen wenn selektiert
+    if (rangeEntity) {
+      rangeEntity.show = selected;
     }
   }
 }
