@@ -40,6 +40,8 @@ export class GameStateService {
   private onProjectileFired: (() => void) | null = null;
   private onDebugLog: ((message: string) => void) | null = null;
 
+  private zombieModelUrl = '/assets/models/zombie_alternative.glb';
+
   initialize(
     viewer: Cesium.Viewer,
     entityPool: EntityPoolService,
@@ -90,76 +92,73 @@ export class GameStateService {
     if (!this.entityPool || !this.viewer) return null;
 
     const startPos = path[0];
+    const terrainHeight = startPos.height ?? 235;
 
     const healthBarEntity = this.entityPool.acquire('healthBar');
-    if (!healthBarEntity) {
-      return null;
-    }
+    if (!healthBarEntity) return null;
 
-    // Reset health bar to full
     EnemyRenderer.updateHealthBar(healthBarEntity, 1.0);
 
-    // Create enemy first with placeholder entity (will be positioned after terrain sample)
+    const position = Cesium.Cartesian3.fromDegrees(startPos.lon, startPos.lat, terrainHeight);
+
     const placeholderEntity = this.viewer.entities.add({
-      position: Cesium.Cartesian3.fromDegrees(startPos.lon, startPos.lat, 0),
+      position: position,
       point: { pixelSize: 1, color: Cesium.Color.TRANSPARENT },
     });
 
+    (healthBarEntity.position as unknown) = Cesium.Cartesian3.fromDegrees(
+      startPos.lon,
+      startPos.lat,
+      terrainHeight + 5
+    );
+
     const enemy = new Enemy(path, placeholderEntity, healthBarEntity, maxHp, speed);
+    enemy.terrainHeight = terrainHeight;
 
-    // Sample terrain height and load model
-    const terrainProvider = this.viewer.terrainProvider;
-    const positions = [Cesium.Cartographic.fromDegrees(startPos.lon, startPos.lat)];
+    // Load model on-demand
+    const viewer = this.viewer;
+    Cesium.Model.fromGltfAsync({
+      url: this.zombieModelUrl,
+      scale: 2.0,
+      minimumPixelSize: 64,
+    }).then((model) => {
+      if (!enemy.alive) {
+        // Enemy died before model loaded
+        return;
+      }
 
-    Cesium.sampleTerrainMostDetailed(terrainProvider, positions).then((sampledPositions) => {
-      if (!this.viewer) return;
+      viewer.scene.primitives.add(model);
+      enemy.model = model;
 
-      const terrainHeight = sampledPositions[0].height || 235;
-      enemy.terrainHeight = terrainHeight; // Store for updates
+      const hpr = new Cesium.HeadingPitchRoll(0, 0, 0);
+      model.modelMatrix = Cesium.Transforms.headingPitchRollToFixedFrame(position, hpr);
 
-      const position = Cesium.Cartesian3.fromDegrees(startPos.lon, startPos.lat, terrainHeight);
-      (placeholderEntity.position as unknown) = position;
-      (healthBarEntity.position as unknown) = Cesium.Cartesian3.fromDegrees(startPos.lon, startPos.lat, terrainHeight + 5);
-
-      // Load model
-      Cesium.Model.fromGltfAsync({
-        url: '/assets/models/zombie_alternative.glb',
-        scale: 2.0,
-        minimumPixelSize: 64,
-      }).then((model) => {
-        if (!this.viewer) return;
-
-        const hpr = new Cesium.HeadingPitchRoll(0, 0, 0);
-        model.modelMatrix = Cesium.Transforms.headingPitchRollToFixedFrame(position, hpr);
-
-        this.viewer.scene.primitives.add(model);
-        enemy.model = model;
-
-        const checkReady = () => {
-          if (model.ready) {
-            model.activeAnimations.add({
-              name: 'Armature|Walk',
-              loop: Cesium.ModelAnimationLoop.REPEAT,
-              multiplier: 2.0,
-              startTime: Cesium.JulianDate.now(),
-            });
-          } else {
-            requestAnimationFrame(checkReady);
-          }
-        };
-        checkReady();
-      });
+      // Wait for model ready before starting animation
+      if (model.ready) {
+        this.startWalkAnimation(model);
+      } else {
+        model.readyEvent.addEventListener(() => {
+          this.startWalkAnimation(model);
+        });
+      }
     });
 
-    // Enable clock for animation timing
     this.viewer.clock.shouldAnimate = true;
-
     this._enemies.update((enemies) => [...enemies, enemy]);
     return enemy;
   }
 
+  private startWalkAnimation(model: Cesium.Model): void {
+    model.activeAnimations.add({
+      name: 'Armature|Walk',
+      loop: Cesium.ModelAnimationLoop.REPEAT,
+      multiplier: 2.0,
+      startTime: Cesium.JulianDate.now(),
+    });
+  }
+
   removeEnemy(enemy: Enemy): void {
-    // Remove model primitive
+    // Remove model from scene
     if (this.viewer && enemy.model) {
       this.viewer.scene.primitives.remove(enemy.model);
     }
