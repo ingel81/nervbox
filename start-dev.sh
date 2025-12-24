@@ -15,6 +15,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
 NC='\033[0m'
 
 cleanup() {
@@ -36,6 +37,11 @@ start() {
         exit 1
     fi
 
+    # Log-Dateien leeren
+    > /tmp/nervbox-backend.log
+    > /tmp/nervbox-player.log
+    > /tmp/nervbox-mixer.log
+
     # Player starten (im Hintergrund)
     echo -e "${GREEN}Starte Player (Port 4200)...${NC}"
     cd "$PLAYER_DIR"
@@ -50,8 +56,20 @@ start() {
     MIXER_PID=$!
     echo "  Mixer PID: $MIXER_PID"
 
-    # PIDs speichern (Backend PID wird später ergänzt)
-    echo "0 $PLAYER_PID $MIXER_PID" > "$PID_FILE"
+    # Backend bauen (für lokale Architektur)
+    echo -e "${GREEN}Baue Backend...${NC}"
+    cd "$BACKEND_DIR"
+    dotnet build -o "$RELEASE_DIR" -c Debug --nologo -v q
+
+    # Backend starten (auch in Log-File)
+    echo -e "${GREEN}Starte Backend (Port 8080)...${NC}"
+    cd "$RELEASE_DIR"
+    ASPNETCORE_ENVIRONMENT=Development dotnet NervboxDeamon.dll > /tmp/nervbox-backend.log 2>&1 &
+    BACKEND_PID=$!
+    echo "  Backend PID: $BACKEND_PID"
+
+    # PIDs speichern
+    echo "$BACKEND_PID $PLAYER_PID $MIXER_PID" > "$PID_FILE"
 
     echo ""
     echo -e "${GREEN}URLs:${NC}"
@@ -61,23 +79,21 @@ start() {
     echo ""
     echo -e "${CYAN}Strg+C beendet alle Services${NC}"
     echo ""
-    # Backend bauen (für lokale Architektur)
-    echo -e "${GREEN}Baue Backend...${NC}"
-    cd "$BACKEND_DIR"
-    dotnet build -o "$RELEASE_DIR" -c Debug --nologo -v q
+    echo -e "${YELLOW}=== Live Logs ===${NC}"
 
-    echo -e "${YELLOW}=== Backend Log ===${NC}"
+    # Farbige Log-Streams starten
+    tail -f /tmp/nervbox-backend.log 2>/dev/null | sed -u "s/^/$(printf "${GREEN}[BACK]${NC} ")/" &
+    TAIL_BACK=$!
+    tail -f /tmp/nervbox-player.log 2>/dev/null | sed -u "s/^/$(printf "${CYAN}[PLAY]${NC} ")/" &
+    TAIL_PLAY=$!
+    tail -f /tmp/nervbox-mixer.log 2>/dev/null | sed -u "s/^/$(printf "${MAGENTA}[MIX]${NC}  ")/" &
+    TAIL_MIX=$!
 
-    # Backend im Vordergrund starten (saubere Serilog-Ausgabe)
-    cd "$RELEASE_DIR"
-    ASPNETCORE_ENVIRONMENT=Development dotnet NervboxDeamon.dll &
-    BACKEND_PID=$!
+    # Warten bis einer der Hauptprozesse endet
+    wait $BACKEND_PID $PLAYER_PID $MIXER_PID 2>/dev/null
 
-    # PIDs aktualisieren
-    echo "$BACKEND_PID $PLAYER_PID $MIXER_PID" > "$PID_FILE"
-
-    # Warten auf Backend-Prozess
-    wait $BACKEND_PID
+    # Tail-Prozesse beenden
+    kill $TAIL_BACK $TAIL_PLAY $TAIL_MIX 2>/dev/null
 }
 
 stop() {
@@ -137,9 +153,13 @@ status() {
 
 logs() {
     echo -e "${YELLOW}=== nervbox Logs (Ctrl+C zum Beenden) ===${NC}"
-    echo -e "${CYAN}[B]${NC}=Backend ${CYAN}[P]${NC}=Player ${CYAN}[M]${NC}=Mixer"
+    echo -e "${GREEN}[BACK]${NC}=Backend ${CYAN}[PLAY]${NC}=Player ${MAGENTA}[MIX]${NC}=Mixer"
     echo ""
-    tail -f /tmp/nervbox-backend.log /tmp/nervbox-player.log /tmp/nervbox-mixer.log 2>/dev/null
+
+    # Farbige Log-Streams
+    tail -f /tmp/nervbox-backend.log 2>/dev/null | sed -u "s/^/$(printf "${GREEN}[BACK]${NC} ")/" &
+    tail -f /tmp/nervbox-player.log 2>/dev/null | sed -u "s/^/$(printf "${CYAN}[PLAY]${NC} ")/" &
+    tail -f /tmp/nervbox-mixer.log 2>/dev/null | sed -u "s/^/$(printf "${MAGENTA}[MIX]${NC}  ")/"
 }
 
 restart() {
