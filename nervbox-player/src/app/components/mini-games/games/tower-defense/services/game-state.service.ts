@@ -268,6 +268,25 @@ export class GameStateService {
     });
   }
 
+  /**
+   * Calculate volume multiplier based on camera distance to position.
+   * Full volume up to minDist, then linear falloff to 0 at maxDist.
+   */
+  private calculateDistanceVolume(position: Cesium.Cartesian3): number {
+    if (!this.viewer) return 1;
+
+    const cameraPosition = this.viewer.camera.positionWC;
+    const distance = Cesium.Cartesian3.distance(cameraPosition, position);
+
+    const minDist = 10; // Full volume up to 10m
+    const maxDist = 300; // Silent at 300m
+
+    if (distance <= minDist) return 1;
+    if (distance >= maxDist) return 0;
+
+    return 1 - (distance - minDist) / (maxDist - minDist);
+  }
+
   removeEnemy(enemy: Enemy): void {
     // Stop moving sound
     this.stopMovingSound(enemy);
@@ -430,6 +449,12 @@ export class GameStateService {
         enemy.position.lat,
         groundHeight + 5
       );
+
+      // Distance-based audio volume
+      if (enemy.movingAudio && this.viewer) {
+        const volume = this.calculateDistanceVolume(position);
+        enemy.movingAudio.volume = volume * (enemy.typeConfig.movingSoundVolume ?? 0.3);
+      }
     }
 
     enemiesToRemove.forEach((e) => this.removeEnemy(e));
@@ -438,11 +463,22 @@ export class GameStateService {
     const health = this.baseHealth();
     if (health <= 0 && this.phase() !== 'gameover') {
       this.triggerGameOver();
-    } else if (health <= 20 && health > 0 && this.basePosition && this.viewer) {
-      // Start small fire when health is low
+    } else if (health < 100 && health > 0 && this.basePosition && this.viewer) {
+      // Progressive fire intensity based on health (inferno only at game over)
+      let targetIntensity: FireIntensity;
+      if (health < 20) {
+        targetIntensity = 'large';
+      } else if (health < 40) {
+        targetIntensity = 'medium';
+      } else if (health < 60) {
+        targetIntensity = 'small';
+      } else {
+        targetIntensity = 'tiny';
+      }
+
       const currentIntensity = FireRenderer.getCurrentIntensity();
-      if (!currentIntensity) {
-        FireRenderer.startFire(this.viewer, this.basePosition.lon, this.basePosition.lat, 'small');
+      if (currentIntensity !== targetIntensity) {
+        FireRenderer.startFire(this.viewer, this.basePosition.lon, this.basePosition.lat, targetIntensity);
       }
     }
   }
