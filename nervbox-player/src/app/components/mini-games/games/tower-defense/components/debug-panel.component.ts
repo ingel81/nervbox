@@ -1,7 +1,8 @@
-import { Component, input, output, model } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { EnemyTypeConfig, EnemyTypeId } from '../models/enemy-types';
 
 @Component({
   selector: 'app-td-debug-panel',
@@ -18,6 +19,21 @@ import { MatIconModule } from '@angular/material/icon';
 
       <div class="section">
         <div class="section-title">Spawn</div>
+        <div class="toggle-row">
+          <span class="label">Typ</span>
+          <div class="type-buttons">
+            @for (type of enemyTypes(); track type.id) {
+              <button
+                class="type-btn"
+                [class.active]="enemyType() === type.id"
+                (click)="onEnemyTypeChange(type.id)"
+                [title]="type.name"
+              >
+                {{ type.name }}
+              </button>
+            }
+          </div>
+        </div>
         <div class="slider-row">
           <span class="label">Anzahl</span>
           <input type="range" min="1" max="20" step="1"
@@ -188,6 +204,35 @@ import { MatIconModule } from '@angular/material/icon';
       color: #22c55e;
     }
 
+    .type-buttons {
+      display: flex;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .type-btn {
+      flex: 1;
+      padding: 4px 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      color: rgba(255, 255, 255, 0.7);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .type-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .type-btn.active {
+      background: rgba(147, 51, 234, 0.3);
+      border-color: #9333ea;
+      color: #9333ea;
+    }
+
     .btn-row {
       display: flex;
       gap: 6px;
@@ -298,6 +343,8 @@ export class DebugPanelComponent {
   streetCount = input.required<number>();
   enemyCount = input.required<number>();
   enemySpeed = input.required<number>();
+  enemyType = input.required<EnemyTypeId>();
+  enemyTypes = input.required<EnemyTypeConfig[]>();
   spawnMode = input.required<'each' | 'random'>();
   streetsVisible = input.required<boolean>();
   routesVisible = input.required<boolean>();
@@ -307,6 +354,7 @@ export class DebugPanelComponent {
   // Outputs
   enemyCountChange = output<number>();
   enemySpeedChange = output<number>();
+  enemyTypeChange = output<EnemyTypeId>();
   toggleSpawnMode = output<void>();
   toggleStreets = output<void>();
   toggleRoutes = output<void>();
@@ -321,5 +369,9 @@ export class DebugPanelComponent {
   onSpeedChange(event: Event): void {
     const value = parseInt((event.target as HTMLInputElement).value, 10);
     this.enemySpeedChange.emit(value);
+  }
+
+  onEnemyTypeChange(typeId: EnemyTypeId): void {
+    this.enemyTypeChange.emit(typeId);
   }
 }

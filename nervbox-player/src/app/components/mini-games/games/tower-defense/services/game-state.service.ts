@@ -4,6 +4,7 @@ import { Tower } from '../models/tower.model';
 import { Enemy } from '../models/enemy.model';
 import { Projectile } from '../models/projectile.model';
 import { GeoPosition, GamePhase, DistanceCalculator } from '../models/game.types';
+import { EnemyTypeId } from '../models/enemy-types';
 import { EntityPoolService } from './entity-pool.service';
 import { TowerRenderer } from '../renderers/tower.renderer';
 import { EnemyRenderer } from '../renderers/enemy.renderer';
@@ -42,9 +43,10 @@ export class GameStateService {
   private onProjectileFired: (() => void) | null = null;
   private onDebugLog: ((message: string) => void) | null = null;
 
-  private zombieModelUrl = '/assets/models/zombie_alternative.glb';
   private onGameOver: ((lon: number, lat: number) => void) | null = null;
   private basePosition: { lon: number; lat: number } | null = null;
+
+  private readonly BASE_DAMAGE_SOUND = '/assets/sounds/impactful-damage-425132.mp3';
 
   initialize(
     viewer: Cesium.Viewer,
@@ -110,11 +112,16 @@ export class GameStateService {
    *    - Walk-Animation startet erst hier
    *
    * @param path - Wegpunkte mit vorberechneten Terrain-Höhen
-   * @param maxHp - Maximale Lebenspunkte
-   * @param speed - Geschwindigkeit in m/s (wird bei paused=true gespeichert)
+   * @param typeId - Enemy-Typ aus ENEMY_TYPES Registry
+   * @param speedOverride - Optional: Überschreibt die Standard-Geschwindigkeit
    * @param paused - true = Gegner steht still bis startAllEnemies()
    */
-  spawnEnemy(path: GeoPosition[], maxHp: number, speed: number, paused = false): Enemy | null {
+  spawnEnemy(
+    path: GeoPosition[],
+    typeId: EnemyTypeId = 'zombie',
+    speedOverride?: number,
+    paused = false
+  ): Enemy | null {
     if (!this.entityPool || !this.viewer) return null;
 
     const startPos = path[0];
@@ -133,25 +140,31 @@ export class GameStateService {
       point: { pixelSize: 1, color: Cesium.Color.TRANSPARENT },
     });
 
+    // Enemy mit Typ erstellen
+    const enemy = new Enemy(path, placeholderEntity, healthBarEntity, typeId, speedOverride);
+    enemy.terrainHeight = terrainHeight;
+
+    const typeConfig = enemy.typeConfig;
+
+    // Health-Bar Position basierend auf Typ-Konfiguration
     (healthBarEntity.position as unknown) = Cesium.Cartesian3.fromDegrees(
       startPos.lon,
       startPos.lat,
-      terrainHeight + 5
+      terrainHeight + typeConfig.healthBarOffset
     );
 
     // Bei paused=true: speed=0, echte Speed in _targetSpeed speichern
-    const enemy = new Enemy(path, placeholderEntity, healthBarEntity, maxHp, paused ? 0 : speed);
-    enemy.terrainHeight = terrainHeight;
     if (paused) {
-      (enemy as unknown as { _targetSpeed: number })._targetSpeed = speed;
+      (enemy as unknown as { _targetSpeed: number })._targetSpeed = enemy.speedMps;
+      enemy.speedMps = 0;
     }
 
-    // Model async laden (Cesium lädt jedes Model separat - keine Instancing-Unterstützung)
+    // Model async laden mit Typ-spezifischer Konfiguration
     const viewer = this.viewer;
     Cesium.Model.fromGltfAsync({
-      url: this.zombieModelUrl,
-      scale: 2.0,
-      minimumPixelSize: 64,
+      url: typeConfig.modelUrl,
+      scale: typeConfig.scale,
+      minimumPixelSize: typeConfig.minimumPixelSize,
     }).then((model) => {
       if (!enemy.alive) return;
 
@@ -161,12 +174,12 @@ export class GameStateService {
       const hpr = new Cesium.HeadingPitchRoll(0, 0, 0);
       model.modelMatrix = Cesium.Transforms.headingPitchRollToFixedFrame(position, hpr);
 
-      // Animation nur starten wenn NICHT pausiert (sonst in startAllEnemies)
-      if (!paused) {
+      // Animation nur starten wenn Typ Animationen hat UND nicht pausiert
+      if (typeConfig.hasAnimations && !paused) {
         if (model.ready) {
-          this.startWalkAnimation(model);
+          this.startWalkAnimation(enemy);
         } else {
-          model.readyEvent.addEventListener(() => this.startWalkAnimation(model));
+          model.readyEvent.addEventListener(() => this.startWalkAnimation(enemy));
         }
       }
     });
@@ -193,24 +206,71 @@ export class GameStateService {
         const targetSpeed = (enemy as unknown as { _targetSpeed?: number })._targetSpeed;
         if (targetSpeed !== undefined && enemy.alive) {
           enemy.speedMps = targetSpeed;
-          if (enemy.model) {
-            this.startWalkAnimation(enemy.model);
+          // Animation starten wenn Typ Animationen unterstützt
+          if (enemy.model && enemy.typeConfig.hasAnimations) {
+            this.startWalkAnimation(enemy);
           }
+          // Moving-Sound starten (Loop)
+          this.startMovingSound(enemy);
         }
       }, index * delayBetween);
     });
   }
 
-  private startWalkAnimation(model: Cesium.Model): void {
-    model.activeAnimations.add({
-      name: 'Armature|Walk',
+  private startWalkAnimation(enemy: Enemy): void {
+    if (!enemy.model || !enemy.typeConfig.hasAnimations || !enemy.typeConfig.walkAnimation) {
+      return;
+    }
+
+    enemy.model.activeAnimations.add({
+      name: enemy.typeConfig.walkAnimation,
       loop: Cesium.ModelAnimationLoop.REPEAT,
-      multiplier: 2.0,
+      multiplier: enemy.typeConfig.animationSpeed ?? 1.0,
       startTime: Cesium.JulianDate.now(),
     });
   }
 
+  private startMovingSound(enemy: Enemy): void {
+    if (!enemy.typeConfig.movingSound) return;
+
+    const audio = new Audio(enemy.typeConfig.movingSound);
+    audio.loop = true;
+    audio.volume = enemy.typeConfig.movingSoundVolume ?? 0.3;
+
+    // Start at random position for variety when multiple enemies spawn
+    audio.addEventListener(
+      'loadedmetadata',
+      () => {
+        audio.currentTime = Math.random() * audio.duration;
+      },
+      { once: true }
+    );
+
+    audio.play().catch(() => {
+      // Ignore autoplay restrictions
+    });
+    enemy.movingAudio = audio;
+  }
+
+  private stopMovingSound(enemy: Enemy): void {
+    if (enemy.movingAudio) {
+      enemy.movingAudio.pause();
+      enemy.movingAudio.currentTime = 0;
+      enemy.movingAudio = null;
+    }
+  }
+
+  private playBaseDamageSound(): void {
+    const audio = new Audio(this.BASE_DAMAGE_SOUND);
+    audio.volume = 0.5;
+    audio.play().catch(() => {
+      // Ignore autoplay restrictions
+    });
+  }
+
   removeEnemy(enemy: Enemy): void {
+    // Stop moving sound
+    this.stopMovingSound(enemy);
     // Remove model from scene
     if (this.viewer && enemy.model) {
       this.viewer.scene.primitives.remove(enemy.model);
@@ -228,6 +288,7 @@ export class GameStateService {
     if (!enemy.alive) return;
 
     enemy.alive = false;
+    this.stopMovingSound(enemy);
     this.credits.update((c) => c + 10);
 
     // Play death animation
@@ -242,14 +303,17 @@ export class GameStateService {
 
   private playEnemyDeathAnimation(enemy: Enemy): void {
     if (!enemy.model || !enemy.model.ready) {
-      console.warn('[Animation] Model not ready for death animation');
       return;
     }
 
-    console.log('[Animation] Playing Die animation');
+    // Nur Animation abspielen wenn Typ Death-Animation hat
+    if (!enemy.typeConfig.hasAnimations || !enemy.typeConfig.deathAnimation) {
+      return;
+    }
+
     enemy.model.activeAnimations.removeAll();
     enemy.model.activeAnimations.add({
-      name: 'Armature|Die',
+      name: enemy.typeConfig.deathAnimation,
       loop: Cesium.ModelAnimationLoop.NONE,
       multiplier: 1.0,
     });
@@ -311,6 +375,7 @@ export class GameStateService {
 
       if (result === 'reached_base') {
         this.baseHealth.update((h) => Math.max(0, h - 10));
+        this.playBaseDamageSound();
         enemy.alive = false;
         this.removeEnemy(enemy);
         continue;
@@ -479,6 +544,8 @@ export class GameStateService {
   private clearAllEnemies(): void {
     const enemies = this._enemies();
     for (const enemy of enemies) {
+      // Stop moving sound
+      this.stopMovingSound(enemy);
       // Remove model primitive
       if (this.viewer && enemy.model) {
         this.viewer.scene.primitives.remove(enemy.model);
