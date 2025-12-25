@@ -21,6 +21,7 @@ import { GameStateService } from './services/game-state.service';
 import { EntityPoolService } from './services/entity-pool.service';
 import { Tower } from './models/tower.model';
 import { GeoPosition } from './models/game.types';
+import { EnemyTypeId, getAllEnemyTypes } from './models/enemy-types';
 import { TowerRenderer } from './renderers/tower.renderer';
 import { ApiService } from '../../../../core/services/api.service';
 import { DebugPanelComponent } from './components/debug-panel.component';
@@ -173,6 +174,8 @@ export interface SpawnPoint {
               [streetCount]="streetCount()"
               [enemyCount]="enemyCount()"
               [enemySpeed]="enemySpeed()"
+              [enemyType]="enemyType()"
+              [enemyTypes]="enemyTypes"
               [spawnMode]="spawnMode()"
               [streetsVisible]="streetsVisible()"
               [routesVisible]="routesVisible()"
@@ -180,6 +183,7 @@ export interface SpawnPoint {
               [debugLog]="debugLog()"
               (enemyCountChange)="onEnemyCountChange($event)"
               (enemySpeedChange)="onSpeedChange($event)"
+              (enemyTypeChange)="onEnemyTypeChange($event)"
               (toggleSpawnMode)="toggleSpawnMode()"
               (toggleStreets)="toggleStreets()"
               (toggleRoutes)="toggleRoutes()"
@@ -730,6 +734,8 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly streetCount = signal(0);
   // Debug: Spawn-Einstellungen
   readonly enemyCount = signal(2);
+  readonly enemyType = signal<EnemyTypeId>('zombie');
+  readonly enemyTypes = getAllEnemyTypes(); // Für Debug-Panel Dropdown
   readonly spawnMode = signal<'each' | 'random'>('each'); // each = einer pro Spawn, random = zufällig
   readonly debugLog = signal('');
   readonly spawnPoints = signal<SpawnPoint[]>([]);
@@ -1297,7 +1303,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       const spawnPath = this.cachedPaths.get(currentSpawn.id);
 
       if (spawnPath && spawnPath.length > 1) {
-        this.gameState.spawnEnemy(spawnPath, 100, speed, true); // paused=true
+        this.gameState.spawnEnemy(spawnPath, this.enemyType(), speed, true); // paused=true
         spawnedCount++;
       }
 
@@ -1390,6 +1396,10 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onEnemyCountChange(value: number): void {
     this.enemyCount.set(value);
+  }
+
+  onEnemyTypeChange(typeId: EnemyTypeId): void {
+    this.enemyType.set(typeId);
   }
 
   toggleSpawnMode(): void {

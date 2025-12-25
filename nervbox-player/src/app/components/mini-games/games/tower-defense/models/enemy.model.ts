@@ -1,10 +1,13 @@
 import * as Cesium from 'cesium';
 import { GeoPosition, EnemyData } from './game.types';
+import { EnemyTypeConfig, EnemyTypeId, getEnemyType } from './enemy-types';
 
 export class Enemy implements EnemyData {
   readonly id: string;
   readonly path: GeoPosition[];
   readonly maxHp: number;
+  readonly typeConfig: EnemyTypeConfig;
+
   // Speed in Meter pro Sekunde
   speedMps: number;
 
@@ -18,6 +21,9 @@ export class Enemy implements EnemyData {
 
   // Model primitive for animation control
   model: Cesium.Model | null = null;
+
+  // Audio for moving sound
+  movingAudio: HTMLAudioElement | null = null;
 
   // Terrain height at spawn position
   terrainHeight = 235;
@@ -39,16 +45,17 @@ export class Enemy implements EnemyData {
     path: GeoPosition[],
     entity: Cesium.Entity,
     healthBarEntity: Cesium.Entity,
-    maxHp = 100,
-    speedMps = 5 // 5 Meter pro Sekunde
+    typeId: EnemyTypeId = 'zombie',
+    speedOverride?: number
   ) {
     this.id = `enemy-${++Enemy.idCounter}`;
+    this.typeConfig = getEnemyType(typeId);
     this.path = path;
     this.entity = entity;
     this.healthBarEntity = healthBarEntity;
-    this.maxHp = maxHp;
-    this.hp = maxHp;
-    this.speedMps = speedMps;
+    this.maxHp = this.typeConfig.baseHp;
+    this.hp = this.maxHp;
+    this.speedMps = speedOverride ?? this.typeConfig.baseSpeed;
     this.position = { ...path[0] };
 
     // Segmentlängen vorberechnen

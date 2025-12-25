@@ -12,3 +12,6 @@ Alle bisherigen Aufgaben erledigt:
 - [x] Feuer bei Health ≤ 20 starten (klein)
 - [x] 5 Sekunden Feuer brennen lassen vor Game Over Screen
 - [x] Feuer viel größer (3 Intensitätsstufen: small, medium, inferno)
+- [x] Enemy-Type System (erweiterbare Registry)
+- [x] Tank als zweiter Enemy-Typ (ohne Animationen)
+- [x] Debug-Panel: Enemy-Typ Auswahl
