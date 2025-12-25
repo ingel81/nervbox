@@ -43,7 +43,7 @@ import { EnemyTypeConfig, EnemyTypeId } from '../models/enemy-types';
         </div>
         <div class="slider-row">
           <span class="label">Speed</span>
-          <input type="range" min="1" max="20" step="1"
+          <input type="range" min="1" max="50" step="1"
                  [value]="enemySpeed()"
                  (input)="onSpeedChange($event)" />
           <span class="value">{{ enemySpeed() }}m/s</span>
