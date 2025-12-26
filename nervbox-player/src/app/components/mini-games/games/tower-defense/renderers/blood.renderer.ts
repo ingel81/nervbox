@@ -111,14 +111,24 @@ export class BloodRenderer {
       }
     }
 
+    // Random size variation for the blood stain
+    const baseSize = 1.2 + Math.random() * 0.8; // 1.2-2.0 meters
+    const aspectRatio = 0.7 + Math.random() * 0.3; // Slightly elliptical
+
+    // Use ellipse at a fixed height above the terrain
+    // This creates a flat blood stain that doesn't rotate with the camera
+    const stainHeight = height + 0.15; // Just above terrain to avoid z-fighting with 3D tiles
     const entity = viewer.entities.add({
-      position: Cesium.Cartesian3.fromDegrees(lon, lat, height + 0.1),
-      billboard: {
-        image: this.createBloodStainCanvas(),
-        scale: 0.8 + Math.random() * 0.4,
-        verticalOrigin: Cesium.VerticalOrigin.CENTER,
-        rotation: Math.random() * Math.PI * 2,
-        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      position: Cesium.Cartesian3.fromDegrees(lon, lat, stainHeight),
+      ellipse: {
+        semiMajorAxis: baseSize,
+        semiMinorAxis: baseSize * aspectRatio,
+        height: stainHeight,
+        material: new Cesium.ImageMaterialProperty({
+          image: this.createBloodStainCanvas(),
+          transparent: true,
+        }),
+        stRotation: Math.random() * Math.PI * 2, // Random rotation
       },
     });
 
