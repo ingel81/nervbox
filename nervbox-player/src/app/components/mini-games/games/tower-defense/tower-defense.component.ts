@@ -1129,13 +1129,54 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (path.length < 2) return;
 
-    // Store path without heights initially
-    const geoPath = path.map((n) => ({ lat: n.lat, lon: n.lon }));
+    // Convert path to geoPath
+    let geoPath = path.map((n) => ({ lat: n.lat, lon: n.lon }));
+
+    // Find the closest point to HQ on the path (including points ON segments, not just nodes)
+    // This ensures enemies leave the street at the optimal point
+    let closestSegmentIndex = geoPath.length - 2;
+    let closestPointOnSegment: { lat: number; lon: number } | null = null;
+    let closestDist = Infinity;
+
+    for (let i = 0; i < geoPath.length - 1; i++) {
+      const a = geoPath[i];
+      const b = geoPath[i + 1];
+
+      // Find closest point on this segment to HQ
+      const closest = this.closestPointOnSegment(a, b, { lat: base.latitude, lon: base.longitude });
+      const dist = this.osmService.haversineDistance(closest.lat, closest.lon, base.latitude, base.longitude);
+
+      if (dist < closestDist) {
+        closestDist = dist;
+        closestSegmentIndex = i;
+        closestPointOnSegment = closest;
+      }
+    }
+
+    // Cut path at the segment and insert the closest point
+    geoPath = geoPath.slice(0, closestSegmentIndex + 1);
+    if (closestPointOnSegment) {
+      // Only add if it's different from the last point
+      const lastPoint = geoPath[geoPath.length - 1];
+      const distToLast = this.osmService.haversineDistance(
+        closestPointOnSegment.lat,
+        closestPointOnSegment.lon,
+        lastPoint.lat,
+        lastPoint.lon
+      );
+      if (distToLast > 1) {
+        // More than 1m away
+        geoPath.push(closestPointOnSegment);
+      }
+    }
+
+    // Add HQ as final destination
+    geoPath.push({ lat: base.latitude, lon: base.longitude });
     this.cachedPaths.set(spawn.id, geoPath);
 
-    // Sample terrain heights for all path points
+    // Sample terrain heights for all path points (including HQ)
     const terrainProvider = this.viewer.terrainProvider;
-    const cartographics = path.map((n) => Cesium.Cartographic.fromDegrees(n.lon, n.lat));
+    const cartographics = geoPath.map((n) => Cesium.Cartographic.fromDegrees(n.lon, n.lat));
 
     Cesium.sampleTerrainMostDetailed(terrainProvider, cartographics).then((sampled) => {
       // Update path with terrain heights
@@ -1144,10 +1185,10 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         height: sampled[i].height ?? 235,
       }));
       this.cachedPaths.set(spawn.id, pathWithHeights);
-      console.log(`[Path] Sampled ${pathWithHeights.length} terrain heights for ${spawn.name}`);
+      console.log(`[Path] Sampled ${pathWithHeights.length} terrain heights for ${spawn.name} (includes HQ)`);
     });
 
-    const positions = path.map((node) => Cesium.Cartesian3.fromDegrees(node.lon, node.lat));
+    const positions = geoPath.map((node) => Cesium.Cartesian3.fromDegrees(node.lon, node.lat));
 
     const routeEntity = this.viewer.entities.add({
       polyline: {
@@ -1502,5 +1543,31 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     ctx.fillText(text, centerX, pinRadius);
 
     return canvas;
+  }
+
+  /**
+   * Find the closest point on a line segment to a target point
+   */
+  private closestPointOnSegment(
+    a: { lat: number; lon: number },
+    b: { lat: number; lon: number },
+    target: { lat: number; lon: number }
+  ): { lat: number; lon: number } {
+    const dx = b.lon - a.lon;
+    const dy = b.lat - a.lat;
+    const lengthSquared = dx * dx + dy * dy;
+
+    if (lengthSquared === 0) {
+      // Segment is a point
+      return { lat: a.lat, lon: a.lon };
+    }
+
+    // Project target onto the line, clamped to segment
+    const t = Math.max(0, Math.min(1, ((target.lon - a.lon) * dx + (target.lat - a.lat) * dy) / lengthSquared));
+
+    return {
+      lat: a.lat + t * dy,
+      lon: a.lon + t * dx,
+    };
   }
 }
