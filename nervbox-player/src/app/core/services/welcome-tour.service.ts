@@ -25,9 +25,19 @@ export class WelcomeTourService {
   private readonly achievementService = inject(AchievementService);
   private readonly dialog = inject(MatDialog);
 
-  private readonly USER_STORAGE_KEY = 'nervbox-welcome-tour';
-  private readonly ADMIN_STORAGE_KEY = 'nervbox-admin-tour';
+  private readonly USER_STORAGE_KEY_PREFIX = 'nervbox-welcome-tour';
+  private readonly ADMIN_STORAGE_KEY_PREFIX = 'nervbox-admin-tour';
   private readonly TOUR_VERSION = '2.2.0'; // Added "Mein Profil" menu item
+
+  private getUserStorageKey(): string {
+    const username = this.auth.currentUser()?.username;
+    return username ? `${this.USER_STORAGE_KEY_PREFIX}-${username}` : this.USER_STORAGE_KEY_PREFIX;
+  }
+
+  private getAdminStorageKey(): string {
+    const username = this.auth.currentUser()?.username;
+    return username ? `${this.ADMIN_STORAGE_KEY_PREFIX}-${username}` : this.ADMIN_STORAGE_KEY_PREFIX;
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private tour: any = null;
@@ -55,12 +65,14 @@ export class WelcomeTourService {
   });
 
   constructor() {
-    this.loadProgress();
     this.setupButtonClickInterceptor();
 
-    // Watch for login to trigger user tour
+    // Watch for login changes and reload progress for the new user
     effect(() => {
       const user = this.auth.currentUser();
+      // Reload progress whenever user changes (login/logout/switch)
+      this.loadProgress();
+
       if (user && this.shouldShowUserTour()) {
         // Delay to ensure UI is ready after login
         setTimeout(() => this.startUserTour(), 500);
@@ -82,9 +94,18 @@ export class WelcomeTourService {
   }
 
   private loadProgress(): void {
+    // Reset to default state first
+    this.userTourCompleted.set(false);
+    this.adminTourCompleted.set(false);
+
+    // Only load progress if user is logged in
+    if (!this.auth.currentUser()) {
+      return;
+    }
+
     // Load user tour progress
     try {
-      const saved = localStorage.getItem(this.USER_STORAGE_KEY);
+      const saved = localStorage.getItem(this.getUserStorageKey());
       if (saved) {
         const progress: TourProgress = JSON.parse(saved);
         if (progress.completed && progress.version === this.TOUR_VERSION) {
@@ -97,7 +118,7 @@ export class WelcomeTourService {
 
     // Load admin tour progress
     try {
-      const saved = localStorage.getItem(this.ADMIN_STORAGE_KEY);
+      const saved = localStorage.getItem(this.getAdminStorageKey());
       if (saved) {
         const progress: TourProgress = JSON.parse(saved);
         if (progress.completed && progress.version === this.TOUR_VERSION) {
@@ -417,7 +438,7 @@ export class WelcomeTourService {
       completedAt: new Date().toISOString(),
       version: this.TOUR_VERSION,
     };
-    localStorage.setItem(this.USER_STORAGE_KEY, JSON.stringify(progress));
+    localStorage.setItem(this.getUserStorageKey(), JSON.stringify(progress));
     this.userTourCompleted.set(true);
     this.userTourActive.set(false);
     this.tour = null;
@@ -439,7 +460,7 @@ export class WelcomeTourService {
       version: this.TOUR_VERSION,
       skippedAt: new Date().toISOString(),
     };
-    localStorage.setItem(this.USER_STORAGE_KEY, JSON.stringify(progress));
+    localStorage.setItem(this.getUserStorageKey(), JSON.stringify(progress));
     this.userTourActive.set(false);
     this.tour = null;
   }
@@ -579,7 +600,7 @@ export class WelcomeTourService {
       completedAt: new Date().toISOString(),
       version: this.TOUR_VERSION,
     };
-    localStorage.setItem(this.ADMIN_STORAGE_KEY, JSON.stringify(progress));
+    localStorage.setItem(this.getAdminStorageKey(), JSON.stringify(progress));
     this.adminTourCompleted.set(true);
     this.adminTourActive.set(false);
     this.tour = null;
@@ -593,7 +614,7 @@ export class WelcomeTourService {
       version: this.TOUR_VERSION,
       skippedAt: new Date().toISOString(),
     };
-    localStorage.setItem(this.ADMIN_STORAGE_KEY, JSON.stringify(progress));
+    localStorage.setItem(this.getAdminStorageKey(), JSON.stringify(progress));
     this.adminTourActive.set(false);
     this.tour = null;
   }
@@ -641,12 +662,12 @@ export class WelcomeTourService {
   }
 
   resetUserTour(): void {
-    localStorage.removeItem(this.USER_STORAGE_KEY);
+    localStorage.removeItem(this.getUserStorageKey());
     this.userTourCompleted.set(false);
   }
 
   resetAdminTour(): void {
-    localStorage.removeItem(this.ADMIN_STORAGE_KEY);
+    localStorage.removeItem(this.getAdminStorageKey());
     this.adminTourCompleted.set(false);
   }
 }
