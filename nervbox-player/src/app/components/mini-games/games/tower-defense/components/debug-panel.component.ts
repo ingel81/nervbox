@@ -66,6 +66,9 @@ import { EnemyTypeConfig, EnemyTypeId } from '../models/enemy-types';
           <button class="icon-btn" [class.active]="routesVisible()" (click)="toggleRoutes.emit()" title="Routen">
             <mat-icon>timeline</mat-icon>
           </button>
+          <button class="icon-btn" (click)="logCamera.emit()" title="Kamera loggen">
+            <mat-icon>videocam</mat-icon>
+          </button>
           <button class="icon-btn danger" [disabled]="!waveActive()" (click)="killAll.emit()" title="Alle töten">
             <mat-icon>skull</mat-icon>
           </button>
@@ -360,6 +363,7 @@ export class DebugPanelComponent {
   toggleRoutes = output<void>();
   killAll = output<void>();
   clearLog = output<void>();
+  logCamera = output<void>();
 
   onEnemyCountChange(event: Event): void {
     const value = parseInt((event.target as HTMLInputElement).value, 10);

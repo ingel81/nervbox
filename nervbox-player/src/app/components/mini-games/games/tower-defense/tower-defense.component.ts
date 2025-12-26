@@ -189,6 +189,7 @@ export interface SpawnPoint {
               (toggleRoutes)="toggleRoutes()"
               (killAll)="killAllEnemies()"
               (clearLog)="clearDebugLog()"
+              (logCamera)="logCameraPosition()"
             />
           }
 
@@ -1386,28 +1387,16 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   resetCamera(): void {
     if (!this.viewer) return;
 
-    const base = this.baseCoords();
-    const height = ERLENBACH_COORDS.height;
-    const pitchRad = Cesium.Math.toRadians(this.tiltAngle);
-
-    // Calculate camera offset so HQ is visible in center of view
-    // Distance = Height / tan(pitch) * factor
-    const horizontalDistance = (height / Math.tan(pitchRad)) * 0.3;
-
-    // Convert distance to longitude offset (camera east of HQ since we look west)
-    // 1 degree longitude ≈ 111km * cos(latitude)
-    const metersPerDegreeLon = 111000 * Math.cos(Cesium.Math.toRadians(base.latitude));
-    const lonOffset = horizontalDistance / metersPerDegreeLon;
-
+    // Fixed camera position with good view of HQ
     this.viewer.camera.flyTo({
       destination: Cesium.Cartesian3.fromDegrees(
-        base.longitude + lonOffset, // East of HQ
-        base.latitude,
-        height
+        9.271721912730355,
+        49.171930814355285,
+        370
       ),
       orientation: {
-        heading: Cesium.Math.toRadians(270), // West
-        pitch: Cesium.Math.toRadians(-this.tiltAngle),
+        heading: Cesium.Math.toRadians(296),
+        pitch: Cesium.Math.toRadians(-18.5),
         roll: 0,
       },
       duration: 1.5,
@@ -1442,7 +1431,39 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   toggleDebug(): void {
-    this.debugMode.update((v) => !v);
+    this.debugMode.update((v: boolean) => !v);
+  }
+
+  logCameraPosition(): void {
+    if (!this.viewer) return;
+
+    const camera = this.viewer.camera;
+    const pos = camera.positionCartographic;
+
+    const data = {
+      position: {
+        latitude: Cesium.Math.toDegrees(pos.latitude),
+        longitude: Cesium.Math.toDegrees(pos.longitude),
+        height: pos.height,
+      },
+      orientation: {
+        heading: Cesium.Math.toDegrees(camera.heading),
+        pitch: Cesium.Math.toDegrees(camera.pitch),
+        roll: Cesium.Math.toDegrees(camera.roll),
+      },
+      hq: this.baseCoords(),
+      tiltAngle: this.tiltAngle,
+    };
+
+    const output = JSON.stringify(data, null, 2);
+
+    // Log to console
+    console.log('=== CAMERA SETTINGS ===');
+    console.log(output);
+    console.log('=======================');
+
+    // Log to debug textarea
+    this.appendDebugLog('=== CAMERA ===\n' + output);
   }
 
   onSpeedChange(value: number): void {
