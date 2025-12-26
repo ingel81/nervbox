@@ -16,7 +16,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { environment } from '../../../../../environments/environment';
-import { OsmStreetService, StreetNetwork } from './services/osm-street.service';
+import { OsmStreetService, Street, StreetNetwork } from './services/osm-street.service';
 import { GameStateService } from './services/game-state.service';
 import { EntityPoolService } from './services/entity-pool.service';
 import { Tower } from './models/tower.model';
@@ -1132,6 +1132,11 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     // Convert path to geoPath
     let geoPath = path.map((n) => ({ lat: n.lat, lon: n.lon }));
 
+    // Extend the path along the street to find the optimal turn-off point
+    // The A* path ends at the nearest street node to HQ, but the optimal 90° turn-off
+    // point might be further along the street
+    geoPath = this.extendPathToOptimalTurnoff(geoPath, base);
+
     // Find the closest point to HQ on the path (including points ON segments, not just nodes)
     // This ensures enemies leave the street at the optimal point
     let closestSegmentIndex = geoPath.length - 2;
@@ -1381,14 +1386,27 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   resetCamera(): void {
     if (!this.viewer) return;
 
+    const base = this.baseCoords();
+    const height = ERLENBACH_COORDS.height;
+    const pitchRad = Cesium.Math.toRadians(this.tiltAngle);
+
+    // Calculate camera offset so HQ is visible in center of view
+    // Distance = Height / tan(pitch) * factor
+    const horizontalDistance = (height / Math.tan(pitchRad)) * 0.3;
+
+    // Convert distance to longitude offset (camera east of HQ since we look west)
+    // 1 degree longitude ≈ 111km * cos(latitude)
+    const metersPerDegreeLon = 111000 * Math.cos(Cesium.Math.toRadians(base.latitude));
+    const lonOffset = horizontalDistance / metersPerDegreeLon;
+
     this.viewer.camera.flyTo({
       destination: Cesium.Cartesian3.fromDegrees(
-        ERLENBACH_COORDS.longitude,
-        ERLENBACH_COORDS.latitude,
-        ERLENBACH_COORDS.height
+        base.longitude + lonOffset, // East of HQ
+        base.latitude,
+        height
       ),
       orientation: {
-        heading: Cesium.Math.toRadians(288.98),
+        heading: Cesium.Math.toRadians(270), // West
         pitch: Cesium.Math.toRadians(-this.tiltAngle),
         roll: 0,
       },
@@ -1569,5 +1587,126 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       lat: a.lat + t * dy,
       lon: a.lon + t * dx,
     };
+  }
+
+  /**
+   * Extend the path along streets to find the optimal 90° turn-off point to HQ.
+   * The A* path ends at the nearest node to HQ, but continuing along the street
+   * might give us a better (perpendicular) approach to HQ.
+   */
+  private extendPathToOptimalTurnoff(
+    geoPath: { lat: number; lon: number }[],
+    base: { latitude: number; longitude: number }
+  ): { lat: number; lon: number }[] {
+    if (!this.streetNetwork || geoPath.length < 2) return geoPath;
+
+    const lastPoint = geoPath[geoPath.length - 1];
+    const secondLastPoint = geoPath[geoPath.length - 2];
+
+    // Find streets that contain a node near the last point
+    const TOLERANCE = 0.00001; // ~1m tolerance for matching
+    const matchingStreets: { street: Street; nodeIndex: number }[] = [];
+
+    for (const street of this.streetNetwork.streets) {
+      for (let i = 0; i < street.nodes.length; i++) {
+        const node = street.nodes[i];
+        if (
+          Math.abs(node.lat - lastPoint.lat) < TOLERANCE &&
+          Math.abs(node.lon - lastPoint.lon) < TOLERANCE
+        ) {
+          matchingStreets.push({ street, nodeIndex: i });
+        }
+      }
+    }
+
+    if (matchingStreets.length === 0) return geoPath;
+
+    // Determine the direction we came from (to continue in the same direction)
+    const dirLat = lastPoint.lat - secondLastPoint.lat;
+    const dirLon = lastPoint.lon - secondLastPoint.lon;
+
+    // Find the best extension: continue along the street in a direction
+    // that could bring us closer to HQ
+    let bestExtension: { lat: number; lon: number }[] = [];
+    let bestClosestDist = this.osmService.haversineDistance(
+      lastPoint.lat,
+      lastPoint.lon,
+      base.latitude,
+      base.longitude
+    );
+
+    for (const { street, nodeIndex } of matchingStreets) {
+      // Try extending in both directions along this street
+      for (const direction of [-1, 1]) {
+        const extension: { lat: number; lon: number }[] = [];
+        let idx = nodeIndex + direction;
+        let foundBetterPoint = false;
+
+        // Extend up to 20 nodes in this direction
+        while (idx >= 0 && idx < street.nodes.length && extension.length < 20) {
+          const node = street.nodes[idx];
+
+          // Check if this node or segment gets us closer to HQ
+          const distToHQ = this.osmService.haversineDistance(
+            node.lat,
+            node.lon,
+            base.latitude,
+            base.longitude
+          );
+
+          // Also check the segment between last extension point and this node
+          const prevPoint = extension.length > 0 ? extension[extension.length - 1] : lastPoint;
+          const closestOnSeg = this.closestPointOnSegment(prevPoint, { lat: node.lat, lon: node.lon }, {
+            lat: base.latitude,
+            lon: base.longitude,
+          });
+          const segDistToHQ = this.osmService.haversineDistance(
+            closestOnSeg.lat,
+            closestOnSeg.lon,
+            base.latitude,
+            base.longitude
+          );
+
+          if (segDistToHQ < bestClosestDist || distToHQ < bestClosestDist) {
+            foundBetterPoint = true;
+            extension.push({ lat: node.lat, lon: node.lon });
+            idx += direction;
+          } else {
+            // Stop if we're moving away from HQ
+            break;
+          }
+        }
+
+        if (foundBetterPoint && extension.length > 0) {
+          // Calculate the closest distance achievable with this extension
+          let minDist = bestClosestDist;
+          for (let i = 0; i < extension.length; i++) {
+            const prev = i === 0 ? lastPoint : extension[i - 1];
+            const curr = extension[i];
+            const closest = this.closestPointOnSegment(prev, curr, {
+              lat: base.latitude,
+              lon: base.longitude,
+            });
+            const dist = this.osmService.haversineDistance(
+              closest.lat,
+              closest.lon,
+              base.latitude,
+              base.longitude
+            );
+            if (dist < minDist) {
+              minDist = dist;
+            }
+          }
+
+          if (minDist < bestClosestDist) {
+            bestClosestDist = minDist;
+            bestExtension = extension;
+          }
+        }
+      }
+    }
+
+    // Return extended path
+    return [...geoPath, ...bestExtension];
   }
 }
