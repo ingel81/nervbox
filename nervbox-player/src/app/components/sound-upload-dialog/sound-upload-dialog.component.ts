@@ -100,6 +100,7 @@ interface FileUploadItem {
                     [value]="item.selectedTags"
                     [disabled]="item.status !== 'pending'"
                     (selectionChange)="onTagsChange(i, $event.value)"
+                    panelClass="dark-select-panel"
                   >
                     @for (tag of availableTags(); track tag.name) {
                       <mat-option [value]="tag.name">{{ tag.name }}</mat-option>
