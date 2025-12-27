@@ -417,8 +417,17 @@ interface FileUploadItem {
       border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
 
+    mat-dialog-actions button {
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 8px;
+    }
+
     mat-dialog-actions button mat-icon {
-      margin-right: 8px;
+      margin: 0 !important;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
     }
 
     .spinning {
