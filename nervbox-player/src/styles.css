@@ -580,3 +580,35 @@ body.shepherd-menu-step-active .shekel-popover-backdrop {
 .shekel-select-panel .mat-mdc-option .mdc-list-item__primary-text {
   color: inherit !important;
 }
+
+/* Dark Select Panel (Upload Dialog Tags) */
+.dark-select-panel {
+  background: #1a1b1f !important;
+  border: 1px solid var(--border-purple) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(147, 51, 234, 0.2), 0 0 40px rgba(147, 51, 234, 0.1) !important;
+}
+
+.dark-select-panel .mat-mdc-option {
+  font-family: Inter, sans-serif !important;
+  font-size: 13px !important;
+  color: var(--text-secondary) !important;
+  min-height: 40px !important;
+}
+
+.dark-select-panel .mat-mdc-option:hover:not(.mdc-list-item--disabled) {
+  background: rgba(147, 51, 234, 0.15) !important;
+}
+
+.dark-select-panel .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) {
+  background: rgba(147, 51, 234, 0.25) !important;
+}
+
+.dark-select-panel .mat-mdc-option.mdc-list-item--selected .mdc-list-item__primary-text {
+  color: var(--color-pink) !important;
+}
+
+.dark-select-panel .mat-pseudo-checkbox-checked {
+  background: var(--color-purple) !important;
+  border-color: var(--color-purple) !important;
+}
