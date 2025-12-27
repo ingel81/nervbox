@@ -5,6 +5,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -32,6 +34,8 @@ interface FileUploadItem {
     MatIconModule,
     MatProgressBarModule,
     MatChipsModule,
+    MatSelectModule,
+    MatFormFieldModule,
     MatTooltipModule,
     MatDividerModule,
     MatSnackBarModule,
@@ -89,21 +93,26 @@ interface FileUploadItem {
 
               <!-- Tags Row -->
               <div class="tags-row">
-                <span class="tags-label">Tags:</span>
-                <div class="tags-container">
-                  @for (tag of availableTags(); track tag.name) {
-                    <mat-chip-option
-                      [selected]="item.selectedTags.includes(tag.name)"
-                      [disabled]="item.status !== 'pending'"
-                      (click)="toggleTag(i, tag.name)"
-                    >
-                      {{ tag.name }}
-                    </mat-chip-option>
-                  }
-                  @if (availableTags().length === 0) {
-                    <span class="no-tags-hint">Keine Tags verfügbar</span>
-                  }
-                </div>
+                <mat-form-field class="tags-select" appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Tags</mat-label>
+                  <mat-select
+                    multiple
+                    [value]="item.selectedTags"
+                    [disabled]="item.status !== 'pending'"
+                    (selectionChange)="onTagsChange(i, $event.value)"
+                  >
+                    @for (tag of availableTags(); track tag.name) {
+                      <mat-option [value]="tag.name">{{ tag.name }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                @if (item.selectedTags.length > 0) {
+                  <div class="selected-tags">
+                    @for (tagName of item.selectedTags; track tagName) {
+                      <span class="tag-chip">{{ tagName }}</span>
+                    }
+                  </div>
+                }
               </div>
 
               <!-- Progress Bar -->
@@ -285,35 +294,45 @@ interface FileUploadItem {
 
     .tags-row {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       gap: 12px;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
-    .tags-label {
-      color: rgba(255, 255, 255, 0.5);
-      font-size: 13px;
-      padding-top: 6px;
+    .tags-select {
+      width: 140px;
       flex-shrink: 0;
     }
 
-    .tags-container {
+    .tags-select ::ng-deep .mat-mdc-form-field-infix {
+      min-height: 36px;
+      padding: 6px 0 !important;
+    }
+
+    .tags-select ::ng-deep .mat-mdc-select-value {
+      font-size: 13px;
+    }
+
+    .tags-select ::ng-deep .mdc-notched-outline__leading,
+    .tags-select ::ng-deep .mdc-notched-outline__notch,
+    .tags-select ::ng-deep .mdc-notched-outline__trailing {
+      border-color: rgba(147, 51, 234, 0.3) !important;
+    }
+
+    .selected-tags {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
       flex: 1;
     }
 
-    .tags-container mat-chip-option {
-      font-size: 12px;
-      min-height: 28px;
-      cursor: pointer;
-    }
-
-    .no-tags-hint {
-      color: rgba(255, 255, 255, 0.4);
-      font-size: 13px;
-      font-style: italic;
+    .tag-chip {
+      background: rgba(147, 51, 234, 0.2);
+      border: 1px solid rgba(147, 51, 234, 0.4);
+      color: #c4b5fd;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 12px;
     }
 
     mat-progress-bar {
@@ -452,18 +471,10 @@ export class SoundUploadDialogComponent {
     this.files.update(files => files.filter((_, i) => i !== index));
   }
 
-  toggleTag(fileIndex: number, tagName: string): void {
+  onTagsChange(fileIndex: number, tags: string[]): void {
     this.files.update(files => {
       const updated = [...files];
-      const item = { ...updated[fileIndex] };
-
-      if (item.selectedTags.includes(tagName)) {
-        item.selectedTags = item.selectedTags.filter(t => t !== tagName);
-      } else {
-        item.selectedTags = [...item.selectedTags, tagName];
-      }
-
-      updated[fileIndex] = item;
+      updated[fileIndex] = { ...updated[fileIndex], selectedTags: tags };
       return updated;
     });
   }
