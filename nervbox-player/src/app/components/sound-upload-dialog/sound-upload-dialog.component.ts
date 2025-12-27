@@ -494,7 +494,18 @@ export class SoundUploadDialogComponent {
               }
             },
             error: (err) => {
-              const message = err.error?.message || err.message || 'Upload fehlgeschlagen';
+              let message = 'Upload fehlgeschlagen';
+              if (err.status === 409) {
+                message = 'Sound existiert bereits';
+              } else if (err.status === 401) {
+                message = 'Nicht angemeldet';
+              } else if (err.status === 413) {
+                message = 'Datei zu groß';
+              } else if (err.error?.error) {
+                message = err.error.error;
+              } else if (err.message) {
+                message = err.message;
+              }
               this.updateFileError(i, message);
               errorCount++;
               resolve(); // Don't reject, continue with next file
