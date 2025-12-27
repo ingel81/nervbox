@@ -311,11 +311,19 @@ interface FileUploadItem {
 
     .tags-select ::ng-deep .mat-mdc-form-field-infix {
       min-height: 36px;
-      padding: 6px 0 !important;
+      padding: 8px 0 !important;
     }
 
     .tags-select ::ng-deep .mat-mdc-select-value {
       font-size: 13px;
+    }
+
+    .tags-select ::ng-deep .mat-mdc-floating-label {
+      top: 18px !important;
+    }
+
+    .tags-select ::ng-deep .mdc-floating-label--float-above {
+      transform: translateY(-106%) scale(0.75) !important;
     }
 
     .tags-select ::ng-deep .mdc-notched-outline__leading,
