@@ -20,6 +20,7 @@ import { CreditSettingsDialogComponent } from './components/admin/credit-setting
 import { ChatSidebarComponent } from './components/chat/chat-sidebar.component';
 import { EarnCoinsFabComponent } from './components/mini-games/earn-coins-fab.component';
 import { AvatarUploadDialogComponent } from './components/avatar-upload-dialog/avatar-upload-dialog.component';
+import { SoundUploadDialogComponent } from './components/sound-upload-dialog/sound-upload-dialog.component';
 import { AchievementToastComponent } from './components/shared/achievement-toast/achievement-toast.component';
 import { SoundService } from './core/services/sound.service';
 import { AuthService } from './core/services/auth.service';
@@ -78,6 +79,7 @@ interface Activity {
         (loginClick)="onLoginClick()"
         (changePasswordClick)="onChangePasswordClick()"
         (changeAvatarClick)="onChangeAvatarClick()"
+        (uploadClick)="onUploadClick()"
         (profileClick)="onProfileClick()"
         (restartTourClick)="welcomeTour.restartTour()"
         (selectionModeToggle)="selectionService.toggleSelectionMode()"
@@ -702,6 +704,14 @@ export class App implements OnInit {
       if (result?.success) {
         this.snackBar.open('Avatar wurde aktualisiert', 'OK', { duration: 3000 });
       }
+    });
+  }
+
+  onUploadClick(): void {
+    this.dialog.open(SoundUploadDialogComponent, {
+      width: '600px',
+      maxWidth: '95vw',
+      panelClass: 'dark-dialog',
     });
   }
 

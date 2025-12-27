@@ -268,6 +268,10 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
               <mat-icon>photo_camera</mat-icon>
               <span>Avatar ändern</span>
             </button>
+            <button mat-menu-item (click)="uploadClick.emit()">
+              <mat-icon>upload_file</mat-icon>
+              <span>Sound hochladen</span>
+            </button>
             <button mat-menu-item (click)="changePasswordClick.emit()">
               <mat-icon>key</mat-icon>
               <span>Kennwort ändern</span>
@@ -962,6 +966,7 @@ export class ToolbarComponent {
   readonly loginClick = output<void>();
   readonly changePasswordClick = output<void>();
   readonly changeAvatarClick = output<void>();
+  readonly uploadClick = output<void>();
   readonly profileClick = output<void>();
   readonly restartTourClick = output<void>();
   readonly selectionModeToggle = output<void>();
