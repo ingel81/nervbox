@@ -358,6 +358,49 @@ namespace NervboxDeamon.Controllers
                 return StatusCode(500, new { Error = ex.Message });
             }
         }
+
+        /// <summary>
+        /// POST /api/credit/plinko - Process Plinko game result
+        /// </summary>
+        [HttpPost("plinko")]
+        [Authorize]
+        public IActionResult PlayPlinko([FromBody] PlinkoRequest request)
+        {
+            try
+            {
+                if (request.Amount <= 0)
+                {
+                    return BadRequest(new { Error = "Einsatz muss größer als 0 sein" });
+                }
+
+                // Validate multiplier is within expected range
+                decimal[] validMultipliers = {
+                    0.2m, 0.3m, 0.5m, 1.5m, 3m, 5m, 10m, 25m, 50m
+                };
+
+                if (!validMultipliers.Contains(request.Multiplier))
+                {
+                    return BadRequest(new { Error = "Ungültiger Multiplikator" });
+                }
+
+                var (newBalance, message) = _creditService.ProcessPlinko(UserId, request.Amount, request.Multiplier);
+
+                var winAmount = (int)(request.Amount * request.Multiplier);
+
+                return Ok(new
+                {
+                    Multiplier = request.Multiplier,
+                    BetAmount = request.Amount,
+                    WinAmount = winAmount,
+                    NewBalance = newBalance,
+                    Message = message
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Error = ex.Message });
+            }
+        }
     }
 
     public class CreditGrantRequest
@@ -382,5 +425,11 @@ namespace NervboxDeamon.Controllers
     {
         public string GameName { get; set; }
         public int Level { get; set; }
+    }
+
+    public class PlinkoRequest
+    {
+        public int Amount { get; set; }
+        public decimal Multiplier { get; set; }
     }
 }

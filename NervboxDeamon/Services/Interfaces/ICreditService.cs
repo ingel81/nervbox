@@ -80,5 +80,10 @@ namespace NervboxDeamon.Services.Interfaces
         /// Formula: 5 * 2^(level-1) = 5, 10, 20, 40, ...
         /// </summary>
         (int reward, int newBalance) ClaimMinigameReward(int userId, string gameName, int level);
+
+        /// <summary>
+        /// Process Plinko game result - deduct bet and add winnings
+        /// </summary>
+        (int newBalance, string message) ProcessPlinko(int userId, int amount, decimal multiplier);
     }
 }

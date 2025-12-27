@@ -797,6 +797,91 @@ namespace NervboxDeamon.Services
             return (actualReward, user.Credits);
         }
 
+        public (int newBalance, string message) ProcessPlinko(int userId, int amount, decimal multiplier)
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+
+            var user = db.Users.Find(userId);
+            if (user == null)
+            {
+                _logger.LogWarning($"User {userId} not found for Plinko");
+                return (0, "Benutzer nicht gefunden");
+            }
+
+            if (user.Credits < amount)
+            {
+                return (user.Credits, "Nicht genug Shekel");
+            }
+
+            var winAmount = (int)(amount * multiplier);
+            var netChange = winAmount - amount;
+            var isWin = multiplier >= 1;
+
+            // Deduct bet
+            user.Credits -= amount;
+
+            var settings = GetSettings();
+
+            // Add winnings (respect max credits for non-admins)
+            if (winAmount > 0)
+            {
+                var potentialBalance = user.Credits + winAmount;
+                if (user.Role != "admin" && potentialBalance > settings.MaxCreditsUser)
+                {
+                    winAmount = settings.MaxCreditsUser - user.Credits;
+                    if (winAmount < 0) winAmount = 0;
+                }
+                user.Credits += winAmount;
+            }
+
+            // Transaction
+            var transactionType = isWin ? CreditTransactionType.GambleWin : CreditTransactionType.GambleLoss;
+            var transaction = new CreditTransaction
+            {
+                UserId = userId,
+                Amount = netChange,
+                TransactionType = transactionType,
+                Description = $"Plinko: {amount} N$ × {multiplier}x = {winAmount} N$",
+                BalanceAfter = user.Credits,
+                RelatedEntityId = $"plinko:{multiplier}"
+            };
+            db.CreditTransactions.Add(transaction);
+            db.SaveChanges();
+
+            BroadcastCreditUpdate(userId, user.Credits);
+
+            // Chat message for big wins (10x or higher)
+            if (multiplier >= 10)
+            {
+                BroadcastSystemChatMessage(
+                    $"🎰 {user.Username} hat bei Plinko {amount} N$ auf {multiplier}x gesetzt und {winAmount} N$ gewonnen! 🎉"
+                );
+            }
+
+            // Check gambling achievements
+            try
+            {
+                var achievementService = scope.ServiceProvider.GetService<IAchievementService>();
+                if (achievementService != null)
+                {
+                    achievementService.CheckGamblingAchievements(userId, isWin, winAmount);
+                    achievementService.CheckWealthAchievements(userId, user.Credits);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Failed to check Plinko achievements: {ex.Message}");
+            }
+
+            string message = isWin
+                ? $"Gewonnen! {multiplier}x = +{netChange} N$"
+                : $"Verloren! {multiplier}x = {netChange} N$";
+
+            _logger.LogInformation($"User {userId} played Plinko: {amount} N$ × {multiplier}x = {winAmount} N$");
+            return (user.Credits, message);
+        }
+
         public void Dispose()
         {
             if (_disposed)

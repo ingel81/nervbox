@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { ArkanoidGameComponent } from './games/arkanoid/arkanoid-game.component';
 import { HotdogGameComponent } from './games/hotdog-katapult/hotdog-game.component';
 import { TowerDefenseComponent } from './games/tower-defense/tower-defense.component';
+import { PlinkoGameComponent } from './games/plinko/plinko-game.component';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -50,6 +51,19 @@ import { AuthService } from '../../core/services/auth.service';
             <div class="game-reward">
               <img src="icons/nervbox-coin.svg" alt="" class="mini-coin">
               <span>1 N$/Treffer</span>
+            </div>
+          </button>
+
+          <!-- Plinko -->
+          <button class="game-card plinko" (click)="startPlinko()">
+            <div class="game-glow"></div>
+            <div class="game-badge casino">CASINO</div>
+            <mat-icon class="game-icon plinko-icon">casino</mat-icon>
+            <span class="game-name">PLINKO</span>
+            <span class="game-desc">Drop & Win!</span>
+            <div class="game-reward">
+              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin">
+              <span>0.2x - 50x</span>
             </div>
           </button>
 
@@ -249,6 +263,11 @@ import { AuthService } from '../../core/services/auth.service';
       border-color: rgba(34, 197, 94, 0.5);
     }
 
+    .game-card.plinko {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(251, 191, 36, 0.1) 100%);
+      border-color: rgba(239, 68, 68, 0.5);
+    }
+
     .game-card:hover {
       transform: translateY(-6px) scale(1.02);
     }
@@ -266,6 +285,11 @@ import { AuthService } from '../../core/services/auth.service';
     .game-card.tower-defense:hover {
       border-color: #22c55e;
       box-shadow: 0 15px 40px rgba(34, 197, 94, 0.4), 0 0 50px rgba(34, 197, 94, 0.2);
+    }
+
+    .game-card.plinko:hover {
+      border-color: #ef4444;
+      box-shadow: 0 15px 40px rgba(239, 68, 68, 0.4), 0 0 50px rgba(239, 68, 68, 0.2);
     }
 
     .game-glow {
@@ -301,6 +325,16 @@ import { AuthService } from '../../core/services/auth.service';
       animation: pulse-new 1.5s ease-in-out infinite;
     }
 
+    .game-badge.casino {
+      background: linear-gradient(135deg, #ef4444 0%, #fbbf24 100%);
+      animation: pulse-casino 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse-casino {
+      0%, 100% { box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4); }
+      50% { box-shadow: 0 2px 20px rgba(239, 68, 68, 0.8); }
+    }
+
     @keyframes pulse-new {
       0%, 100% { box-shadow: 0 2px 10px rgba(249, 115, 22, 0.4); }
       50% { box-shadow: 0 2px 20px rgba(249, 115, 22, 0.8); }
@@ -318,6 +352,11 @@ import { AuthService } from '../../core/services/auth.service';
     .game-icon.tower {
       color: #22c55e;
       filter: drop-shadow(0 0 15px rgba(34, 197, 94, 0.5));
+    }
+
+    .game-icon.plinko-icon {
+      color: #ef4444;
+      filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0.5));
     }
 
     .game-emoji {
@@ -526,6 +565,18 @@ export class GameSelectionDialogComponent {
     this.dialog.open(TowerDefenseComponent, {
       width: 'auto',
       maxWidth: '95vw',
+      height: 'auto',
+      maxHeight: '95vh',
+      panelClass: ['dark-dialog', 'game-dialog'],
+      disableClose: true,
+    });
+  }
+
+  startPlinko(): void {
+    this.dialogRef.close();
+    this.dialog.open(PlinkoGameComponent, {
+      width: '95vw',
+      maxWidth: '900px',
       height: 'auto',
       maxHeight: '95vh',
       panelClass: ['dark-dialog', 'game-dialog'],
