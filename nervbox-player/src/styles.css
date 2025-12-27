@@ -591,24 +591,37 @@ body.shepherd-menu-step-active .shekel-popover-backdrop {
 
 .dark-select-panel .mat-mdc-option {
   font-family: Inter, sans-serif !important;
-  font-size: 13px !important;
-  color: var(--text-secondary) !important;
-  min-height: 40px !important;
+  min-height: 36px !important;
+  padding: 4px 16px !important;
 }
 
 .dark-select-panel .mat-mdc-option:hover:not(.mdc-list-item--disabled) {
-  background: rgba(147, 51, 234, 0.15) !important;
+  background: rgba(147, 51, 234, 0.1) !important;
 }
 
 .dark-select-panel .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) {
-  background: rgba(147, 51, 234, 0.25) !important;
+  background: rgba(147, 51, 234, 0.15) !important;
 }
 
-.dark-select-panel .mat-mdc-option.mdc-list-item--selected .mdc-list-item__primary-text {
-  color: var(--color-pink) !important;
+.dark-select-panel .mat-pseudo-checkbox {
+  margin-right: 12px !important;
 }
 
 .dark-select-panel .mat-pseudo-checkbox-checked {
   background: var(--color-purple) !important;
   border-color: var(--color-purple) !important;
+}
+
+.dark-select-panel .option-tag {
+  display: inline-block;
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.dark-select-panel .option-tag .hash {
+  color: #9333ea;
+  font-weight: 600;
+  margin-right: 1px;
 }
