@@ -103,14 +103,22 @@ interface FileUploadItem {
                     panelClass="dark-select-panel"
                   >
                     @for (tag of availableTags(); track tag.name) {
-                      <mat-option [value]="tag.name">{{ tag.name }}</mat-option>
+                      <mat-option [value]="tag.name">
+                        <span class="option-tag" [style.background]="getTagBackground(tag.name)">
+                          <span class="hash">#</span>{{ tag.name }}
+                        </span>
+                      </mat-option>
                     }
                   </mat-select>
                 </mat-form-field>
                 @if (item.selectedTags.length > 0) {
                   <div class="selected-tags">
                     @for (tagName of item.selectedTags; track tagName) {
-                      <span class="tag-chip">{{ tagName }}</span>
+                      <span
+                        class="tag-chip"
+                        [style.background]="getTagBackground(tagName)"
+                        [style.border-color]="getTagBorderColor(tagName)"
+                      ><span class="hash">#</span>{{ tagName }}</span>
                     }
                   </div>
                 }
@@ -323,17 +331,39 @@ interface FileUploadItem {
     .selected-tags {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 5px;
       flex: 1;
+      align-items: center;
     }
 
     .tag-chip {
-      background: rgba(147, 51, 234, 0.2);
-      border: 1px solid rgba(147, 51, 234, 0.4);
-      color: #c4b5fd;
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid transparent;
+      border-radius: 5px;
+      padding: 3px 7px;
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.45);
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+    }
+
+    .tag-chip .hash {
+      color: #9333ea;
+      font-weight: 600;
+    }
+
+    .option-tag {
+      display: inline-block;
+      border-radius: 5px;
+      padding: 3px 8px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .option-tag .hash {
+      color: #9333ea;
+      font-weight: 600;
+      margin-right: 1px;
     }
 
     mat-progress-bar {
@@ -604,5 +634,22 @@ export class SoundUploadDialogComponent {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  getTagBackground(tag: string): string {
+    const color = this.soundService.tagColorMap()[tag] || '#9333ea';
+    return this.hexToRgba(color, 0.15);
+  }
+
+  getTagBorderColor(tag: string): string {
+    const color = this.soundService.tagColorMap()[tag] || '#9333ea';
+    return this.hexToRgba(color, 0.35);
+  }
+
+  private hexToRgba(hex: string, alpha: number): string {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 }
