@@ -351,9 +351,14 @@ namespace NervboxDeamon.Services
 
         User initiator = UserLookup[userId];
 
+        // Use full name if available, otherwise fall back to username
+        var displayName = !string.IsNullOrWhiteSpace($"{initiator.FirstName}{initiator.LastName}")
+          ? $"{initiator.FirstName} {initiator.LastName}".Trim()
+          : initiator.Username;
+
         this.SoundHub.Clients.All.SendAsync("soundPlayed", new
         {
-          Initiator = new { Name = initiator.FirstName + " " + initiator.LastName, Id = initiator.Id },
+          Initiator = new { Name = displayName, Id = initiator.Id },
           Time = DateTime.UtcNow,
           SoundHash = sound.Hash,
           FileName = sound.FileName
