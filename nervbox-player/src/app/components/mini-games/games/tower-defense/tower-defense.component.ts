@@ -17,14 +17,20 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { environment } from '../../../../../environments/environment';
 import { OsmStreetService, Street, StreetNetwork } from './services/osm-street.service';
-import { GameStateService } from './services/game-state.service';
 import { EntityPoolService } from './services/entity-pool.service';
-import { Tower } from './models/tower.model';
 import { GeoPosition } from './models/game.types';
 import { EnemyTypeId, getAllEnemyTypes } from './models/enemy-types';
 import { TowerRenderer } from './renderers/tower.renderer';
 import { ApiService } from '../../../../core/services/api.service';
 import { DebugPanelComponent } from './components/debug-panel.component';
+// New OO Game Engine imports
+import { GameStateManager } from './managers/game-state.manager';
+import { EnemyManager } from './managers/enemy.manager';
+import { TowerManager } from './managers/tower.manager';
+import { ProjectileManager } from './managers/projectile.manager';
+import { WaveManager, SpawnPoint as WaveSpawnPoint } from './managers/wave.manager';
+import { AudioManager } from './managers/audio.manager';
+import { RenderManager } from './managers/render.manager';
 
 import * as Cesium from 'cesium';
 
@@ -74,7 +80,16 @@ export interface SpawnPoint {
     MatTooltipModule,
     DebugPanelComponent,
   ],
-  providers: [GameStateService, EntityPoolService],
+  providers: [
+    GameStateManager,
+    EnemyManager,
+    TowerManager,
+    ProjectileManager,
+    WaveManager,
+    AudioManager,
+    RenderManager,
+    EntityPoolService,
+  ],
   template: `
     <div class="tower-defense-container" [class.fullscreen]="!isDialog">
       <div class="game-header">
@@ -711,7 +726,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly dialogRef = inject(MatDialogRef<TowerDefenseComponent>, { optional: true });
   private readonly osmService = inject(OsmStreetService);
   private readonly api = inject(ApiService);
-  readonly gameState = inject(GameStateService);
+  readonly gameState = inject(GameStateManager);
   private readonly entityPool = inject(EntityPoolService);
 
   // Sound
@@ -858,18 +873,8 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       // Set up sound URL
       this.projectileSoundUrl = this.api.getFullUrl(`/sound/${this.PROJECTILE_SOUND_HASH}/file`);
 
-      // Initialize services
+      // Initialize entity pool
       this.entityPool.initialize(this.viewer);
-      const base = this.baseCoords();
-      this.gameState.initialize(
-        this.viewer,
-        this.entityPool,
-        (p1, p2) => this.osmService.haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon),
-        () => this.playProjectileSound(),
-        (msg) => this.appendDebugLog(msg),
-        { lon: base.longitude, lat: base.latitude },
-        () => this.onGameOver()
-      );
 
       // Setup click handler and build preview
       this.setupClickHandler();
@@ -880,6 +885,26 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
       this.addBaseMarker();
       this.addPredefinedSpawns();
+
+      // Initialize game state AFTER streets and spawns are loaded
+      const base = this.baseCoords();
+      const waveSpawnPoints: WaveSpawnPoint[] = this.spawnPoints().map((sp) => ({
+        id: sp.id,
+        name: sp.name,
+        latitude: sp.latitude,
+        longitude: sp.longitude,
+      }));
+      this.gameState.initialize(
+        this.viewer,
+        this.streetNetwork!,
+        { lat: base.latitude, lon: base.longitude },
+        waveSpawnPoints,
+        this.cachedPaths,
+        () => this.playProjectileSound(),
+        (msg) => this.appendDebugLog(msg),
+        () => this.onGameOver()
+      );
+
       this.resetCamera();
 
       this.loading.set(false);
@@ -902,7 +927,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       const picked = this.viewer.scene.pick(event.position);
 
       if (Cesium.defined(picked) && picked.id) {
-        const tower = this.gameState.towers().find((t) => t.entity === picked.id);
+        const tower = this.gameState.towers().find((t) => t.render.entity === picked.id);
         if (tower) {
           if (this.gameState.selectedTowerId() === tower.id) {
             this.gameState.deselectAll();
@@ -1255,25 +1280,11 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const position: GeoPosition = { lat, lon };
 
-    // 3D Tower: glTF Modell
-    const entity = this.viewer.entities.add({
-      position: Cesium.Cartesian3.fromDegrees(lon, lat, 0),
-      model: {
-        uri: '/assets/models/tower_archer.glb',
-        scale: 1.8,
-        minimumPixelSize: 48,
-        maximumScale: 3.0,
-        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-      },
-    });
-
-    const rangeEntity = TowerRenderer.createRangeEntity(this.viewer, position, this.TOWER_RANGE, false);
-
-    const tower = new Tower(position, entity, { range: this.TOWER_RANGE });
-    tower.rangeEntity = rangeEntity;
-
-    this.gameState.addTower(tower);
-    this.viewer.scene.requestRender();
+    // Use the new manager API - it handles rendering automatically
+    const tower = this.gameState.placeTower(position, 'archer');
+    if (tower) {
+      this.viewer.scene.requestRender();
+    }
   }
 
   toggleBuildMode(): void {
@@ -1321,7 +1332,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     const mode = this.spawnMode();
     const speed = this.enemySpeed();
 
-    this.gameState.startWave();
+    this.gameState.beginWave();
     this.gatheringPhase.set(true);
 
     // === PHASE 1: SAMMELN ===
@@ -1470,7 +1481,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     this.enemySpeed.set(value);
     // Update all existing enemies live (m/s)
     for (const enemy of this.gameState.enemies()) {
-      enemy.speedMps = value;
+      enemy.movement.speedMps = value;
     }
   }
 

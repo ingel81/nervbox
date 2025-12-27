@@ -1,7 +1,67 @@
 import * as Cesium from 'cesium';
+import { Renderer, RenderResult, RenderConfig } from '../game-components/render.component';
 import { GeoPosition } from '../models/game.types';
+import { TowerTypeConfig } from '../configs/tower-types.config';
 
-export class TowerRenderer {
+export interface TowerRenderConfig extends RenderConfig {
+  position: GeoPosition;
+  typeConfig: TowerTypeConfig;
+}
+
+/**
+ * TowerRenderer - Implements Renderer interface for Tower entities
+ */
+export class TowerRenderer implements Renderer {
+  /**
+   * Create Cesium entities for a tower
+   */
+  create(viewer: Cesium.Viewer, config: TowerRenderConfig): RenderResult {
+    const { position, typeConfig } = config;
+
+    // Tower model entity
+    const entity = viewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(position.lon, position.lat, 0),
+      model: {
+        uri: typeConfig.modelUrl,
+        scale: typeConfig.scale,
+        minimumPixelSize: 0, // 0 = echte Größe, kein Pixel-Clamping beim Zoomen
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+      },
+    });
+
+    // Range indicator entity (hidden by default)
+    const rangeEntity = TowerRenderer.createRangeEntity(viewer, position, typeConfig.range, false);
+
+    return {
+      entity,
+      model: null,
+      additionalEntities: [rangeEntity],
+    };
+  }
+
+  /**
+   * Update tower visual representation
+   */
+  update(result: RenderResult, data: { selected: boolean }): void {
+    const rangeEntity = result.additionalEntities[0];
+    if (rangeEntity) {
+      rangeEntity.show = data.selected;
+    }
+  }
+
+  /**
+   * Destroy tower visual representation
+   */
+  destroy(viewer: Cesium.Viewer, result: RenderResult): void {
+    if (result.entity) {
+      viewer.entities.remove(result.entity);
+    }
+    for (const entity of result.additionalEntities) {
+      viewer.entities.remove(entity);
+    }
+  }
+
+  // Static utility methods (preserved for backwards compatibility)
   static createTowerCanvas(selected = false): HTMLCanvasElement {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d')!;

@@ -5,6 +5,7 @@ import { Projectile } from '../entities/projectile.entity';
 import { Tower } from '../entities/tower.entity';
 import { Enemy } from '../entities/enemy.entity';
 import { EntityPoolService } from '../services/entity-pool.service';
+import { ProjectileRenderer, ProjectileRenderConfig } from '../renderers/projectile.renderer';
 
 /**
  * Manages all projectile entities
@@ -12,6 +13,7 @@ import { EntityPoolService } from '../services/entity-pool.service';
 @Injectable()
 export class ProjectileManager extends EntityManager<Projectile> {
   private entityPool = inject(EntityPoolService);
+  private renderer = new ProjectileRenderer();
   private onProjectileHit?: (projectile: Projectile, enemy: Enemy) => void;
   private onProjectileFired?: () => void;
 
@@ -40,6 +42,13 @@ export class ProjectileManager extends EntityManager<Projectile> {
       tower.combat.damage
     );
 
+    // Initialize rendering
+    const renderConfig: ProjectileRenderConfig = {
+      position: tower.position,
+      typeConfig: projectile.typeConfig,
+    };
+    projectile.render.initialize(this.viewer, this.renderer, renderConfig);
+
     this.add(projectile);
 
     // Play projectile fire sound
@@ -64,9 +73,13 @@ export class ProjectileManager extends EntityManager<Projectile> {
       } else if (!projectile.targetEnemy.alive) {
         // Target died, remove projectile
         toRemove.push(projectile);
+      } else {
+        // Update visual position (use result reference)
+        const result = projectile.render.result;
+        if (result) {
+          this.renderer.update(result, { position: projectile.position });
+        }
       }
-
-      // Update visual position (renderer will handle this)
     }
 
     toRemove.forEach((p) => this.remove(p));

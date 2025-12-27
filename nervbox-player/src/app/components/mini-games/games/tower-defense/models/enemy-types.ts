@@ -39,7 +39,7 @@ export const ENEMY_TYPES: Record<string, EnemyTypeConfig> = {
     name: 'Zombie',
     modelUrl: '/assets/models/zombie_alternative.glb',
     scale: 2.0,
-    minimumPixelSize: 64,
+    minimumPixelSize: 0, // 0 = echte Größe, kein Pixel-Clamping beim Zoomen
     baseHp: 100,
     baseSpeed: 5,
     damage: 10,
@@ -51,7 +51,7 @@ export const ENEMY_TYPES: Record<string, EnemyTypeConfig> = {
     movingSound: '/assets/sounds/zombie-sound-2-357976.mp3',
     movingSoundVolume: 0.4,
     heightOffset: 0,
-    healthBarOffset: 5,
+    healthBarOffset: 8, // Höher über dem Kopf
   },
 
   tank: {
@@ -68,7 +68,7 @@ export const ENEMY_TYPES: Record<string, EnemyTypeConfig> = {
     movingSound: '/assets/sounds/tank-moving-143104.mp3',
     movingSoundVolume: 0.3,
     heightOffset: 0,
-    healthBarOffset: 6,
+    healthBarOffset: 10, // Höher über dem Panzer
   },
 };
 

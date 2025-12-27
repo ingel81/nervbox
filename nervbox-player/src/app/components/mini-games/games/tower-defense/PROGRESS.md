@@ -1,9 +1,9 @@
 # Tower Defense - OO Game Engine Migration Progress
 
-## Status: Phase 6 von 8 abgeschlossen
+## Status: ✅ MIGRATION ABGESCHLOSSEN + BUGFIXES (Phase 8/8)
 
 **Branch:** `claude/tower-defense-engine-architecture-5yGlJ`
-**Letzter Commit:** `551b935` - fix: Restore Google Fonts and Material Icons
+**Letzte Änderung:** 2024-12-28 - Bugfixes für async Model-Loading, Zoom-Skalierung und Health-Bars
 
 ---
 
@@ -50,19 +50,53 @@
 - Build erfolgreich (0 TypeScript-Fehler)
 - Fonts wiederhergestellt
 
----
+### Phase 7: Integration (IN PROGRESS) 🔄
 
-## Ausstehende Phasen
+#### ✅ Abgeschlossen: Renderer Integration
+Die Renderer implementieren jetzt das `Renderer` Interface aus `render.component.ts`:
 
-### Phase 7: Integration (TODO)
-Die `tower-defense.component.ts` muss auf die neuen Manager umgestellt werden:
+- `renderers/enemy.renderer.ts` ✅
+  - Implements `Renderer` interface
+  - `create()` - Erstellt Cesium Entity + Model
+  - `update()` - Aktualisiert Position, Heading, Health
+  - `destroy()` - Entfernt alle Cesium-Objekte
+  - `startWalkAnimation()` - Startet Walk-Animation
+  - `playDeathAnimation()` - Spielt Death-Animation
 
-1. **Provider ändern:**
+- `renderers/tower.renderer.ts` ✅
+  - Implements `Renderer` interface
+  - `create()` - Erstellt Tower Model + Range Entity
+  - `update()` - Aktualisiert Selection-State
+  - `destroy()` - Entfernt alle Cesium-Objekte
+
+- `renderers/projectile.renderer.ts` ✅
+  - Implements `Renderer` interface
+  - `create()` - Erstellt Billboard Entity
+  - `update()` - Aktualisiert Position
+  - `destroy()` - Entfernt Entity
+
+#### ✅ Abgeschlossen: Manager-Renderer Integration
+Die Manager nutzen jetzt die Renderer:
+
+- `managers/enemy.manager.ts` ✅
+  - Ruft `enemy.render.initialize(viewer, renderer, config)` auf
+  - Ruft `renderer.update()` in `update()` auf
+  - Ruft `renderer.playDeathAnimation()` in `kill()` auf
+  - Startet Walk-Animation bei Spawn
+
+- `managers/tower.manager.ts` ✅
+  - Ruft `tower.render.initialize()` in `placeTower()` auf
+  - Ruft `renderer.update()` bei Selection-Änderungen auf
+
+- `managers/projectile.manager.ts` ✅
+  - Ruft `projectile.render.initialize()` in `spawn()` auf
+  - Ruft `renderer.update()` in `update()` auf
+
+#### ✅ Abgeschlossen: Component-Umstellung
+Die `tower-defense.component.ts` wurde erfolgreich auf die neuen Manager umgestellt:
+
+1. **Provider geändert:** ✅
    ```typescript
-   // ALT:
-   providers: [GameStateService, EntityPoolService]
-
-   // NEU:
    providers: [
      GameStateManager,
      EnemyManager,
@@ -71,86 +105,69 @@ Die `tower-defense.component.ts` muss auf die neuen Manager umgestellt werden:
      WaveManager,
      AudioManager,
      RenderManager,
-     EntityPoolService
+     EntityPoolService,
    ]
    ```
 
-2. **Inject ändern:**
+2. **Inject geändert:** ✅
    ```typescript
-   // ALT:
-   readonly gameState = inject(GameStateService);
-
-   // NEU:
    readonly gameState = inject(GameStateManager);
    ```
 
-3. **Initialize anpassen:**
-   ```typescript
-   // ALT:
-   this.gameState.initialize(viewer, entityPool, distanceCalculator, ...);
+3. **Initialize angepasst:** ✅
+   - Aufruf nach `loadStreets()` und `addPredefinedSpawns()` verschoben
+   - Neue Signatur mit streetNetwork, spawnPoints, cachedPaths
 
-   // NEU:
-   this.gameState.initialize(viewer, streetNetwork, basePosition, spawnPoints, cachedPaths, onGameOver);
-   ```
+4. **Methoden-Aufrufe aktualisiert:** ✅
+   - `placeTower()` nutzt jetzt `gameState.placeTower(position, 'archer')`
+   - `tower.entity` → `tower.render.entity`
+   - `enemy.speedMps` → `enemy.movement.speedMps`
+   - `gameState.startWave()` → `gameState.beginWave()` (für manuelle Spawn-Kontrolle)
+   - GameStateManager hat Convenience-Methoden: `towers()`, `enemies()`, `spawnEnemy()`, etc.
 
-4. **Methoden-Aufrufe aktualisieren:**
-   - `spawnEnemy()` → `enemyManager.spawn()`
-   - `placeTower()` → `towerManager.placeTower()`
-   - `startWave()` → `gameState.startWave(config)`
-   - etc.
+### Phase 8: Cleanup ✅
 
-5. **Renderer Integration:**
-   - EnemyRenderer an neues RenderComponent Interface anpassen
-   - TowerRenderer an neues RenderComponent Interface anpassen
-   - ProjectileRenderer an neues RenderComponent Interface anpassen
+1. **Alte Models gelöscht:** ✅
+   - `models/enemy.model.ts` - GELÖSCHT
+   - `models/tower.model.ts` - GELÖSCHT
+   - `models/projectile.model.ts` - GELÖSCHT
 
-### Phase 8: Cleanup (TODO)
-Nach erfolgreicher Integration:
+2. **Alten Service gelöscht:** ✅
+   - `services/game-state.service.ts` - GELÖSCHT
 
-1. **Alte Models löschen:**
-   - `models/enemy.model.ts`
-   - `models/tower.model.ts`
-   - `models/projectile.model.ts`
-
-2. **Alten Service löschen:**
-   - `services/game-state.service.ts`
-
-3. **Imports aktualisieren:**
-   - Alle Imports auf neue Pfade umstellen
+3. **Build erfolgreich:** ✅
+   - Keine TypeScript-Fehler
+   - Keine fehlenden Imports
 
 ---
 
-## Aktuelle Architektur (Parallel)
+## Aktuelle Architektur (FINAL)
 
 ```
 tower-defense/
-├── core/                    ✅ NEU - GameObject, Component
-├── game-components/         ✅ NEU - 6 Components
-├── entities/                ✅ NEU - Enemy, Tower, Projectile Entities
-├── managers/                ✅ NEU - 8 Manager Classes
-├── configs/                 ✅ NEU - Tower/Projectile Type Registries
-├── docs/                    ✅ NEU - ARCHITECTURE.md
+├── core/                    ✅ GameObject, Component
+├── game-components/         ✅ 6 Components (Transform, Health, Render, Audio, Movement, Combat)
+├── entities/                ✅ Enemy, Tower, Projectile Entities
+├── managers/                ✅ 8 Manager Classes (mit Renderer Integration)
+├── configs/                 ✅ Tower/Projectile Type Registries
+├── docs/                    ✅ ARCHITECTURE.md
 │
-├── models/                  ⚠️  ALT - Noch aktiv!
-│   ├── enemy.model.ts       ⚠️  Wird noch von Component verwendet
-│   ├── tower.model.ts       ⚠️  Wird noch von Component verwendet
-│   ├── projectile.model.ts  ⚠️  Wird noch von Component verwendet
-│   ├── enemy-types.ts       ✅ Bleibt (wird von beiden genutzt)
-│   └── game.types.ts        ✅ Bleibt (gemeinsame Types)
+├── models/
+│   ├── enemy-types.ts       ✅ Enemy Type Definitions
+│   └── game.types.ts        ✅ Gemeinsame Types (GeoPosition, etc.)
 │
 ├── services/
-│   ├── game-state.service.ts    ⚠️  ALT - Noch aktiv!
-│   ├── entity-pool.service.ts   ✅ Bleibt
-│   └── osm-street.service.ts    ✅ Bleibt
+│   ├── entity-pool.service.ts   ✅ Entity Pooling
+│   └── osm-street.service.ts    ✅ OSM/Pathfinding
 │
-├── renderers/               ✅ Bestehend - Muss angepasst werden
-│   ├── enemy.renderer.ts
-│   ├── tower.renderer.ts
-│   ├── projectile.renderer.ts
-│   ├── blood.renderer.ts    ✅ Static Utility - bleibt
-│   └── fire.renderer.ts     ✅ Static Utility - bleibt
+├── renderers/               ✅ Implementieren Renderer Interface
+│   ├── enemy.renderer.ts    ✅ Implements Renderer
+│   ├── tower.renderer.ts    ✅ Implements Renderer
+│   ├── projectile.renderer.ts ✅ Implements Renderer
+│   ├── blood.renderer.ts    ✅ Static Utility
+│   └── fire.renderer.ts     ✅ Static Utility
 │
-└── tower-defense.component.ts   ⚠️  Nutzt noch ALTEN Code!
+└── tower-defense.component.ts   ✅ Nutzt GameStateManager + neue Architektur
 ```
 
 ---
@@ -160,47 +177,62 @@ tower-defense/
 ```
 tower-defense.component.ts
     │
-    ├─► GameStateService (ALT)
-    │       ├─► Enemy (models/enemy.model.ts)
-    │       ├─► Tower (models/tower.model.ts)
-    │       └─► Projectile (models/projectile.model.ts)
-    │
-    └─► Renderer (bestehend)
-            ├─► EnemyRenderer
-            ├─► TowerRenderer
-            └─► ProjectileRenderer
+    └─► GameStateManager (NEU)
+            ├─► EnemyManager ─► Enemy Entity ─► EnemyRenderer
+            ├─► TowerManager ─► Tower Entity ─► TowerRenderer
+            ├─► ProjectileManager ─► Projectile Entity ─► ProjectileRenderer
+            ├─► WaveManager ─► Phase Management
+            ├─► AudioManager ─► Spatial Audio
+            └─► RenderManager ─► Renderer Registry
 ```
 
-Die neuen Dateien (entities/, managers/, game-components/) werden **NICHT** verwendet!
+**Das Spiel nutzt jetzt die vollständige OO Game Engine!**
 
 ---
 
-## Geschätzte Aufwand für Phase 7 & 8
+## Zusammenfassung der Migration
 
-- **Phase 7 (Integration):** ~2-3 Stunden
-  - tower-defense.component.ts umstellen
-  - Renderer an neues Interface anpassen
-  - Testen
+### Was wurde geändert:
 
-- **Phase 8 (Cleanup):** ~30 Minuten
-  - Alte Dateien löschen
-  - Imports aufräumen
-  - Finaler Test
+1. **Neue OO Game Engine** mit GameObject/Component-Pattern
+2. **8 Manager-Klassen** für Entity-Lifecycle-Management
+3. **Renderer implementieren Interface** für einheitliches Rendering
+4. **GameStateManager** als zentraler Orchestrator mit Convenience-Methoden
+5. **Alte monolithische Models entfernt** (enemy.model, tower.model, projectile.model)
+6. **Alter GameStateService entfernt**
+
+### Architektur-Vorteile:
+
+- **Separation of Concerns**: Entities, Components, Renderer, Manager getrennt
+- **Testbarkeit**: Jede Komponente isoliert testbar
+- **Erweiterbarkeit**: Neue Entity-Typen/Components einfach hinzufügbar
+- **Wartbarkeit**: Klare Verantwortlichkeiten
 
 ---
 
-## Wichtige Dateien für nächste Session
+## Bugfixes (2024-12-28)
 
-1. **Hauptdatei zum Umstellen:**
-   - `tower-defense.component.ts` (1733 Zeilen)
+### 1. Async Model-Loading Fix ✅
+**Problem:** Models blieben auf der Spawnposition stehen, keine Bewegung/Animation
+**Ursache:** `RenderComponent` kopierte `result.model` (null) statt Referenz zu behalten
+**Lösung:**
+- `RenderComponent` speichert jetzt das gesamte `result` Objekt als Referenz
+- Getter für `entity`, `model`, `additionalEntities` greifen auf `_result` zu
+- Async geladene Models werden automatisch reflektiert
 
-2. **Neue Manager (bereits fertig):**
-   - `managers/game-state.manager.ts`
-   - `managers/enemy.manager.ts`
-   - `managers/tower.manager.ts`
+### 2. Zoom-Skalierung Fix ✅
+**Problem:** Models änderten Größe beim Zoomen
+**Ursache:** `minimumPixelSize: 64` hielt Models auf mindestens 64 Pixel
+**Lösung:**
+- `minimumPixelSize: 0` in `enemy-types.ts` (zombie)
+- `minimumPixelSize: 0` in `tower.renderer.ts`
 
-3. **Architektur-Dokumentation:**
-   - `docs/ARCHITECTURE.md`
+### 3. Health-Bar Sichtbarkeit Fix ✅
+**Problem:** Health-Bars nur teilweise sichtbar
+**Lösung:**
+- Canvas-Größe erhöht (40x8 → 60x12 Pixel)
+- Mehr Kontrast (opacity 0.9, border 0.8)
+- `healthBarOffset` wird jetzt korrekt im Update verwendet
 
 ---
 
@@ -209,5 +241,9 @@ Die neuen Dateien (entities/, managers/, game-components/) werden **NICHT** verw
 - Build funktioniert ✅
 - Keine TypeScript-Fehler ✅
 - Fonts/Icons funktionieren ✅
-- Alte und neue Architektur existieren parallel
-- Spiel läuft aktuell mit ALTER Architektur
+- Renderer implementieren Renderer Interface ✅
+- Manager haben Renderer-Integration ✅
+- Component nutzt NEUE Architektur ✅
+- GameStateManager mit Convenience-Methoden ✅
+- **MIGRATION KOMPLETT ABGESCHLOSSEN** ✅
+- **BUGFIXES KOMPLETT** ✅

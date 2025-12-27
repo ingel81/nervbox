@@ -23,17 +23,38 @@ export interface RenderConfig {
 
 /**
  * RenderComponent manages visual representation of a GameObject
+ *
+ * IMPORTANT: We store a reference to the result object, not copies of its properties.
+ * This allows async model loading to work correctly - when the renderer loads a model
+ * asynchronously and updates result.model, it will be reflected here.
  */
 export class RenderComponent extends Component {
-  entity: Cesium.Entity | null = null;
-  model: Cesium.Model | null = null;
-  additionalEntities: Cesium.Entity[] = []; // Health bars, range indicators, etc.
-
+  private _result: RenderResult | null = null;
   private renderer: Renderer | null = null;
   private viewer: Cesium.Viewer | null = null;
 
   constructor(gameObject: GameObject) {
     super(gameObject);
+  }
+
+  // Getters that delegate to the result object (handles async model loading)
+  get entity(): Cesium.Entity | null {
+    return this._result?.entity ?? null;
+  }
+
+  get model(): Cesium.Model | null {
+    return this._result?.model ?? null;
+  }
+
+  get additionalEntities(): Cesium.Entity[] {
+    return this._result?.additionalEntities ?? [];
+  }
+
+  /**
+   * Get the raw render result (for passing to renderer.update)
+   */
+  get result(): RenderResult | null {
+    return this._result;
   }
 
   /**
@@ -43,10 +64,9 @@ export class RenderComponent extends Component {
     this.viewer = viewer;
     this.renderer = renderer;
 
-    const result = renderer.create(viewer, config);
-    this.entity = result.entity;
-    this.model = result.model;
-    this.additionalEntities = result.additionalEntities;
+    // Store reference to result object (not copies of its properties!)
+    // This allows async model loading to work correctly
+    this._result = renderer.create(viewer, config);
   }
 
   /**
@@ -69,15 +89,9 @@ export class RenderComponent extends Component {
    * Update visual representation
    */
   updateVisual(data: any): void {
-    if (this.renderer?.update) {
-      this.renderer.update(
-        {
-          entity: this.entity,
-          model: this.model,
-          additionalEntities: this.additionalEntities,
-        },
-        data
-      );
+    if (this.renderer?.update && this._result) {
+      // Pass the actual result object reference so async-loaded model is included
+      this.renderer.update(this._result, data);
     }
   }
 
@@ -86,12 +100,9 @@ export class RenderComponent extends Component {
   }
 
   override onDestroy(): void {
-    if (this.viewer && this.renderer) {
-      this.renderer.destroy(this.viewer, {
-        entity: this.entity,
-        model: this.model,
-        additionalEntities: this.additionalEntities,
-      });
+    if (this.viewer && this.renderer && this._result) {
+      // Pass the actual result object so async-loaded model is properly cleaned up
+      this.renderer.destroy(this.viewer, this._result);
     }
   }
 }
