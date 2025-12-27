@@ -5,6 +5,7 @@ import { Tower } from '../entities/tower.entity';
 import { TowerTypeId } from '../configs/tower-types.config';
 import { GeoPosition } from '../models/game.types';
 import { OsmStreetService, StreetNetwork } from '../services/osm-street.service';
+import { TowerRenderer, TowerRenderConfig } from '../renderers/tower.renderer';
 
 /**
  * Manages all tower entities
@@ -12,6 +13,7 @@ import { OsmStreetService, StreetNetwork } from '../services/osm-street.service'
 @Injectable()
 export class TowerManager extends EntityManager<Tower> {
   private osmService = inject(OsmStreetService);
+  private renderer = new TowerRenderer();
 
   private selectedTowerId: string | null = null;
   private streetNetwork: StreetNetwork | null = null;
@@ -55,6 +57,14 @@ export class TowerManager extends EntityManager<Tower> {
     }
 
     const tower = new Tower(position, typeId);
+
+    // Initialize rendering
+    const renderConfig: TowerRenderConfig = {
+      position,
+      typeConfig: tower.typeConfig,
+    };
+    tower.render.initialize(this.viewer, this.renderer, renderConfig);
+
     this.add(tower);
     return tower;
   }
@@ -120,7 +130,11 @@ export class TowerManager extends EntityManager<Tower> {
       const prev = this.getById(this.selectedTowerId);
       if (prev) {
         prev.deselect();
-        // Update visual selection (renderer will handle this)
+        // Update visual selection (use result reference)
+        const result = prev.render.result;
+        if (result) {
+          this.renderer.update(result, { selected: false });
+        }
       }
     }
 
@@ -130,7 +144,11 @@ export class TowerManager extends EntityManager<Tower> {
       const tower = this.getById(id);
       if (tower) {
         tower.select();
-        // Update visual selection (renderer will handle this)
+        // Update visual selection (use result reference)
+        const result = tower.render.result;
+        if (result) {
+          this.renderer.update(result, { selected: true });
+        }
       }
     }
   }
@@ -140,6 +158,13 @@ export class TowerManager extends EntityManager<Tower> {
    */
   getSelected(): Tower | null {
     return this.selectedTowerId ? this.getById(this.selectedTowerId) : null;
+  }
+
+  /**
+   * Get ID of currently selected tower
+   */
+  getSelectedId(): string | null {
+    return this.selectedTowerId;
   }
 
   /**

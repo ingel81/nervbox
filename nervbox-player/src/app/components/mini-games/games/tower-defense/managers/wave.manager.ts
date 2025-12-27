@@ -39,7 +39,15 @@ export class WaveManager {
   }
 
   /**
-   * Start a new wave
+   * Begin wave phase (for manual enemy spawning)
+   */
+  beginWave(): void {
+    this.waveNumber.update((n) => n + 1);
+    this.phase.set('wave');
+  }
+
+  /**
+   * Start a new wave with auto-spawning
    */
   startWave(config: WaveConfig): void {
     this.waveNumber.update((n) => n + 1);
