@@ -52,6 +52,14 @@ export interface GambleResponse {
   betAmount: number;
 }
 
+export interface PlinkoResponse {
+  multiplier: number;
+  betAmount: number;
+  winAmount: number;
+  newBalance: number;
+  message: string;
+}
+
 export interface TransferResponse {
   success: boolean;
   message: string;
@@ -170,6 +178,15 @@ export class CreditService {
   // Gambling
   gamble(amount: number): Observable<GambleResponse> {
     return this.api.post<GambleResponse>('/credit/gamble', { amount }).pipe(
+      tap(response => {
+        this.credits.set(response.newBalance);
+      })
+    );
+  }
+
+  // Plinko
+  playPlinko(amount: number, multiplier: number): Observable<PlinkoResponse> {
+    return this.api.post<PlinkoResponse>('/credit/plinko', { amount, multiplier }).pipe(
       tap(response => {
         this.credits.set(response.newBalance);
       })
