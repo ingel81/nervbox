@@ -163,15 +163,11 @@ interface FileUploadItem {
           (click)="uploadAll()"
         >
           @if (isUploading()) {
-            <ng-container>
-              <mat-icon class="spinning">sync</mat-icon>
-              Hochladen...
-            </ng-container>
+            <mat-icon class="spinning">sync</mat-icon>
+            <span>Hochladen...</span>
           } @else {
-            <ng-container>
-              <mat-icon>cloud_upload</mat-icon>
-              Alle hochladen ({{ pendingCount() }})
-            </ng-container>
+            <mat-icon>cloud_upload</mat-icon>
+            <span>Alle hochladen ({{ pendingCount() }})</span>
           }
         </button>
       }
