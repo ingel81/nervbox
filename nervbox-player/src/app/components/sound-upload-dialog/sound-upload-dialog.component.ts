@@ -577,7 +577,7 @@ export class SoundUploadDialogComponent {
       );
 
       // Reload sounds in the main app
-      this.soundService.loadSounds();
+      this.soundService.loadSounds().subscribe();
     }
 
     if (errorCount > 0 && successCount === 0) {
