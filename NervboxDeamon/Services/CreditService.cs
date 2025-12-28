@@ -939,17 +939,13 @@ namespace NervboxDeamon.Services
 
             // Determine win message
             string winMessage;
-            if (multiplier == 100)
+            if (multiplier == 50)
             {
-                winMessage = "🏆 JACKPOT! 👑👑👑";
-            }
-            else if (multiplier >= 50)
-            {
-                winMessage = "🎰 MEGA WIN! 💰";
+                winMessage = "🌭 HOTDOG JACKPOT! 🌭🌭🌭";
             }
             else if (multiplier >= 25)
             {
-                winMessage = "💎 BIG WIN! ✨";
+                winMessage = "🏆 BIG WIN! 💰";
             }
             else if (multiplier >= 10)
             {
@@ -970,7 +966,7 @@ namespace NervboxDeamon.Services
 
             // Transaction
             var transactionType = isWin ? CreditTransactionType.GambleWin : CreditTransactionType.GambleLoss;
-            var symbolNames = new[] { "🍒", "🍋", "🍊", "💎", "7️⃣", "🎰", "👑" };
+            var symbolNames = new[] { "🍒", "🍋", "🍊", "💎", "7️⃣", "🎰", "👑", "🌭" };
             var symbolDisplay = $"{symbolNames[symbols[0]]} {symbolNames[symbols[1]]} {symbolNames[symbols[2]]}";
 
             var transaction = new CreditTransaction
@@ -1017,22 +1013,23 @@ namespace NervboxDeamon.Services
         private int GetWeightedSymbol()
         {
             // Weighted probabilities (total = 100):
-            // Cherry (0): 26%, Lemon (1): 26%, Orange (2): 26% = 78% fruits
-            // Diamond (3): 10%, Bar (5): 7%, Seven (4): 3%, Crown (6): 2%
+            // Cherry (0): 25%, Lemon (1): 25%, Orange (2): 25% = 75% fruits
+            // Diamond (3): 10%, Bar (5): 7%, Seven (4): 3%, Crown (6): 3%, Hotdog (7): 1%
             var roll = _random.Next(100);
 
-            if (roll < 26) return 0;      // Cherry
-            if (roll < 52) return 1;      // Lemon
-            if (roll < 78) return 2;      // Orange
-            if (roll < 88) return 3;      // Diamond
-            if (roll < 95) return 5;      // Bar
-            if (roll < 98) return 4;      // Seven
-            return 6;                      // Crown (2% chance)
+            if (roll < 25) return 0;      // Cherry
+            if (roll < 50) return 1;      // Lemon
+            if (roll < 75) return 2;      // Orange
+            if (roll < 85) return 3;      // Diamond
+            if (roll < 92) return 5;      // Bar
+            if (roll < 96) return 4;      // Seven
+            if (roll < 99) return 6;      // Crown (3% chance)
+            return 7;                      // Hotdog (1% chance - JACKPOT!)
         }
 
         private int CalculateSlotMultiplier(int[] symbols)
         {
-            // Symbol indices: 0=cherry, 1=lemon, 2=orange, 3=diamond, 4=seven, 5=bar, 6=crown
+            // Symbol indices: 0=cherry, 1=lemon, 2=orange, 3=diamond, 4=seven, 5=bar, 6=crown, 7=hotdog
             var s0 = symbols[0];
             var s1 = symbols[1];
             var s2 = symbols[2];
@@ -1042,7 +1039,8 @@ namespace NervboxDeamon.Services
             {
                 switch (s0)
                 {
-                    case 6: return 25;  // 3x Crown: JACKPOT!
+                    case 7: return 50;  // 3x Hotdog: MEGA JACKPOT! 🌭🌭🌭
+                    case 6: return 25;  // 3x Crown
                     case 4: return 15;  // 3x Seven
                     case 3: return 8;   // 3x Diamond
                     case 5: return 5;   // 3x BAR

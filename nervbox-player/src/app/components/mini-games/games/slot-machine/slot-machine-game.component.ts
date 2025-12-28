@@ -56,7 +56,7 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
   private ctx!: CanvasRenderingContext2D;
   private animationFrame: number = 0;
 
-  // Symbols
+  // Symbols (indices must match backend: 0-6 original + 7=hotdog)
   readonly symbols: SlotSymbol[] = [
     { name: 'cherry', emoji: '🍒', color: '#ff0066', glow: '#ff0066', value: 1 },
     { name: 'lemon', emoji: '🍋', color: '#ffff00', glow: '#ffff00', value: 1 },
@@ -65,13 +65,14 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
     { name: 'seven', emoji: '7️⃣', color: '#ff0000', glow: '#ff00ff', value: 4 },
     { name: 'bar', emoji: '🎰', color: '#ffaa00', glow: '#ffaa00', value: 2 },
     { name: 'crown', emoji: '👑', color: '#ffd700', glow: '#ffff00', value: 5 },
+    { name: 'hotdog', emoji: '🌭', color: '#ff6600', glow: '#ff9900', value: 6 },
   ];
 
   // Game state
   readonly isSpinning = signal(false);
   readonly betAmount = signal(10);
   readonly minBet = 5;
-  readonly maxBet = 100;
+  readonly maxBet = 1000;
   readonly betStep = 5;
 
   readonly reels = signal<number[]>([0, 0, 0]); // Indices of symbols
