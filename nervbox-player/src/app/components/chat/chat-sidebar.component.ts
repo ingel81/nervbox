@@ -624,7 +624,8 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
   readonly loadingOlder = signal(false);
   readonly sending = signal(false);
   readonly showGifPicker = signal(false);
-  readonly hasMoreMessages = signal(false);
+  readonly hasMoreChat = signal(false);
+  readonly hasMoreActivity = signal(false);
   readonly activeTab = signal<ChatTab>('chat');
   newMessage = '';
 
@@ -639,14 +640,10 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
   });
 
   // Check if there are more chat messages to load
-  readonly hasMoreChatMessages = computed(() => {
-    return this.hasMoreMessages() && this.activeTab() === 'chat';
-  });
+  readonly hasMoreChatMessages = computed(() => this.hasMoreChat());
 
   // Check if there are more activity messages to load
-  readonly hasMoreActivityMessages = computed(() => {
-    return this.hasMoreMessages() && this.activeTab() === 'activity';
-  });
+  readonly hasMoreActivityMessages = computed(() => this.hasMoreActivity());
 
   // Unread counts for badges
   readonly unreadChatCount = signal(0);
@@ -712,34 +709,52 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
   }
 
   private loadMessages(): void {
-    this.api.get<{ messages: ChatMessage[]; hasMore: boolean }>('/chat?limit=50').subscribe({
-      next: response => {
-        this.signalR.setInitialMessages(response.messages);
-        this.hasMoreMessages.set(response.hasMore);
-        this.loading.set(false);
-        this.shouldScrollToBottom = true;
-      },
-      error: () => {
-        this.loading.set(false);
-      },
-    });
+    this.api
+      .get<{
+        messages: ChatMessage[];
+        hasMoreChat: boolean;
+        hasMoreActivity: boolean;
+      }>('/chat?limit=25')
+      .subscribe({
+        next: response => {
+          this.signalR.setInitialMessages(response.messages);
+          this.hasMoreChat.set(response.hasMoreChat);
+          this.hasMoreActivity.set(response.hasMoreActivity);
+          this.loading.set(false);
+          this.shouldScrollToBottom = true;
+        },
+        error: () => {
+          this.loading.set(false);
+        },
+      });
   }
 
   loadOlderMessages(): void {
-    const messages = this.signalR.chatMessages();
-    if (!messages?.length || this.loadingOlder()) return;
+    if (this.loadingOlder()) return;
+
+    const tab = this.activeTab();
+    const messages = tab === 'chat' ? this.chatMessages() : this.activityMessages();
+    if (!messages?.length) return;
 
     const oldestId = messages[0]?.id;
     if (!oldestId) return;
+
     this.loadingOlder.set(true);
+    const type = tab === 'chat' ? 'chat' : 'activity';
 
     this.api
-      .get<{ messages: ChatMessage[]; hasMore: boolean }>(`/chat?limit=25&beforeId=${oldestId}`)
+      .get<{ messages: ChatMessage[]; hasMore: boolean }>(
+        `/chat?limit=25&beforeId=${oldestId}&type=${type}`
+      )
       .subscribe({
         next: response => {
           this.skipNextScroll = true;
           this.signalR.prependMessages(response.messages);
-          this.hasMoreMessages.set(response.hasMore);
+          if (tab === 'chat') {
+            this.hasMoreChat.set(response.hasMore);
+          } else {
+            this.hasMoreActivity.set(response.hasMore);
+          }
           this.loadingOlder.set(false);
         },
         error: () => {
