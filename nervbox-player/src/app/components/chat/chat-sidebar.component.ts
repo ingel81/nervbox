@@ -628,18 +628,14 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
   readonly activeTab = signal<ChatTab>('chat');
   newMessage = '';
 
-  // Filtered messages - chat only (text + gif)
+  // Filtered messages - chat only (text + gif, not system notifications)
   readonly chatMessages = computed(() => {
-    return this.signalR.chatMessages().filter(
-      msg => msg.messageType !== 'shekel-transaction'
-    );
+    return this.signalR.chatMessages().filter(msg => msg.messageType !== 'shekel-transaction');
   });
 
-  // Filtered messages - activity only (shekel-transaction)
+  // Filtered messages - activity only (shekel-transaction from NERVBOX)
   readonly activityMessages = computed(() => {
-    return this.signalR.chatMessages().filter(
-      msg => msg.messageType === 'shekel-transaction'
-    );
+    return this.signalR.chatMessages().filter(msg => msg.messageType === 'shekel-transaction');
   });
 
   // Check if there are more chat messages to load

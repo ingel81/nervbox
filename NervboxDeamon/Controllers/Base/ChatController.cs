@@ -31,7 +31,9 @@ namespace NervboxDeamon.Controllers.Base
           m.UserId,
           Username = m.User != null ? m.User.Username : "Unknown",
           m.Message,
-          MessageType = m.MessageType == ChatMessageType.Gif ? "gif" : "text",
+          MessageType = m.MessageType == ChatMessageType.Gif ? "gif"
+                      : m.MessageType == ChatMessageType.ShekelTransaction ? "shekel-transaction"
+                      : "text",
           m.GifUrl,
           m.CreatedAt
         })
