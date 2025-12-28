@@ -79,6 +79,7 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
   readonly lastWinAmount = signal(0);
   readonly lastWinMessage = signal('');
   readonly showWinAnimation = signal(false);
+  readonly showLoseAnimation = signal(false);
 
   // Displayed balance (delayed update during spin)
   readonly displayedBalance = signal(0);
@@ -149,6 +150,7 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
 
     this.isSpinning.set(true);
     this.showWinAnimation.set(false);
+    this.showLoseAnimation.set(false);
     this.lastWinMessage.set('');
 
     // Reset phases and start spinning
@@ -244,6 +246,14 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
       setTimeout(() => {
         this.showWinAnimation.set(false);
       }, 3000);
+    } else {
+      // Show lose animation
+      this.showLoseAnimation.set(true);
+
+      // Hide lose animation after 2 seconds
+      setTimeout(() => {
+        this.showLoseAnimation.set(false);
+      }, 2000);
     }
   }
 

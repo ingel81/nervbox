@@ -110,6 +110,35 @@ canvas {
   text-shadow: 0 0 15px #ffd700;
 }
 
+.lose-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.lose-message {
+  text-align: center;
+}
+
+.lose-title {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #ff3333;
+  text-shadow: 0 0 15px #ff0000;
+  margin-bottom: 8px;
+}
+
+.lose-amount {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #ff6666;
+  text-shadow: 0 0 10px #ff0000;
+}
+
 .spinning-indicator {
   position: absolute;
   top: 50%;
