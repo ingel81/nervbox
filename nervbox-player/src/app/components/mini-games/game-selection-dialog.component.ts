@@ -7,6 +7,7 @@ import { ArkanoidGameComponent } from './games/arkanoid/arkanoid-game.component'
 import { HotdogGameComponent } from './games/hotdog-katapult/hotdog-game.component';
 import { TowerDefenseComponent } from './games/tower-defense/tower-defense.component';
 import { PlinkoGameComponent } from './games/plinko/plinko-game.component';
+import { SlotMachineGameComponent } from './games/slot-machine/slot-machine-game.component';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -64,6 +65,19 @@ import { AuthService } from '../../core/services/auth.service';
             <div class="game-reward">
               <img src="icons/nervbox-coin.svg" alt="" class="mini-coin">
               <span>0.2x - 50x</span>
+            </div>
+          </button>
+
+          <!-- Slot Machine -->
+          <button class="game-card slot-machine" (click)="startSlotMachine()">
+            <div class="game-glow"></div>
+            <div class="game-badge casino">CASINO</div>
+            <mat-icon class="game-icon slot-icon">casino</mat-icon>
+            <span class="game-name">SLOT MACHINE</span>
+            <span class="game-desc">Pull the lever!</span>
+            <div class="game-reward">
+              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin">
+              <span>1x - 100x</span>
             </div>
           </button>
 
@@ -268,6 +282,11 @@ import { AuthService } from '../../core/services/auth.service';
       border-color: rgba(239, 68, 68, 0.5);
     }
 
+    .game-card.slot-machine {
+      background: linear-gradient(135deg, rgba(255, 0, 255, 0.15) 0%, rgba(0, 255, 255, 0.1) 100%);
+      border-color: rgba(255, 0, 255, 0.5);
+    }
+
     .game-card:hover {
       transform: translateY(-6px) scale(1.02);
     }
@@ -290,6 +309,11 @@ import { AuthService } from '../../core/services/auth.service';
     .game-card.plinko:hover {
       border-color: #ef4444;
       box-shadow: 0 15px 40px rgba(239, 68, 68, 0.4), 0 0 50px rgba(239, 68, 68, 0.2);
+    }
+
+    .game-card.slot-machine:hover {
+      border-color: #ff00ff;
+      box-shadow: 0 15px 40px rgba(255, 0, 255, 0.4), 0 0 50px rgba(255, 0, 255, 0.2);
     }
 
     .game-glow {
@@ -357,6 +381,17 @@ import { AuthService } from '../../core/services/auth.service';
     .game-icon.plinko-icon {
       color: #ef4444;
       filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0.5));
+    }
+
+    .game-icon.slot-icon {
+      color: #ff00ff;
+      filter: drop-shadow(0 0 15px rgba(255, 0, 255, 0.5));
+      animation: icon-float 3s ease-in-out infinite, icon-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes icon-pulse {
+      0%, 100% { filter: drop-shadow(0 0 15px rgba(255, 0, 255, 0.5)); }
+      50% { filter: drop-shadow(0 0 25px rgba(255, 0, 255, 0.8)); }
     }
 
     .game-emoji {
@@ -575,6 +610,18 @@ export class GameSelectionDialogComponent {
   startPlinko(): void {
     this.dialogRef.close();
     this.dialog.open(PlinkoGameComponent, {
+      width: '95vw',
+      maxWidth: '900px',
+      height: 'auto',
+      maxHeight: '95vh',
+      panelClass: ['dark-dialog', 'game-dialog'],
+      disableClose: true,
+    });
+  }
+
+  startSlotMachine(): void {
+    this.dialogRef.close();
+    this.dialog.open(SlotMachineGameComponent, {
       width: '95vw',
       maxWidth: '900px',
       height: 'auto',

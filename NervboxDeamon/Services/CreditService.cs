@@ -882,6 +882,177 @@ namespace NervboxDeamon.Services
             return (user.Credits, message);
         }
 
+        public (int[] symbols, int winAmount, int newBalance, string message) PlaySlotMachine(int userId, int betAmount)
+        {
+            if (betAmount <= 0)
+            {
+                return (new int[] { 0, 0, 0 }, 0, 0, "Einsatz muss größer als 0 sein");
+            }
+
+            using var scope = _serviceProvider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+
+            var user = db.Users.Find(userId);
+            if (user == null)
+            {
+                _logger.LogWarning($"User {userId} not found for slot machine");
+                return (new int[] { 0, 0, 0 }, 0, 0, "Benutzer nicht gefunden");
+            }
+
+            if (user.Credits < betAmount)
+            {
+                return (new int[] { 0, 0, 0 }, 0, user.Credits, "Nicht genug N$ zum Spielen");
+            }
+
+            // Deduct bet
+            user.Credits -= betAmount;
+
+            // Generate 3 random symbols (0-6)
+            // Symbol indices match frontend: 0=cherry, 1=lemon, 2=orange, 3=diamond, 4=seven, 5=bar, 6=crown
+            var symbols = new int[3];
+            symbols[0] = _random.Next(7);
+            symbols[1] = _random.Next(7);
+            symbols[2] = _random.Next(7);
+
+            // Calculate win multiplier based on symbol combinations
+            int multiplier = CalculateSlotMultiplier(symbols);
+            int winAmount = betAmount * multiplier;
+
+            var settings = GetSettings();
+
+            // Add winnings (respect max credits for non-admins)
+            if (winAmount > 0)
+            {
+                var potentialBalance = user.Credits + winAmount;
+                if (user.Role != "admin" && potentialBalance > settings.MaxCreditsUser)
+                {
+                    winAmount = settings.MaxCreditsUser - user.Credits;
+                    if (winAmount < 0) winAmount = 0;
+                }
+                user.Credits += winAmount;
+            }
+
+            // Calculate net change for transaction
+            var netChange = winAmount - betAmount;
+            var isWin = netChange > 0;
+
+            // Determine win message
+            string winMessage;
+            if (multiplier == 100)
+            {
+                winMessage = "🏆 JACKPOT! 👑👑👑";
+            }
+            else if (multiplier >= 50)
+            {
+                winMessage = "🎰 MEGA WIN! 💰";
+            }
+            else if (multiplier >= 25)
+            {
+                winMessage = "💎 BIG WIN! ✨";
+            }
+            else if (multiplier >= 10)
+            {
+                winMessage = "🎉 NICE WIN! 🎊";
+            }
+            else if (multiplier > 1)
+            {
+                winMessage = $"WIN! {multiplier}x";
+            }
+            else if (multiplier == 1)
+            {
+                winMessage = "Break Even!";
+            }
+            else
+            {
+                winMessage = "No Win... Try Again!";
+            }
+
+            // Transaction
+            var transactionType = isWin ? CreditTransactionType.GambleWin : CreditTransactionType.GambleLoss;
+            var symbolNames = new[] { "🍒", "🍋", "🍊", "💎", "7️⃣", "🎰", "👑" };
+            var symbolDisplay = $"{symbolNames[symbols[0]]} {symbolNames[symbols[1]]} {symbolNames[symbols[2]]}";
+
+            var transaction = new CreditTransaction
+            {
+                UserId = userId,
+                Amount = netChange,
+                TransactionType = transactionType,
+                Description = $"Slot Machine: {betAmount} N$ × {multiplier}x = {winAmount} N$ [{symbolDisplay}]",
+                BalanceAfter = user.Credits,
+                RelatedEntityId = $"slotmachine:{multiplier}"
+            };
+            db.CreditTransactions.Add(transaction);
+            db.SaveChanges();
+
+            BroadcastCreditUpdate(userId, user.Credits);
+
+            // Broadcast system chat message for big wins (25x or higher)
+            if (multiplier >= 25)
+            {
+                BroadcastSystemChatMessage(
+                    $"🎰 {user.Username} hat an der Slot Machine {betAmount} N$ eingesetzt und {symbolDisplay} getroffen! {multiplier}x Multiplikator = {winAmount} N$! 🤑"
+                );
+            }
+
+            // Check gambling achievements
+            try
+            {
+                var achievementService = scope.ServiceProvider.GetService<IAchievementService>();
+                if (achievementService != null)
+                {
+                    achievementService.CheckGamblingAchievements(userId, isWin, winAmount);
+                    achievementService.CheckWealthAchievements(userId, user.Credits);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Failed to check slot machine achievements: {ex.Message}");
+            }
+
+            _logger.LogInformation($"User {userId} played Slot Machine: {betAmount} N$ bet, {symbolDisplay}, {multiplier}x multiplier, {winAmount} N$ win");
+            return (symbols, winAmount, user.Credits, winMessage);
+        }
+
+        private int CalculateSlotMultiplier(int[] symbols)
+        {
+            // Symbol indices: 0=cherry, 1=lemon, 2=orange, 3=diamond, 4=seven, 5=bar, 6=crown
+            var s0 = symbols[0];
+            var s1 = symbols[1];
+            var s2 = symbols[2];
+
+            // Count occurrences
+            var crown = symbols.Count(s => s == 6);
+            var seven = symbols.Count(s => s == 4);
+            var diamond = symbols.Count(s => s == 3);
+            var bar = symbols.Count(s => s == 5);
+
+            // Check for 3-of-a-kind first
+            if (s0 == s1 && s1 == s2)
+            {
+                switch (s0)
+                {
+                    case 6: return 100; // 3x Crown: JACKPOT!
+                    case 4: return 50;  // 3x Seven
+                    case 3: return 25;  // 3x Diamond
+                    case 5: return 15;  // 3x BAR
+                    case 0:             // 3x Cherry
+                    case 1:             // 3x Lemon
+                    case 2:             // 3x Orange
+                        return 10;
+                }
+            }
+
+            // Check for 2-of-a-kind with special symbols
+            if (crown >= 2) return 5;   // 2x Crown
+            if (seven >= 2) return 3;   // 2x Seven
+
+            // Check for 1 Crown (consolation prize)
+            if (crown >= 1) return 2;   // 1x Crown
+
+            // No win
+            return 0;
+        }
+
         public void Dispose()
         {
             if (_disposed)

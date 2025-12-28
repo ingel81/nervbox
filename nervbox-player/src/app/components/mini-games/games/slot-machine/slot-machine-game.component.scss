@@ -1,0 +1,587 @@
+.slot-machine-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a0015 0%, #1a0033 50%, #2a0055 100%);
+  color: #ffffff;
+  padding: 20px;
+  overflow-y: auto;
+  position: relative;
+
+  // Animated background stars
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+      radial-gradient(2px 2px at 20% 30%, white, transparent),
+      radial-gradient(2px 2px at 60% 70%, white, transparent),
+      radial-gradient(1px 1px at 50% 50%, white, transparent),
+      radial-gradient(1px 1px at 80% 10%, white, transparent),
+      radial-gradient(2px 2px at 90% 60%, white, transparent),
+      radial-gradient(1px 1px at 33% 80%, white, transparent);
+    background-size: 200% 200%;
+    animation: twinkle 8s ease-in-out infinite;
+    opacity: 0.3;
+    pointer-events: none;
+  }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+// Neon text effect
+.neon-text {
+  color: #ffffff;
+  text-shadow:
+    0 0 10px #fff,
+    0 0 20px #fff,
+    0 0 30px #ff00ff,
+    0 0 40px #ff00ff,
+    0 0 50px #ff00ff,
+    0 0 60px #ff00ff,
+    0 0 70px #ff00ff;
+  animation: neon-flicker 3s infinite alternate;
+}
+
+@keyframes neon-flicker {
+  0%, 18%, 22%, 25%, 53%, 57%, 100% {
+    text-shadow:
+      0 0 10px #fff,
+      0 0 20px #fff,
+      0 0 30px #ff00ff,
+      0 0 40px #ff00ff,
+      0 0 50px #ff00ff,
+      0 0 60px #ff00ff,
+      0 0 70px #ff00ff;
+  }
+  20%, 24%, 55% {
+    text-shadow:
+      0 0 5px #fff,
+      0 0 10px #fff,
+      0 0 15px #ff00ff,
+      0 0 20px #ff00ff;
+  }
+}
+
+// Header
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 900px;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.game-title {
+  font-size: 2.5rem;
+  font-weight: 900;
+  letter-spacing: 4px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-family: 'Impact', 'Arial Black', sans-serif;
+
+  .title-icon {
+    font-size: 3rem;
+    width: 3rem;
+    height: 3rem;
+    animation: rotate-icon 4s linear infinite;
+  }
+}
+
+@keyframes rotate-icon {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.close-btn {
+  background: rgba(255, 0, 100, 0.3);
+  color: #ff0066;
+  border: 2px solid #ff0066;
+  box-shadow: 0 0 20px #ff0066;
+
+  &:hover {
+    background: rgba(255, 0, 100, 0.5);
+    box-shadow: 0 0 30px #ff0066;
+  }
+
+  mat-icon {
+    font-size: 2rem;
+    width: 2rem;
+    height: 2rem;
+  }
+}
+
+// Balance Display
+.balance-display {
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.balance-card {
+  background: linear-gradient(135deg, rgba(255, 0, 255, 0.2) 0%, rgba(0, 255, 255, 0.2) 100%);
+  border: 3px solid #00ffff;
+  border-radius: 15px;
+  padding: 15px 30px;
+  box-shadow:
+    0 0 20px rgba(0, 255, 255, 0.5),
+    inset 0 0 20px rgba(0, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.balance-label {
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  color: #00ffff;
+  font-weight: bold;
+}
+
+.balance-amount {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 2rem;
+  font-weight: 900;
+
+  .coin-icon {
+    width: 40px;
+    height: 40px;
+    filter: drop-shadow(0 0 10px #ffd700);
+    animation: coin-bounce 1s ease-in-out infinite;
+  }
+
+  .currency {
+    font-size: 1.5rem;
+    color: #ffd700;
+  }
+}
+
+@keyframes coin-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+// Canvas Container
+.canvas-container {
+  position: relative;
+  margin: 20px 0;
+  border: 5px solid #ff00ff;
+  border-radius: 20px;
+  box-shadow:
+    0 0 30px rgba(255, 0, 255, 0.6),
+    0 0 60px rgba(255, 0, 255, 0.4),
+    inset 0 0 30px rgba(255, 0, 255, 0.2);
+  background: #1a0033;
+  overflow: hidden;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 800px;
+}
+
+// Win Overlay
+.win-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: win-fade-in 0.3s ease-out;
+  z-index: 10;
+}
+
+@keyframes win-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.win-message {
+  text-align: center;
+  animation: win-pulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes win-pulse {
+  from { transform: scale(1); }
+  to { transform: scale(1.1); }
+}
+
+.win-title {
+  font-size: 3rem;
+  font-weight: 900;
+  margin-bottom: 20px;
+  letter-spacing: 3px;
+}
+
+.win-amount {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  font-size: 4rem;
+  font-weight: 900;
+
+  .win-coin {
+    width: 60px;
+    height: 60px;
+    filter: drop-shadow(0 0 20px #ffd700);
+    animation: coin-spin 1s linear infinite;
+  }
+}
+
+@keyframes coin-spin {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(360deg); }
+}
+
+// Spinning Indicator
+.spinning-indicator {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+}
+
+.spinner-text {
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: 5px;
+  animation: pulse-scale 1s ease-in-out infinite;
+}
+
+@keyframes pulse-scale {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+// Bet Controls
+.bet-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 600px;
+  margin: 20px 0;
+  position: relative;
+  z-index: 1;
+}
+
+.bet-selector {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  background: rgba(255, 0, 255, 0.1);
+  border: 3px solid #ff00ff;
+  border-radius: 15px;
+  padding: 20px 30px;
+  box-shadow:
+    0 0 20px rgba(255, 0, 255, 0.3),
+    inset 0 0 20px rgba(255, 0, 255, 0.1);
+}
+
+.bet-btn {
+  background: linear-gradient(135deg, #ff00ff 0%, #ff0066 100%) !important;
+  color: white !important;
+  font-size: 1.5rem !important;
+  font-weight: bold !important;
+  border: 2px solid #ff00ff !important;
+  border-radius: 50% !important;
+  width: 60px !important;
+  height: 60px !important;
+  min-width: 60px !important;
+  box-shadow: 0 0 20px rgba(255, 0, 255, 0.5) !important;
+  transition: all 0.3s ease !important;
+
+  &:hover:not(:disabled) {
+    transform: scale(1.1);
+    box-shadow: 0 0 30px rgba(255, 0, 255, 0.8) !important;
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  mat-icon {
+    font-size: 2rem;
+    width: 2rem;
+    height: 2rem;
+  }
+}
+
+.bet-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 200px;
+}
+
+.bet-label {
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  color: #ff00ff;
+  font-weight: bold;
+}
+
+.bet-amount {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 2rem;
+  font-weight: 900;
+
+  .bet-coin {
+    width: 35px;
+    height: 35px;
+    filter: drop-shadow(0 0 10px #ffd700);
+  }
+
+  .currency {
+    font-size: 1.3rem;
+    color: #ffd700;
+  }
+}
+
+// Spin Button
+.spin-btn {
+  background: linear-gradient(135deg, #00ff00 0%, #00cc00 100%) !important;
+  color: #000000 !important;
+  font-size: 2rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 3px !important;
+  padding: 20px 60px !important;
+  border: 4px solid #00ff00 !important;
+  border-radius: 50px !important;
+  box-shadow:
+    0 0 30px rgba(0, 255, 0, 0.6),
+    0 0 60px rgba(0, 255, 0, 0.4),
+    inset 0 0 20px rgba(255, 255, 255, 0.3) !important;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 15px !important;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+      45deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent
+    );
+    transform: rotate(45deg);
+    animation: shine 3s linear infinite;
+  }
+
+  .spin-icon {
+    font-size: 2.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  &:hover:not(:disabled) {
+    transform: scale(1.1) rotate(-2deg);
+    box-shadow:
+      0 0 40px rgba(0, 255, 0, 0.8),
+      0 0 80px rgba(0, 255, 0, 0.6),
+      inset 0 0 30px rgba(255, 255, 255, 0.5) !important;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(1.05) rotate(0deg);
+  }
+
+  &:disabled {
+    background: linear-gradient(135deg, #555555 0%, #333333 100%) !important;
+    color: #888888 !important;
+    border-color: #555555 !important;
+    box-shadow: none !important;
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+@keyframes shine {
+  0% {
+    left: -50%;
+  }
+  100% {
+    left: 150%;
+  }
+}
+
+// Paytable
+.paytable {
+  margin: 30px 0;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 3px solid #ffd700;
+  border-radius: 15px;
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+  max-width: 600px;
+  position: relative;
+  z-index: 1;
+}
+
+.paytable-title {
+  font-size: 1.5rem;
+  font-weight: 900;
+  text-align: center;
+  margin-bottom: 15px;
+  color: #ffd700;
+  text-shadow:
+    0 0 10px #ffd700,
+    0 0 20px #ffd700;
+}
+
+.paytable-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.paytable-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border-left: 4px solid;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(5px);
+  }
+
+  .combo {
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+
+  .payout {
+    font-weight: bold;
+    color: #ffd700;
+    text-shadow: 0 0 5px #ffd700;
+  }
+
+  &.jackpot {
+    border-left-color: #ffd700;
+    .payout {
+      font-size: 1.3rem;
+      animation: jackpot-glow 1s ease-in-out infinite alternate;
+    }
+  }
+
+  &.mega { border-left-color: #ff0000; }
+  &.big { border-left-color: #00ffff; }
+  &.medium { border-left-color: #ff8800; }
+  &.small { border-left-color: #00ff00; }
+  &.tiny { border-left-color: #999999; }
+}
+
+@keyframes jackpot-glow {
+  from {
+    text-shadow: 0 0 5px #ffd700;
+  }
+  to {
+    text-shadow:
+      0 0 10px #ffd700,
+      0 0 20px #ffd700,
+      0 0 30px #ffd700;
+  }
+}
+
+// Footer
+.game-footer {
+  margin-top: 20px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.disclaimer {
+  font-size: 0.9rem;
+  color: #999999;
+  font-style: italic;
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .game-title {
+    font-size: 1.5rem;
+    gap: 10px;
+
+    .title-icon {
+      font-size: 2rem;
+      width: 2rem;
+      height: 2rem;
+    }
+  }
+
+  canvas {
+    max-width: 100%;
+  }
+
+  .bet-selector {
+    padding: 15px 20px;
+    gap: 15px;
+  }
+
+  .spin-btn {
+    font-size: 1.5rem !important;
+    padding: 15px 40px !important;
+  }
+
+  .win-title {
+    font-size: 2rem;
+  }
+
+  .win-amount {
+    font-size: 2.5rem;
+
+    .win-coin {
+      width: 40px;
+      height: 40px;
+    }
+  }
+}
