@@ -4,6 +4,7 @@ import {
   OnInit,
   OnDestroy,
   signal,
+  computed,
   ElementRef,
   ViewChild,
   AfterViewChecked,
@@ -23,6 +24,8 @@ import { GifPickerComponent } from './gif-picker.component';
 import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component';
 import { UserCacheService } from '../../core/services/user-cache.service';
 
+type ChatTab = 'chat' | 'activity';
+
 @Component({
   selector: 'app-chat-sidebar',
   standalone: true,
@@ -40,12 +43,35 @@ import { UserCacheService } from '../../core/services/user-cache.service';
   template: `
     <div class="chat-sidebar">
       <div class="chat-header">
-        <mat-icon>chat</mat-icon>
-        <span class="header-title">Chat</span>
+        <div class="tabs">
+          <button
+            class="tab"
+            [class.active]="activeTab() === 'chat'"
+            (click)="setActiveTab('chat')"
+          >
+            <mat-icon>chat</mat-icon>
+            <span>Chat</span>
+            @if (unreadChatCount() > 0 && activeTab() !== 'chat') {
+              <span class="badge">{{ unreadChatCount() > 99 ? '99+' : unreadChatCount() }}</span>
+            }
+          </button>
+          <button
+            class="tab"
+            [class.active]="activeTab() === 'activity'"
+            (click)="setActiveTab('activity')"
+          >
+            <mat-icon>notifications</mat-icon>
+            <span>Aktivität</span>
+            @if (unreadActivityCount() > 0 && activeTab() !== 'activity') {
+              <span class="badge">{{ unreadActivityCount() > 99 ? '99+' : unreadActivityCount() }}</span>
+            }
+          </button>
+        </div>
         <div class="connection-status" [class.connected]="signalR.chatConnected()"></div>
       </div>
 
       <div class="chat-content">
+        @if (activeTab() === 'chat') {
           @if (showGifPicker()) {
             <app-gif-picker
               (gifSelected)="onGifSelected($event)"
@@ -59,7 +85,7 @@ import { UserCacheService } from '../../core/services/user-cache.service';
             </div>
           } @else {
             <div class="messages" #messagesContainer>
-              @if (hasMoreMessages()) {
+              @if (hasMoreChatMessages()) {
                 <button class="load-older-btn" (click)="loadOlderMessages()" [disabled]="loadingOlder()">
                   @if (loadingOlder()) {
                     <mat-spinner diameter="16"></mat-spinner>
@@ -69,7 +95,7 @@ import { UserCacheService } from '../../core/services/user-cache.service';
                   }
                 </button>
               }
-              @for (msg of signalR.chatMessages(); track msg.id || $index) {
+              @for (msg of chatMessages(); track msg.id || $index) {
                 <div class="message-row" [class.own]="msg.userId === auth.currentUser()?.id">
                   @if (msg.userId !== auth.currentUser()?.id) {
                     <app-user-avatar [userId]="msg.userId" size="small" class="message-avatar" />
@@ -90,8 +116,8 @@ import { UserCacheService } from '../../core/services/user-cache.service';
                   }
                 </div>
               }
-              @if (!signalR.chatMessages().length) {
-                <div class="empty">Noch keine Nachrichten</div>
+              @if (!chatMessages().length) {
+                <div class="empty">Noch keine Chat-Nachrichten</div>
               }
             </div>
           }
@@ -139,7 +165,42 @@ import { UserCacheService } from '../../core/services/user-cache.service';
               <span>Einloggen zum Chatten</span>
             </div>
           }
-        </div>
+        } @else {
+          <!-- Activity Tab -->
+          @if (loading()) {
+            <div class="loading">
+              <mat-spinner diameter="24"></mat-spinner>
+            </div>
+          } @else {
+            <div class="messages activity-feed" #activityContainer>
+              @if (hasMoreActivityMessages()) {
+                <button class="load-older-btn" (click)="loadOlderMessages()" [disabled]="loadingOlder()">
+                  @if (loadingOlder()) {
+                    <mat-spinner diameter="16"></mat-spinner>
+                  } @else {
+                    <mat-icon>expand_less</mat-icon>
+                    Ältere Mitteilungen
+                  }
+                </button>
+              }
+              @for (msg of activityMessages(); track msg.id || $index) {
+                <div class="activity-item">
+                  <div class="activity-icon">
+                    <mat-icon>{{ getActivityIcon(msg.message) }}</mat-icon>
+                  </div>
+                  <div class="activity-content">
+                    <span class="activity-text">{{ msg.message }}</span>
+                    <span class="activity-time">{{ formatTime(msg.createdAt) }}</span>
+                  </div>
+                </div>
+              }
+              @if (!activityMessages().length) {
+                <div class="empty">Noch keine Aktivitäten</div>
+              }
+            </div>
+          }
+        }
+      </div>
     </div>
   `,
   styles: `
@@ -156,20 +217,63 @@ import { UserCacheService } from '../../core/services/user-cache.service';
     .chat-header {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 12px;
+      gap: 8px;
+      padding: 8px;
       background: linear-gradient(135deg, rgba(147, 51, 234, 0.2) 0%, rgba(236, 72, 153, 0.1) 100%);
       border-bottom: 1px solid rgba(147, 51, 234, 0.3);
     }
 
-    .chat-header mat-icon:first-child {
+    .tabs {
+      display: flex;
+      flex: 1;
+      gap: 4px;
+    }
+
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .tab mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    .tab:hover {
+      background: rgba(147, 51, 234, 0.15);
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .tab.active {
+      background: rgba(147, 51, 234, 0.25);
       color: #9333ea;
     }
 
-    .header-title {
-      flex: 1;
+    .tab.active mat-icon {
+      color: #9333ea;
+    }
+
+    .badge {
+      background: #ec4899;
+      color: white;
+      font-size: 10px;
       font-weight: 600;
-      font-size: 14px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      min-width: 18px;
+      text-align: center;
     }
 
     .connection-status {
@@ -441,6 +545,64 @@ import { UserCacheService } from '../../core/services/user-cache.service';
       height: 16px;
     }
 
+    /* Activity Feed Styles */
+    .activity-feed {
+      gap: 4px;
+    }
+
+    .activity-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      background: rgba(30, 30, 35, 0.6);
+      border-radius: 8px;
+      border-left: 3px solid rgba(147, 51, 234, 0.5);
+      transition: background 0.2s ease;
+    }
+
+    .activity-item:hover {
+      background: rgba(30, 30, 35, 0.9);
+    }
+
+    .activity-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(147, 51, 234, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .activity-icon mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      color: #9333ea;
+    }
+
+    .activity-content {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .activity-text {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.85);
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .activity-time {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.35);
+    }
+
     @media (max-width: 768px) {
       .chat-sidebar {
         display: none;
@@ -455,6 +617,7 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
   private readonly userCache = inject(UserCacheService);
 
   @ViewChild('messagesContainer') messagesContainer?: ElementRef;
+  @ViewChild('activityContainer') activityContainer?: ElementRef;
   @ViewChild('messageInput') messageInput?: ElementRef<HTMLInputElement>;
 
   readonly loading = signal(true);
@@ -462,29 +625,75 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
   readonly sending = signal(false);
   readonly showGifPicker = signal(false);
   readonly hasMoreMessages = signal(false);
+  readonly activeTab = signal<ChatTab>('chat');
   newMessage = '';
+
+  // Filtered messages - chat only (text + gif)
+  readonly chatMessages = computed(() => {
+    return this.signalR.chatMessages().filter(
+      msg => msg.messageType !== 'shekel-transaction'
+    );
+  });
+
+  // Filtered messages - activity only (shekel-transaction)
+  readonly activityMessages = computed(() => {
+    return this.signalR.chatMessages().filter(
+      msg => msg.messageType === 'shekel-transaction'
+    );
+  });
+
+  // Check if there are more chat messages to load
+  readonly hasMoreChatMessages = computed(() => {
+    return this.hasMoreMessages() && this.activeTab() === 'chat';
+  });
+
+  // Check if there are more activity messages to load
+  readonly hasMoreActivityMessages = computed(() => {
+    return this.hasMoreMessages() && this.activeTab() === 'activity';
+  });
+
+  // Unread counts for badges
+  readonly unreadChatCount = signal(0);
+  readonly unreadActivityCount = signal(0);
 
   private shouldScrollToBottom = false;
   private skipNextScroll = false;
-  private lastMessageCount = 0;
+  private lastChatCount = 0;
+  private lastActivityCount = 0;
 
   constructor() {
     // Auto-scroll when new messages arrive (at the end, not when prepending)
     effect(() => {
-      const messages = this.signalR.chatMessages();
-      const count = messages?.length ?? 0;
+      const chatMsgs = this.chatMessages();
+      const activityMsgs = this.activityMessages();
+      const tab = this.activeTab();
 
       if (this.skipNextScroll) {
         this.skipNextScroll = false;
-        this.lastMessageCount = count;
+        this.lastChatCount = chatMsgs.length;
+        this.lastActivityCount = activityMsgs.length;
         return;
       }
 
-      // Only scroll if messages were added (not on initial load handled elsewhere)
-      if (count > this.lastMessageCount && this.lastMessageCount > 0) {
-        setTimeout(() => this.scrollToBottom(), 50);
+      // Track unread counts when not on that tab
+      if (chatMsgs.length > this.lastChatCount && this.lastChatCount > 0) {
+        if (tab !== 'chat') {
+          this.unreadChatCount.update(c => c + (chatMsgs.length - this.lastChatCount));
+        } else {
+          setTimeout(() => this.scrollToBottom(), 50);
+        }
       }
-      this.lastMessageCount = count;
+
+      if (activityMsgs.length > this.lastActivityCount && this.lastActivityCount > 0) {
+        if (tab !== 'activity') {
+          this.unreadActivityCount.update(c => c + (activityMsgs.length - this.lastActivityCount));
+        } else {
+          setTimeout(() => this.scrollToBottom(), 50);
+        }
+      }
+
+      this.lastChatCount = chatMsgs.length;
+      this.lastActivityCount = activityMsgs.length;
     });
   }
 
@@ -507,7 +716,7 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
   }
 
   private loadMessages(): void {
-    this.api.get<{ messages: ChatMessage[]; hasMore: boolean }>('/chat?limit=3').subscribe({
+    this.api.get<{ messages: ChatMessage[]; hasMore: boolean }>('/chat?limit=50').subscribe({
       next: response => {
         this.signalR.setInitialMessages(response.messages);
         this.hasMoreMessages.set(response.hasMore);
@@ -529,7 +738,7 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
     this.loadingOlder.set(true);
 
     this.api
-      .get<{ messages: ChatMessage[]; hasMore: boolean }>(`/chat?limit=3&beforeId=${oldestId}`)
+      .get<{ messages: ChatMessage[]; hasMore: boolean }>(`/chat?limit=25&beforeId=${oldestId}`)
       .subscribe({
         next: response => {
           this.skipNextScroll = true;
@@ -583,9 +792,40 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
   }
 
   private scrollToBottom(): void {
-    if (this.messagesContainer) {
-      const el = this.messagesContainer.nativeElement;
+    const container = this.activeTab() === 'chat'
+      ? this.messagesContainer
+      : this.activityContainer;
+    if (container) {
+      const el = container.nativeElement;
       el.scrollTop = el.scrollHeight;
     }
+  }
+
+  setActiveTab(tab: ChatTab): void {
+    this.activeTab.set(tab);
+    // Clear unread count for the selected tab
+    if (tab === 'chat') {
+      this.unreadChatCount.set(0);
+    } else {
+      this.unreadActivityCount.set(0);
+    }
+    // Scroll to bottom after tab switch
+    setTimeout(() => this.scrollToBottom(), 50);
+  }
+
+  getActivityIcon(message: string): string {
+    if (message.includes('Slot') || message.includes('Gamblen') || message.includes('Plinko')) {
+      return 'casino';
+    }
+    if (message.includes('Hotdog') || message.includes('Katapult')) {
+      return 'sports_esports';
+    }
+    if (message.includes('gesendet') || message.includes('N$')) {
+      return 'payments';
+    }
+    if (message.includes('Level') || message.includes('geschafft')) {
+      return 'emoji_events';
+    }
+    return 'notifications';
   }
 }
