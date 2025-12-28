@@ -15,8 +15,23 @@ export class MovementComponent extends Component {
   private segmentLengths: number[] = [];
   paused = false;
 
+  // Lateral offset for path variety (perpendicular to movement direction)
+  private lateralOffsetMeters = 0;
+
+  // Track previous position for direction-based heading calculation
+  private previousLat = 0;
+  private previousLon = 0;
+  private hasMovedOnce = false;
+
   constructor(gameObject: GameObject) {
     super(gameObject);
+  }
+
+  /**
+   * Set lateral offset in meters (positive = right, negative = left of path)
+   */
+  setLateralOffset(offsetMeters: number): void {
+    this.lateralOffsetMeters = offsetMeters;
   }
 
   /**
@@ -106,8 +121,26 @@ export class MovementComponent extends Component {
     const next = this.path[this.currentIndex + 1];
 
     if (current && next) {
-      const newLat = current.lat + (next.lat - current.lat) * this.progress;
-      const newLon = current.lon + (next.lon - current.lon) * this.progress;
+      let newLat = current.lat + (next.lat - current.lat) * this.progress;
+      let newLon = current.lon + (next.lon - current.lon) * this.progress;
+
+      // Apply lateral offset perpendicular to movement direction
+      if (this.lateralOffsetMeters !== 0) {
+        const dLat = next.lat - current.lat;
+        const dLon = next.lon - current.lon;
+        const len = Math.sqrt(dLat * dLat + dLon * dLon);
+        if (len > 0) {
+          // Perpendicular vector (rotated 90 degrees)
+          const perpLat = -dLon / len;
+          const perpLon = dLat / len;
+          // Convert meters to approximate degrees (at this latitude)
+          const metersPerDegree = 111000 * Math.cos((newLat * Math.PI) / 180);
+          const offsetDegrees = this.lateralOffsetMeters / metersPerDegree;
+          newLat += perpLat * offsetDegrees;
+          newLon += perpLon * offsetDegrees;
+        }
+      }
+
       transform.setPosition(newLat, newLon);
 
       // Interpolate height if available
@@ -115,8 +148,25 @@ export class MovementComponent extends Component {
         transform.terrainHeight = current.height + (next.height - current.height) * this.progress;
       }
 
-      // Update rotation to face next waypoint
-      transform.lookAt(next);
+      // Update rotation based on actual movement direction (not next waypoint)
+      // This prevents sudden heading jumps at segment transitions
+      if (this.hasMovedOnce) {
+        const dLat = newLat - this.previousLat;
+        const dLon = newLon - this.previousLon;
+        const moveDist = Math.sqrt(dLat * dLat + dLon * dLon);
+        // Only update heading if we've moved a meaningful distance
+        if (moveDist > 0.0000001) {
+          transform.lookAt({ lat: newLat + dLat, lon: newLon + dLon });
+        }
+      } else {
+        // First frame: look at next waypoint
+        transform.lookAt(next);
+        this.hasMovedOnce = true;
+      }
+
+      // Store current position for next frame's direction calculation
+      this.previousLat = newLat;
+      this.previousLon = newLon;
     }
 
     return 'moving';

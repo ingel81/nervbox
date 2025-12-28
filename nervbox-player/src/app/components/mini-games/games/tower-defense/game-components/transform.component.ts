@@ -8,9 +8,14 @@ import { GeoPosition } from '../models/game.types';
  */
 export class TransformComponent extends Component {
   position: GeoPosition = { lat: 0, lon: 0, height: 0 };
-  rotation = 0; // Heading in radians
+  rotation = 0; // Heading in radians (smoothed)
   scale = 1.0;
   terrainHeight = 235; // Default terrain height
+
+  // Rotation smoothing
+  private targetRotation = 0;
+  private rotationInitialized = false;
+  rotationSmoothingFactor = 0.15; // 0 = no smoothing, 1 = instant
 
   constructor(gameObject: GameObject) {
     super(gameObject);
@@ -35,13 +40,24 @@ export class TransformComponent extends Component {
   }
 
   /**
-   * Look at a target position (updates rotation)
+   * Look at a target position (updates target rotation, smoothed in update)
    */
   lookAt(target: GeoPosition): void {
     const dLon = target.lon - this.position.lon;
     const dLat = target.lat - this.position.lat;
+
+    // Skip if movement is too small (prevents jitter)
+    const dist = Math.sqrt(dLon * dLon + dLat * dLat);
+    if (dist < 0.0000001) return;
+
     // Model faces -Y in local coords, so subtract PI/2 to align with movement direction
-    this.rotation = Math.atan2(dLon, dLat) - Math.PI / 2;
+    this.targetRotation = Math.atan2(dLon, dLat) - Math.PI / 2;
+
+    // Initialize rotation immediately on first call
+    if (!this.rotationInitialized) {
+      this.rotation = this.targetRotation;
+      this.rotationInitialized = true;
+    }
   }
 
   /**
@@ -52,6 +68,22 @@ export class TransformComponent extends Component {
   }
 
   update(deltaTime: number): void {
-    // Transform doesn't need per-frame updates (position updated by other components)
+    // Smoothly interpolate rotation towards target
+    if (this.rotationInitialized && this.rotation !== this.targetRotation) {
+      // Handle angle wrapping (shortest path)
+      let diff = this.targetRotation - this.rotation;
+      while (diff > Math.PI) diff -= 2 * Math.PI;
+      while (diff < -Math.PI) diff += 2 * Math.PI;
+
+      // Lerp towards target
+      if (Math.abs(diff) < 0.001) {
+        this.rotation = this.targetRotation;
+      } else {
+        this.rotation += diff * this.rotationSmoothingFactor;
+        // Normalize rotation
+        while (this.rotation > Math.PI) this.rotation -= 2 * Math.PI;
+        while (this.rotation < -Math.PI) this.rotation += 2 * Math.PI;
+      }
+    }
   }
 }

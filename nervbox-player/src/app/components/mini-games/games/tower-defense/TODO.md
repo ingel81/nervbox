@@ -1,19 +1,11 @@
 # Tower Defense - TODO
 
-[ ] Gegner allgemein:
-    - Flag ob Gegner bluten können
+[x] Zombies:
+    [x] mehr lateraler Versatz (1.5m → 3.0m)
 
-[ ] Zombies:
-    - mehr randomnes
-        - zufälliger Start der Animationen
-        - zufälliger Start des Sounds
-        - Animationen schon ab loslaufen (bewegen sich ohne dass es eine animation gibt)
-        - minimal abweichungen (links und rechts der route laufen, leichter Versatz reinbringen)
-        - blut: ja
-
-[ ] Panzer:
-    - mehr randomnes
-        - zufälliger Start der Animationen
-        - zufälliger Start des Sounds
-        - minimal abweichungen (links und rechts der route laufen, leichter Versatz reinbringen)
-        - blut: nein
+[x] Panzer:
+    [x] Überlappen sich gegenseitig → spawnStartDelay: 800ms (statt 300ms)
+    [x] drehen sich manchmal kurz etwas weird:
+        - Rotation Smoothing (lerp mit factor 0.15)
+        - Heading basiert auf tatsächlicher Bewegungsrichtung (currentPos - previousPos) statt next waypoint
+    [x] mehr lateraler Versatz (0.8m → 2.5m)
