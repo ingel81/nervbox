@@ -37,6 +37,13 @@ export class EnemyManager extends EntityManager<Enemy> {
     const enemy = new Enemy(typeId, path, speedOverride);
     enemy.setViewer(this.viewer);
 
+    // Apply random lateral offset for movement variety
+    if (enemy.typeConfig.lateralOffset && enemy.typeConfig.lateralOffset > 0) {
+      const maxOffset = enemy.typeConfig.lateralOffset;
+      const randomOffset = (Math.random() * 2 - 1) * maxOffset; // -maxOffset to +maxOffset
+      enemy.movement.setLateralOffset(randomOffset);
+    }
+
     // Initialize rendering
     const startPos = path[0];
     const terrainHeight = startPos.height ?? 235;
@@ -148,22 +155,13 @@ export class EnemyManager extends EntityManager<Enemy> {
         continue;
       }
 
-      // Calculate heading towards next waypoint
-      const nextWaypoint = enemy.movement.getNextWaypoint();
-      let heading = 0;
-      if (nextWaypoint) {
-        const dLon = nextWaypoint.lon - enemy.position.lon;
-        const dLat = nextWaypoint.lat - enemy.position.lat;
-        heading = Math.atan2(dLon, dLat) - Math.PI / 2;
-      }
-
-      // Update visual representation (use result reference for async model)
+      // Update visual representation using smoothed rotation from transform
       const renderResult = enemy.render.result;
       if (renderResult) {
         this.renderer.update(renderResult, {
           position: enemy.position,
           terrainHeight: enemy.transform.terrainHeight,
-          heading,
+          heading: enemy.transform.rotation, // Use smoothed rotation
           healthPercent: enemy.health.healthPercent,
           healthBarOffset: enemy.typeConfig.healthBarOffset,
         });
@@ -175,18 +173,22 @@ export class EnemyManager extends EntityManager<Enemy> {
 
   /**
    * Start all paused enemies with delay
+   * Uses spawnStartDelay from enemy type config if available
    */
-  startAll(delayBetween = 300): void {
+  startAll(defaultDelayBetween = 300): void {
     const paused = this.getAll().filter((e) => e.movement.paused);
 
-    paused.forEach((enemy, index) => {
+    let accumulatedDelay = 0;
+    paused.forEach((enemy) => {
+      const delay = enemy.typeConfig.spawnStartDelay ?? defaultDelayBetween;
       setTimeout(() => {
         if (enemy.alive) {
           enemy.startMoving();
           // Start walk animation
           this.waitForModelAndStartAnimation(enemy);
         }
-      }, index * delayBetween);
+      }, accumulatedDelay);
+      accumulatedDelay += delay;
     });
   }
 

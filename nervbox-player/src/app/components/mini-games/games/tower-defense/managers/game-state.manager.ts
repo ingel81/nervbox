@@ -168,19 +168,21 @@ export class GameStateManager {
   private onProjectileHit(projectile: Projectile, enemy: Enemy): void {
     if (!this.viewer) return;
 
-    // Spawn blood effects
-    BloodRenderer.spawnBloodSplatter(
-      this.viewer,
-      enemy.position.lon,
-      enemy.position.lat,
-      enemy.transform.terrainHeight + 1
-    );
-    BloodRenderer.spawnBloodStain(
-      this.viewer,
-      enemy.position.lon,
-      enemy.position.lat,
-      enemy.transform.terrainHeight
-    );
+    // Spawn blood effects only for enemies that can bleed
+    if (enemy.typeConfig.canBleed) {
+      BloodRenderer.spawnBloodSplatter(
+        this.viewer,
+        enemy.position.lon,
+        enemy.position.lat,
+        enemy.transform.terrainHeight + 1
+      );
+      BloodRenderer.spawnBloodStain(
+        this.viewer,
+        enemy.position.lon,
+        enemy.position.lat,
+        enemy.transform.terrainHeight
+      );
+    }
 
     const killed = enemy.health.takeDamage(projectile.damage);
     if (killed) {

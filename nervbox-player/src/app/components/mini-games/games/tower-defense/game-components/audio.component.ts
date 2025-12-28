@@ -7,6 +7,7 @@ export interface AudioConfig {
   volume?: number;
   loop?: boolean;
   spatial?: boolean; // Distance-based attenuation
+  randomStart?: boolean; // Start at random position in audio
 }
 
 /**
@@ -59,6 +60,19 @@ export class AudioComponent extends Component {
         const volume = this.calculateDistanceVolume(transform.getCartesian3(), audio.volume);
         audio.volume = volume;
       }
+    }
+
+    // Random start position for variety
+    if (sound.config.randomStart) {
+      audio.addEventListener(
+        'loadedmetadata',
+        () => {
+          if (audio.duration > 0) {
+            audio.currentTime = Math.random() * audio.duration;
+          }
+        },
+        { once: true }
+      );
     }
 
     audio.play().catch(() => {

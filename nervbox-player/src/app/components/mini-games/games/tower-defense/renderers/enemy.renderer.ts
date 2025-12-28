@@ -144,11 +144,20 @@ export class EnemyRenderer implements Renderer {
   startWalkAnimation(result: RenderResult, typeConfig: EnemyTypeConfig): void {
     if (!result.model?.ready || !typeConfig.hasAnimations || !typeConfig.walkAnimation) return;
 
+    // Calculate start time - optionally with random offset for variety
+    let startTime = Cesium.JulianDate.now();
+    if (typeConfig.randomAnimationStart) {
+      // Start animation at a random point (0-2 seconds in the past)
+      // This makes each enemy appear to be at a different animation frame
+      const randomOffset = Math.random() * 2.0;
+      startTime = Cesium.JulianDate.addSeconds(startTime, -randomOffset, new Cesium.JulianDate());
+    }
+
     result.model.activeAnimations.add({
       name: typeConfig.walkAnimation,
       loop: Cesium.ModelAnimationLoop.REPEAT,
       multiplier: typeConfig.animationSpeed ?? 1.0,
-      startTime: Cesium.JulianDate.now(),
+      startTime,
     });
   }
 

@@ -31,6 +31,16 @@ export interface EnemyTypeConfig {
   // Visual
   heightOffset: number; // Model-Höhe über Boden
   healthBarOffset: number; // Health-Bar Höhe über Model
+  canBleed: boolean; // Ob Bluteffekte angezeigt werden
+  headingOffset?: number; // Rotations-Offset in Radians (Model-Ausrichtung korrigieren)
+
+  // Randomness
+  randomAnimationStart?: boolean; // Animation bei zufälligem Frame starten
+  randomSoundStart?: boolean; // Sound bei zufälliger Position starten
+  lateralOffset?: number; // Max. seitlicher Versatz in Metern (0 = keine Abweichung)
+
+  // Spawning
+  spawnStartDelay?: number; // Delay in ms zwischen Start von Enemies dieses Typs (default: 300)
 }
 
 export const ENEMY_TYPES: Record<string, EnemyTypeConfig> = {
@@ -52,6 +62,10 @@ export const ENEMY_TYPES: Record<string, EnemyTypeConfig> = {
     movingSoundVolume: 0.4,
     heightOffset: 0,
     healthBarOffset: 8, // Höher über dem Kopf
+    canBleed: true, // Zombies bluten
+    randomAnimationStart: true, // Animation bei zufälligem Frame starten
+    randomSoundStart: true, // Sound bei zufälliger Position starten
+    lateralOffset: 3.0, // Max. 3m seitlicher Versatz
   },
 
   tank: {
@@ -60,7 +74,7 @@ export const ENEMY_TYPES: Record<string, EnemyTypeConfig> = {
     modelUrl: '/assets/models/tank.glb',
     scale: 2.5,
     minimumPixelSize: 0, // 0 = echte Größe, kein Pixel-Clamping
-    baseHp: 300,
+    baseHp: 300, // Doppelt so viel wie Zombie
     baseSpeed: 3,
     damage: 25,
     reward: 30,
@@ -69,6 +83,10 @@ export const ENEMY_TYPES: Record<string, EnemyTypeConfig> = {
     movingSoundVolume: 0.3,
     heightOffset: 0,
     healthBarOffset: 10, // Höher über dem Panzer
+    canBleed: false, // Panzer bluten nicht
+    randomSoundStart: true, // Sound bei zufälliger Position starten
+    lateralOffset: 2.5, // Max. 2.5m seitlicher Versatz
+    spawnStartDelay: 800, // Größerer Abstand zwischen Panzern (800ms statt 300ms)
   },
 };
 

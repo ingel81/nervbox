@@ -60,6 +60,7 @@ export class Enemy extends GameObject {
         volume: this.typeConfig.movingSoundVolume ?? 0.3,
         loop: true,
         spatial: true,
+        randomStart: this.typeConfig.randomSoundStart ?? false,
       });
     }
   }
