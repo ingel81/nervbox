@@ -29,15 +29,15 @@ export interface PlinkoSlot {
 
 // Multiplikator-Tabelle für 16 Rows (17 Slots)
 // High-Style Verteilung: Ränder = hohe Multiplikatoren, Mitte = niedrige
-// Aber mit moderateren Werten
+// Deutlich reduziert für mehr Verluste und härteres Gameplay
 export const MULTIPLIERS: number[] = [
-  50, 25, 10, 5, 3, 1.5, 0.5, 0.3, 0.2,
-  0.3, 0.5, 1.5, 3, 5, 10, 25, 50
+  20, 10, 5, 2, 0.8, 0.5, 0.3, 0.2, 0.1,
+  0.2, 0.3, 0.5, 0.8, 2, 5, 10, 20
 ];
 
 // Alle gültigen Multiplikatoren für Backend-Validierung
 export const VALID_MULTIPLIERS = [
-  0.2, 0.3, 0.5, 1.5, 3, 5, 10, 25, 50
+  0.1, 0.2, 0.3, 0.5, 0.8, 2, 5, 10, 20
 ];
 
 // Slot-Farben basierend auf Multiplikator
