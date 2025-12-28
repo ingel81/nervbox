@@ -433,7 +433,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
   readonly canvasWidth = 1100;
   readonly canvasHeight = 650;
 
-  private k!: KAPLAYCtx;
+  private k: KAPLAYCtx | null = null;
   private hotdog: GameObj | null = null;
   private slingshot: { anchor: Vec2; pulling: boolean; pullPos: Vec2 | null } = {
     anchor: { x: 100, y: 400 } as Vec2,
@@ -444,24 +444,72 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
   private isFlying = false;
   private roundTargetsHit = 0;
   private spritesLoaded = false;
+  private destroyed = false;
 
   ngAfterViewInit(): void {
+    // Reset destroyed flag for new dialog instance
+    this.destroyed = false;
     this.initKaplay();
   }
 
   private async initKaplay(): Promise<void> {
-    const canvas = this.canvasRef.nativeElement;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const win = window as any;
 
-    this.k = kaplay({
-      canvas,
-      width: this.canvasWidth,
-      height: this.canvasHeight,
-      background: [10, 10, 10],
-      global: false,
-    });
+    // Check if we have an existing KAPLAY instance we can reuse
+    if (win._hotdogKaplayCtx && win._hotdogCanvas) {
+      // Reuse existing instance - just clear all game objects
+      const k = win._hotdogKaplayCtx as KAPLAYCtx;
+      this.k = k;
+      // Reuse the same sprite prefix so we use cached sprites
+      this.spritePrefix = win._hotdogSpritePrefix || '';
+      this.spritesLoaded = true; // Sprites are already loaded
 
-    // Load sprites
-    await this.loadSprites();
+      // Destroy all existing game objects
+      try {
+        k.get('*').forEach((obj: GameObj) => {
+          try {
+            k.destroy(obj);
+          } catch {
+            // Ignore
+          }
+        });
+      } catch {
+        // Ignore
+      }
+
+      // Attach the existing canvas to our container
+      const container = this.canvasRef.nativeElement.parentElement;
+      if (container && win._hotdogCanvas.parentElement !== container) {
+        // Remove old canvas placeholder
+        if (this.canvasRef.nativeElement.parentElement) {
+          this.canvasRef.nativeElement.remove();
+        }
+        // Move the KAPLAY canvas to our container
+        container.appendChild(win._hotdogCanvas);
+        (this.canvasRef as { nativeElement: HTMLCanvasElement }).nativeElement = win._hotdogCanvas;
+      }
+    } else {
+      // First time - create new KAPLAY instance
+      const canvas = this.canvasRef.nativeElement;
+
+      this.k = kaplay({
+        canvas,
+        width: this.canvasWidth,
+        height: this.canvasHeight,
+        background: [10, 10, 10],
+        global: false,
+      });
+
+      // Store references globally for reuse
+      win._hotdogKaplayCtx = this.k;
+      win._hotdogCanvas = canvas;
+
+      // Load sprites only on first init
+      this.loadSprites();
+      // Store sprite prefix globally for reuse
+      win._hotdogSpritePrefix = this.spritePrefix;
+    }
 
     // Set up sound URL
     this.launchSoundUrl = this.api.getFullUrl(`/sound/${this.LAUNCH_SOUND_HASH}/file`);
@@ -474,24 +522,30 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
     this.gameState.set('ready');
   }
 
-  private async loadSprites(): Promise<void> {
+  private spritePrefix = '';
+
+  private loadSprites(): void {
+    if (!this.k) return;
     const k = this.k;
     const basePath = '/games/hotdog';
 
-    // Load individual sprite files (extracted from sprite sheet)
-    k.loadSprite('hotdog', `${basePath}/hotdog.png`);
-    k.loadSprite('slingshot', `${basePath}/slingshot.png`);
-    k.loadSprite('background', `${basePath}/background.png`);
+    // Use unique prefix for sprites
+    this.spritePrefix = `s${Date.now()}_`;
+
+    // Load all sprites - KAPLAY handles async loading internally
+    k.loadSprite(`${this.spritePrefix}hotdog`, `${basePath}/hotdog.png`);
+    k.loadSprite(`${this.spritePrefix}slingshot`, `${basePath}/slingshot.png`);
 
     // Load face sprites
     for (let i = 0; i < SPRITES.faces.length; i++) {
-      k.loadSprite(`face${i}`, `${basePath}/face${i}.png`);
+      k.loadSprite(`${this.spritePrefix}face${i}`, `${basePath}/face${i}.png`);
     }
 
     this.spritesLoaded = true;
   }
 
   private drawBackground(): void {
+    if (!this.k || this.destroyed) return;
     const k = this.k;
 
     // Sky gradient background
@@ -615,6 +669,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
   }
 
   private spawnBackgroundElements(): void {
+    if (!this.k || this.destroyed) return;
     const k = this.k;
 
     // Spawn clouds periodically
@@ -647,7 +702,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
 
     // Spawn a cloud every 3-6 seconds
     const cloudInterval = setInterval(() => {
-      if (!this.k) {
+      if (!this.k || this.destroyed) {
         clearInterval(cloudInterval);
         return;
       }
@@ -692,7 +747,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
 
     // Spawn a bird every 5-10 seconds
     const birdInterval = setInterval(() => {
-      if (!this.k) {
+      if (!this.k || this.destroyed) {
         clearInterval(birdInterval);
         return;
       }
@@ -737,7 +792,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
 
     // Spawn butterfly every 4-8 seconds
     const butterflyInterval = setInterval(() => {
-      if (!this.k) {
+      if (!this.k || this.destroyed) {
         clearInterval(butterflyInterval);
         return;
       }
@@ -754,6 +809,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
   }
 
   private setupRound(): void {
+    if (!this.k || this.destroyed) return;
     const k = this.k;
 
     // Clear previous objects except background
@@ -769,7 +825,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
     const slingshotX = 140;
     const slingshotY = this.canvasHeight - 220;
     k.add([
-      k.sprite('slingshot'),
+      k.sprite(`${this.spritePrefix}slingshot`),
       k.pos(slingshotX, slingshotY),
       k.scale(slingshotScale),
       k.z(1),
@@ -809,7 +865,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
       const hitRadius = Math.max(25, avgSize * scale * 0.4);
 
       const target = k.add([
-        k.sprite(`face${faceIndex}`),
+        k.sprite(`${this.spritePrefix}face${faceIndex}`),
         k.pos(x, y),
         k.scale(scale),
         k.anchor('center'),
@@ -844,6 +900,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
   private readonly hotdogScale = 0.25;
 
   private createHotdog(): void {
+    if (!this.k || this.destroyed) return;
     const k = this.k;
 
     // Remove old hotdog
@@ -851,7 +908,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
 
     // Create hotdog using sprite
     this.hotdog = k.add([
-      k.sprite('hotdog'),
+      k.sprite(`${this.spritePrefix}hotdog`),
       k.pos(this.slingshot.anchor.x, this.slingshot.anchor.y),
       k.scale(this.hotdogScale),
       k.anchor('center'),
@@ -867,7 +924,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
 
   @HostListener('mousedown', ['$event'])
   onMouseDown(event: MouseEvent): void {
-    if (this.gameState() !== 'aiming' || this.isFlying) return;
+    if (this.gameState() !== 'aiming' || this.isFlying || !this.k) return;
 
     const rect = this.canvasRef.nativeElement.getBoundingClientRect();
     const x = (event.clientX - rect.left) * (this.canvasWidth / rect.width);
@@ -887,7 +944,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
 
   @HostListener('mousemove', ['$event'])
   onMouseMove(event: MouseEvent): void {
-    if (!this.slingshot.pulling || this.isFlying) return;
+    if (!this.slingshot.pulling || this.isFlying || !this.k) return;
 
     const rect = this.canvasRef.nativeElement.getBoundingClientRect();
     const x = (event.clientX - rect.left) * (this.canvasWidth / rect.width);
@@ -925,7 +982,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
   @HostListener('touchstart', ['$event'])
   onTouchStart(event: TouchEvent): void {
     event.preventDefault();
-    if (this.gameState() !== 'aiming' || this.isFlying) return;
+    if (this.gameState() !== 'aiming' || this.isFlying || !this.k) return;
 
     const touch = event.touches[0];
     const rect = this.canvasRef.nativeElement.getBoundingClientRect();
@@ -946,7 +1003,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
   @HostListener('touchmove', ['$event'])
   onTouchMove(event: TouchEvent): void {
     event.preventDefault();
-    if (!this.slingshot.pulling || this.isFlying) return;
+    if (!this.slingshot.pulling || this.isFlying || !this.k) return;
 
     const touch = event.touches[0];
     const rect = this.canvasRef.nativeElement.getBoundingClientRect();
@@ -980,12 +1037,13 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
   }
 
   private updateHotdogPosition(x: number, y: number): void {
+    if (!this.k || this.destroyed) return;
     const k = this.k;
     k.get('hotdog').forEach((h: GameObj) => k.destroy(h));
 
     // Create hotdog using sprite
     this.hotdog = k.add([
-      k.sprite('hotdog'),
+      k.sprite(`${this.spritePrefix}hotdog`),
       k.pos(x, y),
       k.scale(this.hotdogScale),
       k.anchor('center'),
@@ -1032,6 +1090,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
   }
 
   private drawTrajectory(): void {
+    if (!this.k || this.destroyed) return;
     const k = this.k;
     k.get('trajectory').forEach((t: GameObj) => k.destroy(t));
 
@@ -1071,7 +1130,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
   }
 
   private launchHotdog(): void {
-    if (!this.slingshot.pullPos) return;
+    if (!this.slingshot.pullPos || !this.k || this.destroyed) return;
 
     const k = this.k;
     this.slingshot.pulling = false;
@@ -1097,7 +1156,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
 
     // Animation loop
     const animate = () => {
-      if (!this.isFlying) return;
+      if (!this.isFlying || this.destroyed || !this.k) return;
 
       x += vx;
       y += vy;
@@ -1111,7 +1170,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
 
       // Flying hotdog using sprite
       this.hotdog = k.add([
-        k.sprite('hotdog'),
+        k.sprite(`${this.spritePrefix}hotdog`),
         k.pos(x, y),
         k.scale(this.hotdogScale),
         k.rotate(rotation),
@@ -1353,9 +1412,27 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destroyed = true;
     this.isFlying = false;
-    if (this.k) {
-      this.k.quit();
+
+    // DON'T destroy the KAPLAY instance - we reuse it for the singleton pattern
+    // Just clear all game objects to reset state
+    const k = this.k;
+    if (k) {
+      try {
+        k.get('*').forEach((obj: GameObj) => {
+          try {
+            k.destroy(obj);
+          } catch {
+            // Ignore
+          }
+        });
+      } catch {
+        // Ignore
+      }
+      // Don't set this.k = null - the global reference stays valid
     }
+
+    // Don't clear the canvas - KAPLAY manages it
   }
 }
