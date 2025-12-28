@@ -26,6 +26,15 @@
           </div>
         }
 
+        @if (showLoseAnimation()) {
+          <div class="lose-overlay">
+            <div class="lose-message">
+              <div class="lose-title">VERLOREN</div>
+              <div class="lose-amount">-{{ betAmount() }} N$</div>
+            </div>
+          </div>
+        }
+
         @if (isSpinning()) {
           <div class="spinning-indicator">
             <span class="spinner-text neon-text">SPINNING...</span>
