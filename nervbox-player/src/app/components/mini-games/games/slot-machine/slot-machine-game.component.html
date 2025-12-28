@@ -3,135 +3,78 @@
   <div class="game-header">
     <h1 class="game-title neon-text">
       <mat-icon class="title-icon">casino</mat-icon>
-      LUCKY NERVBOX SLOTS
-      <mat-icon class="title-icon">casino</mat-icon>
+      N$ FORTUNE
     </h1>
     <button mat-icon-button class="close-btn" (click)="exitGame()">
       <mat-icon>close</mat-icon>
     </button>
   </div>
 
-  <!-- Balance Display -->
-  <div class="balance-display">
-    <div class="balance-card">
-      <span class="balance-label">YOUR BALANCE</span>
-      <div class="balance-amount neon-text">
-        <img src="icons/nervbox-coin.svg" alt="N$" class="coin-icon">
-        <span>{{ currentBalance() }}</span>
-        <span class="currency">N$</span>
-      </div>
-    </div>
-  </div>
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Left: Slot Machine -->
+    <div class="slot-section">
+      <div class="canvas-container">
+        <canvas #gameCanvas></canvas>
 
-  <!-- Slot Machine Canvas -->
-  <div class="canvas-container">
-    <canvas #gameCanvas></canvas>
-
-    <!-- Win Overlay -->
-    @if (showWinAnimation()) {
-      <div class="win-overlay">
-        <div class="win-message neon-text">
-          <div class="win-title">{{ lastWinMessage() }}</div>
-          <div class="win-amount">
-            <img src="icons/nervbox-coin.svg" alt="N$" class="win-coin">
-            <span>+{{ lastWinAmount() }} N$</span>
+        @if (showWinAnimation()) {
+          <div class="win-overlay">
+            <div class="win-message neon-text">
+              <div class="win-title">{{ lastWinMessage() }}</div>
+              <div class="win-amount">+{{ lastWinAmount() }} N$</div>
+            </div>
           </div>
-        </div>
-      </div>
-    }
+        }
 
-    <!-- Spinning Indicator -->
-    @if (isSpinning()) {
-      <div class="spinning-indicator">
-        <div class="spinner-text neon-text">SPINNING...</div>
-      </div>
-    }
-  </div>
-
-  <!-- Bet Controls -->
-  <div class="bet-controls">
-    <div class="bet-selector">
-      <button
-        mat-raised-button
-        class="bet-btn"
-        (click)="decreaseBet()"
-        [disabled]="betAmount() <= minBet || isSpinning()"
-      >
-        <mat-icon>remove</mat-icon>
-      </button>
-
-      <div class="bet-display">
-        <span class="bet-label">BET AMOUNT</span>
-        <div class="bet-amount neon-text">
-          <img src="icons/nervbox-coin.svg" alt="N$" class="bet-coin">
-          <span>{{ betAmount() }}</span>
-          <span class="currency">N$</span>
-        </div>
+        @if (isSpinning()) {
+          <div class="spinning-indicator">
+            <span class="spinner-text neon-text">SPINNING...</span>
+          </div>
+        }
       </div>
 
-      <button
-        mat-raised-button
-        class="bet-btn"
-        (click)="increaseBet()"
-        [disabled]="betAmount() >= maxBet || isSpinning()"
-      >
-        <mat-icon>add</mat-icon>
+      <button mat-raised-button class="spin-btn" (click)="spin()" [disabled]="!canSpin()">
+        <mat-icon class="spin-icon">play_arrow</mat-icon>
+        <span>SPIN!</span>
       </button>
     </div>
 
-    <!-- Spin Button -->
-    <button
-      mat-raised-button
-      class="spin-btn neon-button"
-      (click)="spin()"
-      [disabled]="!canSpin()"
-    >
-      <mat-icon class="spin-icon">play_circle</mat-icon>
-      <span class="spin-text">SPIN!</span>
-    </button>
-  </div>
+    <!-- Middle: Balance & Bet -->
+    <div class="controls-section">
+      <div class="balance-card">
+        <div class="card-label">BALANCE</div>
+        <div class="card-value">
+          <img src="icons/nervbox-coin.svg" alt="" class="coin-icon">
+          <span>{{ displayedBalance() }} N$</span>
+        </div>
+      </div>
 
-  <!-- Paytable -->
-  <div class="paytable">
-    <div class="paytable-title">💰 PAYTABLE 💰</div>
-    <div class="paytable-grid">
-      <div class="paytable-row jackpot">
-        <span class="combo">👑 👑 👑</span>
-        <span class="payout">100x JACKPOT!</span>
-      </div>
-      <div class="paytable-row mega">
-        <span class="combo">7️⃣ 7️⃣ 7️⃣</span>
-        <span class="payout">50x</span>
-      </div>
-      <div class="paytable-row big">
-        <span class="combo">💎 💎 💎</span>
-        <span class="payout">25x</span>
-      </div>
-      <div class="paytable-row medium">
-        <span class="combo">🎰 🎰 🎰</span>
-        <span class="payout">15x</span>
-      </div>
-      <div class="paytable-row small">
-        <span class="combo">🍒/🍋/🍊 × 3</span>
-        <span class="payout">10x</span>
-      </div>
-      <div class="paytable-row tiny">
-        <span class="combo">👑 👑 Any</span>
-        <span class="payout">5x</span>
-      </div>
-      <div class="paytable-row tiny">
-        <span class="combo">7️⃣ 7️⃣ Any</span>
-        <span class="payout">3x</span>
-      </div>
-      <div class="paytable-row tiny">
-        <span class="combo">👑 Any Any</span>
-        <span class="payout">2x</span>
+      <div class="bet-card">
+        <div class="card-label">BET</div>
+        <div class="bet-row">
+          <button mat-icon-button class="bet-btn" (click)="decreaseBet()" [disabled]="betAmount() <= minBet || isSpinning()">
+            <mat-icon>remove</mat-icon>
+          </button>
+          <span class="bet-value">{{ betAmount() }} N$</span>
+          <button mat-icon-button class="bet-btn" (click)="increaseBet()" [disabled]="betAmount() >= maxBet || isSpinning()">
+            <mat-icon>add</mat-icon>
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Footer -->
-  <div class="game-footer">
-    <p class="disclaimer">🎰 Gamble responsibly with your Nervbucks! 🎰</p>
+    <!-- Right: Paytable -->
+    <div class="paytable-section">
+      <div class="paytable-card">
+        <div class="card-label">PAYTABLE</div>
+        <table class="paytable">
+          <tr class="jackpot"><td>👑👑👑</td><td>25x</td></tr>
+          <tr><td>7️⃣7️⃣7️⃣</td><td>15x</td></tr>
+          <tr><td>💎💎💎</td><td>8x</td></tr>
+          <tr><td>🎰🎰🎰</td><td>5x</td></tr>
+          <tr><td>🍒🍒🍒</td><td>3x</td></tr>
+        </table>
+      </div>
+    </div>
   </div>
 </div>

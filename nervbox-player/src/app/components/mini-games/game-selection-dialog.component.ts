@@ -622,10 +622,8 @@ export class GameSelectionDialogComponent {
   startSlotMachine(): void {
     this.dialogRef.close();
     this.dialog.open(SlotMachineGameComponent, {
-      width: '95vw',
-      maxWidth: '900px',
-      height: 'auto',
-      maxHeight: '95vh',
+      width: '950px',
+      maxWidth: '95vw',
       panelClass: ['dark-dialog', 'game-dialog'],
       disableClose: true,
     });
