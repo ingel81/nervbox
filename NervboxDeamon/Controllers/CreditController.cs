@@ -401,6 +401,37 @@ namespace NervboxDeamon.Controllers
                 return StatusCode(500, new { Error = ex.Message });
             }
         }
+
+        /// <summary>
+        /// POST /api/credit/slotmachine - Play slot machine game
+        /// </summary>
+        [HttpPost("slotmachine")]
+        [Authorize]
+        public IActionResult PlaySlotMachine([FromBody] SlotMachineRequest request)
+        {
+            try
+            {
+                if (request.BetAmount <= 0)
+                {
+                    return BadRequest(new { Error = "Einsatz muss größer als 0 sein" });
+                }
+
+                var (symbols, winAmount, newBalance, message) = _creditService.PlaySlotMachine(UserId, request.BetAmount);
+
+                return Ok(new
+                {
+                    Symbols = symbols,
+                    WinAmount = winAmount,
+                    NewBalance = newBalance,
+                    Message = message,
+                    BetAmount = request.BetAmount
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Error = ex.Message });
+            }
+        }
     }
 
     public class CreditGrantRequest
@@ -431,5 +462,10 @@ namespace NervboxDeamon.Controllers
     {
         public int Amount { get; set; }
         public decimal Multiplier { get; set; }
+    }
+
+    public class SlotMachineRequest
+    {
+        public int BetAmount { get; set; }
     }
 }

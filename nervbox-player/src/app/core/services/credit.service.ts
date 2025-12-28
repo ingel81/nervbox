@@ -74,6 +74,14 @@ export interface MinigameRewardResponse {
   newBalance: number;
 }
 
+export interface SlotMachineResponse {
+  symbols: number[];
+  winAmount: number;
+  newBalance: number;
+  message: string;
+  betAmount: number;
+}
+
 export interface TransferableUser {
   id: number;
   username: string;
@@ -215,6 +223,15 @@ export class CreditService {
         if (response.success) {
           this.credits.set(response.newBalance);
         }
+      })
+    );
+  }
+
+  // Slot Machine
+  playSlotMachine(betAmount: number): Observable<SlotMachineResponse> {
+    return this.api.post<SlotMachineResponse>('/credit/slotmachine', { betAmount }).pipe(
+      tap(response => {
+        this.credits.set(response.newBalance);
       })
     );
   }
