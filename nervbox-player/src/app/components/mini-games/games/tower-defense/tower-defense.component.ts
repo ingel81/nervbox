@@ -22,7 +22,7 @@ import { GeoPosition } from './models/game.types';
 import { EnemyTypeId, getAllEnemyTypes } from './models/enemy-types';
 import { TowerRenderer } from './renderers/tower.renderer';
 import { ApiService } from '../../../../core/services/api.service';
-import { DebugPanelComponent } from './components/debug-panel.component';
+import { DebugPanelComponent, LocationConfig, SpawnLocationConfig } from './components/debug-panel.component';
 // New OO Game Engine imports
 import { GameStateManager } from './managers/game-state.manager';
 import { EnemyManager } from './managers/enemy.manager';
@@ -34,18 +34,19 @@ import { RenderManager } from './managers/render.manager';
 
 import * as Cesium from 'cesium';
 
-const ERLENBACH_COORDS = {
+// Default locations - can be overridden via debug settings
+const DEFAULT_CENTER_COORDS = {
   latitude: 49.1726836,
   longitude: 9.2703122,
   height: 400,
 };
 
-const BASE_COORDS = {
+const DEFAULT_BASE_COORDS = {
   latitude: 49.17326887448299,
   longitude: 9.268588397188681,
 };
 
-const SPAWN_POINTS = [
+const DEFAULT_SPAWN_POINTS = [
   {
     id: 'spawn-north',
     name: 'Nord',
@@ -59,6 +60,8 @@ const SPAWN_POINTS = [
     longitude: 9.266037019764674,
   },
 ];
+
+const LOCATION_STORAGE_KEY = 'td_custom_locations_v1';
 
 export interface SpawnPoint {
   id: string;
@@ -196,6 +199,9 @@ export interface SpawnPoint {
               [routesVisible]="routesVisible()"
               [waveActive]="waveActive()"
               [debugLog]="debugLog()"
+              [hqLocation]="editableHqLocation()"
+              [spawnLocations]="editableSpawnLocations()"
+              [isApplying]="isApplyingLocation()"
               (enemyCountChange)="onEnemyCountChange($event)"
               (enemySpeedChange)="onSpeedChange($event)"
               (enemyTypeChange)="onEnemyTypeChange($event)"
@@ -205,6 +211,8 @@ export interface SpawnPoint {
               (killAll)="killAllEnemies()"
               (clearLog)="clearDebugLog()"
               (logCamera)="logCameraPosition()"
+              (applyNewLocation)="onApplyNewLocation($event)"
+              (resetLocations)="onResetLocations()"
             />
           }
 
@@ -755,8 +763,14 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly spawnMode = signal<'each' | 'random'>('each'); // each = einer pro Spawn, random = zufällig
   readonly debugLog = signal('');
   readonly spawnPoints = signal<SpawnPoint[]>([]);
-  readonly baseCoords = signal(BASE_COORDS);
+  readonly baseCoords = signal(DEFAULT_BASE_COORDS);
+  readonly centerCoords = signal(DEFAULT_CENTER_COORDS);
   readonly buildMode = signal(false);
+
+  // Editable location settings (for debug panel)
+  readonly editableHqLocation = signal<LocationConfig | null>(null);
+  readonly editableSpawnLocations = signal<SpawnLocationConfig[]>([]);
+  readonly isApplyingLocation = signal(false);
 
   readonly waveActive = computed(() => this.gameState.phase() === 'wave');
   readonly isGameOver = computed(() => this.gameState.phase() === 'gameover');
@@ -780,6 +794,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     (window as unknown as { CESIUM_BASE_URL: string }).CESIUM_BASE_URL = '/cesium/';
+    this.initializeEditableLocations();
   }
 
   ngAfterViewInit(): void {
@@ -966,16 +981,27 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       (movement: { endPosition: Cesium.Cartesian2 }) => {
         if (!this.buildMode() || !this.buildPreviewEntity || !this.viewer) return;
 
-        // Use globe.pick (terrain only, faster than pickPosition which includes 3D tiles)
-        const ray = this.viewer.camera.getPickRay(movement.endPosition);
-        if (!ray) {
-          this.buildPreviewEntity.show = false;
-          return;
-        }
+        // Use pickPosition to get position on 3D tiles surface (buildings)
+        const cartesian = this.viewer.scene.pickPosition(movement.endPosition);
+        if (!cartesian || !Cesium.defined(cartesian)) {
+          // Fallback to globe.pick if pickPosition fails
+          const ray = this.viewer.camera.getPickRay(movement.endPosition);
+          if (!ray) {
+            this.buildPreviewEntity.show = false;
+            return;
+          }
+          const groundCartesian = this.viewer.scene.globe.pick(ray, this.viewer.scene);
+          if (!groundCartesian) {
+            this.buildPreviewEntity.show = false;
+            return;
+          }
+          const cartographic = Cesium.Cartographic.fromCartesian(groundCartesian);
+          const lat = Cesium.Math.toDegrees(cartographic.latitude);
+          const lon = Cesium.Math.toDegrees(cartographic.longitude);
 
-        const cartesian = this.viewer.scene.globe.pick(ray, this.viewer.scene);
-        if (!cartesian) {
-          this.buildPreviewEntity.show = false;
+          (this.buildPreviewEntity.position as Cesium.ConstantPositionProperty).setValue(groundCartesian);
+          this.buildPreviewEntity.show = true;
+          this.updatePreviewValidation(lat, lon);
           return;
         }
 
@@ -983,31 +1009,33 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         const lat = Cesium.Math.toDegrees(cartographic.latitude);
         const lon = Cesium.Math.toDegrees(cartographic.longitude);
 
-        // Update position directly
-        (this.buildPreviewEntity.position as Cesium.ConstantPositionProperty).setValue(
-          Cesium.Cartesian3.fromDegrees(lon, lat, 0)
-        );
+        // Update position on 3D surface
+        (this.buildPreviewEntity.position as Cesium.ConstantPositionProperty).setValue(cartesian);
         this.buildPreviewEntity.show = true;
 
-        // Throttle validation - only every 30ms
-        if (this.previewThrottleId === null) {
-          this.previewThrottleId = window.setTimeout(() => {
-            this.previewThrottleId = null;
-            if (!this.buildPreviewEntity?.billboard) return;
-
-            const validation = this.validateTowerPosition(lat, lon);
-            if (this.lastPreviewValidation !== validation.valid) {
-              this.lastPreviewValidation = validation.valid;
-              // Update billboard image
-              this.buildPreviewEntity.billboard.image = new Cesium.ConstantProperty(
-                this.createPreviewCanvas(validation.valid)
-              );
-            }
-          }, 30);
-        }
+        this.updatePreviewValidation(lat, lon);
       },
       Cesium.ScreenSpaceEventType.MOUSE_MOVE
     );
+  }
+
+  private updatePreviewValidation(lat: number, lon: number): void {
+    // Throttle validation - only every 30ms
+    if (this.previewThrottleId === null) {
+      this.previewThrottleId = window.setTimeout(() => {
+        this.previewThrottleId = null;
+        if (!this.buildPreviewEntity?.billboard) return;
+
+        const validation = this.validateTowerPosition(lat, lon);
+        if (this.lastPreviewValidation !== validation.valid) {
+          this.lastPreviewValidation = validation.valid;
+          // Update billboard image
+          this.buildPreviewEntity.billboard.image = new Cesium.ConstantProperty(
+            this.createPreviewCanvas(validation.valid)
+          );
+        }
+      }, 30);
+    }
   }
 
   private createBuildPreview(): void {
@@ -1051,11 +1079,17 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private async loadStreets(): Promise<void> {
     try {
+      const center = this.centerCoords();
+      console.log(`[Streets] Loading for center: ${center.latitude.toFixed(6)}, ${center.longitude.toFixed(6)}`);
+
       this.streetNetwork = await this.osmService.loadStreets(
-        ERLENBACH_COORDS.latitude,
-        ERLENBACH_COORDS.longitude,
+        center.latitude,
+        center.longitude,
         2000 // 2km radius
       );
+
+      console.log(`[Streets] Loaded ${this.streetNetwork.streets.length} streets`);
+      console.log(`[Streets] Bounds: ${this.streetNetwork.bounds.minLat.toFixed(6)}-${this.streetNetwork.bounds.maxLat.toFixed(6)}, ${this.streetNetwork.bounds.minLon.toFixed(6)}-${this.streetNetwork.bounds.maxLon.toFixed(6)}`);
 
       this.streetCount.set(this.streetNetwork.streets.length);
       this.renderStreets();
@@ -1096,9 +1130,17 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   private addPredefinedSpawns(): void {
     const colors = [Cesium.Color.RED, Cesium.Color.ORANGE, Cesium.Color.CYAN, Cesium.Color.MAGENTA];
 
-    SPAWN_POINTS.forEach((spawn, index) => {
-      this.addSpawnPoint(spawn.id, spawn.name, spawn.latitude, spawn.longitude, colors[index % colors.length]);
-    });
+    // Use editable spawn locations if available, otherwise defaults
+    const spawns = this.editableSpawnLocations();
+    if (spawns.length > 0 && spawns.every(s => s.lat !== 0 && s.lon !== 0)) {
+      spawns.forEach((spawn, index) => {
+        this.addSpawnPoint(spawn.id, spawn.name || `Spawn ${index + 1}`, spawn.lat, spawn.lon, colors[index % colors.length]);
+      });
+    } else {
+      DEFAULT_SPAWN_POINTS.forEach((spawn, index) => {
+        this.addSpawnPoint(spawn.id, spawn.name, spawn.latitude, spawn.longitude, colors[index % colors.length]);
+      });
+    }
   }
 
   private addBaseMarker(): void {
@@ -1236,40 +1278,64 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private validateTowerPosition(lat: number, lon: number): { valid: boolean; reason?: string } {
     if (!this.streetNetwork) {
+      console.log('[Validate] No street network loaded!');
       return { valid: false, reason: 'Strassennetz nicht geladen' };
+    }
+
+    if (this.streetNetwork.streets.length === 0) {
+      console.log('[Validate] Street network is empty!');
+      return { valid: false, reason: 'Keine Strassen geladen' };
+    }
+
+    // Check if click is within street network bounds
+    const bounds = this.streetNetwork.bounds;
+    const inBounds = lat >= bounds.minLat && lat <= bounds.maxLat &&
+                     lon >= bounds.minLon && lon <= bounds.maxLon;
+    if (!inBounds) {
+      console.log('[Validate] Click OUTSIDE street network bounds!');
+      console.log(`  Click: ${lat.toFixed(6)}, ${lon.toFixed(6)}`);
+      console.log(`  Bounds: ${bounds.minLat.toFixed(6)}-${bounds.maxLat.toFixed(6)}, ${bounds.minLon.toFixed(6)}-${bounds.maxLon.toFixed(6)}`);
+      return { valid: false, reason: 'Ausserhalb Spielbereich' };
     }
 
     const base = this.baseCoords();
     const distToBase = this.osmService.haversineDistance(lat, lon, base.latitude, base.longitude);
     if (distToBase < this.MIN_DISTANCE_TO_BASE) {
-      return { valid: false, reason: 'Zu nah an der Basis' };
+      return { valid: false, reason: `Zu nah an Basis (${distToBase.toFixed(0)}m)` };
     }
 
     for (const spawn of this.spawnPoints()) {
       const distToSpawn = this.osmService.haversineDistance(lat, lon, spawn.latitude, spawn.longitude);
       if (distToSpawn < this.MIN_DISTANCE_TO_SPAWN) {
-        return { valid: false, reason: 'Zu nah am Spawn-Punkt' };
+        return { valid: false, reason: `Zu nah am Spawn (${distToSpawn.toFixed(0)}m)` };
       }
     }
 
     for (const tower of this.gameState.towers()) {
       const distToTower = this.osmService.haversineDistance(lat, lon, tower.position.lat, tower.position.lon);
       if (distToTower < 20) {
-        return { valid: false, reason: 'Zu nah an anderem Tower' };
+        return { valid: false, reason: `Zu nah an Tower (${distToTower.toFixed(0)}m)` };
       }
     }
 
     const nearest = this.osmService.findNearestStreetPoint(this.streetNetwork, lat, lon);
     if (!nearest) {
-      return { valid: false, reason: 'Keine Strasse in der Naehe' };
+      console.log('[Validate] No street found - network bounds:', this.streetNetwork.bounds);
+      console.log('[Validate] Click position:', lat, lon);
+      return { valid: false, reason: 'Keine Strasse gefunden' };
+    }
+
+    // Log occasionally (not every frame)
+    if (Math.random() < 0.1) {
+      console.log(`[Validate] Street dist: ${nearest.distance.toFixed(1)}m (max: ${this.MAX_DISTANCE_TO_STREET}m)`);
     }
 
     if (nearest.distance > this.MAX_DISTANCE_TO_STREET) {
-      return { valid: false, reason: 'Zu weit von Strasse entfernt' };
+      return { valid: false, reason: `Zu weit (${nearest.distance.toFixed(0)}m > ${this.MAX_DISTANCE_TO_STREET}m)` };
     }
 
     if (nearest.distance < this.MIN_DISTANCE_TO_STREET) {
-      return { valid: false, reason: 'Nicht direkt auf der Strasse bauen' };
+      return { valid: false, reason: 'Nicht auf Strasse bauen' };
     }
 
     return { valid: true };
@@ -1740,5 +1806,192 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Return extended path
     return [...geoPath, ...bestExtension];
+  }
+
+  // ==================== Location Settings Methods ====================
+
+  /**
+   * Initialize editable locations from current values or localStorage
+   */
+  private initializeEditableLocations(): void {
+    // Try to load from localStorage
+    const savedLocations = this.loadLocationsFromStorage();
+
+    if (savedLocations && savedLocations.hq) {
+      console.log('[Init] Loaded saved location from localStorage:', savedLocations.hq.name);
+      console.log('[Init] HQ coords:', savedLocations.hq.lat, savedLocations.hq.lon);
+
+      this.editableHqLocation.set(savedLocations.hq);
+      this.editableSpawnLocations.set(savedLocations.spawns);
+
+      // Apply saved locations
+      this.baseCoords.set({
+        latitude: savedLocations.hq.lat,
+        longitude: savedLocations.hq.lon,
+      });
+      this.centerCoords.set({
+        latitude: savedLocations.hq.lat,
+        longitude: savedLocations.hq.lon,
+        height: 400,
+      });
+    } else {
+      console.log('[Init] Using default location: Erlenbach');
+      // Initialize from defaults
+      const base = this.baseCoords();
+      this.editableHqLocation.set({
+        lat: base.latitude,
+        lon: base.longitude,
+        name: 'Erlenbach (Default)',
+      });
+
+      // Convert spawn points to editable format
+      const editableSpawns: SpawnLocationConfig[] = DEFAULT_SPAWN_POINTS.map((sp) => ({
+        id: sp.id,
+        lat: sp.latitude,
+        lon: sp.longitude,
+        name: sp.name,
+      }));
+      this.editableSpawnLocations.set(editableSpawns);
+    }
+  }
+
+  /**
+   * Apply new location - simplified: just HQ + single spawn
+   */
+  async onApplyNewLocation(data: { hq: LocationConfig; spawn: LocationConfig }): Promise<void> {
+    this.isApplyingLocation.set(true);
+    this.appendDebugLog(`Lade: ${data.hq.name?.split(',')[0]}...`);
+
+    try {
+      // Update coords
+      this.baseCoords.set({ latitude: data.hq.lat, longitude: data.hq.lon });
+      this.centerCoords.set({ latitude: data.hq.lat, longitude: data.hq.lon, height: 400 });
+
+      // Update editable state
+      this.editableHqLocation.set(data.hq);
+      const spawnConfig: SpawnLocationConfig = { id: 'spawn-1', ...data.spawn };
+      this.editableSpawnLocations.set([spawnConfig]);
+
+      // Clear existing entities
+      this.clearMapEntities();
+
+      // Reload streets for new center
+      this.streetNetwork = await this.osmService.loadStreets(data.hq.lat, data.hq.lon, 2000);
+      this.streetCount.set(this.streetNetwork.streets.length);
+      this.renderStreets();
+
+      // Add new base marker
+      this.addBaseMarker();
+
+      // Add spawn point
+      this.addSpawnPoint('spawn-1', data.spawn.name?.split(',')[0] || 'Spawn', data.spawn.lat, data.spawn.lon, Cesium.Color.RED);
+
+      // Reinitialize game state
+      const base = this.baseCoords();
+      const waveSpawnPoints: WaveSpawnPoint[] = this.spawnPoints().map((sp) => ({
+        id: sp.id,
+        name: sp.name,
+        latitude: sp.latitude,
+        longitude: sp.longitude,
+      }));
+      this.gameState.initialize(
+        this.viewer!,
+        this.streetNetwork!,
+        { lat: base.latitude, lon: base.longitude },
+        waveSpawnPoints,
+        this.cachedPaths,
+        () => this.playProjectileSound(),
+        (msg) => this.appendDebugLog(msg),
+        () => this.onGameOver()
+      );
+
+      // Save to localStorage
+      this.saveLocationsToStorage();
+
+      // Fly to new location
+      this.flyToCenter();
+
+      this.appendDebugLog(`Geladen: ${this.streetCount()} Strassen`);
+    } catch (err) {
+      console.error('Failed to apply location:', err);
+      this.appendDebugLog(`Fehler: ${err instanceof Error ? err.message : 'Unbekannt'}`);
+    } finally {
+      this.isApplyingLocation.set(false);
+    }
+  }
+
+  onResetLocations(): void {
+    this.onApplyNewLocation({
+      hq: { lat: DEFAULT_BASE_COORDS.latitude, lon: DEFAULT_BASE_COORDS.longitude, name: 'Erlenbach (Default)' },
+      spawn: { lat: DEFAULT_SPAWN_POINTS[0].latitude, lon: DEFAULT_SPAWN_POINTS[0].longitude, name: DEFAULT_SPAWN_POINTS[0].name },
+    });
+    localStorage.removeItem(LOCATION_STORAGE_KEY);
+  }
+
+  private clearMapEntities(): void {
+    if (!this.viewer) return;
+
+    // Clear spawn entities
+    for (const entity of this.spawnEntities) {
+      this.viewer.entities.remove(entity);
+    }
+    this.spawnEntities = [];
+
+    // Clear route entities
+    for (const entity of this.routeEntities) {
+      this.viewer.entities.remove(entity);
+    }
+    this.routeEntities = [];
+
+    // Clear street entities
+    for (const entity of this.streetEntities) {
+      this.viewer.entities.remove(entity);
+    }
+    this.streetEntities = [];
+
+    // Clear base entity
+    if (this.baseEntity) {
+      this.viewer.entities.remove(this.baseEntity);
+      this.baseEntity = null;
+    }
+
+    // Clear spawn points signal
+    this.spawnPoints.set([]);
+
+    // Clear cached paths
+    this.cachedPaths.clear();
+  }
+
+  private flyToCenter(): void {
+    if (!this.viewer) return;
+
+    const center = this.centerCoords();
+    this.viewer.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(center.longitude, center.latitude, 500),
+      orientation: {
+        heading: Cesium.Math.toRadians(0),
+        pitch: Cesium.Math.toRadians(-45),
+        roll: 0,
+      },
+      duration: 2.0,
+    });
+  }
+
+  private saveLocationsToStorage(): void {
+    const data = {
+      hq: this.editableHqLocation(),
+      spawns: this.editableSpawnLocations(),
+    };
+    localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(data));
+  }
+
+  private loadLocationsFromStorage(): { hq: LocationConfig | null; spawns: SpawnLocationConfig[] } | null {
+    try {
+      const data = localStorage.getItem(LOCATION_STORAGE_KEY);
+      if (!data) return null;
+      return JSON.parse(data);
+    } catch {
+      return null;
+    }
   }
 }
