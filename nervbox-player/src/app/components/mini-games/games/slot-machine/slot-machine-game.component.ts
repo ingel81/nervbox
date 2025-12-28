@@ -79,13 +79,17 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
   readonly lastWinMessage = signal('');
   readonly showWinAnimation = signal(false);
 
+  // Displayed balance (delayed update during spin)
+  readonly displayedBalance = signal(0);
+  private pendingBalance = 0;
+
   // Spinning animation state
   private reelPositions = [0, 0, 0];
   private reelVelocities = [0, 0, 0];
-  private reelTargets = [0, 0, 0];
-  private spinStartTime = 0;
-  private readonly SYMBOL_HEIGHT = 120;
-  private readonly SPIN_DURATION = 3000;
+  private reelTargetSymbols = [0, 0, 0]; // Das Zielsymbol vom Server (0-6)
+  private reelFinalPositions = [0, 0, 0]; // Exakte Endposition zum Einrasten
+  private reelPhase: ('idle' | 'spinning' | 'stopping' | 'stopped')[] = ['idle', 'idle', 'idle'];
+  private readonly SYMBOL_HEIGHT = 60;
 
   // Particles
   private particles: Particle[] = [];
@@ -95,21 +99,26 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
     this.betAmount() <= this.creditService.credits()
   );
 
-  readonly currentBalance = this.creditService.credits;
-
   ngOnInit(): void {
     // Initialize with random symbols
-    this.reels.set([
+    const initialSymbols = [
       Math.floor(Math.random() * this.symbols.length),
       Math.floor(Math.random() * this.symbols.length),
       Math.floor(Math.random() * this.symbols.length),
-    ]);
+    ];
+    this.reels.set(initialSymbols);
+
+    // Set initial reel positions to match symbols
+    this.reelPositions = initialSymbols.map(s => s * this.SYMBOL_HEIGHT);
+
+    // Initialize displayed balance
+    this.displayedBalance.set(this.creditService.credits());
   }
 
   ngAfterViewInit(): void {
     const canvas = this.canvasRef.nativeElement;
-    canvas.width = 800;
-    canvas.height = 400;
+    canvas.width = 480;
+    canvas.height = 240;
     this.ctx = canvas.getContext('2d')!;
 
     // Start render loop
@@ -141,43 +150,90 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
     this.showWinAnimation.set(false);
     this.lastWinMessage.set('');
 
-    // Start spinning animation
-    this.spinStartTime = Date.now();
-    this.reelVelocities = [50, 50, 50]; // Fast initial speed
+    // Reset phases and start spinning
+    this.reelPhase = ['spinning', 'spinning', 'spinning'];
+    this.reelVelocities = [30, 30, 30];
 
     // Call backend
     const bet = this.betAmount();
+
+    // Show balance minus bet immediately (optimistic)
+    this.displayedBalance.set(this.creditService.credits() - bet);
+
     this.creditService.playSlotMachine(bet).subscribe({
       next: (response) => {
-        // Set target symbols based on server response
-        this.reelTargets = response.symbols;
+        // Store target symbols from server
+        this.reelTargetSymbols = [...response.symbols];
+
+        // Store pending balance for after animation
+        this.pendingBalance = response.newBalance;
+
+        // Calculate final positions for each reel
+        const numSymbols = this.symbols.length;
+        for (let i = 0; i < 3; i++) {
+          const targetSymbol = response.symbols[i];
+          const currentPos = this.reelPositions[i];
+
+          // Berechne Endposition: aktueller Zyklus + mindestens 2 volle Umdrehungen + Zielsymbol
+          const cycleSize = numSymbols * this.SYMBOL_HEIGHT;
+          const currentCycle = Math.floor(currentPos / cycleSize);
+          // Ziel: 2-3 volle Umdrehungen von jetzt + zum Zielsymbol
+          this.reelFinalPositions[i] = (currentCycle + 3) * cycleSize + targetSymbol * this.SYMBOL_HEIGHT;
+        }
 
         // Schedule stop animations (staggered)
-        setTimeout(() => this.stopReel(0), 1500);
-        setTimeout(() => this.stopReel(1), 2000);
-        setTimeout(() => this.stopReel(2), 2500);
+        setTimeout(() => this.triggerStop(0), 600);
+        setTimeout(() => this.triggerStop(1), 1000);
+        setTimeout(() => this.triggerStop(2), 1400);
 
-        // Show results after all reels stop
+        // Show results after all reels definitely stopped
         setTimeout(() => {
           this.showResult(response.winAmount, response.message);
-        }, 3000);
+        }, 2800);
       },
       error: (err) => {
         console.error('Slot machine error:', err);
         this.isSpinning.set(false);
+        this.reelPhase = ['idle', 'idle', 'idle'];
+        // Restore balance on error
+        this.displayedBalance.set(this.creditService.credits());
       },
     });
   }
 
-  private stopReel(reelIndex: number): void {
-    // Slow down this reel to stop at target
-    this.reelVelocities[reelIndex] = 2;
+  private triggerStop(reelIndex: number): void {
+    this.reelPhase[reelIndex] = 'stopping';
+  }
+
+  private snapToFinal(reelIndex: number): void {
+    // Exakt auf Endposition setzen
+    this.reelPositions[reelIndex] = this.reelFinalPositions[reelIndex];
+    this.reelVelocities[reelIndex] = 0;
+    this.reelPhase[reelIndex] = 'stopped';
+
+    // Symbol-State aktualisieren
+    this.reels.update(reels => {
+      const newReels = [...reels];
+      newReels[reelIndex] = this.reelTargetSymbols[reelIndex];
+      return newReels;
+    });
   }
 
   private showResult(winAmount: number, message: string): void {
+    // Stelle sicher, dass alle Walzen final eingerastet sind
+    for (let i = 0; i < 3; i++) {
+      if (this.reelPhase[i] !== 'stopped') {
+        this.snapToFinal(i);
+      }
+    }
+
     this.isSpinning.set(false);
+    this.reelPhase = ['idle', 'idle', 'idle'];
     this.lastWinAmount.set(winAmount);
     this.lastWinMessage.set(message);
+
+    // Now reveal the actual balance (after animation)
+    this.displayedBalance.set(this.pendingBalance);
 
     if (winAmount > 0) {
       this.showWinAnimation.set(true);
@@ -191,9 +247,9 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   private createWinParticles(winAmount: number): void {
-    const particleCount = Math.min(100, winAmount * 2);
-    const centerX = 400;
-    const centerY = 200;
+    const particleCount = Math.min(50, winAmount);
+    const centerX = 240;
+    const centerY = 120;
 
     for (let i = 0; i < particleCount; i++) {
       const angle = (Math.PI * 2 * i) / particleCount;
@@ -233,29 +289,38 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
     // Update spinning reels
     if (this.isSpinning()) {
       for (let i = 0; i < 3; i++) {
-        this.reelPositions[i] += this.reelVelocities[i];
+        const phase = this.reelPhase[i];
 
-        // Wrap around
-        const maxPos = this.symbols.length * this.SYMBOL_HEIGHT;
-        if (this.reelPositions[i] >= maxPos) {
-          this.reelPositions[i] = 0;
+        if (phase === 'spinning') {
+          // Freies Drehen mit konstanter Geschwindigkeit
+          this.reelPositions[i] += this.reelVelocities[i];
         }
+        else if (phase === 'stopping') {
+          const targetPos = this.reelFinalPositions[i];
+          const currentPos = this.reelPositions[i];
+          const distance = targetPos - currentPos;
 
-        // Slow down gradually and snap to target
-        if (this.reelVelocities[i] <= 2) {
-          const targetPos = this.reelTargets[i] * this.SYMBOL_HEIGHT;
-          const diff = targetPos - (this.reelPositions[i] % maxPos);
+          if (distance <= 0) {
+            // Bereits am/über Ziel - sofort einrasten
+            this.snapToFinal(i);
+          } else if (distance < 200) {
+            // Nahe am Ziel - Ease-Out mit garantiertem Einrasten
+            const speed = Math.max(2, distance * 0.15);
+            this.reelPositions[i] += speed;
 
-          if (Math.abs(diff) < 5) {
-            this.reelPositions[i] = targetPos;
-            this.reelVelocities[i] = 0;
-            this.reels.update(reels => {
-              const newReels = [...reels];
-              newReels[i] = this.reelTargets[i];
-              return newReels;
-            });
+            // Einrasten wenn sehr nah
+            if (targetPos - this.reelPositions[i] < 2) {
+              this.snapToFinal(i);
+            }
+          } else {
+            // Noch weit weg - normale Geschwindigkeit, aber langsamer werdend
+            const speed = Math.min(this.reelVelocities[i], distance * 0.08 + 5);
+            this.reelPositions[i] += speed;
+            // Geschwindigkeit reduzieren
+            this.reelVelocities[i] = Math.max(15, this.reelVelocities[i] * 0.98);
           }
         }
+        // 'stopped' und 'idle' - nichts tun
       }
     }
 
@@ -273,46 +338,167 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
   };
 
   private drawReels(): void {
-    const reelWidth = 200;
-    const reelHeight = 300;
-    const startX = 100;
-    const startY = 50;
-    const gap = 20;
+    const ctx = this.ctx;
+    const W = 480, H = 240;
 
+    // Walzen-Layout: 3 Walzen mit klaren Trennungen
+    const reelW = 110;
+    const reelH = 200;
+    const gap = 24;
+    const totalW = 3 * reelW + 2 * gap;
+    const startX = (W - totalW) / 2;
+    const startY = (H - reelH) / 2;
+
+    const symbolSize = this.SYMBOL_HEIGHT;
+    const numSymbols = this.symbols.length;
+
+    // Casino-Gehäuse mit Metallrahmen
+    ctx.fillStyle = '#0d0015';
+    ctx.beginPath();
+    ctx.roundRect(startX - 18, startY - 10, totalW + 36, reelH + 20, 12);
+    ctx.fill();
+
+    // Metallischer Rahmen
+    const frameGrad = ctx.createLinearGradient(startX - 18, startY - 10, startX - 18, startY + reelH + 10);
+    frameGrad.addColorStop(0, '#4a3060');
+    frameGrad.addColorStop(0.5, '#2a1540');
+    frameGrad.addColorStop(1, '#1a0a30');
+    ctx.strokeStyle = frameGrad;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // Innerer Glanz
+    ctx.strokeStyle = 'rgba(180, 100, 255, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(startX - 16, startY - 8, totalW + 32, reelH + 16, 10);
+    ctx.stroke();
+
+    // Jede Walze einzeln zeichnen
     for (let i = 0; i < 3; i++) {
-      const x = startX + i * (reelWidth + gap);
+      const x = startX + i * (reelW + gap);
+      const centerY = startY + reelH / 2;
 
-      // Draw reel background
-      this.ctx.fillStyle = '#2a0055';
-      this.ctx.strokeStyle = '#ff00ff';
-      this.ctx.lineWidth = 3;
-      this.ctx.beginPath();
-      this.ctx.roundRect(x, startY, reelWidth, reelHeight, 10);
-      this.ctx.fill();
-      this.ctx.stroke();
+      // Walzen-Slot mit Tiefe
+      ctx.fillStyle = '#050008';
+      ctx.beginPath();
+      ctx.roundRect(x - 2, startY, reelW + 4, reelH, 6);
+      ctx.fill();
 
-      // Draw neon glow
-      this.ctx.shadowBlur = 20;
-      this.ctx.shadowColor = '#ff00ff';
-      this.ctx.stroke();
-      this.ctx.shadowBlur = 0;
+      // 3D-Vertiefung
+      const slotGrad = ctx.createLinearGradient(x, startY, x + reelW, startY);
+      slotGrad.addColorStop(0, 'rgba(0,0,0,0.8)');
+      slotGrad.addColorStop(0.1, 'rgba(0,0,0,0)');
+      slotGrad.addColorStop(0.9, 'rgba(0,0,0,0)');
+      slotGrad.addColorStop(1, 'rgba(0,0,0,0.8)');
+      ctx.fillStyle = slotGrad;
+      ctx.fill();
 
-      // Draw symbol
-      const symbolIndex = this.reels()[i];
-      const symbol = this.symbols[symbolIndex];
+      // Clipping für saubere Symbolgrenzen
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x, startY + 4, reelW, reelH - 8);
+      ctx.clip();
 
-      // Draw symbol emoji
-      this.ctx.font = 'bold 100px Arial';
-      this.ctx.textAlign = 'center';
-      this.ctx.textBaseline = 'middle';
+      // Symbol-Position berechnen
+      const totalCycle = numSymbols * symbolSize;
+      const pos = ((this.reelPositions[i] % totalCycle) + totalCycle) % totalCycle;
+      const symbolFloat = pos / symbolSize;
+      const baseIdx = Math.floor(symbolFloat);
+      const offset = (symbolFloat - baseIdx) * symbolSize;
 
-      // Glow effect
-      this.ctx.shadowBlur = 30;
-      this.ctx.shadowColor = symbol.glow;
-      this.ctx.fillStyle = symbol.color;
-      this.ctx.fillText(symbol.emoji, x + reelWidth / 2, startY + reelHeight / 2);
-      this.ctx.shadowBlur = 0;
+      // Symbole zeichnen (3 sichtbar + Puffer oben/unten)
+      for (let j = -2; j <= 2; j++) {
+        let idx = (baseIdx + j) % numSymbols;
+        if (idx < 0) idx += numSymbols;
+
+        const symbol = this.symbols[idx];
+        const yPos = centerY + j * symbolSize - offset;
+
+        // Nur sichtbare Symbole zeichnen
+        if (yPos > startY - symbolSize && yPos < startY + reelH + symbolSize) {
+          // Leichter Glow für mittleres Symbol
+          const distFromCenter = Math.abs(yPos - centerY);
+          if (distFromCenter < symbolSize * 0.6) {
+            ctx.shadowColor = symbol.glow;
+            ctx.shadowBlur = 8;
+          } else {
+            ctx.shadowBlur = 0;
+          }
+
+          ctx.font = '40px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#fff';
+          ctx.fillText(symbol.emoji, x + reelW / 2, yPos);
+        }
+      }
+      ctx.shadowBlur = 0;
+      ctx.restore();
+
+      // Oben/Unten Fade-Out für Tiefeneffekt
+      const fadeH = 25;
+      const topFade = ctx.createLinearGradient(x, startY, x, startY + fadeH);
+      topFade.addColorStop(0, '#0d0015');
+      topFade.addColorStop(1, 'rgba(13, 0, 21, 0)');
+      ctx.fillStyle = topFade;
+      ctx.fillRect(x, startY, reelW, fadeH);
+
+      const bottomFade = ctx.createLinearGradient(x, startY + reelH - fadeH, x, startY + reelH);
+      bottomFade.addColorStop(0, 'rgba(13, 0, 21, 0)');
+      bottomFade.addColorStop(1, '#0d0015');
+      ctx.fillStyle = bottomFade;
+      ctx.fillRect(x, startY + reelH - fadeH, reelW, fadeH);
+
+      // Walzen-Separator
+      if (i < 2) {
+        const sepX = x + reelW + gap / 2;
+        ctx.strokeStyle = 'rgba(80, 40, 120, 0.6)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(sepX, startY + 10);
+        ctx.lineTo(sepX, startY + reelH - 10);
+        ctx.stroke();
+      }
     }
+
+    // Gewinnlinie mit Glow
+    const lineY = startY + reelH / 2;
+
+    // Glow-Effekt
+    ctx.shadowColor = '#ffd700';
+    ctx.shadowBlur = 12;
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(startX - 12, lineY);
+    ctx.lineTo(startX + totalW + 12, lineY);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Pfeil-Indikatoren
+    const arrowSize = 8;
+    ctx.fillStyle = '#ffd700';
+    ctx.shadowColor = '#ffd700';
+    ctx.shadowBlur = 6;
+
+    // Linker Pfeil
+    ctx.beginPath();
+    ctx.moveTo(startX - 14, lineY);
+    ctx.lineTo(startX - 6, lineY - arrowSize);
+    ctx.lineTo(startX - 6, lineY + arrowSize);
+    ctx.closePath();
+    ctx.fill();
+
+    // Rechter Pfeil
+    ctx.beginPath();
+    ctx.moveTo(startX + totalW + 14, lineY);
+    ctx.lineTo(startX + totalW + 6, lineY - arrowSize);
+    ctx.lineTo(startX + totalW + 6, lineY + arrowSize);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
   }
 
   private updateParticles(): void {
@@ -341,11 +527,11 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
     const time = Date.now() / 100;
     const pulse = Math.sin(time) * 0.5 + 0.5;
 
-    this.ctx.shadowBlur = 50 + pulse * 50;
+    this.ctx.shadowBlur = 15 + pulse * 15;
     this.ctx.shadowColor = '#ffd700';
     this.ctx.strokeStyle = '#ffd700';
-    this.ctx.lineWidth = 5;
-    this.ctx.strokeRect(50, 25, 700, 350);
+    this.ctx.lineWidth = 3;
+    this.ctx.strokeRect(5, 5, 470, 230);
     this.ctx.shadowBlur = 0;
   }
 

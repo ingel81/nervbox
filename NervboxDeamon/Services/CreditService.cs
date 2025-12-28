@@ -907,12 +907,13 @@ namespace NervboxDeamon.Services
             // Deduct bet
             user.Credits -= betAmount;
 
-            // Generate 3 random symbols (0-6)
+            // Generate 3 weighted random symbols (0-6)
             // Symbol indices match frontend: 0=cherry, 1=lemon, 2=orange, 3=diamond, 4=seven, 5=bar, 6=crown
+            // Weighted probabilities: fruits common, crown/seven rare
             var symbols = new int[3];
-            symbols[0] = _random.Next(7);
-            symbols[1] = _random.Next(7);
-            symbols[2] = _random.Next(7);
+            symbols[0] = GetWeightedSymbol();
+            symbols[1] = GetWeightedSymbol();
+            symbols[2] = GetWeightedSymbol();
 
             // Calculate win multiplier based on symbol combinations
             int multiplier = CalculateSlotMultiplier(symbols);
@@ -1013,6 +1014,22 @@ namespace NervboxDeamon.Services
             return (symbols, winAmount, user.Credits, winMessage);
         }
 
+        private int GetWeightedSymbol()
+        {
+            // Weighted probabilities (total = 100):
+            // Cherry (0): 26%, Lemon (1): 26%, Orange (2): 26% = 78% fruits
+            // Diamond (3): 10%, Bar (5): 7%, Seven (4): 3%, Crown (6): 2%
+            var roll = _random.Next(100);
+
+            if (roll < 26) return 0;      // Cherry
+            if (roll < 52) return 1;      // Lemon
+            if (roll < 78) return 2;      // Orange
+            if (roll < 88) return 3;      // Diamond
+            if (roll < 95) return 5;      // Bar
+            if (roll < 98) return 4;      // Seven
+            return 6;                      // Crown (2% chance)
+        }
+
         private int CalculateSlotMultiplier(int[] symbols)
         {
             // Symbol indices: 0=cherry, 1=lemon, 2=orange, 3=diamond, 4=seven, 5=bar, 6=crown
@@ -1020,36 +1037,23 @@ namespace NervboxDeamon.Services
             var s1 = symbols[1];
             var s2 = symbols[2];
 
-            // Count occurrences
-            var crown = symbols.Count(s => s == 6);
-            var seven = symbols.Count(s => s == 4);
-            var diamond = symbols.Count(s => s == 3);
-            var bar = symbols.Count(s => s == 5);
-
-            // Check for 3-of-a-kind first
+            // Only 3-of-a-kind wins - simple and clear
             if (s0 == s1 && s1 == s2)
             {
                 switch (s0)
                 {
-                    case 6: return 100; // 3x Crown: JACKPOT!
-                    case 4: return 50;  // 3x Seven
-                    case 3: return 25;  // 3x Diamond
-                    case 5: return 15;  // 3x BAR
+                    case 6: return 25;  // 3x Crown: JACKPOT!
+                    case 4: return 15;  // 3x Seven
+                    case 3: return 8;   // 3x Diamond
+                    case 5: return 5;   // 3x BAR
                     case 0:             // 3x Cherry
                     case 1:             // 3x Lemon
                     case 2:             // 3x Orange
-                        return 10;
+                        return 3;
                 }
             }
 
-            // Check for 2-of-a-kind with special symbols
-            if (crown >= 2) return 5;   // 2x Crown
-            if (seven >= 2) return 3;   // 2x Seven
-
-            // Check for 1 Crown (consolation prize)
-            if (crown >= 1) return 2;   // 1x Crown
-
-            // No win
+            // No win - only exact 3-of-a-kind pays
             return 0;
         }
 

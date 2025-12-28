@@ -373,9 +373,9 @@ namespace NervboxDeamon.Controllers
                     return BadRequest(new { Error = "Einsatz muss größer als 0 sein" });
                 }
 
-                // Validate multiplier is within expected range
+                // Validate multiplier is within expected range (must match frontend VALID_MULTIPLIERS in plinko.types.ts)
                 decimal[] validMultipliers = {
-                    0.2m, 0.3m, 0.5m, 1.5m, 3m, 5m, 10m, 25m, 50m
+                    0.1m, 0.2m, 0.3m, 0.5m, 0.8m, 2m, 5m, 10m, 20m
                 };
 
                 if (!validMultipliers.Contains(request.Multiplier))
