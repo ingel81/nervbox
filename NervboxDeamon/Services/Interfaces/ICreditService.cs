@@ -85,5 +85,11 @@ namespace NervboxDeamon.Services.Interfaces
         /// Process Plinko game result - deduct bet and add winnings
         /// </summary>
         (int newBalance, string message) ProcessPlinko(int userId, int amount, decimal multiplier);
+
+        /// <summary>
+        /// Play slot machine - spin reels and calculate winnings
+        /// Returns symbol indices, win amount, new balance, and win message
+        /// </summary>
+        (int[] symbols, int winAmount, int newBalance, string message) PlaySlotMachine(int userId, int betAmount);
     }
 }
