@@ -8,6 +8,7 @@ import { HotdogGameComponent } from './games/hotdog-katapult/hotdog-game.compone
 import { TowerDefenseComponent } from './games/tower-defense/tower-defense.component';
 import { PlinkoGameComponent } from './games/plinko/plinko-game.component';
 import { SlotMachineGameComponent } from './games/slot-machine/slot-machine-game.component';
+import { KaybergGameComponent } from './games/kayberg/kayberg-game.component';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -78,6 +79,19 @@ import { AuthService } from '../../core/services/auth.service';
             <div class="game-reward">
               <img src="icons/nervbox-coin.svg" alt="" class="mini-coin">
               <span>1x - 100x</span>
+            </div>
+          </button>
+
+          <!-- Kayberg Hunter -->
+          <button class="game-card kayberg" (click)="startKayberg()">
+            <div class="game-glow"></div>
+            <div class="game-badge new">NEU</div>
+            <mat-icon class="game-icon kayberg-icon">flight</mat-icon>
+            <span class="game-name">KAYBERG HUNTER</span>
+            <span class="game-desc">Jage als Greifvogel!</span>
+            <div class="game-reward">
+              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin">
+              <span>N$ pro Level</span>
             </div>
           </button>
 
@@ -287,6 +301,11 @@ import { AuthService } from '../../core/services/auth.service';
       border-color: rgba(255, 0, 255, 0.5);
     }
 
+    .game-card.kayberg {
+      background: linear-gradient(135deg, rgba(34, 139, 34, 0.15) 0%, rgba(139, 69, 19, 0.1) 100%);
+      border-color: rgba(34, 139, 34, 0.5);
+    }
+
     .game-card:hover {
       transform: translateY(-6px) scale(1.02);
     }
@@ -314,6 +333,11 @@ import { AuthService } from '../../core/services/auth.service';
     .game-card.slot-machine:hover {
       border-color: #ff00ff;
       box-shadow: 0 15px 40px rgba(255, 0, 255, 0.4), 0 0 50px rgba(255, 0, 255, 0.2);
+    }
+
+    .game-card.kayberg:hover {
+      border-color: #228b22;
+      box-shadow: 0 15px 40px rgba(34, 139, 34, 0.4), 0 0 50px rgba(34, 139, 34, 0.2);
     }
 
     .game-glow {
@@ -387,6 +411,12 @@ import { AuthService } from '../../core/services/auth.service';
       color: #ff00ff;
       filter: drop-shadow(0 0 15px rgba(255, 0, 255, 0.5));
       animation: icon-float 3s ease-in-out infinite, icon-pulse 2s ease-in-out infinite;
+    }
+
+    .game-icon.kayberg-icon {
+      color: #228b22;
+      filter: drop-shadow(0 0 15px rgba(34, 139, 34, 0.5));
+      transform: rotate(-30deg);
     }
 
     @keyframes icon-pulse {
@@ -624,6 +654,18 @@ export class GameSelectionDialogComponent {
     this.dialog.open(SlotMachineGameComponent, {
       width: '950px',
       maxWidth: '95vw',
+      panelClass: ['dark-dialog', 'game-dialog'],
+      disableClose: true,
+    });
+  }
+
+  startKayberg(): void {
+    this.dialogRef.close();
+    this.dialog.open(KaybergGameComponent, {
+      width: '95vw',
+      maxWidth: '950px',
+      height: 'auto',
+      maxHeight: '95vh',
       panelClass: ['dark-dialog', 'game-dialog'],
       disableClose: true,
     });
