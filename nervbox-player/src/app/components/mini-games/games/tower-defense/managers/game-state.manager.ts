@@ -242,6 +242,16 @@ export class GameStateManager {
   }
 
   /**
+   * Heal the base to full health and stop fire
+   */
+  healBase(): void {
+    this.baseHealth.set(100);
+    if (this.viewer) {
+      FireRenderer.stopFire(this.viewer);
+    }
+  }
+
+  /**
    * Reset game state
    */
   reset(): void {
