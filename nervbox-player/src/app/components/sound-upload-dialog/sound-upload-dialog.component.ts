@@ -164,10 +164,13 @@ interface FileUploadItem {
         >
           @if (isUploading()) {
             <mat-icon class="spinning">sync</mat-icon>
-            <span>Hochladen...</span>
           } @else {
             <mat-icon>cloud_upload</mat-icon>
-            <span>Alle hochladen ({{ pendingCount() }})</span>
+          }
+          @if (isUploading()) {
+            Hochladen...
+          } @else {
+            Alle hochladen ({{ pendingCount() }})
           }
         </button>
       }
