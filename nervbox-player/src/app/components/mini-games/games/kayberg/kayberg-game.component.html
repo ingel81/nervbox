@@ -1,0 +1,126 @@
+<div class="kayberg-container">
+  <!-- Game Header -->
+  <div class="game-header">
+    <div class="header-left">
+      <div class="score-display">
+        <mat-icon>stars</mat-icon>
+        <span class="score-value">{{ score() }}</span>
+      </div>
+      <div class="level-display">
+        <span class="level-label">LVL</span>
+        <span class="level-value">{{ level() }}</span>
+      </div>
+      <div class="wave-progress">
+        <mat-icon>catching_pokemon</mat-icon>
+        <span>{{ waveProgress() }}</span>
+      </div>
+    </div>
+
+    <div class="lives-display">
+      @for (life of livesArray(); track $index) {
+        <mat-icon class="heart">favorite</mat-icon>
+      }
+    </div>
+
+    <button mat-icon-button class="close-btn" (click)="confirmExit()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Game Canvas -->
+  <div class="canvas-container">
+    <canvas
+      #gameCanvas
+      [width]="canvasWidth"
+      [height]="canvasHeight"
+      class="game-canvas"
+    ></canvas>
+
+    <!-- Crosshair -->
+    @if (gameState() === 'playing') {
+      <div class="crosshair">
+        <div class="crosshair-h"></div>
+        <div class="crosshair-v"></div>
+      </div>
+    }
+
+    <!-- Ready Overlay -->
+    @if (gameState() === 'ready') {
+      <div class="overlay start-overlay" (click)="startGame()">
+        <mat-icon class="overlay-icon bird-icon">flight</mat-icon>
+        <h3>KAYBERG HUNTER</h3>
+        <p class="level-info">Level {{ level() }}</p>
+        <div class="instructions">
+          <p><strong>Steuerung:</strong></p>
+          <p>Maus - Blickrichtung</p>
+          <p>WASD - Bewegung</p>
+          <p>Leertaste - Sturzflug-Attacke</p>
+        </div>
+        <button mat-raised-button color="primary" class="start-btn">
+          <mat-icon>play_arrow</mat-icon>
+          Jagd starten
+        </button>
+        <p class="controls-hint">Fange {{ preyRequired() }} Beutetiere!</p>
+      </div>
+    }
+
+    <!-- Paused Overlay -->
+    @if (gameState() === 'paused') {
+      <div class="overlay pause-overlay">
+        <mat-icon class="overlay-icon">pause_circle</mat-icon>
+        <h3>Pausiert</h3>
+        <div class="overlay-actions">
+          <button mat-raised-button color="primary" (click)="resumeGame()">
+            <mat-icon>play_arrow</mat-icon>
+            Weiterspielen
+          </button>
+          <button mat-stroked-button (click)="exitGame()">Beenden</button>
+        </div>
+      </div>
+    }
+
+    <!-- Game Over Overlay -->
+    @if (gameState() === 'gameover') {
+      <div class="overlay gameover-overlay">
+        <mat-icon class="overlay-icon dead">sentiment_very_dissatisfied</mat-icon>
+        <h3>Game Over!</h3>
+        <p class="final-score">Score: {{ score() }}</p>
+        <p class="final-level">Erreicht: Level {{ level() }}</p>
+        <div class="overlay-actions">
+          <button mat-raised-button color="primary" (click)="restartGame()">
+            <mat-icon>replay</mat-icon>
+            Nochmal spielen
+          </button>
+          <button mat-stroked-button (click)="exitGame()">Beenden</button>
+        </div>
+      </div>
+    }
+
+    <!-- Level Complete Overlay -->
+    @if (gameState() === 'won') {
+      <div class="overlay win-overlay">
+        <mat-icon class="overlay-icon win">emoji_events</mat-icon>
+        <h3>Level geschafft!</h3>
+        <p class="final-score">Score: {{ score() }}</p>
+        @if (levelReward() > 0) {
+          <p class="reward-display">+{{ levelReward() }} N$</p>
+        }
+        <div class="overlay-actions">
+          <button mat-raised-button color="primary" (click)="nextLevel()">
+            <mat-icon>arrow_forward</mat-icon>
+            Level {{ level() + 1 }}
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Game Footer -->
+  <div class="game-footer">
+    <button mat-button (click)="togglePause()" [disabled]="gameState() !== 'playing'">
+      <mat-icon>pause</mat-icon>
+      Pause
+    </button>
+    <span class="footer-hint">ESC = Pause | Klicken zum Steuern</span>
+  </div>
+</div>
