@@ -81,6 +81,9 @@ export interface SpawnLocationConfig extends LocationConfig {
           <button class="icon-btn" (click)="logCamera.emit()" title="Kamera loggen">
             <mat-icon>videocam</mat-icon>
           </button>
+          <button class="icon-btn heal" [disabled]="baseHealth() >= 100" (click)="healHq.emit()" title="HQ heilen">
+            <mat-icon>healing</mat-icon>
+          </button>
           <button class="icon-btn danger" [disabled]="!waveActive()" (click)="killAll.emit()" title="Alle töten">
             <mat-icon>skull</mat-icon>
           </button>
@@ -388,6 +391,15 @@ export interface SpawnLocationConfig extends LocationConfig {
       background: rgba(239, 68, 68, 0.2);
     }
 
+    .icon-btn.heal {
+      border-color: rgba(34, 197, 94, 0.4);
+      color: #22c55e;
+    }
+
+    .icon-btn.heal:hover:not(:disabled) {
+      background: rgba(34, 197, 94, 0.2);
+    }
+
     .icon-btn:disabled {
       opacity: 0.3;
       cursor: not-allowed;
@@ -650,6 +662,7 @@ export class DebugPanelComponent {
   streetsVisible = input.required<boolean>();
   routesVisible = input.required<boolean>();
   waveActive = input.required<boolean>();
+  baseHealth = input.required<number>();
   debugLog = input.required<string>();
 
   // Location inputs
@@ -665,6 +678,7 @@ export class DebugPanelComponent {
   toggleStreets = output<void>();
   toggleRoutes = output<void>();
   killAll = output<void>();
+  healHq = output<void>();
   clearLog = output<void>();
   logCamera = output<void>();
 

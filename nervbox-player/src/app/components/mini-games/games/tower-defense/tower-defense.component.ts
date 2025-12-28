@@ -198,6 +198,7 @@ export interface SpawnPoint {
               [streetsVisible]="streetsVisible()"
               [routesVisible]="routesVisible()"
               [waveActive]="waveActive()"
+              [baseHealth]="gameState.baseHealth()"
               [debugLog]="debugLog()"
               [hqLocation]="editableHqLocation()"
               [spawnLocations]="editableSpawnLocations()"
@@ -209,6 +210,7 @@ export interface SpawnPoint {
               (toggleStreets)="toggleStreets()"
               (toggleRoutes)="toggleRoutes()"
               (killAll)="killAllEnemies()"
+              (healHq)="healHq()"
               (clearLog)="clearDebugLog()"
               (logCamera)="logCameraPosition()"
               (applyNewLocation)="onApplyNewLocation($event)"
@@ -1571,6 +1573,12 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         this.gameState.killEnemy(enemy);
       }
     }
+  }
+
+  healHq(): void {
+    // HQ auf 100 HP heilen und Feuer stoppen
+    this.gameState.healBase();
+    this.appendDebugLog('HQ geheilt (100 HP)');
   }
 
   clearDebugLog(): void {
