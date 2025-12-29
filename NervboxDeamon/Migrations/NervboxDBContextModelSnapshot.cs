@@ -67,6 +67,41 @@ namespace NervboxDeamon.Migrations
                     b.ToTable("achievements");
                 });
 
+            modelBuilder.Entity("NervboxDeamon.DbModels.ChatMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("GifUrl")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("gif_url");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("message");
+
+                    b.Property<int>("MessageType")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("message_type");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("chat_messages");
+                });
+
             modelBuilder.Entity("NervboxDeamon.DbModels.CreditSettings", b =>
                 {
                     b.Property<int>("Id")
@@ -148,41 +183,6 @@ namespace NervboxDeamon.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("credit_transactions");
-                });
-
-            modelBuilder.Entity("NervboxDeamon.DbModels.ChatMessage", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("GifUrl")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("gif_url");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("message");
-
-                    b.Property<int>("MessageType")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("message_type");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("chat_messages");
                 });
 
             modelBuilder.Entity("NervboxDeamon.DbModels.Setting", b =>
@@ -303,6 +303,35 @@ namespace NervboxDeamon.Migrations
                     b.ToTable("sound_usages");
                 });
 
+            modelBuilder.Entity("NervboxDeamon.DbModels.SoundVote", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("SoundHash")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("sound_hash");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("VoteValue")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("vote_value");
+
+                    b.Property<DateTime>("VotedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("voted_at");
+
+                    b.HasKey("UserId", "SoundHash");
+
+                    b.HasIndex("SoundHash");
+
+                    b.ToTable("sound_votes");
+                });
+
             modelBuilder.Entity("NervboxDeamon.DbModels.Tag", b =>
                 {
                     b.Property<int>("Id")
@@ -388,6 +417,10 @@ namespace NervboxDeamon.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("username");
 
+                    b.Property<int>("Wood")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("wood");
+
                     b.HasKey("Id");
 
                     b.HasIndex("IpAddress")
@@ -443,35 +476,6 @@ namespace NervboxDeamon.Migrations
                     b.HasIndex("SoundHash");
 
                     b.ToTable("user_favorites");
-                });
-
-            modelBuilder.Entity("NervboxDeamon.DbModels.SoundVote", b =>
-                {
-                    b.Property<int>("UserId")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("user_id");
-
-                    b.Property<string>("SoundHash")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("sound_hash");
-
-                    b.Property<int>("VoteValue")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("vote_value");
-
-                    b.Property<DateTime>("VotedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("voted_at");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("UserId", "SoundHash");
-
-                    b.HasIndex("SoundHash");
-
-                    b.ToTable("sound_votes");
                 });
 
             modelBuilder.Entity("NervboxDeamon.DbModels.ChatMessage", b =>
@@ -541,6 +545,25 @@ namespace NervboxDeamon.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("NervboxDeamon.DbModels.SoundVote", b =>
+                {
+                    b.HasOne("NervboxDeamon.DbModels.Sound", "Sound")
+                        .WithMany("Votes")
+                        .HasForeignKey("SoundHash")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NervboxDeamon.DbModels.User", "User")
+                        .WithMany("SoundVotes")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Sound");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("NervboxDeamon.DbModels.UserAchievement", b =>
                 {
                     b.HasOne("NervboxDeamon.DbModels.Achievement", "Achievement")
@@ -570,25 +593,6 @@ namespace NervboxDeamon.Migrations
 
                     b.HasOne("NervboxDeamon.DbModels.User", "User")
                         .WithMany("Favorites")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Sound");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("NervboxDeamon.DbModels.SoundVote", b =>
-                {
-                    b.HasOne("NervboxDeamon.DbModels.Sound", "Sound")
-                        .WithMany("Votes")
-                        .HasForeignKey("SoundHash")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("NervboxDeamon.DbModels.User", "User")
-                        .WithMany("SoundVotes")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();

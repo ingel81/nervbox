@@ -251,6 +251,21 @@ body {
   background-color: var(--color-red) !important;
 }
 
+/* Shop Dialog - needs scrolling */
+.dark-dialog .mat-mdc-dialog-surface {
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+.dark-dialog .mat-mdc-dialog-content.shop-content {
+  flex: 1 1 auto;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  max-height: none !important;
+  min-height: 0;
+}
+
 /* Snackbar Styling */
 .mat-mdc-snack-bar-container {
   --mdc-snackbar-container-color: #1a1b1f !important;

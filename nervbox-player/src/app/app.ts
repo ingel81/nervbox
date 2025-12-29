@@ -19,6 +19,7 @@ import { UserManagementDialogComponent } from './components/admin/user-managemen
 import { CreditSettingsDialogComponent } from './components/admin/credit-settings-dialog.component';
 import { ChatSidebarComponent } from './components/chat/chat-sidebar.component';
 import { EarnCoinsFabComponent } from './components/mini-games/earn-coins-fab.component';
+import { ShopFabComponent } from './components/shop/shop-fab.component';
 import { AvatarUploadDialogComponent } from './components/avatar-upload-dialog/avatar-upload-dialog.component';
 import { SoundUploadDialogComponent } from './components/sound-upload-dialog/sound-upload-dialog.component';
 import { AchievementToastComponent } from './components/shared/achievement-toast/achievement-toast.component';
@@ -55,6 +56,7 @@ interface Activity {
     TagFilterComponent,
     ChatSidebarComponent,
     EarnCoinsFabComponent,
+    ShopFabComponent,
     AchievementToastComponent,
   ],
   template: `
@@ -151,6 +153,9 @@ interface Activity {
 
       <!-- Mini-Games FAB (Admin only) -->
       <app-earn-coins-fab />
+
+      <!-- Shop FAB -->
+      <app-shop-fab />
 
       <!-- Achievement Toast -->
       <app-achievement-toast />

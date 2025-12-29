@@ -91,5 +91,10 @@ namespace NervboxDeamon.Services.Interfaces
         /// Returns symbol indices, win amount, new balance, and win message
         /// </summary>
         (int[] symbols, int winAmount, int newBalance, string message) PlaySlotMachine(int userId, int betAmount);
+
+        /// <summary>
+        /// Process shooter game result - directly add/subtract balance
+        /// </summary>
+        int ProcessShooterGameResult(int userId, string gameName, int balanceChange, int hits, int misses);
     }
 }
