@@ -216,10 +216,10 @@ export class WeinfestShooterEngine {
   }
 
   private spawnThrower(): void {
-    // Random position at bottom of screen
-    const margin = 100;
+    // Random position at bottom of screen (landscape mode)
+    const margin = 150;
     const x = margin + Math.random() * (this.width - margin * 2);
-    const y = this.height - 150 + Math.random() * 50;
+    const y = this.height - 80 + Math.random() * 30;
 
     const thrower: Thrower = {
       x,
@@ -270,13 +270,13 @@ export class WeinfestShooterEngine {
   }
 
   private spawnBottle(thrower: Thrower): void {
-    // Calculate throw velocity for a nice arc
-    const throwAngle = -Math.PI / 2 + (Math.random() - 0.5) * 0.8; // Mostly upward with some variance
-    const throwSpeed = 8 + Math.random() * 4;
+    // Calculate throw velocity for a nice arc (adjusted for landscape)
+    const throwAngle = -Math.PI / 2 + (Math.random() - 0.5) * 1.0; // Wider horizontal variance
+    const throwSpeed = 6 + Math.random() * 3; // Slower for shorter canvas
 
     const bottle: Bottle = {
       x: thrower.x,
-      y: thrower.y - 50,
+      y: thrower.y - 30,
       vx: Math.cos(throwAngle) * throwSpeed,
       vy: Math.sin(throwAngle) * throwSpeed,
       rotation: 0,
@@ -302,8 +302,8 @@ export class WeinfestShooterEngine {
           bottle.y += bottle.vy * dt;
           bottle.rotation += bottle.rotationSpeed * dt;
 
-          // Check if hit ground
-          if (bottle.y >= this.height - 80) {
+          // Check if hit ground (adjusted for landscape)
+          if (bottle.y >= this.height - 50) {
             bottle.state = 'breaking_floor';
             bottle.breakFrame = 0;
             bottle.breakTimer = 0;
@@ -462,7 +462,7 @@ export class WeinfestShooterEngine {
       const scale = 0.5;
       const w = img.width * scale;
       const h = img.height * scale;
-      this.ctx.drawImage(img, bottle.x - w / 2, this.height - 80 - h / 2, w, h);
+      this.ctx.drawImage(img, bottle.x - w / 2, this.height - 50 - h / 2, w, h);
     }
   }
 

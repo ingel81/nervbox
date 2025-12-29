@@ -505,9 +505,9 @@ export class WeinfestShooterGameComponent implements AfterViewInit, OnDestroy {
     return Math.round((this.hits() / total) * 100);
   });
 
-  // Canvas dimensions (Portrait mode)
-  readonly canvasWidth = 400;
-  readonly canvasHeight = 700;
+  // Canvas dimensions (Landscape mode - matches 1376x768 background)
+  readonly canvasWidth = 800;
+  readonly canvasHeight = 448;
 
   private engine!: WeinfestShooterEngine;
   private animationId = 0;
