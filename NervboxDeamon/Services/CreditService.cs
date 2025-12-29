@@ -1055,6 +1055,91 @@ namespace NervboxDeamon.Services
             return 0;
         }
 
+        public int ProcessShooterGameResult(int userId, string gameName, int balanceChange, int hits, int misses)
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+
+            var user = db.Users.Find(userId);
+            if (user == null)
+            {
+                _logger.LogWarning($"User {userId} not found for shooter game result");
+                return 0;
+            }
+
+            var settings = GetSettings();
+
+            // Handle positive balance (winnings)
+            if (balanceChange > 0)
+            {
+                // Apply max credits cap for non-admins
+                var actualReward = balanceChange;
+                if (user.Role != "admin")
+                {
+                    var newBalance = user.Credits + balanceChange;
+                    if (newBalance > settings.MaxCreditsUser)
+                    {
+                        actualReward = settings.MaxCreditsUser - user.Credits;
+                        if (actualReward <= 0)
+                        {
+                            _logger.LogDebug($"User {userId} at max credits, no shooter game reward given");
+                            return user.Credits;
+                        }
+                    }
+                }
+
+                user.Credits += actualReward;
+
+                // Log transaction
+                db.CreditTransactions.Add(new CreditTransaction
+                {
+                    UserId = userId,
+                    Amount = actualReward,
+                    TransactionType = CreditTransactionType.GameReward,
+                    Description = $"{gameName}: {hits} Treffer, {misses} Misses",
+                    BalanceAfter = user.Credits,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                db.SaveChanges();
+                _logger.LogInformation($"User {userId} earned {actualReward} N$ from {gameName} ({hits} hits, {misses} misses)");
+            }
+            // Handle negative balance (losses)
+            else if (balanceChange < 0)
+            {
+                var loss = Math.Abs(balanceChange);
+                var actualLoss = Math.Min(loss, user.Credits); // Don't go below 0
+
+                user.Credits -= actualLoss;
+
+                if (actualLoss > 0)
+                {
+                    // Log transaction
+                    db.CreditTransactions.Add(new CreditTransaction
+                    {
+                        UserId = userId,
+                        Amount = -actualLoss,
+                        TransactionType = CreditTransactionType.GameReward,
+                        Description = $"{gameName}: {hits} Treffer, {misses} Misses (Verlust)",
+                        BalanceAfter = user.Credits,
+                        CreatedAt = DateTime.UtcNow
+                    });
+
+                    db.SaveChanges();
+                    _logger.LogInformation($"User {userId} lost {actualLoss} N$ from {gameName} ({hits} hits, {misses} misses)");
+                }
+            }
+
+            // Broadcast credit update via SignalR
+            _soundHub.Clients.All.SendAsync("CreditUpdate", new
+            {
+                UserId = userId,
+                Credits = user.Credits
+            });
+
+            return user.Credits;
+        }
+
         public void Dispose()
         {
             if (_disposed)

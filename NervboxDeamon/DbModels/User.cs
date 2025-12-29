@@ -47,6 +47,9 @@ namespace NervboxDeamon.DbModels
         [Column("credits")]
         public int Credits { get; set; } = 0;
 
+        [Column("wood")]
+        public int Wood { get; set; } = 10;  // Initial 10 Holz für jeden User
+
         [Column("last_credit_grant_at")]
         public DateTime? LastCreditGrantAt { get; set; }
 

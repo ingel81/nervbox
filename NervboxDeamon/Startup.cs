@@ -124,6 +124,7 @@ namespace NervboxDeamon
       services.AddSingleton<ICreditService, CreditService>();
       services.AddSingleton<IAchievementService, AchievementService>();
       services.AddSingleton<IVoteService, VoteService>();
+      services.AddSingleton<IShopService, ShopService>();
       services.Configure<IISServerOptions>(options =>
       {
         options.AllowSynchronousIO = true;

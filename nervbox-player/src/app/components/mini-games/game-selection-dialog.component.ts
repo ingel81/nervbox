@@ -9,6 +9,7 @@ import { TowerDefenseComponent } from './games/tower-defense/tower-defense.compo
 import { PlinkoGameComponent } from './games/plinko/plinko-game.component';
 import { SlotMachineGameComponent } from './games/slot-machine/slot-machine-game.component';
 import { KaybergGameComponent } from './games/kayberg/kayberg-game.component';
+import { WeinfestShooterGameComponent } from './games/weinfest-shooter/weinfest-shooter-game.component';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -85,13 +86,25 @@ import { AuthService } from '../../core/services/auth.service';
           <!-- Kayberg Hunter -->
           <button class="game-card kayberg" (click)="startKayberg()">
             <div class="game-glow"></div>
-            <div class="game-badge new">NEU</div>
             <mat-icon class="game-icon kayberg-icon">flight</mat-icon>
             <span class="game-name">KAYBERG HUNTER</span>
             <span class="game-desc">Jage als Greifvogel!</span>
             <div class="game-reward">
               <img src="icons/nervbox-coin.svg" alt="" class="mini-coin">
               <span>N$ pro Level</span>
+            </div>
+          </button>
+
+          <!-- Weinfest Shooter -->
+          <button class="game-card weinfest" (click)="startWeinfestShooter()">
+            <div class="game-glow"></div>
+            <div class="game-badge new">NEU</div>
+            <span class="game-emoji wine">🍷</span>
+            <span class="game-name">WEINFEST SHOOTER</span>
+            <span class="game-desc">Schiess die Flaschen ab!</span>
+            <div class="game-reward">
+              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin">
+              <span>+3/-2 N$</span>
             </div>
           </button>
 
@@ -306,6 +319,11 @@ import { AuthService } from '../../core/services/auth.service';
       border-color: rgba(34, 139, 34, 0.5);
     }
 
+    .game-card.weinfest {
+      background: linear-gradient(135deg, rgba(139, 69, 19, 0.2) 0%, rgba(128, 0, 128, 0.15) 100%);
+      border-color: rgba(139, 69, 19, 0.5);
+    }
+
     .game-card:hover {
       transform: translateY(-6px) scale(1.02);
     }
@@ -338,6 +356,11 @@ import { AuthService } from '../../core/services/auth.service';
     .game-card.kayberg:hover {
       border-color: #228b22;
       box-shadow: 0 15px 40px rgba(34, 139, 34, 0.4), 0 0 50px rgba(34, 139, 34, 0.2);
+    }
+
+    .game-card.weinfest:hover {
+      border-color: #8b4513;
+      box-shadow: 0 15px 40px rgba(139, 69, 19, 0.4), 0 0 50px rgba(128, 0, 128, 0.3);
     }
 
     .game-glow {
@@ -428,6 +451,10 @@ import { AuthService } from '../../core/services/auth.service';
       font-size: 48px;
       filter: drop-shadow(0 0 15px rgba(249, 115, 22, 0.5));
       animation: icon-float 3s ease-in-out infinite;
+    }
+
+    .game-emoji.wine {
+      filter: drop-shadow(0 0 15px rgba(128, 0, 128, 0.5));
     }
 
     @keyframes icon-float {
@@ -664,6 +691,18 @@ export class GameSelectionDialogComponent {
     this.dialog.open(KaybergGameComponent, {
       width: '95vw',
       maxWidth: '950px',
+      height: 'auto',
+      maxHeight: '95vh',
+      panelClass: ['dark-dialog', 'game-dialog'],
+      disableClose: true,
+    });
+  }
+
+  startWeinfestShooter(): void {
+    this.dialogRef.close();
+    this.dialog.open(WeinfestShooterGameComponent, {
+      width: 'auto',
+      maxWidth: '95vw',
       height: 'auto',
       maxHeight: '95vh',
       panelClass: ['dark-dialog', 'game-dialog'],

@@ -82,6 +82,22 @@ export interface SlotMachineResponse {
   betAmount: number;
 }
 
+export interface ShooterGameResultRequest {
+  gameName: string;
+  balance: number;
+  hits: number;
+  misses: number;
+}
+
+export interface ShooterGameResultResponse {
+  success: boolean;
+  gameName: string;
+  balanceChange: number;
+  hits: number;
+  misses: number;
+  newBalance: number;
+}
+
 export interface TransferableUser {
   id: number;
   username: string;
@@ -234,5 +250,26 @@ export class CreditService {
         this.credits.set(response.newBalance);
       })
     );
+  }
+
+  // Shooter Games (e.g., Weinfest Shooter)
+  submitShooterGameResult(
+    gameName: string,
+    balance: number,
+    hits: number,
+    misses: number
+  ): Observable<ShooterGameResultResponse> {
+    return this.api
+      .post<ShooterGameResultResponse>('/credit/shooter-game', {
+        gameName,
+        balance,
+        hits,
+        misses,
+      })
+      .pipe(
+        tap(response => {
+          this.credits.set(response.newBalance);
+        })
+      );
   }
 }

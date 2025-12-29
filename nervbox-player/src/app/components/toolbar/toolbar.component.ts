@@ -17,8 +17,10 @@ import { FavoritesService } from '../../core/services/favorites.service';
 import { CreditService } from '../../core/services/credit.service';
 import { AvatarService } from '../../core/services/avatar.service';
 import { AchievementService } from '../../core/services/achievement.service';
+import { InventoryService } from '../../core/services/inventory.service';
 import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component';
 import { ShekelPopoverComponent } from '../shared/shekel-popover/shekel-popover.component';
+import { ShopDialogComponent } from '../shop/shop-dialog.component';
 
 export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'duration-desc' | 'duration-asc' | 'votes-desc' | 'votes-asc' | 'random';
 
@@ -117,10 +119,10 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
           <span class="credit-currency">N$</span>
         </div>
 
-        <!-- LOGS - ??? -->
-        <div class="logs-display" matTooltip="Mysteriöses Holz">
+        <!-- LOGS - Clickable to open shop -->
+        <div class="logs-display clickable" matTooltip="Holz kaufen" (click)="openShop()">
           <img src="icons/nervbox-log.svg" alt="" class="log-icon">
-          <span class="log-amount">10</span>
+          <span class="log-amount">{{ inventoryService.wood() }}</span>
         </div>
 
         <!-- INCOME/h -->
@@ -595,6 +597,17 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       margin-left: 8px;
       cursor: default;
       user-select: none;
+      transition: all 0.3s ease;
+    }
+
+    .logs-display.clickable {
+      cursor: pointer;
+    }
+
+    .logs-display.clickable:hover {
+      background: linear-gradient(135deg, rgba(46, 125, 50, 0.25) 0%, rgba(27, 94, 32, 0.2) 100%);
+      border-color: rgba(46, 125, 50, 0.5);
+      transform: scale(1.05);
     }
 
     .log-icon {
@@ -923,6 +936,7 @@ export class ToolbarComponent {
   readonly favorites = inject(FavoritesService);
   readonly creditService = inject(CreditService);
   readonly avatarService = inject(AvatarService);
+  readonly inventoryService = inject(InventoryService);
   private readonly dialog = inject(MatDialog);
   private readonly achievementService = inject(AchievementService);
 
@@ -998,6 +1012,15 @@ export class ToolbarComponent {
       panelClass: 'shekel-popover-dialog',
       backdropClass: 'shekel-popover-backdrop',
       autoFocus: false,
+    });
+  }
+
+  openShop(): void {
+    this.dialog.open(ShopDialogComponent, {
+      width: '1100px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      panelClass: 'dark-dialog',
     });
   }
 }

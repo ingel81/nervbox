@@ -432,6 +432,46 @@ namespace NervboxDeamon.Controllers
                 return StatusCode(500, new { Error = ex.Message });
             }
         }
+
+        /// <summary>
+        /// POST /api/credit/shooter-game - Submit shooter game result (direct balance add/subtract)
+        /// </summary>
+        [HttpPost("shooter-game")]
+        [Authorize]
+        public IActionResult SubmitShooterGameResult([FromBody] ShooterGameResultRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(request.GameName))
+                {
+                    return BadRequest(new { Error = "Game name is required" });
+                }
+
+                // Limit balance change to reasonable values (-100 to +500)
+                var clampedBalance = Math.Max(-100, Math.Min(500, request.Balance));
+
+                var newBalance = _creditService.ProcessShooterGameResult(
+                    UserId,
+                    request.GameName,
+                    clampedBalance,
+                    request.Hits,
+                    request.Misses);
+
+                return Ok(new
+                {
+                    Success = true,
+                    GameName = request.GameName,
+                    BalanceChange = clampedBalance,
+                    Hits = request.Hits,
+                    Misses = request.Misses,
+                    NewBalance = newBalance
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Error = ex.Message });
+            }
+        }
     }
 
     public class CreditGrantRequest
@@ -467,5 +507,13 @@ namespace NervboxDeamon.Controllers
     public class SlotMachineRequest
     {
         public int BetAmount { get; set; }
+    }
+
+    public class ShooterGameResultRequest
+    {
+        public string GameName { get; set; }
+        public int Balance { get; set; }
+        public int Hits { get; set; }
+        public int Misses { get; set; }
     }
 }
