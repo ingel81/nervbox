@@ -701,8 +701,8 @@ export class GameSelectionDialogComponent {
   startWeinfestShooter(): void {
     this.dialogRef.close();
     this.dialog.open(WeinfestShooterGameComponent, {
-      width: 'auto',
-      maxWidth: '95vw',
+      width: '95vw',
+      maxWidth: '900px',
       height: 'auto',
       maxHeight: '95vh',
       panelClass: ['dark-dialog', 'game-dialog'],
