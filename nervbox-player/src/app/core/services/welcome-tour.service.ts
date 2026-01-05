@@ -53,14 +53,16 @@ export class WelcomeTourService {
 
   readonly shouldShowUserTour = computed(() => {
     // Tour nur für eingeloggte User - sonst fehlen UI-Elemente
-    return this.auth.isLoggedIn() && !this.userTourCompleted() && !this.userTourActive();
+    // Auf Mobile nicht anzeigen - Tooltips werden von Dialogen verdeckt
+    return this.auth.isLoggedIn() && !this.userTourCompleted() && !this.userTourActive() && !this.isMobile();
   });
 
   readonly shouldShowAdminTour = computed(() => {
     return (
       this.auth.currentUser()?.role === 'admin' &&
       !this.adminTourCompleted() &&
-      !this.adminTourActive()
+      !this.adminTourActive() &&
+      !this.isMobile()
     );
   });
 
@@ -218,6 +220,8 @@ export class WelcomeTourService {
     // Tour nur für eingeloggte User
     if (!this.auth.isLoggedIn()) return;
     if (this.userTourActive() || this.adminTourActive()) return;
+    // Tour auf Mobile nicht starten - Tooltips werden von Dialogen verdeckt
+    if (this.isMobile()) return;
 
     this.userTourActive.set(true);
     this.tour = this.createTour();
@@ -470,6 +474,8 @@ export class WelcomeTourService {
   startAdminTour(): void {
     if (this.userTourActive() || this.adminTourActive()) return;
     if (this.auth.currentUser()?.role !== 'admin') return;
+    // Tour auf Mobile nicht starten - Tooltips werden von Dialogen verdeckt
+    if (this.isMobile()) return;
 
     // Check if admin menu button is visible
     const adminMenu = document.querySelector('[data-tour="admin-menu"]');
@@ -620,6 +626,14 @@ export class WelcomeTourService {
   }
 
   // ============ SHARED ============
+
+  /**
+   * Detects if the current device is mobile.
+   * On mobile devices, tooltips get covered by dialogs, making the tour unusable.
+   */
+  private isMobile(): boolean {
+    return window.innerWidth < 768;
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private createTour(): any {
