@@ -472,6 +472,41 @@ namespace NervboxDeamon.Controllers
                 return StatusCode(500, new { Error = ex.Message });
             }
         }
+
+        /// <summary>
+        /// POST /api/credit/spend - Spend credits (for minigames like Sandwichmaster)
+        /// </summary>
+        [HttpPost("spend")]
+        [Authorize]
+        public IActionResult SpendCredits([FromBody] SpendCreditsRequest request)
+        {
+            try
+            {
+                if (request.Amount <= 0)
+                {
+                    return BadRequest(new { Error = "Betrag muss größer als 0 sein" });
+                }
+
+                var (success, newBalance, message) = _creditService.SpendCredits(UserId, request.Amount, request.Reason);
+
+                if (!success)
+                {
+                    return BadRequest(new { Error = message, NewBalance = newBalance });
+                }
+
+                return Ok(new
+                {
+                    Success = true,
+                    AmountSpent = request.Amount,
+                    NewBalance = newBalance,
+                    Message = message
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Error = ex.Message });
+            }
+        }
     }
 
     public class CreditGrantRequest
@@ -515,5 +550,11 @@ namespace NervboxDeamon.Controllers
         public int Balance { get; set; }
         public int Hits { get; set; }
         public int Misses { get; set; }
+    }
+
+    public class SpendCreditsRequest
+    {
+        public int Amount { get; set; }
+        public string Reason { get; set; }
     }
 }
