@@ -10,6 +10,7 @@ import { PlinkoGameComponent } from './games/plinko/plinko-game.component';
 import { SlotMachineGameComponent } from './games/slot-machine/slot-machine-game.component';
 import { KaybergGameComponent } from './games/kayberg/kayberg-game.component';
 import { WeinfestShooterGameComponent } from './games/weinfest-shooter/weinfest-shooter-game.component';
+import { SandwichmasterGameComponent } from './games/sandwichmaster/sandwichmaster-game.component';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -98,13 +99,25 @@ import { AuthService } from '../../core/services/auth.service';
           <!-- Weinfest Shooter -->
           <button class="game-card weinfest" (click)="startWeinfestShooter()">
             <div class="game-glow"></div>
-            <div class="game-badge new">NEU</div>
             <span class="game-emoji wine">🍷</span>
             <span class="game-name">WEINFEST SHOOTER</span>
             <span class="game-desc">Schiess die Flaschen ab!</span>
             <div class="game-reward">
               <img src="icons/nervbox-coin.svg" alt="" class="mini-coin">
               <span>+3/-2 N$</span>
+            </div>
+          </button>
+
+          <!-- Sandwichmaster -->
+          <button class="game-card sandwichmaster" (click)="startSandwichmaster()">
+            <div class="game-glow"></div>
+            <div class="game-badge new">NEU</div>
+            <span class="game-emoji sandwich">🥪</span>
+            <span class="game-name">SANDWICHMASTER</span>
+            <span class="game-desc">Baue das ultimative Sandwich!</span>
+            <div class="game-reward">
+              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin">
+              <span>Punkte sammeln</span>
             </div>
           </button>
 
@@ -324,6 +337,11 @@ import { AuthService } from '../../core/services/auth.service';
       border-color: rgba(139, 69, 19, 0.5);
     }
 
+    .game-card.sandwichmaster {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(234, 179, 8, 0.15) 100%);
+      border-color: rgba(34, 197, 94, 0.5);
+    }
+
     .game-card:hover {
       transform: translateY(-6px) scale(1.02);
     }
@@ -361,6 +379,11 @@ import { AuthService } from '../../core/services/auth.service';
     .game-card.weinfest:hover {
       border-color: #8b4513;
       box-shadow: 0 15px 40px rgba(139, 69, 19, 0.4), 0 0 50px rgba(128, 0, 128, 0.3);
+    }
+
+    .game-card.sandwichmaster:hover {
+      border-color: #22c55e;
+      box-shadow: 0 15px 40px rgba(34, 197, 94, 0.4), 0 0 50px rgba(234, 179, 8, 0.3);
     }
 
     .game-glow {
@@ -455,6 +478,10 @@ import { AuthService } from '../../core/services/auth.service';
 
     .game-emoji.wine {
       filter: drop-shadow(0 0 15px rgba(128, 0, 128, 0.5));
+    }
+
+    .game-emoji.sandwich {
+      filter: drop-shadow(0 0 15px rgba(34, 197, 94, 0.5));
     }
 
     @keyframes icon-float {
@@ -703,6 +730,18 @@ export class GameSelectionDialogComponent {
     this.dialog.open(WeinfestShooterGameComponent, {
       width: '95vw',
       maxWidth: '900px',
+      height: 'auto',
+      maxHeight: '95vh',
+      panelClass: ['dark-dialog', 'game-dialog'],
+      disableClose: true,
+    });
+  }
+
+  startSandwichmaster(): void {
+    this.dialogRef.close();
+    this.dialog.open(SandwichmasterGameComponent, {
+      width: '95vw',
+      maxWidth: '850px',
       height: 'auto',
       maxHeight: '95vh',
       panelClass: ['dark-dialog', 'game-dialog'],

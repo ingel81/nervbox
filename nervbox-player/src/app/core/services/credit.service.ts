@@ -98,6 +98,13 @@ export interface ShooterGameResultResponse {
   newBalance: number;
 }
 
+export interface SpendCreditsResponse {
+  success: boolean;
+  amountSpent: number;
+  newBalance: number;
+  message: string;
+}
+
 export interface TransferableUser {
   id: number;
   username: string;
@@ -271,5 +278,16 @@ export class CreditService {
           this.credits.set(response.newBalance);
         })
       );
+  }
+
+  // Spend Credits (for minigames like Sandwichmaster)
+  spendCredits(amount: number, reason: string): Observable<SpendCreditsResponse> {
+    return this.api.post<SpendCreditsResponse>('/credit/spend', { amount, reason }).pipe(
+      tap(response => {
+        if (response.success) {
+          this.credits.set(response.newBalance);
+        }
+      })
+    );
   }
 }

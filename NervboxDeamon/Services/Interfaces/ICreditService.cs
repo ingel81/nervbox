@@ -96,5 +96,10 @@ namespace NervboxDeamon.Services.Interfaces
         /// Process shooter game result - directly add/subtract balance
         /// </summary>
         int ProcessShooterGameResult(int userId, string gameName, int balanceChange, int hits, int misses);
+
+        /// <summary>
+        /// Spend credits (for minigames like Sandwichmaster where credits are consumed)
+        /// </summary>
+        (bool success, int newBalance, string message) SpendCredits(int userId, int amount, string reason);
     }
 }

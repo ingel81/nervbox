@@ -1140,6 +1140,50 @@ namespace NervboxDeamon.Services
             return user.Credits;
         }
 
+        public (bool success, int newBalance, string message) SpendCredits(int userId, int amount, string reason)
+        {
+            if (amount <= 0)
+            {
+                return (false, 0, "Betrag muss größer als 0 sein");
+            }
+
+            using var scope = _serviceProvider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+
+            var user = db.Users.Find(userId);
+            if (user == null)
+            {
+                _logger.LogWarning($"User {userId} not found for spend credits");
+                return (false, 0, "Benutzer nicht gefunden");
+            }
+
+            if (user.Credits < amount)
+            {
+                return (false, user.Credits, "Nicht genug N$ zum Ausgeben");
+            }
+
+            // Deduct credits
+            user.Credits -= amount;
+
+            var transaction = new CreditTransaction
+            {
+                UserId = userId,
+                Amount = -amount,
+                TransactionType = CreditTransactionType.GameReward, // Using GameReward for minigame spending
+                Description = reason ?? "Minigame Ausgabe",
+                BalanceAfter = user.Credits,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            db.CreditTransactions.Add(transaction);
+            db.SaveChanges();
+
+            BroadcastCreditUpdate(userId, user.Credits);
+
+            _logger.LogInformation($"User {userId} spent {amount} credits: {reason}");
+            return (true, user.Credits, $"{amount} N$ ausgegeben");
+        }
+
         public void Dispose()
         {
             if (_disposed)
