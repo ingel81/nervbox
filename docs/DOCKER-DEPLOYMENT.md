@@ -57,7 +57,7 @@ Diese Anleitung beschreibt das Deployment von Nervbox als Docker-Container auf e
 
 ## Schritt 2: Docker auf Unraid einrichten
 
-### 2.1 Verzeichnisse erstellen
+### 2.1 Verzeichnisse und Config erstellen
 
 Erstelle auf dem Unraid-Server:
 
@@ -66,6 +66,27 @@ mkdir -p /mnt/user/appdata/nervbox/sounds
 mkdir -p /mnt/user/appdata/nervbox/avatars
 mkdir -p /mnt/user/appdata/nervbox/logs
 ```
+
+Erstelle die Konfigurationsdatei `/mnt/user/appdata/nervbox/appsettings.Docker.json`:
+
+```json
+{
+  "AppSettings": {
+    "Secret": "DEIN_SICHERES_SECRET_MINDESTENS_32_ZEICHEN",
+    "LogPath": "/data/logs/log-{Date}.log",
+    "DatabasePath": "/data/nervbox.db",
+    "SoundPath": "/data/sounds",
+    "AvatarPath": "/data/avatars",
+    "PlaybackMode": "Browser",
+    "CesiumAccessToken": ""
+  },
+  "Giphy": {
+    "ApiKeys": ["OPTIONAL_GIPHY_API_KEY"]
+  }
+}
+```
+
+**Wichtig:** Generiere ein sicheres Secret mit: `openssl rand -hex 32`
 
 ### 2.2 Datenbank und Sounds vom Raspberry Pi kopieren
 
@@ -90,7 +111,7 @@ services:
       - TZ=Europe/Berlin
     volumes:
       - /mnt/user/appdata/nervbox:/data
-      - /mnt/user/appdata/nervbox/logs:/var/log/nervbox
+      - /mnt/user/appdata/nervbox/appsettings.Docker.json:/app/appsettings.Docker.json:ro
     networks:
       - nervbox-network
     healthcheck:
@@ -122,10 +143,39 @@ networks:
 
 ### 2.4 Container starten
 
+**Option A: docker-compose (empfohlen)**
+
 ```bash
 cd /mnt/user/appdata/nervbox
 docker-compose up -d
 ```
+
+**Option B: Unraid Docker UI**
+
+Falls du die Unraid UI bevorzugst:
+
+**nervbox Container:**
+| Einstellung | Wert |
+|-------------|------|
+| Repository | `ingel81/nervbox:latest` |
+| Network Type | `Custom: br0` oder `Bridge` |
+| Port | `8080` → `8080` |
+| Path `/data` | `/mnt/user/appdata/nervbox` |
+| Path `/app/appsettings.Docker.json` | `/mnt/user/appdata/nervbox/appsettings.Docker.json` (Read Only) |
+| Variable `ASPNETCORE_ENVIRONMENT` | `Docker` |
+| Variable `TZ` | `Europe/Berlin` |
+
+**cloudflared Container:**
+| Einstellung | Wert |
+|-------------|------|
+| Repository | `cloudflare/cloudflared:latest` |
+| Network Type | Gleich wie nervbox |
+| Post Arguments | `tunnel --no-autoupdate run` |
+| Variable `TUNNEL_TOKEN` | Dein Cloudflare Tunnel Token |
+
+**Cloudflare Tunnel Public Hostname:**
+- Service Type: `HTTP`
+- URL: `<nervbox-container-ip>:8080` (z.B. `192.168.0.50:8080`)
 
 ### 2.5 Logs prüfen
 
@@ -228,24 +278,43 @@ Im GitHub Repository unter **Settings** → **Secrets and variables** → **Acti
 
 ## Konfiguration ändern
 
-Die Docker-Konfiguration liegt in `appsettings.Docker.json`:
+Die Konfiguration liegt in deiner gemounteten `appsettings.Docker.json`:
 
 ```json
 {
   "AppSettings": {
-    "Secret": "CHANGE_THIS_SECRET_IN_PRODUCTION",
-    "PlaybackMode": "Browser",
+    "Secret": "DEIN_SECRET_HIER_MINDESTENS_32_ZEICHEN",
+    "LogPath": "/data/logs/log-{Date}.log",
     "DatabasePath": "/data/nervbox.db",
-    "SoundPath": "/data/sounds"
+    "SoundPath": "/data/sounds",
+    "AvatarPath": "/data/avatars",
+    "PlaybackMode": "Browser",
+    "CesiumAccessToken": ""
+  },
+  "Giphy": {
+    "ApiKeys": ["dein-giphy-api-key"]
   }
 }
 ```
 
-**Wichtig:** Ändere den `Secret` für Produktion zu einem sicheren 32+ Zeichen String!
+### Einstellungen
 
-### Secret in Docker überschreiben
+| Setting | Beschreibung |
+|---------|--------------|
+| `Secret` | JWT-Signatur-Key (min. 32 Zeichen). **Muss geheim bleiben!** |
+| `PlaybackMode` | `Browser` = Sound im Browser, `Local` = Sound auf Server |
+| `CesiumAccessToken` | Optional: Für 3D-Karte im Tower Defense Minigame |
+| `Giphy.ApiKeys` | Optional: Für GIF-Suche im Chat |
 
-Du kannst das Secret als Environment-Variable überschreiben:
+### Secret generieren
+
+```bash
+openssl rand -hex 32
+```
+
+### Secret als Environment-Variable
+
+Alternative zum Config-File:
 
 ```yaml
 environment:
