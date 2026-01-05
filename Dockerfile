@@ -76,8 +76,8 @@ COPY --from=backend-build /app/publish .
 # Copy player to wwwroot
 COPY --from=player-build /app/dist/nervbox-player/browser ./wwwroot/
 
-# Copy mixer to wwwroot/mixer
-COPY --from=mixer-build /app/dist/nervbox-mixer/browser ./wwwroot/mixer/
+# Copy mixer to wwwroot/mixer (Angular 20 outputs to dist/nervbox-mixer without /browser)
+COPY --from=mixer-build /app/dist/nervbox-mixer ./wwwroot/mixer/
 
 # Create data directories
 RUN mkdir -p /data/sounds /data/avatars /var/log/nervbox
