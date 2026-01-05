@@ -32,6 +32,7 @@ import { FavoritesService } from './core/services/favorites.service';
 import { VoteService } from './core/services/vote.service';
 import { AvatarService } from './core/services/avatar.service';
 import { AchievementService } from './core/services/achievement.service';
+import { ConfigService } from './core/services/config.service';
 import { Sound } from './core/models';
 
 interface Activity {
@@ -378,6 +379,7 @@ export class App implements OnInit {
   readonly voteService = inject(VoteService);
   readonly avatarService = inject(AvatarService);
   readonly achievementService = inject(AchievementService);
+  private readonly configService = inject(ConfigService);
   private readonly signalR = inject(SignalRService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
@@ -474,6 +476,9 @@ export class App implements OnInit {
   });
 
   ngOnInit(): void {
+    // Load config first (playback mode etc.)
+    this.configService.loadConfig().subscribe();
+
     this.loadSounds();
     this.soundService.loadTags().subscribe();
     this.connectSignalR();

@@ -3,6 +3,7 @@ import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
 import { Sound, SoundUpdateRequest, Tag, TopSound, TopUser } from '../models';
 import { CreditService } from './credit.service';
+import { ConfigService } from './config.service';
 
 interface PlaySoundResponse {
   creditsRemaining: number;
@@ -14,6 +15,7 @@ interface PlaySoundResponse {
 export class SoundService {
   private readonly api = inject(ApiService);
   private readonly creditService = inject(CreditService);
+  private readonly configService = inject(ConfigService);
 
   // State
   readonly sounds = signal<Sound[]>([]);
@@ -43,6 +45,12 @@ export class SoundService {
       tap(response => {
         if (response?.creditsRemaining !== undefined) {
           this.creditService.updateCreditsFromPlayResponse(response.creditsRemaining);
+        }
+
+        // In Browser playback mode, also play the sound locally in the browser
+        // (the server only logs usage and deducts credits, doesn't play locally)
+        if (this.configService.isBrowserPlayback()) {
+          this.playInBrowser(hash);
         }
       })
     );
