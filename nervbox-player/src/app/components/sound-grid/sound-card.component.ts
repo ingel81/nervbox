@@ -9,6 +9,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { Sound } from '../../core/models';
 import { DurationPipe } from '../../shared/pipes/duration.pipe';
 import { AuthService } from '../../core/services/auth.service';
+import { ConfigService } from '../../core/services/config.service';
 import { FavoritesService } from '../../core/services/favorites.service';
 import { AchievementService } from '../../core/services/achievement.service';
 import { ApiService } from '../../core/services/api.service';
@@ -126,10 +127,12 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
     </div>
 
     <mat-menu #menu="matMenu">
-      <button mat-menu-item (click)="playClick.emit(sound())">
-        <mat-icon>speaker</mat-icon>
-        <span>Auf Nervbox abspielen</span>
-      </button>
+      @if (!configService.isBrowserPlayback()) {
+        <button mat-menu-item (click)="playClick.emit(sound())">
+          <mat-icon>speaker</mat-icon>
+          <span>Auf Nervbox abspielen</span>
+        </button>
+      }
       <button mat-menu-item (click)="playInBrowser()">
         <mat-icon>headphones</mat-icon>
         <span>Im Browser anhören</span>
@@ -604,6 +607,7 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
 })
 export class SoundCardComponent implements AfterViewInit {
   readonly auth = inject(AuthService);
+  readonly configService = inject(ConfigService);
   private readonly favoritesService = inject(FavoritesService);
   private readonly achievementService = inject(AchievementService);
   private readonly api = inject(ApiService);

@@ -49,9 +49,9 @@ WORKDIR /app
 COPY nervbox-mixer/package*.json ./
 RUN npm ci --legacy-peer-deps
 
-# Copy source and build for Docker deployment (baseHref: /mixer/)
+# Copy source and build for Docker deployment (lan config has baseHref + nervboxApi)
 COPY nervbox-mixer/ ./
-RUN npm run build -- --configuration production --base-href /mixer/
+RUN npm run build -- --configuration lan
 
 # -----------------------------------------------------------------------------
 # Stage 4: Runtime Image
@@ -79,8 +79,8 @@ COPY --from=player-build /app/dist/nervbox-player/browser ./wwwroot/
 # Copy mixer to wwwroot/mixer (Angular 20 outputs to dist/nervbox-mixer without /browser)
 COPY --from=mixer-build /app/dist/nervbox-mixer ./wwwroot/mixer/
 
-# Create data directories
-RUN mkdir -p /data/sounds /data/avatars /var/log/nervbox
+# Create data directories (all under /data for easy volume mounting)
+RUN mkdir -p /data/sounds /data/avatars /data/logs
 
 # Expose port
 EXPOSE 8080
