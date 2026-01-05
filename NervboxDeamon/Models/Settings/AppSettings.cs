@@ -5,6 +5,23 @@ using System.Threading.Tasks;
 
 namespace NervboxDeamon.Models.Settings
 {
+  /// <summary>
+  /// Defines how sounds are played
+  /// </summary>
+  public enum PlaybackMode
+  {
+    /// <summary>
+    /// Sound is played locally on the server (via mpg123, SSH, etc.)
+    /// Used for Raspberry Pi deployment where the Pi has speakers
+    /// </summary>
+    Local,
+
+    /// <summary>
+    /// Sound is streamed to the browser for playback
+    /// Used for Docker/Cloud deployment where there's no local audio output
+    /// </summary>
+    Browser
+  }
 
   public class AppSettings
   {
@@ -15,6 +32,13 @@ namespace NervboxDeamon.Models.Settings
     public string SoundPathDebugPlay { get; set; }
     public string AvatarPath { get; set; } = "avatars";
     public string LocalPlayer { get; set; } = "mpg123";
+
+    /// <summary>
+    /// How sounds should be played: "Local" (server plays via speakers) or "Browser" (client streams)
+    /// Default: Local (backward compatible with Raspberry Pi deployment)
+    /// </summary>
+    public PlaybackMode PlaybackMode { get; set; } = PlaybackMode.Local;
+
     public SSHSettings SSH { get; set; }
     public CameraSettings Camera1 { get; set; }
   }

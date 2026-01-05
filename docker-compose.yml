@@ -1,0 +1,79 @@
+# =============================================================================
+# Nervbox Docker Compose for Unraid with Cloudflare Tunnel
+# =============================================================================
+#
+# Setup:
+# 1. Copy this file to your Unraid appdata folder
+# 2. Create a Cloudflare Tunnel and get your token
+# 3. Replace CLOUDFLARE_TUNNEL_TOKEN with your token
+# 4. Run: docker-compose up -d
+#
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Nervbox Application
+  # ---------------------------------------------------------------------------
+  nervbox:
+    image: ingel81/nervbox:latest
+    container_name: nervbox
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - TZ=Europe/Berlin
+    volumes:
+      # Persistent data (database, sounds, avatars)
+      - nervbox-data:/data
+      # Logs (optional, can be removed if not needed)
+      - nervbox-logs:/var/log/nervbox
+    networks:
+      - nervbox-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/sound"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Cloudflare Tunnel (Zero Trust Access)
+  # ---------------------------------------------------------------------------
+  # Creates a secure tunnel to Cloudflare - no open ports needed!
+  #
+  # Setup in Cloudflare Dashboard:
+  # 1. Go to Zero Trust > Networks > Tunnels
+  # 2. Create a new tunnel
+  # 3. Copy the token to .env file (see .env.example)
+  # 4. Configure Public Hostname:
+  #    - Subdomain: nervbox
+  #    - Domain: sgeht.net
+  #    - Service: http://nervbox:8080
+  # ---------------------------------------------------------------------------
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: nervbox-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN:?Error: CLOUDFLARE_TUNNEL_TOKEN must be set in .env file}
+    networks:
+      - nervbox-network
+    depends_on:
+      nervbox:
+        condition: service_healthy
+
+# -----------------------------------------------------------------------------
+# Networks
+# -----------------------------------------------------------------------------
+networks:
+  nervbox-network:
+    driver: bridge
+
+# -----------------------------------------------------------------------------
+# Volumes
+# -----------------------------------------------------------------------------
+volumes:
+  nervbox-data:
+    driver: local
+  nervbox-logs:
+    driver: local

@@ -1,6 +1,6 @@
 # nervbox - Projektstatus
 
-**Stand:** 2025-12-23
+**Stand:** 2026-01-05
 
 ---
 
@@ -74,6 +74,52 @@
 - **Audio Effects**: Tuna.js Integration im Mixer (Echo, Pitch)
 - **Mixer Effects Panel**: UI für Audio-Effekte
 - **Grid Controls**: Snap-to-Grid Funktionalität im Mixer
+
+### Phase 7: Docker Deployment für Unraid (2026-01-05) - IN PROGRESS
+
+**Ziel:** nervbox als Docker-Container auf Unraid-Server betreiben, erreichbar via nervbox.sgeht.net
+
+#### Architektur
+```
+Internet → Cloudflare (SSL, DDoS) → Cloudflare Tunnel → Unraid Docker → nervbox:8080
+```
+
+#### Erstellte Dateien
+| Datei | Beschreibung |
+|-------|--------------|
+| `Dockerfile` | Multi-stage Build (Backend + Player + Mixer) |
+| `docker-compose.yml` | Container-Setup mit Cloudflare Tunnel |
+| `.github/workflows/docker-build.yml` | GitHub Actions für automatische Builds zu Docker Hub |
+| `.dockerignore` | Optimierter Build-Context |
+| `appsettings.Docker.json` | Docker-spezifische Konfiguration (PlaybackMode: Browser) |
+| `.env.example` | Vorlage für Cloudflare Tunnel Token |
+| `docs/DOCKER-DEPLOYMENT.md` | Ausführliche Deployment-Anleitung |
+
+#### Code-Änderungen
+| Datei | Änderung |
+|-------|----------|
+| `AppSettings.cs` | Neues `PlaybackMode` Enum (Local/Browser) |
+| `SoundService.cs` | Browser-Modus überspringt lokales mpg123 |
+| `ConfigController.cs` | Neuer Endpoint `/api/config` für Client-Konfiguration |
+| `config.service.ts` | Frontend-Service lädt PlaybackMode |
+| `sound.service.ts` | Spielt Sound im Browser wenn PlaybackMode=Browser |
+| `app.ts` | Lädt ConfigService beim App-Start |
+
+#### Wichtige Unterschiede Pi vs Docker
+| Aspekt | Raspberry Pi | Docker/Unraid |
+|--------|--------------|---------------|
+| Sound-Wiedergabe | Lokal via mpg123 | Im Browser (Streaming) |
+| SSL | Let's Encrypt direkt | Cloudflare terminiert |
+| Port-Forwarding | 80/443 offen | Keine Ports offen (Tunnel) |
+| Update | `./deploy.sh` | `docker pull && docker-compose up -d` |
+
+#### Offene Schritte
+- [ ] GitHub Secrets einrichten (DOCKERHUB_USERNAME, DOCKERHUB_TOKEN)
+- [ ] Code committen und pushen
+- [ ] Cloudflare Tunnel erstellen
+- [ ] DB + Sounds vom Pi auf Unraid kopieren
+- [ ] Docker-Container auf Unraid starten
+- [ ] DNS umstellen (nervbox.sgeht.net → Cloudflare Tunnel)
 
 ---
 

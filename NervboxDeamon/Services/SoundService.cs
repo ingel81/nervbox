@@ -318,7 +318,12 @@ namespace NervboxDeamon.Services
       // Play the sound asynchronously
       new Task(() =>
       {
-        if (appSettings.SSH?.Enabled == true)
+        // In Browser mode, skip local playback - the client will stream the audio
+        if (appSettings.PlaybackMode == PlaybackMode.Browser)
+        {
+          Logger.LogDebug($"Browser playback mode - skipping local playback for: {sound.FileName}");
+        }
+        else if (appSettings.SSH?.Enabled == true)
         {
           // Remote via SSH auf Raspberry Pi
           var path = SoundDirectory.FullName;

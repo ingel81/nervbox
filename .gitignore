@@ -349,3 +349,12 @@ healthchecksdbNervboxDeamon/nervbox.db
 
 # Deployment config with credentials
 deploy.conf
+
+# Docker environment files with secrets
+.env
+.env.local
+.env.production
+
+# Local stats/analytics data
+stats/
+wrapped-*/
