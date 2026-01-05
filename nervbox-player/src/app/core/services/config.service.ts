@@ -4,6 +4,7 @@ import { tap, catchError, of } from 'rxjs';
 
 export interface AppConfig {
   playbackMode: 'Local' | 'Browser';
+  cesiumAccessToken: string;
   version: string;
 }
 
@@ -19,6 +20,7 @@ export class ConfigService {
 
   // Convenience getters
   readonly isBrowserPlayback = signal(false);
+  readonly cesiumAccessToken = signal('');
 
   /**
    * Load configuration from server.
@@ -29,14 +31,16 @@ export class ConfigService {
       tap(config => {
         this.config.set(config);
         this.isBrowserPlayback.set(config.playbackMode === 'Browser');
+        this.cesiumAccessToken.set(config.cesiumAccessToken || '');
         this.loaded.set(true);
-        console.log(`[Config] PlaybackMode: ${config.playbackMode}`);
+        console.log(`[Config] PlaybackMode: ${config.playbackMode}, Cesium: ${config.cesiumAccessToken ? 'configured' : 'not configured'}`);
       }),
       catchError(err => {
-        console.warn('[Config] Failed to load config, defaulting to Local mode:', err);
-        // Default to Local mode if config endpoint fails (backward compatibility)
-        this.config.set({ playbackMode: 'Local', version: 'unknown' });
+        console.warn('[Config] Failed to load config, using defaults:', err);
+        // Default values if config endpoint fails (backward compatibility)
+        this.config.set({ playbackMode: 'Local', cesiumAccessToken: '', version: 'unknown' });
         this.isBrowserPlayback.set(false);
+        this.cesiumAccessToken.set('');
         this.loaded.set(true);
         return of(null);
       })

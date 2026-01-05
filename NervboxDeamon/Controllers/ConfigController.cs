@@ -30,6 +30,9 @@ namespace NervboxDeamon.Controllers
         // PlaybackMode: "Local" = server plays sound, "Browser" = client streams
         PlaybackMode = _appSettings.PlaybackMode.ToString(),
 
+        // Cesium Ion Access Token for 3D map features
+        CesiumAccessToken = _appSettings.CesiumAccessToken ?? "",
+
         // Version info (can be extended)
         Version = "2.0.0"
       });

@@ -39,6 +39,12 @@ namespace NervboxDeamon.Models.Settings
     /// </summary>
     public PlaybackMode PlaybackMode { get; set; } = PlaybackMode.Local;
 
+    /// <summary>
+    /// Cesium Ion Access Token for 3D map features
+    /// Get one at: https://cesium.com/ion/tokens
+    /// </summary>
+    public string CesiumAccessToken { get; set; } = "";
+
     public SSHSettings SSH { get; set; }
     public CameraSettings Camera1 { get; set; }
   }

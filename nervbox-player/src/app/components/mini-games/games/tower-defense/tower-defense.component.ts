@@ -15,7 +15,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { environment } from '../../../../../environments/environment';
+import { ConfigService } from '../../../../core/services/config.service';
 import { OsmStreetService, Street, StreetNetwork } from './services/osm-street.service';
 import { EntityPoolService } from './services/entity-pool.service';
 import { GeoPosition } from './models/game.types';
@@ -123,8 +123,8 @@ export interface SpawnPoint {
             <div class="token-instructions">
               <p>1. Erstelle einen kostenlosen Account bei <a href="https://cesium.com/ion/" target="_blank">cesium.com/ion</a></p>
               <p>2. Kopiere deinen Access Token</p>
-              <p>3. Trage ihn in <code>environment.ts</code> ein:</p>
-              <pre>cesiumAccessToken: 'dein-token-hier'</pre>
+              <p>3. Trage ihn in <code>appsettings.json</code> ein:</p>
+              <pre>"CesiumAccessToken": "dein-token-hier"</pre>
             </div>
             <button mat-flat-button color="primary" (click)="close()">Schliessen</button>
           </div>
@@ -736,6 +736,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly dialogRef = inject(MatDialogRef<TowerDefenseComponent>, { optional: true });
   private readonly osmService = inject(OsmStreetService);
   private readonly api = inject(ApiService);
+  private readonly configService = inject(ConfigService);
   readonly gameState = inject(GameStateManager);
   private readonly entityPool = inject(EntityPoolService);
 
@@ -822,9 +823,10 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private async initCesium(): Promise<void> {
     try {
-      const token = environment.cesiumAccessToken;
+      // Get token from ConfigService (loaded from backend /api/config)
+      const token = this.configService.cesiumAccessToken();
       if (!token || token === 'YOUR_CESIUM_ION_ACCESS_TOKEN') {
-        this.error.set('Bitte konfiguriere deinen Cesium Ion Access Token.');
+        this.error.set('Bitte konfiguriere deinen Cesium Ion Access Token in appsettings.json.');
         this.loading.set(false);
         return;
       }
