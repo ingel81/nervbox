@@ -166,11 +166,12 @@ namespace NervboxDeamon
       {
         app.UseDeveloperExceptionPage();
       }
-      else
+      else if (env.EnvironmentName == "Production")
       {
-        // Production: HTTP → HTTPS Redirect
+        // Production (Pi): HTTP → HTTPS Redirect (SSL terminated by Kestrel)
         app.UseHttpsRedirection();
       }
+      // Docker: No HTTPS redirect - SSL is terminated by Cloudflare/reverse proxy
 
       // global cors policy
       app.UseCors("CorsPolicy");
