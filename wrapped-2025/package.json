@@ -1,0 +1,13 @@
+{
+  "name": "nervbox-wrapped-2025",
+  "version": "1.0.0",
+  "description": "NERVBOX WRAPPED 2025 - Spotify Wrapped Style Stats",
+  "main": "generate.js",
+  "scripts": {
+    "generate": "node generate.js",
+    "generate:single": "node generate.js --slide"
+  },
+  "dependencies": {
+    "puppeteer": "^23.0.0"
+  }
+}

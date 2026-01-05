@@ -1,0 +1,328 @@
+<!-- Slide 05: PEAK TIMES -->
+<style>
+  .slide-05 {
+    background: linear-gradient(180deg, #0a0a0a 0%, #14080a 100%);
+  }
+
+  .slide-05 .bg-heat {
+    position: absolute;
+    width: 600px;
+    height: 400px;
+    top: 25%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(ellipse, rgba(249, 115, 22, 0.15) 0%, transparent 60%);
+  }
+
+  .peak-header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .peak-header h1 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 52px;
+    background: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+
+  .peak-header p {
+    font-size: 22px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .peak-card {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(239, 68, 68, 0.1) 100%);
+    border: 2px solid rgba(249, 115, 22, 0.3);
+    border-radius: 28px;
+    padding: 28px;
+    text-align: center;
+    width: 100%;
+    box-shadow: 0 0 40px rgba(249, 115, 22, 0.2);
+    margin-bottom: 20px;
+  }
+
+  .peak-card .icon {
+    font-size: 48px;
+    margin-bottom: 8px;
+  }
+
+  .peak-card .label {
+    font-size: 16px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+  }
+
+  .peak-card .time {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 72px;
+    color: #ffffff;
+    line-height: 1;
+    text-shadow: 0 0 30px rgba(249, 115, 22, 0.5);
+  }
+
+  .peak-card .plays {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 26px;
+    color: #f97316;
+    margin-top: 8px;
+  }
+
+  .section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+
+  .hourly-chart {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .hourly-bars {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    height: 160px;
+    gap: 4px;
+  }
+
+  .hourly-bar {
+    flex: 1;
+    border-radius: 4px 4px 0 0;
+    position: relative;
+    min-width: 0;
+  }
+
+  .hourly-bar .hour-label {
+    position: absolute;
+    bottom: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  .hourly-bar.cold { background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%); }
+  .hourly-bar.warm { background: linear-gradient(180deg, #f97316 0%, #ea580c 100%); }
+  .hourly-bar.hot {
+    background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+  }
+
+  .daily-chart {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .daily-bars {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    height: 180px;
+    gap: 16px;
+  }
+
+  .daily-bar-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .daily-bar {
+    width: 100%;
+    border-radius: 8px 8px 0 0;
+    position: relative;
+  }
+
+  .daily-bar.peak {
+    background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+  }
+
+  .daily-bar.high {
+    background: linear-gradient(180deg, #f97316 0%, #ea580c 100%);
+  }
+
+  .daily-bar.medium {
+    background: linear-gradient(180deg, #eab308 0%, #ca8a04 100%);
+  }
+
+  .daily-bar.low {
+    background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+  }
+
+  .daily-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.6);
+    text-align: center;
+  }
+
+  .daily-plays {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  .peak-day-highlight {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(249, 115, 22, 0.15) 100%);
+    border: 2px solid rgba(239, 68, 68, 0.3);
+    border-radius: 20px;
+    padding: 24px;
+    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .peak-day-info {
+    text-align: left;
+  }
+
+  .peak-day-info .label {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+
+  .peak-day-info .date {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 32px;
+    color: #ffffff;
+  }
+
+  .peak-day-info .subtitle {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 4px;
+  }
+
+  .peak-day-stat {
+    text-align: right;
+  }
+
+  .peak-day-stat .number {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 40px;
+    color: #ef4444;
+  }
+
+  .peak-day-stat .unit {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+</style>
+
+<div class="slide slide-05">
+  <div class="bg-heat"></div>
+
+  <div class="slide-content">
+    <div class="peak-header">
+      <h1>Wann ging es ab?</h1>
+      <p>Die heißesten Zeiten</p>
+    </div>
+
+    <div class="peak-card">
+      <div class="icon">🔥</div>
+      <div class="label">Peak Hour</div>
+      <div class="time">14:00</div>
+      <div class="plays">1.306 Plays</div>
+    </div>
+
+    <div class="section-title">Aktivität nach Stunde</div>
+    <div class="hourly-chart">
+      <div class="hourly-bars">
+        <div class="hourly-bar hot" style="height: 96%;"><span class="hour-label">0</span></div>
+        <div class="hourly-bar cold" style="height: 6%;"><span class="hour-label">1</span></div>
+        <div class="hourly-bar cold" style="height: 1%;"><span class="hour-label">2</span></div>
+        <div class="hourly-bar cold" style="height: 1%;"><span class="hour-label">3</span></div>
+        <div class="hourly-bar cold" style="height: 1%;"><span class="hour-label">4</span></div>
+        <div class="hourly-bar cold" style="height: 1%;"><span class="hour-label">5</span></div>
+        <div class="hourly-bar cold" style="height: 1%;"><span class="hour-label">6</span></div>
+        <div class="hourly-bar cold" style="height: 1%;"><span class="hour-label">7</span></div>
+        <div class="hourly-bar cold" style="height: 1%;"><span class="hour-label">8</span></div>
+        <div class="hourly-bar cold" style="height: 1%;"><span class="hour-label">9</span></div>
+        <div class="hourly-bar cold" style="height: 1%;"><span class="hour-label">10</span></div>
+        <div class="hourly-bar warm" style="height: 14%;"><span class="hour-label">11</span></div>
+        <div class="hourly-bar cold" style="height: 2%;"><span class="hour-label">12</span></div>
+        <div class="hourly-bar warm" style="height: 10%;"><span class="hour-label">13</span></div>
+        <div class="hourly-bar hot" style="height: 100%;"><span class="hour-label">14</span></div>
+        <div class="hourly-bar warm" style="height: 37%;"><span class="hour-label">15</span></div>
+        <div class="hourly-bar warm" style="height: 19%;"><span class="hour-label">16</span></div>
+        <div class="hourly-bar warm" style="height: 34%;"><span class="hour-label">17</span></div>
+        <div class="hourly-bar warm" style="height: 28%;"><span class="hour-label">18</span></div>
+        <div class="hourly-bar warm" style="height: 42%;"><span class="hour-label">19</span></div>
+        <div class="hourly-bar warm" style="height: 37%;"><span class="hour-label">20</span></div>
+        <div class="hourly-bar warm" style="height: 23%;"><span class="hour-label">21</span></div>
+        <div class="hourly-bar hot" style="height: 80%;"><span class="hour-label">22</span></div>
+        <div class="hourly-bar warm" style="height: 60%;"><span class="hour-label">23</span></div>
+      </div>
+    </div>
+
+    <div class="section-title">Verlauf über die Tage</div>
+    <div class="daily-chart">
+      <div class="daily-bars">
+        <div class="daily-bar-wrap">
+          <div class="daily-plays">3.111</div>
+          <div class="daily-bar high" style="height: 140px;"></div>
+          <div class="daily-label">27.12.</div>
+        </div>
+        <div class="daily-bar-wrap">
+          <div class="daily-plays">3.491</div>
+          <div class="daily-bar peak" style="height: 160px;"></div>
+          <div class="daily-label">28.12.</div>
+        </div>
+        <div class="daily-bar-wrap">
+          <div class="daily-plays">1.078</div>
+          <div class="daily-bar medium" style="height: 50px;"></div>
+          <div class="daily-label">29.12.</div>
+        </div>
+        <div class="daily-bar-wrap">
+          <div class="daily-plays">4</div>
+          <div class="daily-bar low" style="height: 5px;"></div>
+          <div class="daily-label">30.12.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="peak-day-highlight">
+      <div class="peak-day-info">
+        <div class="label">Lautester Tag</div>
+        <div class="date">28. Dezember</div>
+        <div class="subtitle">Samstag — Der Tag des Chaos</div>
+      </div>
+      <div class="peak-day-stat">
+        <div class="number">3.491</div>
+        <div class="unit">Plays 🔥</div>
+      </div>
+    </div>
+  </div>
+</div>

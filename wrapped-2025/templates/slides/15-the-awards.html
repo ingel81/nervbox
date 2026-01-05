@@ -1,0 +1,226 @@
+<!-- Slide 15: THE AWARDS -->
+<style>
+  .slide-15 {
+    background: linear-gradient(180deg, #0a0a0a 0%, #0f0a14 100%);
+  }
+
+  .slide-15 .bg-spotlight {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background:
+      radial-gradient(ellipse 300px 400px at 30% 20%, rgba(251, 191, 36, 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse 300px 400px at 70% 80%, rgba(147, 51, 234, 0.1) 0%, transparent 50%);
+  }
+
+  .awards-header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .awards-header h1 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 56px;
+    background: linear-gradient(135deg, #fbbf24 0%, #a855f7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+
+  .awards-header p {
+    font-size: 22px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .awards-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+  }
+
+  .award-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .award-card.highlight {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(249, 115, 22, 0.1) 100%);
+    border: 2px solid rgba(251, 191, 36, 0.3);
+  }
+
+  .award-icon {
+    font-size: 44px;
+    width: 60px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .award-content {
+    flex: 1;
+  }
+
+  .award-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+
+  .award-winner {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 24px;
+    color: #ffffff;
+    margin-bottom: 4px;
+  }
+
+  .award-desc {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.4);
+    line-height: 1.4;
+  }
+
+  .award-stat {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 22px;
+    background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: right;
+    flex-shrink: 0;
+    min-width: 100px;
+  }
+
+  .award-stat.green {
+    background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .award-stat.red {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .award-stat.purple {
+    background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .award-stat.blue {
+    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .award-stat.pink {
+    background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+</style>
+
+<div class="slide slide-15">
+  <div class="bg-spotlight"></div>
+
+  <div class="slide-content">
+    <div class="awards-header">
+      <h1>The Awards</h1>
+      <p>Die besonderen Auszeichnungen</p>
+    </div>
+
+    <div class="awards-grid">
+      <div class="award-card highlight">
+        <div class="award-icon">💰</div>
+        <div class="award-content">
+          <div class="award-title">Reichster Nerd</div>
+          <div class="award-winner">Chefkoch</div>
+          <div class="award-desc">Höchster Kontostand am Ende des Events</div>
+        </div>
+        <div class="award-stat green">51.695 N$</div>
+      </div>
+
+      <div class="award-card">
+        <div class="award-icon">🎰</div>
+        <div class="award-content">
+          <div class="award-title">Größter Jackpot</div>
+          <div class="award-winner">Mase Harry</div>
+          <div class="award-desc">Höchster Einzelgewinn im Casino</div>
+        </div>
+        <div class="award-stat">273.522 N$</div>
+      </div>
+
+      <div class="award-card">
+        <div class="award-icon">📉</div>
+        <div class="award-content">
+          <div class="award-title">Längste Pechsträhne</div>
+          <div class="award-winner">Jango</div>
+          <div class="award-desc">45 Verluste am Stück — Respekt für's Durchhalten</div>
+        </div>
+        <div class="award-stat red">45 Losses</div>
+      </div>
+
+      <div class="award-card">
+        <div class="award-icon">⚡</div>
+        <div class="award-content">
+          <div class="award-title">Speed Demon</div>
+          <div class="award-winner">Lemmy</div>
+          <div class="award-desc">Höchste Sounds pro Minute — 3,1 pro Sekunde!</div>
+        </div>
+        <div class="award-stat purple">187/min</div>
+      </div>
+
+      <div class="award-card">
+        <div class="award-icon">🦉</div>
+        <div class="award-content">
+          <div class="award-title">Nacht-Champion</div>
+          <div class="award-winner">Adminstraktor</div>
+          <div class="award-desc">Meiste Sounds zwischen 0-6 Uhr morgens</div>
+        </div>
+        <div class="award-stat blue">454 Plays</div>
+      </div>
+
+      <div class="award-card">
+        <div class="award-icon">🎯</div>
+        <div class="award-content">
+          <div class="award-title">Exklusiv-Spieler</div>
+          <div class="award-winner">Bot(HARD)</div>
+          <div class="award-desc">Meiste Sounds die nur er gespielt hat</div>
+        </div>
+        <div class="award-stat pink">6 Sounds</div>
+      </div>
+
+      <div class="award-card">
+        <div class="award-icon">🎲</div>
+        <div class="award-content">
+          <div class="award-title">Gambling-Addict</div>
+          <div class="award-winner">Mase Harry</div>
+          <div class="award-desc">Meiste Spielrunden im Casino — unglaublich!</div>
+        </div>
+        <div class="award-stat red">31.494</div>
+      </div>
+
+      <div class="award-card">
+        <div class="award-icon">💝</div>
+        <div class="award-content">
+          <div class="award-title">Großzügigster</div>
+          <div class="award-winner">Adminstraktor</div>
+          <div class="award-desc">Meiste N$ an andere transferiert</div>
+        </div>
+        <div class="award-stat green">225.002 N$</div>
+      </div>
+    </div>
+  </div>
+</div>

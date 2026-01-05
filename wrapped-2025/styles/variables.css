@@ -1,0 +1,66 @@
+/* NERVBOX WRAPPED 2025 - Design Tokens */
+
+:root {
+  /* Primary Colors */
+  --purple: #9333ea;
+  --purple-light: #a855f7;
+  --purple-dark: #7c3aed;
+  --pink: #ec4899;
+  --pink-light: #f472b6;
+  --pink-dark: #db2777;
+
+  /* Accent Colors */
+  --orange: #f97316;
+  --gold: #fbbf24;
+  --green: #22c55e;
+  --red: #ef4444;
+  --blue: #3b82f6;
+
+  /* Backgrounds */
+  --bg-dark: #0a0a0a;
+  --bg-surface: #1a1b1f;
+  --bg-elevated: #2a2b2f;
+
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.5);
+
+  /* Gradients */
+  --gradient-main: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
+  --gradient-gold: linear-gradient(135deg, #f97316 0%, #fbbf24 100%);
+  --gradient-shame: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+  --gradient-night: linear-gradient(180deg, #0f172a 0%, #020617 100%);
+  --gradient-success: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+  --gradient-dark: linear-gradient(180deg, #0a0a0a 0%, #1a1b1f 100%);
+
+  /* Glow Effects */
+  --glow-purple: 0 0 60px rgba(147, 51, 234, 0.4), 0 0 120px rgba(147, 51, 234, 0.2);
+  --glow-gold: 0 0 60px rgba(249, 115, 22, 0.4), 0 0 120px rgba(249, 115, 22, 0.2);
+  --glow-pink: 0 0 60px rgba(236, 72, 153, 0.4), 0 0 120px rgba(236, 72, 153, 0.2);
+  --glow-red: 0 0 60px rgba(239, 68, 68, 0.4), 0 0 120px rgba(239, 68, 68, 0.2);
+
+  /* Borders */
+  --border-subtle: 1px solid rgba(255, 255, 255, 0.1);
+  --border-purple: 1px solid rgba(147, 51, 234, 0.3);
+  --border-gold: 2px solid rgba(251, 191, 36, 0.5);
+
+  /* Spacing */
+  --spacing-xs: 8px;
+  --spacing-sm: 16px;
+  --spacing-md: 24px;
+  --spacing-lg: 40px;
+  --spacing-xl: 60px;
+  --spacing-2xl: 80px;
+
+  /* Border Radius */
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 32px;
+  --radius-full: 9999px;
+
+  /* Slide Dimensions */
+  --slide-width: 1080px;
+  --slide-height: 1920px;
+  --slide-padding: 60px;
+}

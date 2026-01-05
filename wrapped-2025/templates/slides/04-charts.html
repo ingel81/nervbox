@@ -1,0 +1,295 @@
+<!-- Slide 04: DIE CHARTS - TOP 20 SOUNDS -->
+<style>
+  .slide-04 {
+    background: linear-gradient(180deg, #0a0a0a 0%, #0a0f14 100%);
+  }
+
+  .slide-04 .bg-gradient {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(180deg, rgba(147, 51, 234, 0.05) 0%, transparent 50%);
+  }
+
+  .charts-header {
+    text-align: center;
+    margin-bottom: 30px;
+    width: 100%;
+  }
+
+  .charts-header .event-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    color: #a855f7;
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+  }
+
+  .charts-header h1 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 56px;
+    background: linear-gradient(135deg, #ffffff 0%, #a855f7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+
+  .charts-header p {
+    font-size: 24px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .chart-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .chart-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .chart-rank {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 22px;
+    width: 40px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .chart-rank.gold { color: #fbbf24; }
+  .chart-rank.silver { color: #94a3b8; }
+  .chart-rank.bronze { color: #d97706; }
+  .chart-rank.normal { color: rgba(255, 255, 255, 0.4); }
+
+  .chart-bar-container {
+    flex: 1;
+    height: 44px;
+    position: relative;
+  }
+
+  .chart-bar {
+    height: 100%;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .chart-bar.rank-1 {
+    background: linear-gradient(90deg, #fbbf24 0%, #f97316 100%);
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+  }
+  .chart-bar.rank-2 {
+    background: linear-gradient(90deg, #64748b 0%, #94a3b8 100%);
+  }
+  .chart-bar.rank-3 {
+    background: linear-gradient(90deg, #b45309 0%, #d97706 100%);
+  }
+  .chart-bar.rank-default {
+    background: linear-gradient(90deg, #7c3aed 0%, #9333ea 100%);
+  }
+
+  .chart-bar .name {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 18px;
+    color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .chart-plays {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.7);
+    width: 60px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+</style>
+
+<div class="slide slide-04">
+  <div class="bg-gradient"></div>
+
+  <div class="slide-content">
+    <div class="charts-header">
+      <div class="event-tag">CABD 2025</div>
+      <h1>Die Charts</h1>
+      <p>Top 20 Sounds</p>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-row">
+        <span class="chart-rank gold">1</span>
+        <div class="chart-bar-container">
+          <div class="chart-bar rank-1" style="width: 100%;"><span class="name">tiiiiiim</span></div>
+        </div>
+        <span class="chart-plays">587</span>
+      </div>
+
+      <div class="chart-row">
+        <span class="chart-rank silver">2</span>
+        <div class="chart-bar-container">
+          <div class="chart-bar rank-2" style="width: 91%;"><span class="name">suuuer</span></div>
+        </div>
+        <span class="chart-plays">532</span>
+      </div>
+
+      <div class="chart-row">
+        <span class="chart-rank bronze">3</span>
+        <div class="chart-bar-container">
+          <div class="chart-bar rank-3" style="width: 57%;"><span class="name">horn_3x</span></div>
+        </div>
+        <span class="chart-plays">334</span>
+      </div>
+
+      <div class="chart-row">
+        <span class="chart-rank normal">4</span>
+        <div class="chart-bar-container">
+          <div class="chart-bar rank-default" style="width: 49%;"><span class="name">figg</span></div>
+        </div>
+        <span class="chart-plays">285</span>
+      </div>
+
+      <div class="chart-row">
+        <span class="chart-rank normal">5</span>
+        <div class="chart-bar-container">
+          <div class="chart-bar rank-default" style="width: 48%;"><span class="name">tiefighter</span></div>
+        </div>
+        <span class="chart-plays">284</span>
+      </div>
+
+      <div class="chart-row">
+        <span class="chart-rank normal">6</span>
+        <div class="chart-bar-container">
+          <div class="chart-bar rank-default" style="width: 26%;"><span class="name">thx</span></div>
+        </div>
+        <span class="chart-plays">155</span>
+      </div>
+
+      <div class="chart-row">
+        <span class="chart-rank normal">7</span>
+        <div class="chart-bar-container">
+          <div class="chart-bar rank-default" style="width: 24%;"><span class="name">figgen</span></div>
+        </div>
+        <span class="chart-plays">139</span>
+      </div>
+
+      <div class="chart-row">
+        <span class="chart-rank normal">8</span>
+        <div class="chart-bar-container">
+          <div class="chart-bar rank-default" style="width: 22%;"><span class="name">bambabam</span></div>
+        </div>
+        <span class="chart-plays">130</span>
+      </div>
+
+      <div class="chart-row">
+        <span class="chart-rank normal">9</span>
+        <div class="chart-bar-container">
+          <div class="chart-bar rank-default" style="width: 21%;"><span class="name">aaaahh</span></div>
+        </div>
+        <span class="chart-plays">126</span>
+      </div>
+
+      <div class="chart-row">
+        <span class="chart-rank normal">10</span>
+        <div class="chart-bar-container">
+          <div class="chart-bar rank-default" style="width: 21%;"><span class="name">horn_1x</span></div>
+        </div>
+        <span class="chart-plays">125</span>
+      </div>
+
+      <div class="chart-row">
+        <span class="chart-rank normal">11</span>
+        <div class="chart-bar-container">
+          <div class="chart-bar rank-default" style="width: 19%;"><span class="name">pfeife_kurz</span></div>
+        </div>
+        <span class="chart-plays">111</span>
+      </div>
+
+      <div class="chart-row">
+        <span class="chart-rank normal">12</span>
+        <div class="chart-bar-container">
+          <div class="chart-bar rank-default" style="width: 19%;"><span class="name">drueeeeegeeee</span></div>
+        </div>
+        <span class="chart-plays">110</span>
+      </div>
+
+      <div class="chart-row">
+        <span class="chart-rank normal">13</span>
+        <div class="chart-bar-container">
+          <div class="chart-bar rank-default" style="width: 17%;"><span class="name">lecker</span></div>
+        </div>
+        <span class="chart-plays">100</span>
+      </div>
+
+      <div class="chart-row">
+        <span class="chart-rank normal">14</span>
+        <div class="chart-bar-container">
+          <div class="chart-bar rank-default" style="width: 14%;"><span class="name">lalala2</span></div>
+        </div>
+        <span class="chart-plays">83</span>
+      </div>
+
+      <div class="chart-row">
+        <span class="chart-rank normal">15</span>
+        <div class="chart-bar-container">
+          <div class="chart-bar rank-default" style="width: 13%;"><span class="name">google</span></div>
+        </div>
+        <span class="chart-plays">79</span>
+      </div>
+
+      <div class="chart-row">
+        <span class="chart-rank normal">16</span>
+        <div class="chart-bar-container">
+          <div class="chart-bar rank-default" style="width: 13%;"><span class="name">padddiiiiii</span></div>
+        </div>
+        <span class="chart-plays">76</span>
+      </div>
+
+      <div class="chart-row">
+        <span class="chart-rank normal">17</span>
+        <div class="chart-bar-container">
+          <div class="chart-bar rank-default" style="width: 11%;"><span class="name">lauter</span></div>
+        </div>
+        <span class="chart-plays">66</span>
+      </div>
+
+      <div class="chart-row">
+        <span class="chart-rank normal">18</span>
+        <div class="chart-bar-container">
+          <div class="chart-bar rank-default" style="width: 11%;"><span class="name">theo</span></div>
+        </div>
+        <span class="chart-plays">63</span>
+      </div>
+
+      <div class="chart-row">
+        <span class="chart-rank normal">19</span>
+        <div class="chart-bar-container">
+          <div class="chart-bar rank-default" style="width: 11%;"><span class="name">horn_boot</span></div>
+        </div>
+        <span class="chart-plays">62</span>
+      </div>
+
+      <div class="chart-row">
+        <span class="chart-rank normal">20</span>
+        <div class="chart-bar-container">
+          <div class="chart-bar rank-default" style="width: 10%;"><span class="name">zocken</span></div>
+        </div>
+        <span class="chart-plays">58</span>
+      </div>
+    </div>
+  </div>
+</div>

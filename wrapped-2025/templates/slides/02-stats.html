@@ -1,0 +1,192 @@
+<!-- Slide 02: DIE GROSSEN ZAHLEN -->
+<style>
+  .slide-02 {
+    background: linear-gradient(180deg, #0a0a0a 0%, #0f0a14 100%);
+  }
+
+  .slide-02 .bg-orb {
+    position: absolute;
+    width: 800px;
+    height: 800px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(147, 51, 234, 0.15) 0%, transparent 60%);
+    border-radius: 50%;
+  }
+
+  .stats-header {
+    text-align: center;
+  }
+
+  .stats-header h1 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 64px;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #ffffff 0%, #a855f7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .stats-header p {
+    font-size: 28px;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .main-stat {
+    background: linear-gradient(135deg, rgba(147, 51, 234, 0.15) 0%, rgba(236, 72, 153, 0.15) 100%);
+    border: 2px solid rgba(147, 51, 234, 0.3);
+    border-radius: 40px;
+    padding: 60px;
+    text-align: center;
+    width: 100%;
+    box-shadow: 0 0 80px rgba(147, 51, 234, 0.2);
+  }
+
+  .main-stat .number {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 160px;
+    background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+  }
+
+  .main-stat .label {
+    font-family: 'Inter', sans-serif;
+    font-size: 42px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.8);
+    margin-top: 20px;
+    text-transform: uppercase;
+    letter-spacing: 10px;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    width: 100%;
+  }
+
+  .stat-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 28px;
+    padding: 40px 32px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+  }
+
+  .stat-card .icon {
+    font-size: 56px;
+    margin-bottom: 16px;
+  }
+
+  .stat-card .number {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 64px;
+    color: #ffffff;
+    line-height: 1.1;
+  }
+
+  .stat-card .label {
+    font-size: 20px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  .five-days-badge {
+    background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
+    padding: 14px 32px;
+    border-radius: 100px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 22px;
+  }
+
+  .bottom-stats {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+  }
+
+  .bottom-stat {
+    text-align: center;
+  }
+
+  .bottom-stat .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 36px;
+    color: #a855f7;
+  }
+
+  .bottom-stat .desc {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 4px;
+  }
+</style>
+
+<div class="slide slide-02">
+  <div class="bg-orb"></div>
+
+  <div class="slide-content">
+    <div class="stats-header">
+      <h1>Eine Community.</h1>
+      <p>Die Zahlen sprechen für sich.</p>
+    </div>
+
+    <div class="five-days-badge">4 TAGE CABD 2025</div>
+
+    <div class="main-stat">
+      <div class="number">7.684</div>
+      <div class="label">Sound-Plays</div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="icon">👥</div>
+        <div class="number">23</div>
+        <div class="label">User</div>
+      </div>
+      <div class="stat-card">
+        <div class="icon">💬</div>
+        <div class="number">10.752</div>
+        <div class="label">Chat-Nachrichten</div>
+      </div>
+      <div class="stat-card">
+        <div class="icon">🏆</div>
+        <div class="number">274</div>
+        <div class="label">Achievements</div>
+      </div>
+      <div class="stat-card">
+        <div class="icon">🎵</div>
+        <div class="number">45</div>
+        <div class="label">Neue Sounds</div>
+      </div>
+    </div>
+
+    <div class="bottom-stats">
+      <div class="bottom-stat">
+        <div class="value">1.921</div>
+        <div class="desc">Sounds/Tag</div>
+      </div>
+      <div class="bottom-stat">
+        <div class="value">80</div>
+        <div class="desc">Sounds/Stunde</div>
+      </div>
+      <div class="bottom-stat">
+        <div class="value">334</div>
+        <div class="desc">Sounds/User</div>
+      </div>
+    </div>
+  </div>
+</div>

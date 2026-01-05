@@ -1,0 +1,448 @@
+/* NERVBOX WRAPPED 2025 - Components */
+
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Slide Container */
+.slide {
+  width: var(--slide-width);
+  height: var(--slide-height);
+  padding: var(--slide-padding);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.slide-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 0;
+  z-index: 1;
+}
+
+/* Background Styles */
+.bg-gradient-main {
+  background: var(--gradient-main);
+}
+
+.bg-gradient-dark {
+  background: var(--gradient-dark);
+}
+
+.bg-gradient-gold {
+  background: linear-gradient(135deg, #1a1008 0%, #2d1f0a 50%, #1a1008 100%);
+}
+
+.bg-gradient-shame {
+  background: linear-gradient(135deg, #1a0808 0%, #2d0a0a 50%, #1a0808 100%);
+}
+
+.bg-gradient-night {
+  background: var(--gradient-night);
+}
+
+/* Background Decorations */
+.bg-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.5;
+  z-index: 0;
+}
+
+.bg-glow-purple {
+  background: var(--purple);
+}
+
+.bg-glow-pink {
+  background: var(--pink);
+}
+
+.bg-glow-gold {
+  background: var(--orange);
+}
+
+/* Glassmorphism Card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+}
+
+.glass-card-sm {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+}
+
+/* Highlight Cards */
+.card-gold {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(249, 115, 22, 0.1) 100%);
+  border: 2px solid rgba(251, 191, 36, 0.3);
+  box-shadow: var(--glow-gold);
+}
+
+.card-purple {
+  background: rgba(147, 51, 234, 0.1);
+  border: 2px solid rgba(147, 51, 234, 0.3);
+  box-shadow: var(--glow-purple);
+}
+
+.card-red {
+  background: rgba(239, 68, 68, 0.1);
+  border: 2px solid rgba(239, 68, 68, 0.3);
+  box-shadow: var(--glow-red);
+}
+
+/* Stat Card */
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--spacing-sm);
+}
+
+.stat-card .number {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+}
+
+.stat-card .label {
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+/* Grid Layouts */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+  width: 100%;
+}
+
+.stats-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-md);
+  width: 100%;
+}
+
+/* Podium */
+.podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: var(--spacing-md);
+  width: 100%;
+  margin-top: auto;
+}
+
+.podium-place {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.podium-place.first {
+  order: 2;
+}
+
+.podium-place.second {
+  order: 1;
+}
+
+.podium-place.third {
+  order: 3;
+}
+
+.podium-bar {
+  width: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.podium-bar.gold {
+  height: 200px;
+  background: var(--gradient-gold);
+}
+
+.podium-bar.silver {
+  height: 150px;
+  background: linear-gradient(135deg, #94a3b8 0%, #cbd5e1 100%);
+}
+
+.podium-bar.bronze {
+  height: 100px;
+  background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+}
+
+/* Bar Chart */
+.bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  width: 100%;
+}
+
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.bar-rank {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 24px;
+  width: 40px;
+  color: var(--text-secondary);
+}
+
+.bar-fill {
+  height: 48px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--spacing-md);
+  min-width: 60px;
+}
+
+.bar-label {
+  font-size: 18px;
+  font-weight: 600;
+  margin-left: auto;
+  padding-left: var(--spacing-md);
+  white-space: nowrap;
+}
+
+/* Progress Bar */
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--gradient-main);
+  border-radius: var(--radius-full);
+}
+
+/* Avatar Circle */
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--gradient-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 32px;
+  color: white;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+}
+
+.avatar-lg {
+  width: 120px;
+  height: 120px;
+  font-size: 48px;
+}
+
+/* Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-full);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.badge-gold {
+  background: rgba(251, 191, 36, 0.2);
+  color: var(--gold);
+}
+
+.badge-red {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--red);
+}
+
+.badge-green {
+  background: rgba(34, 197, 94, 0.2);
+  color: var(--green);
+}
+
+/* Divider */
+.divider {
+  width: 100%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* List */
+.ranked-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.ranked-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-md);
+}
+
+.ranked-item .rank {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 24px;
+  color: var(--text-muted);
+  width: 50px;
+}
+
+.ranked-item .name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 22px;
+}
+
+.ranked-item .value {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: 22px;
+  color: var(--purple-light);
+}
+
+/* Icon Wrapper */
+.icon {
+  font-size: 48px;
+  line-height: 1;
+}
+
+.icon-lg {
+  font-size: 72px;
+}
+
+.icon-xl {
+  font-size: 96px;
+}
+
+/* Emoji as Icon */
+.emoji-icon {
+  font-size: 64px;
+  filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.3));
+}
+
+/* Timeline */
+.timeline {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  position: relative;
+  padding-left: var(--spacing-xl);
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 20px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--gradient-main);
+  border-radius: 2px;
+}
+
+.timeline-item {
+  position: relative;
+  padding-left: var(--spacing-lg);
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -40px;
+  top: 8px;
+  width: 16px;
+  height: 16px;
+  background: var(--purple);
+  border-radius: 50%;
+  border: 3px solid var(--bg-dark);
+}
+
+.timeline-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.timeline-text {
+  font-size: 20px;
+  font-weight: 500;
+}
+
+/* Spacers */
+.spacer-sm { height: var(--spacing-sm); }
+.spacer-md { height: var(--spacing-md); }
+.spacer-lg { height: var(--spacing-lg); }
+.spacer-xl { height: var(--spacing-xl); }
+
+/* Flex Utilities */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.gap-sm { gap: var(--spacing-sm); }
+.gap-md { gap: var(--spacing-md); }
+.gap-lg { gap: var(--spacing-lg); }
+.text-center { text-align: center; }
+.w-full { width: 100%; }
+
+/* Decorative Elements */
+.crown {
+  font-size: 80px;
+  filter: drop-shadow(0 0 30px rgba(251, 191, 36, 0.5));
+}
+
+.confetti {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}

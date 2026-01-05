@@ -1,0 +1,236 @@
+<!-- Slide 16: TIMELINE -->
+<style>
+  .slide-16 {
+    background: linear-gradient(180deg, #0a0a0a 0%, #0a0f14 100%);
+  }
+
+  .slide-16 .bg-time {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(180deg, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
+  }
+
+  .timeline-header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  .timeline-header h1 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 56px;
+    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+
+  .timeline-header p {
+    font-size: 22px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .timeline-container {
+    position: relative;
+    width: 100%;
+  }
+
+  .timeline-line {
+    position: absolute;
+    left: 36px;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, #3b82f6 0%, #8b5cf6 33%, #a855f7 66%, #ec4899 100%);
+    border-radius: 2px;
+  }
+
+  .timeline-events {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .timeline-event {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+    padding-left: 0;
+  }
+
+  .timeline-dot {
+    width: 74px;
+    height: 74px;
+    border-radius: 50%;
+    background: #0a0a0a;
+    border: 4px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    flex-shrink: 0;
+    z-index: 1;
+  }
+
+  .timeline-event:nth-child(1) .timeline-dot { border-color: #3b82f6; }
+  .timeline-event:nth-child(2) .timeline-dot { border-color: #8b5cf6; }
+  .timeline-event:nth-child(3) .timeline-dot { border-color: #a855f7; }
+  .timeline-event:nth-child(4) .timeline-dot { border-color: #ec4899; }
+
+  .timeline-content {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 24px;
+  }
+
+  .timeline-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 20px;
+    color: #3b82f6;
+    margin-bottom: 8px;
+  }
+
+  .timeline-title {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 26px;
+    color: #ffffff;
+    margin-bottom: 8px;
+  }
+
+  .timeline-desc {
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+
+  .timeline-stat {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 18px;
+    color: #a855f7;
+    background: rgba(168, 85, 247, 0.1);
+    padding: 8px 16px;
+    border-radius: 8px;
+    display: inline-block;
+  }
+
+  .timeline-summary {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+    border: 2px solid rgba(59, 130, 246, 0.3);
+    border-radius: 20px;
+    padding: 24px;
+    margin-top: 30px;
+    text-align: center;
+  }
+
+  .timeline-summary .title {
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 12px;
+  }
+
+  .timeline-summary .stats {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+  }
+
+  .timeline-summary .stat-item {
+    text-align: center;
+  }
+
+  .timeline-summary .stat-item .number {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 36px;
+    color: #60a5fa;
+  }
+
+  .timeline-summary .stat-item .label {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+</style>
+
+<div class="slide slide-16">
+  <div class="bg-time"></div>
+
+  <div class="slide-content">
+    <div class="timeline-header">
+      <h1>Die Timeline</h1>
+      <p>4 Tage Chaos im Überblick</p>
+    </div>
+
+    <div class="timeline-container">
+      <div class="timeline-line"></div>
+
+      <div class="timeline-events">
+        <div class="timeline-event">
+          <div class="timeline-dot">🚀</div>
+          <div class="timeline-content">
+            <div class="timeline-date">27. Dezember</div>
+            <div class="timeline-title">Die Invasion</div>
+            <div class="timeline-desc">19 neue User stürmen die nervbox. Der erste Ansturm auf die Sounds beginnt. Das Chaos nimmt seinen Lauf.</div>
+            <div class="timeline-stat">3.111 Plays • 19 neue User</div>
+          </div>
+        </div>
+
+        <div class="timeline-event">
+          <div class="timeline-dot">🔥</div>
+          <div class="timeline-content">
+            <div class="timeline-date">28. Dezember</div>
+            <div class="timeline-title">Peak Chaos</div>
+            <div class="timeline-desc">Der absolute Wahnsinn! Lemmy erreicht 187 Sounds/min. Das Casino läuft heiß. Der lauteste Tag aller Zeiten.</div>
+            <div class="timeline-stat">3.491 Plays • Speed Record</div>
+          </div>
+        </div>
+
+        <div class="timeline-event">
+          <div class="timeline-dot">🎰</div>
+          <div class="timeline-content">
+            <div class="timeline-date">29. Dezember</div>
+            <div class="timeline-title">Gambling-Fieber</div>
+            <div class="timeline-desc">Die Erschöpfung setzt ein, aber das Casino läuft weiter. Mase Harry spielt tausende Runden am Stück.</div>
+            <div class="timeline-stat">1.078 Plays • Casino Non-Stop</div>
+          </div>
+        </div>
+
+        <div class="timeline-event">
+          <div class="timeline-dot">🏆</div>
+          <div class="timeline-content">
+            <div class="timeline-date">30. Dezember</div>
+            <div class="timeline-title">Finale Grande</div>
+            <div class="timeline-desc">Mase Harry knackt den 273K Jackpot — und verliert ihn 16 Sekunden später wieder. Ein würdiger Abschluss.</div>
+            <div class="timeline-stat">273.522 N$ Jackpot!</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-summary">
+      <div class="title">4 Tage CABD 2025 in Zahlen</div>
+      <div class="stats">
+        <div class="stat-item">
+          <div class="number">7.684</div>
+          <div class="label">Sounds</div>
+        </div>
+        <div class="stat-item">
+          <div class="number">23</div>
+          <div class="label">Nerds</div>
+        </div>
+        <div class="stat-item">
+          <div class="number">10.752</div>
+          <div class="label">Chats</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

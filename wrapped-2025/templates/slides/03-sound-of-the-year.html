@@ -1,0 +1,225 @@
+<!-- Slide 03: SOUND OF THE YEAR -->
+<style>
+  .slide-03 {
+    background: linear-gradient(180deg, #1a0f08 0%, #0a0a0a 50%, #0a0808 100%);
+  }
+
+  .slide-03 .bg-glow-gold {
+    position: absolute;
+    width: 700px;
+    height: 700px;
+    top: 35%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(251, 191, 36, 0.25) 0%, transparent 60%);
+    border-radius: 50%;
+  }
+
+  .slide-03 .bg-rays {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: repeating-conic-gradient(
+      from 0deg,
+      rgba(251, 191, 36, 0.03) 0deg 10deg,
+      transparent 10deg 20deg
+    );
+    opacity: 0.5;
+  }
+
+  .soty-header {
+    text-align: center;
+  }
+
+  .soty-header .label {
+    font-size: 22px;
+    font-weight: 600;
+    color: rgba(251, 191, 36, 0.8);
+    text-transform: uppercase;
+    letter-spacing: 6px;
+    margin-bottom: 12px;
+  }
+
+  .soty-header h1 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 64px;
+    background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .crown-icon {
+    font-size: 120px;
+    filter: drop-shadow(0 0 50px rgba(251, 191, 36, 0.6));
+  }
+
+  .sound-champion-card {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(249, 115, 22, 0.1) 100%);
+    border: 3px solid rgba(251, 191, 36, 0.4);
+    border-radius: 48px;
+    padding: 70px 60px;
+    text-align: center;
+    width: 100%;
+    box-shadow: 0 0 100px rgba(251, 191, 36, 0.3),
+                inset 0 0 60px rgba(251, 191, 36, 0.1);
+    position: relative;
+  }
+
+  .sound-champion-card::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(135deg, #fbbf24 0%, #f97316 50%, #fbbf24 100%);
+    border-radius: 50px;
+    z-index: -1;
+    opacity: 0.5;
+    filter: blur(20px);
+  }
+
+  .sound-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 88px;
+    color: #ffffff;
+    margin-bottom: 30px;
+    text-shadow: 0 0 40px rgba(251, 191, 36, 0.5);
+  }
+
+  .sound-plays {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .sound-plays .number {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 140px;
+    background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+  }
+
+  .sound-plays .unit {
+    font-size: 44px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 4px;
+  }
+
+  .soundwave-visual {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 40px;
+    height: 80px;
+  }
+
+  .soundwave-visual .bar {
+    width: 10px;
+    background: linear-gradient(180deg, #fbbf24 0%, #f97316 100%);
+    border-radius: 5px;
+    opacity: 0.6;
+  }
+
+  .runner-ups {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    width: 100%;
+  }
+
+  .runner-up {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 28px 36px;
+    text-align: center;
+    flex: 1;
+  }
+
+  .runner-up .rank {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 8px;
+  }
+
+  .runner-up .name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 26px;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 8px;
+  }
+
+  .runner-up .plays {
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .runner-up.silver .rank { color: #94a3b8; }
+  .runner-up.bronze .rank { color: #d97706; }
+</style>
+
+<div class="slide slide-03">
+  <div class="bg-rays"></div>
+  <div class="bg-glow-gold"></div>
+
+  <div class="slide-content">
+    <div class="soty-header">
+      <div class="label">Der absolute Dauerbrenner</div>
+      <h1>Sound of the Year</h1>
+    </div>
+
+    <div class="crown-icon">👑</div>
+
+    <div class="sound-champion-card">
+      <div class="sound-name">"tiiiiiim"</div>
+      <div class="sound-plays">
+        <span class="number">587</span>
+        <span class="unit">Plays</span>
+      </div>
+      <div class="soundwave-visual">
+        <div class="bar" style="height: 25px;"></div>
+        <div class="bar" style="height: 45px;"></div>
+        <div class="bar" style="height: 65px;"></div>
+        <div class="bar" style="height: 80px;"></div>
+        <div class="bar" style="height: 55px;"></div>
+        <div class="bar" style="height: 70px;"></div>
+        <div class="bar" style="height: 50px;"></div>
+        <div class="bar" style="height: 75px;"></div>
+        <div class="bar" style="height: 45px;"></div>
+        <div class="bar" style="height: 60px;"></div>
+        <div class="bar" style="height: 35px;"></div>
+      </div>
+    </div>
+
+    <div class="runner-ups">
+      <div class="runner-up silver">
+        <div class="rank">#2</div>
+        <div class="name">suuuer</div>
+        <div class="plays">532 Plays</div>
+      </div>
+      <div class="runner-up bronze">
+        <div class="rank">#3</div>
+        <div class="name">horn_3x</div>
+        <div class="plays">334 Plays</div>
+      </div>
+      <div class="runner-up">
+        <div class="rank">#4</div>
+        <div class="name">figg</div>
+        <div class="plays">285 Plays</div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,255 @@
+<!-- Slide 08: DIE NACHTEULEN -->
+<style>
+  .slide-08 {
+    background: linear-gradient(180deg, #04050a 0%, #0a0a14 100%);
+  }
+
+  .slide-08 .bg-stars {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .star {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #ffffff;
+    border-radius: 50%;
+    opacity: 0.5;
+  }
+
+  .slide-08 .bg-moon {
+    position: absolute;
+    width: 180px;
+    height: 180px;
+    top: 80px;
+    right: 50px;
+    background: radial-gradient(circle at 30% 30%, #e2e8f0 0%, #94a3b8 50%, #64748b 100%);
+    border-radius: 50%;
+    box-shadow: 0 0 80px rgba(148, 163, 184, 0.4);
+  }
+
+  .nacht-header {
+    text-align: center;
+  }
+
+  .nacht-header h1 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 64px;
+    background: linear-gradient(135deg, #60a5fa 0%, #a855f7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+  }
+
+  .nacht-header p {
+    font-size: 24px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .nacht-card {
+    background: linear-gradient(135deg, rgba(96, 165, 250, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+    border: 3px solid rgba(96, 165, 250, 0.3);
+    border-radius: 40px;
+    padding: 50px;
+    text-align: center;
+    width: 100%;
+    box-shadow: 0 0 80px rgba(96, 165, 250, 0.2);
+  }
+
+  .owl-icon {
+    font-size: 120px;
+    margin-bottom: 20px;
+  }
+
+  .nacht-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 56px;
+    color: #ffffff;
+    margin-bottom: 16px;
+  }
+
+  .nacht-stat {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .nacht-stat .number {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 120px;
+    background: linear-gradient(135deg, #60a5fa 0%, #a855f7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+  }
+
+  .nacht-stat .unit {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 36px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .nacht-context {
+    font-size: 22px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 24px;
+  }
+
+  .time-range {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 20px 40px;
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 24px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .nacht-runners {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    width: 100%;
+  }
+
+  .nacht-runner {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 28px 36px;
+    text-align: center;
+    flex: 1;
+  }
+
+  .nacht-runner .icon {
+    font-size: 44px;
+    margin-bottom: 12px;
+  }
+
+  .nacht-runner .name {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 22px;
+    color: #ffffff;
+    margin-bottom: 8px;
+  }
+
+  .nacht-runner .plays {
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .nacht-total {
+    background: linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(147, 51, 234, 0.15) 100%);
+    border: 2px solid rgba(96, 165, 250, 0.3);
+    border-radius: 20px;
+    padding: 24px 50px;
+    display: flex;
+    gap: 60px;
+  }
+
+  .nacht-total-item {
+    text-align: center;
+  }
+
+  .nacht-total-item .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 36px;
+    color: #60a5fa;
+  }
+
+  .nacht-total-item .label {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+</style>
+
+<div class="slide slide-08">
+  <div class="bg-stars">
+    <div class="star" style="top: 10%; left: 10%;"></div>
+    <div class="star" style="top: 20%; left: 25%;"></div>
+    <div class="star" style="top: 8%; left: 40%;"></div>
+    <div class="star" style="top: 30%; left: 15%;"></div>
+    <div class="star" style="top: 40%; left: 8%;"></div>
+    <div class="star" style="top: 50%; left: 20%;"></div>
+    <div class="star" style="top: 15%; left: 55%;"></div>
+    <div class="star" style="top: 55%; left: 85%;"></div>
+    <div class="star" style="top: 65%; left: 75%;"></div>
+    <div class="star" style="top: 75%; left: 90%;"></div>
+    <div class="star" style="top: 80%; left: 5%;"></div>
+    <div class="star" style="top: 85%; left: 35%;"></div>
+    <div class="star" style="top: 92%; left: 60%;"></div>
+    <div class="star" style="top: 45%; left: 92%;"></div>
+  </div>
+  <div class="bg-moon"></div>
+
+  <div class="slide-content">
+    <div class="nacht-header">
+      <h1>Die Nachteulen</h1>
+      <p>Wer macht nach Mitternacht noch Krach?</p>
+    </div>
+
+    <div class="nacht-card">
+      <div class="owl-icon">🦉</div>
+      <div class="nacht-name">Adminstraktor</div>
+
+      <div class="nacht-stat">
+        <span class="number">454</span>
+        <span class="unit">Plays</span>
+      </div>
+
+      <div class="nacht-context">
+        Sounds zwischen Mitternacht und 6 Uhr morgens
+      </div>
+
+      <div class="time-range">🌙 00:00 — 06:00</div>
+    </div>
+
+    <div class="nacht-runners">
+      <div class="nacht-runner">
+        <div class="icon">🌃</div>
+        <div class="name">Bot(HARD)</div>
+        <div class="plays">298 Plays</div>
+      </div>
+      <div class="nacht-runner">
+        <div class="icon">🌃</div>
+        <div class="name">Gergott</div>
+        <div class="plays">187 Plays</div>
+      </div>
+      <div class="nacht-runner">
+        <div class="icon">🌃</div>
+        <div class="name">shibby</div>
+        <div class="plays">142 Plays</div>
+      </div>
+    </div>
+
+    <div class="nacht-total">
+      <div class="nacht-total-item">
+        <div class="value">1.081</div>
+        <div class="label">Nacht-Plays gesamt</div>
+      </div>
+      <div class="nacht-total-item">
+        <div class="value">14%</div>
+        <div class="label">Aller Sounds</div>
+      </div>
+      <div class="nacht-total-item">
+        <div class="value">00:00</div>
+        <div class="label">Peak Nacht-Stunde</div>
+      </div>
+    </div>
+  </div>
+</div>
