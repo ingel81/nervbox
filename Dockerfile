@@ -34,8 +34,9 @@ WORKDIR /app
 COPY nervbox/nervbox-player/package*.json ./
 RUN npm ci --legacy-peer-deps
 
-# Copy source and build
+# Copy source and create secrets from example (for Docker build)
 COPY nervbox/nervbox-player/ ./
+RUN cp src/environments/secrets.example.ts src/environments/secrets.ts
 RUN npm run build -- --configuration production
 
 # -----------------------------------------------------------------------------
