@@ -6,6 +6,7 @@ import { EnemyTypeId } from '../models/enemy-types';
 import { GeoPosition } from '../models/game.types';
 import { EntityPoolService } from '../services/entity-pool.service';
 import { EnemyRenderer, EnemyRenderConfig } from '../renderers/enemy.renderer';
+import { TdThreeEngine } from '../three-engine';
 
 /**
  * Manages all enemy entities
@@ -16,8 +17,18 @@ export class EnemyManager extends EntityManager<Enemy> {
   private onEnemyReachedBase?: (enemy: Enemy) => void;
   private renderer = new EnemyRenderer();
 
-  override initialize(viewer: Cesium.Viewer, onEnemyReachedBase?: (enemy: Enemy) => void): void {
-    super.initialize(viewer);
+  // Track Three.js render IDs for each enemy
+  private threeRenderIds = new Map<string, string>();
+
+  /**
+   * Initialize enemy manager with callbacks and optional Three.js engine
+   */
+  initializeWithCallbacks(
+    viewer: Cesium.Viewer,
+    onEnemyReachedBase?: (enemy: Enemy) => void,
+    threeEngine?: TdThreeEngine
+  ): void {
+    super.initialize(viewer, threeEngine);
     this.onEnemyReachedBase = onEnemyReachedBase;
   }
 
@@ -46,21 +57,36 @@ export class EnemyManager extends EntityManager<Enemy> {
 
     // Initialize rendering
     const startPos = path[0];
-    const terrainHeight = startPos.height ?? 235;
+    if (startPos.height === undefined) {
+      console.error('[EnemyManager] Path has no height data! startPos:', startPos);
+    }
+    const terrainHeight = startPos.height!;
     enemy.transform.terrainHeight = terrainHeight;
+    console.log(`[EnemyManager] Spawning enemy at height ${terrainHeight}m`);
 
-    const renderConfig: EnemyRenderConfig = {
-      position: startPos,
-      terrainHeight,
-      typeConfig: enemy.typeConfig,
-    };
+    if (this.useThreeJs && this.threeEngine) {
+      // Three.js rendering
+      this.threeEngine.enemies
+        .create(enemy.id, typeId, startPos.lat, startPos.lon, terrainHeight)
+        .then((renderData) => {
+          if (renderData && !paused) {
+            this.threeEngine!.enemies.startWalkAnimation(enemy.id);
+          }
+        });
+      this.threeRenderIds.set(enemy.id, enemy.id);
+    } else {
+      // Cesium rendering (fallback)
+      const renderConfig: EnemyRenderConfig = {
+        position: startPos,
+        terrainHeight,
+        typeConfig: enemy.typeConfig,
+      };
+      enemy.render.initialize(this.viewer, this.renderer, renderConfig);
 
-    // Create Cesium entities via renderer
-    enemy.render.initialize(this.viewer, this.renderer, renderConfig);
-
-    // Start walk animation when model is ready (unless paused)
-    if (!paused) {
-      this.waitForModelAndStartAnimation(enemy);
+      // Start walk animation when model is ready (unless paused)
+      if (!paused) {
+        this.waitForModelAndStartAnimation(enemy);
+      }
     }
 
     if (paused) {
@@ -114,17 +140,22 @@ export class EnemyManager extends EntityManager<Enemy> {
     }
     enemy.stopMoving();
 
-    // Play death animation (use result reference for async model)
-    const result = enemy.render.result;
-    console.log('[EnemyManager] result:', !!result, 'model:', !!result?.model);
-    if (result) {
-      this.renderer.playDeathAnimation(result, enemy.typeConfig);
-    }
+    if (this.useThreeJs && this.threeEngine) {
+      // Three.js: Play death animation
+      this.threeEngine.enemies.playDeathAnimation(enemy.id);
+    } else {
+      // Cesium: Play death animation
+      const result = enemy.render.result;
+      console.log('[EnemyManager] result:', !!result, 'model:', !!result?.model);
+      if (result) {
+        this.renderer.playDeathAnimation(result, enemy.typeConfig);
+      }
 
-    // Hide health bar
-    const healthBarEntity = enemy.render.additionalEntities[0];
-    if (healthBarEntity) {
-      healthBarEntity.show = false;
+      // Hide health bar (Cesium only)
+      const healthBarEntity = enemy.render.additionalEntities[0];
+      if (healthBarEntity) {
+        healthBarEntity.show = false;
+      }
     }
 
     // Remove after death animation (2 seconds)
@@ -155,16 +186,29 @@ export class EnemyManager extends EntityManager<Enemy> {
         continue;
       }
 
-      // Update visual representation using smoothed rotation from transform
-      const renderResult = enemy.render.result;
-      if (renderResult) {
-        this.renderer.update(renderResult, {
-          position: enemy.position,
-          terrainHeight: enemy.transform.terrainHeight,
-          heading: enemy.transform.rotation, // Use smoothed rotation
-          healthPercent: enemy.health.healthPercent,
-          healthBarOffset: enemy.typeConfig.healthBarOffset,
-        });
+      // Update visual representation
+      if (this.useThreeJs && this.threeEngine) {
+        // Three.js rendering
+        this.threeEngine.enemies.update(
+          enemy.id,
+          enemy.position.lat,
+          enemy.position.lon,
+          enemy.transform.terrainHeight,
+          enemy.transform.rotation,
+          enemy.health.healthPercent
+        );
+      } else {
+        // Cesium rendering (fallback)
+        const renderResult = enemy.render.result;
+        if (renderResult) {
+          this.renderer.update(renderResult, {
+            position: enemy.position,
+            terrainHeight: enemy.transform.terrainHeight,
+            heading: enemy.transform.rotation,
+            healthPercent: enemy.health.healthPercent,
+            healthBarOffset: enemy.typeConfig.healthBarOffset,
+          });
+        }
       }
     }
 
@@ -185,11 +229,37 @@ export class EnemyManager extends EntityManager<Enemy> {
         if (enemy.alive) {
           enemy.startMoving();
           // Start walk animation
-          this.waitForModelAndStartAnimation(enemy);
+          if (this.useThreeJs && this.threeEngine) {
+            this.threeEngine.enemies.startWalkAnimation(enemy.id);
+          } else {
+            this.waitForModelAndStartAnimation(enemy);
+          }
         }
       }, accumulatedDelay);
       accumulatedDelay += delay;
     });
+  }
+
+  /**
+   * Override remove to cleanup Three.js resources
+   */
+  override remove(entity: Enemy): void {
+    if (this.useThreeJs && this.threeEngine) {
+      this.threeEngine.enemies.remove(entity.id);
+      this.threeRenderIds.delete(entity.id);
+    }
+    super.remove(entity);
+  }
+
+  /**
+   * Override clear to cleanup all Three.js resources
+   */
+  override clear(): void {
+    if (this.useThreeJs && this.threeEngine) {
+      this.threeEngine.enemies.clear();
+      this.threeRenderIds.clear();
+    }
+    super.clear();
   }
 
   /**

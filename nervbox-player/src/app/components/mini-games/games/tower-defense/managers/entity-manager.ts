@@ -1,5 +1,6 @@
 import * as Cesium from 'cesium';
 import { GameObject } from '../core/game-object';
+import { TdThreeEngine } from '../three-engine';
 
 /**
  * Abstract base class for all entity managers
@@ -7,9 +8,18 @@ import { GameObject } from '../core/game-object';
 export abstract class EntityManager<T extends GameObject> {
   protected entities = new Map<string, T>();
   protected viewer: Cesium.Viewer | null = null;
+  protected threeEngine: TdThreeEngine | null = null;
 
-  initialize(viewer: Cesium.Viewer): void {
+  /**
+   * Check if Three.js rendering is enabled
+   */
+  protected get useThreeJs(): boolean {
+    return this.threeEngine !== null;
+  }
+
+  initialize(viewer: Cesium.Viewer, threeEngine?: TdThreeEngine): void {
     this.viewer = viewer;
+    this.threeEngine = threeEngine ?? null;
   }
 
   /**

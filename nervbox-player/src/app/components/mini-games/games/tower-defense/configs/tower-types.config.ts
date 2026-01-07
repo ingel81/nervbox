@@ -15,11 +15,14 @@ export interface TowerTypeConfig {
   cost: number;
 }
 
+// NOTE: Currently only tower_archer.glb exists. Using it for all tower types until more models are created.
+const ARCHER_MODEL_URL = '/assets/games/tower-defense/models/tower_archer.glb';
+
 export const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
   archer: {
     id: 'archer',
     name: 'Archer Tower',
-    modelUrl: '/assets/games/tower-defense/models/tower_archer.glb',
+    modelUrl: ARCHER_MODEL_URL,
     scale: 1.8,
     damage: 25,
     range: 60,
@@ -30,7 +33,7 @@ export const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
   cannon: {
     id: 'cannon',
     name: 'Cannon Tower',
-    modelUrl: '/assets/games/tower-defense/models/tower_cannon.glb',
+    modelUrl: ARCHER_MODEL_URL, // TODO: Replace with tower_cannon.glb when available
     scale: 2.0,
     damage: 75,
     range: 80,
@@ -41,7 +44,7 @@ export const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
   magic: {
     id: 'magic',
     name: 'Magic Tower',
-    modelUrl: '/assets/games/tower-defense/models/tower_magic.glb',
+    modelUrl: ARCHER_MODEL_URL, // TODO: Replace with tower_magic.glb when available
     scale: 1.5,
     damage: 40,
     range: 70,
@@ -52,7 +55,7 @@ export const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
   sniper: {
     id: 'sniper',
     name: 'Sniper Tower',
-    modelUrl: '/assets/games/tower-defense/models/tower_sniper.glb',
+    modelUrl: ARCHER_MODEL_URL, // TODO: Replace with tower_sniper.glb when available
     scale: 1.6,
     damage: 150,
     range: 120,

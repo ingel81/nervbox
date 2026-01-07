@@ -10,7 +10,7 @@ export class TransformComponent extends Component {
   position: GeoPosition = { lat: 0, lon: 0, height: 0 };
   rotation = 0; // Heading in radians (smoothed)
   scale = 1.0;
-  terrainHeight = 235; // Default terrain height
+  terrainHeight = 0; // Must be set from terrain sampling before use
 
   // Rotation smoothing
   private targetRotation = 0;

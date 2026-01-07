@@ -31,6 +31,8 @@ import { ProjectileManager } from './managers/projectile.manager';
 import { WaveManager, SpawnPoint as WaveSpawnPoint } from './managers/wave.manager';
 import { AudioManager } from './managers/audio.manager';
 import { RenderManager } from './managers/render.manager';
+// Three.js Engine
+import { TdThreeEngine } from './three-engine';
 
 import * as Cesium from 'cesium';
 
@@ -131,6 +133,7 @@ export interface SpawnPoint {
         }
 
         <div #cesiumContainer class="cesium-container" [class.hidden]="loading() || error()"></div>
+        <canvas #threeCanvas class="three-canvas" [class.hidden]="loading() || error()"></canvas>
 
         @if (!loading() && !error()) {
           <!-- Status Panel (top left) -->
@@ -342,6 +345,21 @@ export interface SpawnPoint {
     }
 
     .cesium-container.hidden {
+      visibility: hidden;
+    }
+
+    .three-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      pointer-events: none;
+      background: transparent;
+    }
+
+    .three-canvas.hidden {
       visibility: hidden;
     }
 
@@ -732,6 +750,7 @@ export interface SpawnPoint {
 })
 export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('cesiumContainer') cesiumContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('threeCanvas') threeCanvas!: ElementRef<HTMLCanvasElement>;
 
   private readonly dialogRef = inject(MatDialogRef<TowerDefenseComponent>, { optional: true });
   private readonly osmService = inject(OsmStreetService);
@@ -745,6 +764,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   private projectileSoundUrl = '';
 
   private viewer: Cesium.Viewer | null = null;
+  private threeEngine: TdThreeEngine | null = null;
   private streetNetwork: StreetNetwork | null = null;
   private streetEntities: Cesium.Entity[] = [];
   private spawnEntities: Cesium.Entity[] = [];
@@ -794,6 +814,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly TOWER_RANGE = 60;
 
   private tiltAngle = 45;
+  private threeRenderCallback: Cesium.Event.RemoveCallback | null = null;
 
   ngOnInit(): void {
     (window as unknown as { CESIUM_BASE_URL: string }).CESIUM_BASE_URL = '/cesium/';
@@ -808,6 +829,9 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
     }
+    if (this.threeRenderCallback) {
+      this.viewer?.scene.postRender.removeEventListener(this.threeRenderCallback);
+    }
     if (this.clickHandler) {
       this.clickHandler.destroy();
     }
@@ -815,9 +839,101 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       this.viewer.entities.remove(this.buildPreviewEntity);
     }
     this.entityPool.destroy();
+    if (this.threeEngine) {
+      this.threeEngine.dispose();
+      this.threeEngine = null;
+    }
     if (this.viewer) {
       this.viewer.destroy();
       this.viewer = null;
+    }
+  }
+
+  /**
+   * Initialize Three.js rendering engine
+   */
+  private async initThreeEngine(): Promise<void> {
+    if (!this.viewer || !this.threeCanvas?.nativeElement) {
+      console.warn('[TD] Cannot initialize Three.js engine - viewer or canvas not ready');
+      return;
+    }
+
+    const canvas = this.threeCanvas.nativeElement;
+    const rect = this.cesiumContainer.nativeElement.getBoundingClientRect();
+
+    // Set canvas size to match Cesium container
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+
+    // Get terrain height at HQ for origin
+    const base = this.baseCoords();
+    const positions = [Cesium.Cartographic.fromDegrees(base.longitude, base.latitude)];
+    const sampled = await Cesium.sampleTerrainMostDetailed(this.viewer.terrainProvider, positions);
+    const baseHeight = sampled[0].height;
+    console.log('[TD] Sampled terrain height at HQ:', baseHeight);
+
+    // Create Three.js engine with separate canvas
+    this.threeEngine = new TdThreeEngine(canvas, this.viewer, base.latitude, base.longitude, baseHeight);
+    this.threeEngine.resize(rect.width, rect.height);
+
+    // Preload 3D models in background
+    this.threeEngine.preloadModels().then(() => {
+      console.log('[TD] All Three.js models preloaded');
+    });
+
+    // Add test cube at HQ position (Phase 1 test - can be removed later)
+    this.threeEngine.addTestCube(base.latitude, base.longitude).then(() => {
+      console.log('[TD] Test cube added at HQ');
+    });
+
+    // Add test cubes at spawn points
+    const spawns = this.spawnPoints();
+    if (spawns.length > 0) {
+      this.threeEngine.addTestCubesAtSpawns(
+        spawns.map((s) => ({ lat: s.latitude, lon: s.longitude }))
+      );
+    }
+
+    // Add axis helper for debugging
+    this.threeEngine.addAxisHelper();
+
+    // Register postRender callback to sync Three.js with Cesium
+    // This ensures Three.js renders AFTER Cesium each frame (in same WebGL context)
+    this.threeRenderCallback = this.viewer.scene.postRender.addEventListener(() => {
+      if (this.threeEngine) {
+        this.threeEngine.render();
+      }
+    });
+
+    // Start continuous render loop for Three.js (independent of game wave state)
+    // This ensures test cubes and entities are always visible
+    this.startThreeRenderLoop();
+
+    console.log('[TD] Three.js engine initialized, canvas:', canvas.width, 'x', canvas.height);
+  }
+
+  private threeRenderLoopId: number | null = null;
+
+  private startThreeRenderLoop(): void {
+    const renderLoop = () => {
+      if (!this.viewer || !this.threeEngine) {
+        this.threeRenderLoopId = null;
+        return;
+      }
+
+      // Request Cesium render (triggers postRender callback which renders Three.js)
+      this.viewer.scene.requestRender();
+
+      this.threeRenderLoopId = requestAnimationFrame(renderLoop);
+    };
+
+    this.threeRenderLoopId = requestAnimationFrame(renderLoop);
+  }
+
+  private stopThreeRenderLoop(): void {
+    if (this.threeRenderLoopId !== null) {
+      cancelAnimationFrame(this.threeRenderLoopId);
+      this.threeRenderLoopId = null;
     }
   }
 
@@ -895,6 +1011,9 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       // Initialize entity pool
       this.entityPool.initialize(this.viewer);
 
+      // Initialize Three.js engine (async - waits for terrain height)
+      await this.initThreeEngine();
+
       // Setup click handler and build preview
       this.setupClickHandler();
       this.createBuildPreview();
@@ -921,7 +1040,8 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         this.cachedPaths,
         () => this.playProjectileSound(),
         (msg) => this.appendDebugLog(msg),
-        () => this.onGameOver()
+        () => this.onGameOver(),
+        this.threeEngine ?? undefined
       );
 
       this.resetCamera();
@@ -1187,7 +1307,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showPathFromSpawn(spawn);
   }
 
-  private showPathFromSpawn(spawn: SpawnPoint): void {
+  private async showPathFromSpawn(spawn: SpawnPoint): Promise<void> {
     if (!this.viewer || !this.streetNetwork) return;
 
     const base = this.baseCoords();
@@ -1255,15 +1375,16 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     const terrainProvider = this.viewer.terrainProvider;
     const cartographics = geoPath.map((n) => Cesium.Cartographic.fromDegrees(n.lon, n.lat));
 
-    Cesium.sampleTerrainMostDetailed(terrainProvider, cartographics).then((sampled) => {
-      // Update path with terrain heights
-      const pathWithHeights = geoPath.map((pos, i) => ({
-        ...pos,
-        height: sampled[i].height ?? 235,
-      }));
-      this.cachedPaths.set(spawn.id, pathWithHeights);
-      console.log(`[Path] Sampled ${pathWithHeights.length} terrain heights for ${spawn.name} (includes HQ)`);
-    });
+    // Sample terrain heights synchronously before continuing
+    const sampled = await Cesium.sampleTerrainMostDetailed(terrainProvider, cartographics);
+    // Update path with terrain heights
+    const pathWithHeights = geoPath.map((pos, i) => ({
+      ...pos,
+      height: sampled[i].height,
+    }));
+    this.cachedPaths.set(spawn.id, pathWithHeights);
+    console.log(`[Path] Sampled ${pathWithHeights.length} terrain heights for ${spawn.name}:`,
+      `first=${pathWithHeights[0].height?.toFixed(1)}m, last=${pathWithHeights[pathWithHeights.length-1].height?.toFixed(1)}m`);
 
     const positions = geoPath.map((node) => Cesium.Cartesian3.fromDegrees(node.lon, node.lat));
 
@@ -1345,10 +1466,15 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     return { valid: true };
   }
 
-  private placeTower(lat: number, lon: number): void {
+  private async placeTower(lat: number, lon: number): Promise<void> {
     if (!this.viewer) return;
 
-    const position: GeoPosition = { lat, lon };
+    // Sample terrain height at placement position
+    const positions = [Cesium.Cartographic.fromDegrees(lon, lat)];
+    const sampled = await Cesium.sampleTerrainMostDetailed(this.viewer.terrainProvider, positions);
+    const terrainHeight = sampled[0].height;
+
+    const position: GeoPosition = { lat, lon, height: terrainHeight };
 
     // Use the new manager API - it handles rendering automatically
     const tower = this.gameState.placeTower(position, 'archer');
@@ -1450,6 +1576,12 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
       const currentTime = performance.now();
       this.gameState.update(currentTime);
+
+      // Update and render Three.js
+      if (this.threeEngine) {
+        this.threeEngine.update(16); // ~60fps
+        this.threeEngine.render();
+      }
 
       if (this.gameState.checkWaveComplete()) {
         this.gameState.endWave();
@@ -1912,11 +2044,21 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         this.cachedPaths,
         () => this.playProjectileSound(),
         (msg) => this.appendDebugLog(msg),
-        () => this.onGameOver()
+        () => this.onGameOver(),
+        this.threeEngine ?? undefined
       );
 
       // Save to localStorage
       this.saveLocationsToStorage();
+
+      // Update Three.js engine origin and debug helpers
+      if (this.threeEngine) {
+        this.threeEngine.setOrigin(data.hq.lat, data.hq.lon);
+        this.threeEngine.clearDebugHelpers();
+        // Debug helpers removed for production - uncomment for testing
+        // this.threeEngine.addTestCube(data.hq.lat, data.hq.lon);
+        // this.threeEngine.addAxisHelper();
+      }
 
       // Fly to new location
       this.flyToCenter();
