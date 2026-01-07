@@ -19,7 +19,7 @@ export const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
   archer: {
     id: 'archer',
     name: 'Archer Tower',
-    modelUrl: '/assets/models/tower_archer.glb',
+    modelUrl: '/assets/games/tower-defense/models/tower_archer.glb',
     scale: 1.8,
     damage: 25,
     range: 60,
@@ -30,7 +30,7 @@ export const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
   cannon: {
     id: 'cannon',
     name: 'Cannon Tower',
-    modelUrl: '/assets/models/tower_cannon.glb',
+    modelUrl: '/assets/games/tower-defense/models/tower_cannon.glb',
     scale: 2.0,
     damage: 75,
     range: 80,
@@ -41,7 +41,7 @@ export const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
   magic: {
     id: 'magic',
     name: 'Magic Tower',
-    modelUrl: '/assets/models/tower_magic.glb',
+    modelUrl: '/assets/games/tower-defense/models/tower_magic.glb',
     scale: 1.5,
     damage: 40,
     range: 70,
@@ -52,7 +52,7 @@ export const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
   sniper: {
     id: 'sniper',
     name: 'Sniper Tower',
-    modelUrl: '/assets/models/tower_sniper.glb',
+    modelUrl: '/assets/games/tower-defense/models/tower_sniper.glb',
     scale: 1.6,
     damage: 150,
     range: 120,

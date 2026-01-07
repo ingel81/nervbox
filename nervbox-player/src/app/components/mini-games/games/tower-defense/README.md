@@ -32,7 +32,7 @@ Ein Tower Defense Spiel mit echten 3D-Karten von Erlenbach (Google Photorealisti
 
 ### 3D-Modelle
 
-Modelle befinden sich in `/public/assets/models/`:
+Modelle befinden sich in `/public/assets/games/tower-defense/models/`:
 
 | Datei | Typ | Beschreibung |
 |-------|-----|--------------|
