@@ -1430,7 +1430,7 @@ const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
   archer: {
     id: 'archer',
     name: 'Archer Tower',
-    modelUrl: '/assets/models/tower_archer.glb',
+    modelUrl: '/assets/games/tower-defense/models/tower_archer.glb',
     scale: 1.8,
     damage: 25,
     range: 60,
@@ -1441,7 +1441,7 @@ const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
   cannon: {
     id: 'cannon',
     name: 'Cannon Tower',
-    modelUrl: '/assets/models/tower_cannon.glb',
+    modelUrl: '/assets/games/tower-defense/models/tower_cannon.glb',
     scale: 2.0,
     damage: 75,
     range: 80,
@@ -1452,7 +1452,7 @@ const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
   magic: {
     id: 'magic',
     name: 'Magic Tower',
-    modelUrl: '/assets/models/tower_magic.glb',
+    modelUrl: '/assets/games/tower-defense/models/tower_magic.glb',
     scale: 1.5,
     damage: 40,
     range: 70,
@@ -1463,7 +1463,7 @@ const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
   sniper: {
     id: 'sniper',
     name: 'Sniper Tower',
-    modelUrl: '/assets/models/tower_sniper.glb',
+    modelUrl: '/assets/games/tower-defense/models/tower_sniper.glb',
     scale: 1.6,
     damage: 150,
     range: 120,
@@ -1534,7 +1534,7 @@ const ENEMY_TYPES: Record<EnemyTypeId, EnemyTypeConfig> = {
   drone: {
     id: 'drone',
     name: 'Attack Drone',
-    modelUrl: '/assets/models/drone.glb',
+    modelUrl: '/assets/games/tower-defense/models/drone.glb',
     baseHp: 30,
     baseSpeed: 8,
     movementType: 'air', // Fliegt, ignoriert Pfade teilweise
@@ -1754,7 +1754,7 @@ const TOWER_TYPES = {
   frost: {
     id: 'frost',
     name: 'Frost Tower',
-    modelUrl: '/assets/models/tower_frost.glb',
+    modelUrl: '/assets/games/tower-defense/models/tower_frost.glb',
     scale: 1.7,
     damage: 15,
     range: 65,
@@ -1790,7 +1790,7 @@ const ENEMY_TYPES = {
   drone: {
     id: 'drone',
     name: 'Attack Drone',
-    modelUrl: '/assets/models/drone.glb',
+    modelUrl: '/assets/games/tower-defense/models/drone.glb',
     baseHp: 40,
     baseSpeed: 10,
     movementType: 'air',

@@ -58,7 +58,7 @@ export class EntityPoolService {
         return this.viewer.entities.add({
           position: Cesium.Cartesian3.fromDegrees(0, 0, 0),
           model: {
-            uri: '/assets/models/enemy_zombie.glb',
+            uri: '/assets/games/tower-defense/models/enemy_zombie.glb',
             scale: 5.0,
             minimumPixelSize: 128,
           },
