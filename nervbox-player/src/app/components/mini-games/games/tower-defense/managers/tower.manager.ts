@@ -6,6 +6,7 @@ import { TowerTypeId } from '../configs/tower-types.config';
 import { GeoPosition } from '../models/game.types';
 import { OsmStreetService, StreetNetwork } from '../services/osm-street.service';
 import { TowerRenderer, TowerRenderConfig } from '../renderers/tower.renderer';
+import { TdThreeEngine } from '../three-engine';
 
 /**
  * Manages all tower entities
@@ -34,9 +35,10 @@ export class TowerManager extends EntityManager<Tower> {
     viewer: Cesium.Viewer,
     streetNetwork: StreetNetwork,
     basePosition: GeoPosition,
-    spawnPoints: GeoPosition[]
+    spawnPoints: GeoPosition[],
+    threeEngine?: TdThreeEngine
   ): void {
-    super.initialize(viewer);
+    super.initialize(viewer, threeEngine);
     this.streetNetwork = streetNetwork;
     this.basePosition = basePosition;
     this.spawnPoints = spawnPoints;
@@ -58,12 +60,27 @@ export class TowerManager extends EntityManager<Tower> {
 
     const tower = new Tower(position, typeId);
 
-    // Initialize rendering
-    const renderConfig: TowerRenderConfig = {
-      position,
-      typeConfig: tower.typeConfig,
-    };
-    tower.render.initialize(this.viewer, this.renderer, renderConfig);
+    if (this.useThreeJs && this.threeEngine) {
+      // Three.js rendering
+      if (position.height === undefined) {
+        console.error('[TowerManager] position.height is undefined! Terrain height must be sampled before placing tower.');
+      }
+      const terrainHeight = position.height!;
+      this.threeEngine.towers.create(
+        tower.id,
+        typeId,
+        position.lat,
+        position.lon,
+        terrainHeight
+      );
+    } else {
+      // Cesium rendering (fallback)
+      const renderConfig: TowerRenderConfig = {
+        position,
+        typeConfig: tower.typeConfig,
+      };
+      tower.render.initialize(this.viewer, this.renderer, renderConfig);
+    }
 
     this.add(tower);
     return tower;
@@ -130,10 +147,13 @@ export class TowerManager extends EntityManager<Tower> {
       const prev = this.getById(this.selectedTowerId);
       if (prev) {
         prev.deselect();
-        // Update visual selection (use result reference)
-        const result = prev.render.result;
-        if (result) {
-          this.renderer.update(result, { selected: false });
+        if (this.useThreeJs && this.threeEngine) {
+          this.threeEngine.towers.deselect(this.selectedTowerId);
+        } else {
+          const result = prev.render.result;
+          if (result) {
+            this.renderer.update(result, { selected: false });
+          }
         }
       }
     }
@@ -144,10 +164,13 @@ export class TowerManager extends EntityManager<Tower> {
       const tower = this.getById(id);
       if (tower) {
         tower.select();
-        // Update visual selection (use result reference)
-        const result = tower.render.result;
-        if (result) {
-          this.renderer.update(result, { selected: true });
+        if (this.useThreeJs && this.threeEngine) {
+          this.threeEngine.towers.select(id);
+        } else {
+          const result = tower.render.result;
+          if (result) {
+            this.renderer.update(result, { selected: true });
+          }
         }
       }
     }
@@ -189,5 +212,26 @@ export class TowerManager extends EntityManager<Tower> {
         Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
+  }
+
+  /**
+   * Override remove to cleanup Three.js resources
+   */
+  override remove(entity: Tower): void {
+    if (this.useThreeJs && this.threeEngine) {
+      this.threeEngine.towers.remove(entity.id);
+    }
+    super.remove(entity);
+  }
+
+  /**
+   * Override clear to cleanup all Three.js resources
+   */
+  override clear(): void {
+    if (this.useThreeJs && this.threeEngine) {
+      this.threeEngine.towers.clear();
+    }
+    this.selectedTowerId = null;
+    super.clear();
   }
 }

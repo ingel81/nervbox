@@ -16,6 +16,7 @@ import { FireRenderer, FireIntensity } from '../renderers/fire.renderer';
 import { EnemyTypeId } from '../models/enemy-types';
 import { TowerTypeId } from '../configs/tower-types.config';
 import { Tower } from '../entities/tower.entity';
+import { TdThreeEngine } from '../three-engine';
 
 /**
  * Main game state orchestrator - coordinates all managers
@@ -46,11 +47,19 @@ export class GameStateManager {
   readonly selectedTowerId = computed(() => this.towerManager.getSelectedId());
 
   private viewer: Cesium.Viewer | null = null;
+  private threeEngine: TdThreeEngine | null = null;
   private lastUpdateTime = 0;
   private basePosition: GeoPosition | null = null;
   private onGameOverCallback?: () => void;
   private onProjectileFiredCallback?: () => void;
   private onDebugLogCallback?: (msg: string) => void;
+
+  /**
+   * Check if Three.js rendering is enabled
+   */
+  get useThreeJs(): boolean {
+    return this.threeEngine !== null;
+  }
 
   /**
    * Initialize game state and all managers
@@ -63,6 +72,7 @@ export class GameStateManager {
    * @param onProjectileFired - Optional callback when projectile is fired (for sound)
    * @param onDebugLog - Optional callback for debug logging
    * @param onGameOver - Optional callback when game is over
+   * @param threeEngine - Optional Three.js engine for rendering
    */
   initialize(
     viewer: Cesium.Viewer,
@@ -72,9 +82,11 @@ export class GameStateManager {
     cachedPaths: Map<string, GeoPosition[]>,
     onProjectileFired?: () => void,
     onDebugLog?: (msg: string) => void,
-    onGameOver?: () => void
+    onGameOver?: () => void,
+    threeEngine?: TdThreeEngine
   ): void {
     this.viewer = viewer;
+    this.threeEngine = threeEngine ?? null;
     this.basePosition = basePosition;
     this.onGameOverCallback = onGameOver;
     this.onProjectileFiredCallback = onProjectileFired;
@@ -84,20 +96,26 @@ export class GameStateManager {
     this.renderManager.initialize(viewer);
     this.audioManager.initialize(viewer);
 
-    this.enemyManager.initialize(viewer, (enemy) => this.onEnemyReachedBase(enemy));
+    this.enemyManager.initializeWithCallbacks(
+      viewer,
+      (enemy) => this.onEnemyReachedBase(enemy),
+      threeEngine
+    );
     this.towerManager.initializeWithContext(
       viewer,
       streetNetwork,
       basePosition,
-      spawnPoints.map((s) => ({ lat: s.latitude, lon: s.longitude }))
+      spawnPoints.map((s) => ({ lat: s.latitude, lon: s.longitude })),
+      threeEngine
     );
-    this.projectileManager.initialize(
+    this.projectileManager.initializeWithCallbacks(
       viewer,
       (proj, enemy) => this.onProjectileHit(proj, enemy),
       () => {
         // Projectile fire sound callback (sound file not available)
         this.onProjectileFiredCallback?.();
-      }
+      },
+      threeEngine
     );
     this.waveManager.initialize(spawnPoints, cachedPaths);
 
@@ -170,18 +188,28 @@ export class GameStateManager {
 
     // Spawn blood effects only for enemies that can bleed
     if (enemy.typeConfig.canBleed) {
-      BloodRenderer.spawnBloodSplatter(
-        this.viewer,
-        enemy.position.lon,
-        enemy.position.lat,
-        enemy.transform.terrainHeight + 1
-      );
-      BloodRenderer.spawnBloodStain(
-        this.viewer,
-        enemy.position.lon,
-        enemy.position.lat,
-        enemy.transform.terrainHeight
-      );
+      if (this.useThreeJs && this.threeEngine) {
+        // Three.js blood effects
+        this.threeEngine.effects.spawnBloodSplatter(
+          enemy.position.lat,
+          enemy.position.lon,
+          enemy.transform.terrainHeight + 1
+        );
+      } else {
+        // Cesium blood effects (fallback)
+        BloodRenderer.spawnBloodSplatter(
+          this.viewer,
+          enemy.position.lon,
+          enemy.position.lat,
+          enemy.transform.terrainHeight + 1
+        );
+        BloodRenderer.spawnBloodStain(
+          this.viewer,
+          enemy.position.lon,
+          enemy.position.lat,
+          enemy.transform.terrainHeight
+        );
+      }
     }
 
     const killed = enemy.health.takeDamage(projectile.damage);
@@ -191,6 +219,9 @@ export class GameStateManager {
     }
     // Health bar update will be handled by renderer integration
   }
+
+  // Track active fire effect ID for Three.js
+  private activeFireId: string | null = null;
 
   /**
    * Update fire intensity based on base health
@@ -206,7 +237,22 @@ export class GameStateManager {
     else if (health < 60) intensity = 'small';
     else intensity = 'tiny';
 
-    FireRenderer.startFire(this.viewer, this.basePosition.lon, this.basePosition.lat, intensity);
+    if (this.useThreeJs && this.threeEngine) {
+      // Three.js fire effects
+      // Stop existing fire and start new one with updated intensity
+      if (this.activeFireId) {
+        this.threeEngine.effects.stopFire(this.activeFireId);
+      }
+      this.activeFireId = this.threeEngine.effects.spawnFire(
+        this.basePosition.lat,
+        this.basePosition.lon,
+        235, // Base terrain height
+        intensity
+      );
+    } else {
+      // Cesium fire effects (fallback)
+      FireRenderer.startFire(this.viewer, this.basePosition.lon, this.basePosition.lat, intensity);
+    }
   }
 
   /**
@@ -217,7 +263,21 @@ export class GameStateManager {
     this.enemyManager.clear();
 
     if (this.basePosition && this.viewer) {
-      FireRenderer.startFire(this.viewer, this.basePosition.lon, this.basePosition.lat, 'inferno');
+      if (this.useThreeJs && this.threeEngine) {
+        // Three.js inferno
+        if (this.activeFireId) {
+          this.threeEngine.effects.stopFire(this.activeFireId);
+        }
+        this.activeFireId = this.threeEngine.effects.spawnFire(
+          this.basePosition.lat,
+          this.basePosition.lon,
+          235,
+          'inferno'
+        );
+      } else {
+        // Cesium inferno (fallback)
+        FireRenderer.startFire(this.viewer, this.basePosition.lon, this.basePosition.lat, 'inferno');
+      }
     }
 
     this.onGameOverCallback?.();
@@ -246,7 +306,10 @@ export class GameStateManager {
    */
   healBase(): void {
     this.baseHealth.set(100);
-    if (this.viewer) {
+    if (this.useThreeJs && this.threeEngine) {
+      this.threeEngine.effects.stopAllFires();
+      this.activeFireId = null;
+    } else if (this.viewer) {
       FireRenderer.stopFire(this.viewer);
     }
   }
@@ -263,7 +326,10 @@ export class GameStateManager {
     this.audioManager.stopAll();
 
     // Clear visual effects
-    if (this.viewer) {
+    if (this.useThreeJs && this.threeEngine) {
+      this.threeEngine.effects.clear();
+      this.activeFireId = null;
+    } else if (this.viewer) {
       FireRenderer.stopFire(this.viewer);
       BloodRenderer.clearAllBloodStains(this.viewer);
     }
