@@ -49,6 +49,8 @@ export class ThreeTilesEngine {
   private raycaster: THREE.Raycaster;
   private heightCache = new Map<string, number>();
   private readonly CACHE_PRECISION = 5;
+  private readonly HEIGHT_CHANGE_THRESHOLD = 2.0; // Only refresh if height changed by >2m
+  private lastOriginHeight: number | null = null;
 
   // Debug flag: reset when tiles are loaded so we get debug output
   private tilesWereLoaded = false;
@@ -225,6 +227,7 @@ export class ThreeTilesEngine {
   /**
    * Called when all visible tiles finish loading
    * Uses debounce to avoid multiple rapid refreshes during camera movement
+   * Only triggers refresh if terrain height actually changed significantly
    */
   private onTilesLoadEnd(): void {
     // Clear existing debounce timer
@@ -234,13 +237,28 @@ export class ThreeTilesEngine {
 
     // Start new debounce timer - wait for camera to settle
     this.tilesLoadDebounceTimer = setTimeout(() => {
-      // Clear height cache so next raycasts get fresh data
-      this.heightCache.clear();
+      // Check if origin height changed significantly (bypass cache for this check)
+      const freshOriginHeight = this.raycastTerrainHeight(0, 0);
 
-      // Notify listener (component) to refresh terrain heights
-      if (this.onTilesLoadCallback) {
-        console.log('[ThreeTilesEngine] All tiles loaded, triggering terrain refresh');
-        this.onTilesLoadCallback();
+      if (freshOriginHeight !== null) {
+        const heightDelta = this.lastOriginHeight !== null
+          ? Math.abs(freshOriginHeight - this.lastOriginHeight)
+          : Infinity; // First load always triggers refresh
+
+        if (heightDelta > this.HEIGHT_CHANGE_THRESHOLD) {
+          console.log(`[ThreeTilesEngine] Terrain changed: ${this.lastOriginHeight?.toFixed(1) ?? 'null'} -> ${freshOriginHeight.toFixed(1)} (delta: ${heightDelta.toFixed(1)}m)`);
+          this.lastOriginHeight = freshOriginHeight;
+
+          // Clear cache and notify for full refresh
+          this.heightCache.clear();
+
+          if (this.onTilesLoadCallback) {
+            this.onTilesLoadCallback();
+          }
+        } else {
+          // Heights stable - no refresh needed
+          console.log(`[ThreeTilesEngine] Terrain stable (delta: ${heightDelta.toFixed(2)}m < ${this.HEIGHT_CHANGE_THRESHOLD}m)`);
+        }
       }
     }, this.TILES_LOAD_DEBOUNCE_MS);
   }
@@ -456,6 +474,7 @@ export class ThreeTilesEngine {
 
   /**
    * Get terrain height at geographic coordinates using LOCAL coordinate raycast.
+   * Uses cache to avoid expensive raycasts for the same positions.
    *
    * With ReorientationPlugin (recenter: true):
    * - Tiles are centered at local origin (0,0,0) - NOT in ECEF!
@@ -468,77 +487,64 @@ export class ThreeTilesEngine {
    * @returns Height in local Y coordinates, or null if no hit
    */
   getTerrainHeightAtGeo(lat: number, lon: number): number | null {
+    // Check cache first
+    const cacheKey = this.getHeightCacheKey(lat, lon);
+    if (this.heightCache.has(cacheKey)) {
+      return this.heightCache.get(cacheKey)!;
+    }
+
+    // Get local position
+    const localPos = this.sync.geoToLocalSimple(lat, lon, 0);
+
+    // Do the raycast
+    const height = this.raycastTerrainHeight(localPos.x, localPos.z);
+
+    // Cache the result (even nulls as a special value)
+    if (height !== null) {
+      this.heightCache.set(cacheKey, height);
+    }
+
+    return height;
+  }
+
+  /**
+   * Internal raycast for terrain height - no caching, just the raw raycast.
+   * Used for cache invalidation checks and actual height lookups.
+   *
+   * @param localX - Local X coordinate (meters from origin)
+   * @param localZ - Local Z coordinate (meters from origin)
+   * @returns Height in local Y coordinates, or null if no hit
+   */
+  private raycastTerrainHeight(localX: number, localZ: number): number | null {
     if (!this.tilesRenderer) return null;
 
-    // Check if tiles are loaded
-    let meshCount = 0;
-    this.tilesRenderer.group.traverse((obj) => {
-      if ((obj as THREE.Mesh).isMesh) meshCount++;
-    });
-
-    if (meshCount === 0) {
-      // Tiles not loaded yet
-      return null;
-    }
-
-    // Reset debug counter when tiles first become available
+    // Check if tiles are loaded (only on first call)
     if (!this.tilesWereLoaded) {
+      let meshCount = 0;
+      this.tilesRenderer.group.traverse((obj) => {
+        if ((obj as THREE.Mesh).isMesh) meshCount++;
+      });
+
+      if (meshCount === 0) {
+        return null;
+      }
+
       this.tilesWereLoaded = true;
       this.raycastDebugCount = 0;
-      console.log(`[Terrain DEBUG] Tiles now loaded (${meshCount} meshes), starting raycast debugging`);
-
-      // Log tiles bounding box to understand coordinate system
-      const box = new THREE.Box3();
-      this.tilesRenderer.group.traverse((obj) => {
-        if ((obj as THREE.Mesh).isMesh) {
-          const meshBox = new THREE.Box3().setFromObject(obj);
-          box.union(meshBox);
-        }
-      });
-      if (!box.isEmpty()) {
-        console.log(`[Terrain DEBUG] Tiles bbox: min=(${box.min.x.toFixed(1)}, ${box.min.y.toFixed(1)}, ${box.min.z.toFixed(1)})`);
-        console.log(`[Terrain DEBUG] Tiles bbox: max=(${box.max.x.toFixed(1)}, ${box.max.y.toFixed(1)}, ${box.max.z.toFixed(1)})`);
-      }
+      console.log(`[Terrain] Tiles loaded (${meshCount} meshes)`);
     }
 
-    // Get local position using geoToLocalSimple
-    // This gives us X/Z offset from origin, we set Y=10000 (high above)
-    const localPos = this.sync.geoToLocalSimple(lat, lon, 0);
-    const rayOrigin = new THREE.Vector3(localPos.x, 10000, localPos.z);
-
-    // Raycast straight down in local coordinate system
+    // Raycast from high above straight down
+    const rayOrigin = new THREE.Vector3(localX, 10000, localZ);
     const direction = new THREE.Vector3(0, -1, 0);
 
-    // Debug first few raycasts
-    if (this.raycastDebugCount < 3) {
-      console.log(`[Terrain DEBUG] Local raycast from: (${rayOrigin.x.toFixed(1)}, ${rayOrigin.y.toFixed(1)}, ${rayOrigin.z.toFixed(1)})`);
-    }
-
     this.raycaster.set(rayOrigin, direction);
-    this.raycaster.far = 20000;  // 20km range
+    this.raycaster.far = 20000;
 
     const results = this.raycaster.intersectObject(this.tilesRenderer.group, true);
 
     if (results.length > 0) {
-      // Hit point is in WORLD coordinates
-      const hitPoint = results[0].point;
-
-      if (this.raycastDebugCount < 3) {
-        console.log(`[Terrain] Hit at (${lat.toFixed(5)}, ${lon.toFixed(5)})`);
-        console.log(`[Terrain]   -> hitPoint WORLD: (${hitPoint.x.toFixed(1)}, ${hitPoint.y.toFixed(1)}, ${hitPoint.z.toFixed(1)})`);
-        console.log(`[Terrain]   -> distance: ${results[0].distance.toFixed(1)}m`);
-        this.raycastDebugCount++;
-      }
-
-      // The overlayGroup is positioned at the same location as tiles
-      // So we need to use the hit point Y directly
-      return hitPoint.y;
-    }
-
-    // Debug first miss
-    if (this.raycastDebugCount < 3) {
-      console.log(`[Terrain DEBUG] MISS at (${lat.toFixed(5)}, ${lon.toFixed(5)}) localX=${localPos.x.toFixed(1)}, localZ=${localPos.z.toFixed(1)}`);
-      this.raycastDebugCount++;
+      return results[0].point.y;
     }
 
     return null;
