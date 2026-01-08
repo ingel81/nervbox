@@ -57,6 +57,13 @@ UI:
  [x] FPS Anzeige
      - Im Header rechts neben den Stats
      - Aktualisiert jedes Frame vom Engine
+ [x] 3D Model Previews in Sidebar
+     - ModelPreviewService mit geteiltem WebGL-Renderer
+     - Tower-Grid: 2x2 Kacheln mit rotierenden 3D-Modellen
+     - Enemy-Preview: Animierter Gegner (Walk-Animation) in Wave-Section
+     - Kosten-Badge als Overlay oben rechts
+     - groundModel-Option fuer korrekte Charakter-Zentrierung
+     - Siehe docs/MODEL_PREVIEW.md
 
 Kamera:
  [x] Initiale Position optimiert

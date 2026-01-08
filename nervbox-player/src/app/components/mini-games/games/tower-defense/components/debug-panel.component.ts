@@ -71,17 +71,8 @@ export interface SpawnLocationConfig extends LocationConfig {
       </div>
 
       <div class="section">
-        <div class="section-title">Anzeige</div>
+        <div class="section-title">Aktionen</div>
         <div class="btn-row">
-          <button class="icon-btn" [class.active]="streetsVisible()" (click)="toggleStreets.emit()" title="Strassen">
-            <mat-icon>route</mat-icon>
-          </button>
-          <button class="icon-btn" [class.active]="routesVisible()" (click)="toggleRoutes.emit()" title="Routen">
-            <mat-icon>timeline</mat-icon>
-          </button>
-          <button class="icon-btn" [class.active]="heightDebugVisible()" (click)="toggleHeightDebug.emit()" title="Terrain-Höhen debuggen">
-            <mat-icon>terrain</mat-icon>
-          </button>
           <button class="icon-btn" (click)="logCamera.emit()" title="Kamera loggen">
             <mat-icon>videocam</mat-icon>
           </button>
@@ -663,9 +654,6 @@ export class DebugPanelComponent {
   enemyType = input.required<EnemyTypeId>();
   enemyTypes = input.required<EnemyTypeConfig[]>();
   spawnMode = input.required<'each' | 'random'>();
-  streetsVisible = input.required<boolean>();
-  routesVisible = input.required<boolean>();
-  heightDebugVisible = input.required<boolean>();
   waveActive = input.required<boolean>();
   baseHealth = input.required<number>();
   debugLog = input.required<string>();
@@ -680,9 +668,6 @@ export class DebugPanelComponent {
   enemySpeedChange = output<number>();
   enemyTypeChange = output<EnemyTypeId>();
   toggleSpawnMode = output<void>();
-  toggleStreets = output<void>();
-  toggleRoutes = output<void>();
-  toggleHeightDebug = output<void>();
   killAll = output<void>();
   healHq = output<void>();
   clearLog = output<void>();
