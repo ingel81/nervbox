@@ -6,7 +6,7 @@ import { TowerTypeId } from '../configs/tower-types.config';
 import { GeoPosition } from '../models/game.types';
 import { OsmStreetService, StreetNetwork } from '../services/osm-street.service';
 import { TowerRenderer, TowerRenderConfig } from '../renderers/tower.renderer';
-import { TdThreeEngine } from '../three-engine';
+import { TdThreeEngine, ThreeTilesEngine } from '../three-engine';
 
 /**
  * Manages all tower entities
@@ -45,10 +45,25 @@ export class TowerManager extends EntityManager<Tower> {
   }
 
   /**
+   * Initialize with ThreeTilesEngine (no Cesium viewer)
+   */
+  initializeWithTilesEngine(
+    tilesEngine: ThreeTilesEngine,
+    streetNetwork: StreetNetwork,
+    basePosition: GeoPosition,
+    spawnPoints: GeoPosition[]
+  ): void {
+    super.initializeTilesEngine(tilesEngine);
+    this.streetNetwork = streetNetwork;
+    this.basePosition = basePosition;
+    this.spawnPoints = spawnPoints;
+  }
+
+  /**
    * Place a new tower
    */
   placeTower(position: GeoPosition, typeId: TowerTypeId): Tower | null {
-    if (!this.viewer) {
+    if (!this.viewer && !this.tilesEngine) {
       throw new Error('TowerManager not initialized');
     }
 
@@ -60,8 +75,21 @@ export class TowerManager extends EntityManager<Tower> {
 
     const tower = new Tower(position, typeId);
 
-    if (this.useThreeJs && this.threeEngine) {
-      // Three.js rendering
+    if (this.tilesEngine) {
+      // ThreeTilesEngine rendering
+      if (position.height === undefined) {
+        console.error('[TowerManager] position.height is undefined! Terrain height must be sampled before placing tower.');
+      }
+      const terrainHeight = position.height!;
+      this.tilesEngine.towers.create(
+        tower.id,
+        typeId,
+        position.lat,
+        position.lon,
+        terrainHeight
+      );
+    } else if (this.useThreeJs && this.threeEngine) {
+      // TdThreeEngine rendering
       if (position.height === undefined) {
         console.error('[TowerManager] position.height is undefined! Terrain height must be sampled before placing tower.');
       }
@@ -73,7 +101,7 @@ export class TowerManager extends EntityManager<Tower> {
         position.lon,
         terrainHeight
       );
-    } else {
+    } else if (this.viewer) {
       // Cesium rendering (fallback)
       const renderConfig: TowerRenderConfig = {
         position,
@@ -147,7 +175,9 @@ export class TowerManager extends EntityManager<Tower> {
       const prev = this.getById(this.selectedTowerId);
       if (prev) {
         prev.deselect();
-        if (this.useThreeJs && this.threeEngine) {
+        if (this.tilesEngine) {
+          this.tilesEngine.towers.deselect(this.selectedTowerId);
+        } else if (this.useThreeJs && this.threeEngine) {
           this.threeEngine.towers.deselect(this.selectedTowerId);
         } else {
           const result = prev.render.result;
@@ -164,7 +194,9 @@ export class TowerManager extends EntityManager<Tower> {
       const tower = this.getById(id);
       if (tower) {
         tower.select();
-        if (this.useThreeJs && this.threeEngine) {
+        if (this.tilesEngine) {
+          this.tilesEngine.towers.select(id);
+        } else if (this.useThreeJs && this.threeEngine) {
           this.threeEngine.towers.select(id);
         } else {
           const result = tower.render.result;
@@ -218,7 +250,9 @@ export class TowerManager extends EntityManager<Tower> {
    * Override remove to cleanup Three.js resources
    */
   override remove(entity: Tower): void {
-    if (this.useThreeJs && this.threeEngine) {
+    if (this.tilesEngine) {
+      this.tilesEngine.towers.remove(entity.id);
+    } else if (this.useThreeJs && this.threeEngine) {
       this.threeEngine.towers.remove(entity.id);
     }
     super.remove(entity);
@@ -228,7 +262,9 @@ export class TowerManager extends EntityManager<Tower> {
    * Override clear to cleanup all Three.js resources
    */
   override clear(): void {
-    if (this.useThreeJs && this.threeEngine) {
+    if (this.tilesEngine) {
+      this.tilesEngine.towers.clear();
+    } else if (this.useThreeJs && this.threeEngine) {
       this.threeEngine.towers.clear();
     }
     this.selectedTowerId = null;

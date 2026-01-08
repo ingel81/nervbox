@@ -1,8 +1,20 @@
 # Tower Defense - Erlenbach
 
-Ein Tower Defense Spiel mit echten 3D-Karten von Erlenbach (Google Photorealistic 3D Tiles via Cesium).
+Ein Tower Defense Spiel mit echten 3D-Karten von Erlenbach (Google Photorealistic 3D Tiles).
 
 **Status:** POC (Proof of Concept) - Admin-only sichtbar
+
+## 3D Engine
+
+Das Spiel nutzt **Three.js** mit **3DTilesRendererJS** (NASA JPL) für Google Photorealistic 3D Tiles.
+
+| Komponente | Technologie |
+|------------|-------------|
+| 3D-Rendering | Three.js |
+| Google 3D Tiles | 3DTilesRendererJS (NASA JPL) |
+| Koordinaten | WGS84 via EllipsoidSync |
+| Terrain-Höhen | Raycast gegen geladene Tiles |
+| Authentifizierung | Cesium Ion Token |
 
 ## Features
 
@@ -10,205 +22,177 @@ Ein Tower Defense Spiel mit echten 3D-Karten von Erlenbach (Google Photorealisti
 
 - **3D-Karte**: Echte Gebäude und Terrain von Erlenbach (Google Photorealistic 3D Tiles)
 - **Straßennetz**: Gegner laufen auf echten Straßen (OpenStreetMap + A* Pathfinding)
-- **3D-Modelle**: Tower und Enemies als glTF/glb Modelle (Primitive API)
-- **Animationen**: Zombies mit Walk- und Death-Animation
+- **3D-Modelle**: Tower und Enemies als glTF/glb Modelle
+- **Animationen**: Zombies mit Walk- und Death-Animation (AnimationMixer)
 - **Tower-System**: Platziere Tower neben Straßen (10-50m Abstand)
-- **Wellen-System**: Gegner spawnen in Wellen (5 pro Welle)
+- **Wellen-System**: Gegner spawnen in Wellen
 - **Projektile**: Tower schießen auf Gegner in Reichweite
-- **Sound-Effekte**: Projektil-Sound beim Schießen
-- **Health Bars**: Gegner haben HP und farbige Lebensbalken
-- **Blut-Effekte**: Spritzer bei Treffern + Blutflecken am Boden
-- **Terrain-Following**: Gegner folgen dem echten Gelände (Höhen-Interpolation)
-- **localStorage Cache**: OSM-Daten werden gecacht (schnellerer 2. Start)
+- **Health Bars**: Gegner haben HP und farbige Lebensbalken (Sprites)
+- **Blut-Effekte**: Partikel bei Treffern
+- **Terrain-Following**: Overlays folgen dem echten Gelände (Raycast-basiert)
+- **localStorage Cache**: OSM-Daten werden gecacht
 
 ### UI-Toggles
 
 | Button | Funktion | Default |
 |--------|----------|---------|
-| Straßen (route) | Gelbe Straßen ein/aus | Aus |
-| Routen (timeline) | Rote Gegner-Pfade ein/aus | Aus |
-| Neigung (3d_rotation) | Kamera-Neigung wechseln | 45° |
-| Kamera (my_location) | Kamera zurücksetzen | - |
-
-### 3D-Modelle
-
-Modelle befinden sich in `/public/assets/games/tower-defense/models/`:
-
-| Datei | Typ | Beschreibung |
-|-------|-----|--------------|
-| `tower_archer.glb` | Tower | Bogen-Turm (114 KB) |
-| `zombie_alternative.glb` | Enemy | Zombie mit Animationen (2.1 MB) |
-
-#### Zombie-Animationen (Primitive API)
-
-```
-Armature|Walk      - Lauf-Animation (aktiv während Bewegung)
-Armature|Die       - Sterbe-Animation (bei Tod)
-Armature|Die2      - Alternative Sterbe-Animation
-Armature|Idle      - Idle-Animation
-Armature|Attack    - Angriffs-Animation
-```
+| Straßen | Gelbe Straßen ein/aus | Aus |
+| Routen | Rote Gegner-Pfade ein/aus | Aus |
+| Terrain | Terrain-Höhen Debug-Marker | Aus |
+| Neigung | Kamera-Neigung wechseln | 45° |
+| Kamera | Kamera zurücksetzen | - |
 
 ## Architektur
 
 ```
 tower-defense/
-├── tower-defense.component.ts   # Haupt-UI + Cesium Viewer
-├── README.md                    # Diese Dokumentation
+├── tower-defense.component.ts    # Haupt-UI + Three.js Integration
+├── README.md                     # Diese Dokumentation
+│
+├── three-engine/                 # Three.js + 3DTilesRenderer Engine
+│   ├── three-tiles-engine.ts     # Haupt-Engine (Scene, Renderer, Tiles)
+│   ├── ellipsoid-sync.ts         # WGS84 ↔ Three.js Koordinaten
+│   └── renderers/
+│       ├── three-enemy.renderer.ts      # GLB Models + AnimationMixer
+│       ├── three-tower.renderer.ts      # Tower Models + Range/Selection
+│       └── three-projectile.renderer.ts # Projektile
+│
+├── core/                         # OO Game Engine
+│   ├── game-object.ts            # GameObject Base Class
+│   └── component.ts              # Component System
+│
+├── game-components/              # Entity Components
+│   ├── transform.component.ts    # Position, Rotation
+│   ├── health.component.ts       # HP, Damage
+│   ├── movement.component.ts     # Path-Following
+│   ├── combat.component.ts       # Damage, Range, Fire Rate
+│   └── render.component.ts       # Renderer Integration
+│
+├── entities/                     # Spezialisierte GameObjects
+│   ├── enemy.entity.ts           # Enemy mit Components
+│   ├── tower.entity.ts           # Tower mit Components
+│   └── projectile.entity.ts      # Projectile mit Components
+│
+├── managers/                     # Entity Lifecycle Management
+│   ├── game-state.manager.ts     # Main Orchestrator
+│   ├── enemy.manager.ts          # Spawn, Kill, Wave
+│   ├── tower.manager.ts          # Placement, Selection
+│   ├── projectile.manager.ts     # Spawn, Hit Detection
+│   └── wave.manager.ts           # Wave Progression
+│
+├── configs/                      # Type Registries
+│   ├── tower-types.config.ts     # Archer, Cannon, Magic, Sniper
+│   └── projectile-types.config.ts
+│
 ├── models/
-│   ├── game.types.ts            # Interfaces & Types (inkl. height in GeoPosition)
-│   ├── tower.model.ts           # Tower-Klasse
-│   ├── enemy.model.ts           # Enemy-Klasse (mit model + terrainHeight)
-│   └── projectile.model.ts      # Projectile-Klasse
-├── renderers/
-│   ├── tower.renderer.ts        # Tower Range-Kreis Rendering
-│   ├── enemy.renderer.ts        # Health Bar Rendering
-│   ├── projectile.renderer.ts   # Projektil Billboard-Rendering
-│   └── blood.renderer.ts        # Blut-Effekte (Splatter + Stains)
-└── services/
-    ├── osm-street.service.ts    # OpenStreetMap + A* + localStorage Cache
-    ├── game-state.service.ts    # Zentraler Spiel-State (Signals)
-    └── entity-pool.service.ts   # Object Pooling für Health Bars/Projektile
+│   ├── enemy-types.ts            # Zombie, Tank Definitionen
+│   └── game.types.ts             # GeoPosition, etc.
+│
+├── services/
+│   └── osm-street.service.ts     # OpenStreetMap + A* Pathfinding
+│
+├── components/
+│   └── debug-panel.component.ts  # Debug-Steuerung
+│
+└── docs/
+    ├── ARCHITECTURE.md           # Detaillierte Architektur
+    └── MIGRATION_TO_THREE_TILES.md  # Migrations-Dokumentation
 ```
 
-## Services
+## Koordinatensystem
 
-### GameStateService
+Mit ReorientationPlugin (recenter: true) werden Tiles auf den Origin (HQ) zentriert:
 
-Zentraler State-Manager mit Angular Signals:
+```
+Lokale Koordinaten (overlayGroup):
+  X = East/West Offset (Meter), -X = East
+  Y = Höhe über Origin-Terrain
+  Z = North/South Offset (Meter), +Z = North
+```
+
+### Geo → Lokal Transformation
 
 ```typescript
-// Signals (readonly)
-phase: Signal<'setup' | 'wave' | 'gameover'>
-waveNumber: Signal<number>
-baseHealth: Signal<number>       // Startet bei 100
-credits: Signal<number>          // Startet bei 100
-towers: Signal<Tower[]>
-enemies: Signal<Enemy[]>
-projectiles: Signal<Projectile[]>
-selectedTowerId: Signal<string | null>
-enemiesAlive: Signal<number>     // Computed
+// Für Overlays (Straßen, Marker, Routen)
+const local = engine.sync.geoToLocalSimple(lat, lon, 0);
 
-// Methoden
-initialize(viewer, entityPool, distanceCalculator, onProjectileFired)
-spawnEnemy(path, maxHp, speed)   // Erstellt 3D-Zombie mit Walk-Animation
-playEnemyDeathAnimation(enemy)   // Wechselt zu Death-Animation
-update(currentTime)              // Game Loop - Enemies, Towers, Projectiles
+// Terrain-Höhe per Raycast (relativ zu Origin)
+const terrainY = engine.getTerrainHeightAtGeo(lat, lon);
+const originTerrainY = engine.getTerrainHeightAtGeo(originLat, originLon);
+local.y = (terrainY - originTerrainY) + HEIGHT_ABOVE_GROUND;
 ```
 
-### EntityPoolService
+### Overlays
 
-Object Pooling für Performance + Animation-Steuerung (Primitive API):
+Objekte zu `overlayGroup` hinzufügen (NICHT scene.add()!):
 
 ```typescript
-initialize(viewer)
-acquire(type): Entity            // 'healthBar' | 'projectile'
-release(entity, type)
-playAnimation(entity, name, loop) // Direkter Zugriff auf model.activeAnimations
-playWalkAnimation(entity)         // 'Armature|Walk' (loop)
-playDeathAnimation(entity)        // 'Armature|Die' (einmalig)
+const overlayGroup = engine.getOverlayGroup();
+const localPos = engine.sync.geoToLocalSimple(lat, lon, height);
+mesh.position.copy(localPos);
+overlayGroup.add(mesh);
 ```
 
-### OsmStreetService
+Die overlayGroup wird automatisch mit der Tiles-Bewegung synchronisiert und auf `overlayBaseY` (Origin-Terrain-Höhe) positioniert.
 
-Lädt Straßen von OpenStreetMap (Overpass API) mit localStorage-Cache:
+## Terrain-Höhenermittlung
+
+Terrain-Höhen werden per Raycast gegen die geladenen 3D Tiles ermittelt:
 
 ```typescript
-loadStreets(lat, lon, radiusMeters): StreetNetwork
-// - Prüft zuerst localStorage Cache
-// - Bei Cache-Miss: API-Aufruf + Cache speichern
-// - Cache-Key: td_streets_v1_{lat}_{lon}_{radius}
+// In three-tiles-engine.ts
+getTerrainHeightAtGeo(lat: number, lon: number): number | null {
+  const localPos = this.sync.geoToLocalSimple(lat, lon, 0);
+  const rayOrigin = new THREE.Vector3(localPos.x, 10000, localPos.z);
+  const direction = new THREE.Vector3(0, -1, 0);
 
-findPath(network, startLat, startLon, endLat, endLon): StreetNode[]
-findNearestStreetPoint(network, lat, lon)
-haversineDistance(lat1, lon1, lat2, lon2): meters
+  this.raycaster.set(rayOrigin, direction);
+  const results = this.raycaster.intersectObject(this.tilesRenderer.group, true);
+
+  return results.length > 0 ? results[0].point.y : null;
+}
 ```
 
-### BloodRenderer
+## Setup
 
-Blut-Effekte bei Treffern:
+Cesium Ion Token in `environment.ts`:
 
 ```typescript
-spawnBloodSplatter(viewer, lon, lat, height)  // 3-5 Partikel, verschwinden nach 300-500ms
-spawnBloodStain(viewer, lon, lat, height)     // Bleibt am Boden (max 50, FIFO)
-clearAllBloodStains(viewer)                   // Bei Game Reset
+export const environment = {
+  cesiumAccessToken: 'dein-token-hier'
+};
 ```
 
-## Game Loop
+Token erstellen: https://cesium.com/ion/tokens
 
-```
-1. Welle starten (Button "Welle starten!")
-   ├── gameState.startWave()
-   ├── viewer.clock.shouldAnimate = true  # Aktiviert Animationen
-   ├── Spawn-Interval: alle 800ms ein Zombie
-   │   ├── Terrain-Höhe für Pfad samplen (sampleTerrainMostDetailed)
-   │   ├── Model.fromGltfAsync() laden
-   │   └── model.activeAnimations.add('Armature|Walk')
-   └── startGameLoop()
+## 3D-Modelle
 
-2. Jeder Animation Frame
-   └── gameState.update(currentTime)
-       ├── updateEnemies()
-       │   ├── enemy.update() → Position interpolieren
-       │   ├── Heading berechnen (Blickrichtung)
-       │   ├── Höhe interpolieren zwischen Wegpunkten
-       │   ├── model.modelMatrix aktualisieren
-       │   └── Bei "reached_base" → baseHealth -= 10, Death-Animation
-       ├── updateTowerShooting(currentTime)
-       │   ├── tower.canFire(time)?
-       │   ├── tower.findTarget(enemies)
-       │   ├── spawnProjectile(tower, targetId)
-       │   └── onProjectileFired() → Sound abspielen
-       └── updateProjectiles(deltaTime)
-           ├── projectile.update(targetPos, delta)
-           ├── Bei Hit:
-           │   ├── BloodRenderer.spawnBloodSplatter()
-           │   ├── BloodRenderer.spawnBloodStain()
-           │   ├── enemy.takeDamage()
-           │   └── Wenn tot: Death-Animation + verzögertes Entfernen
-           └── Health Bar aktualisieren
+Modelle befinden sich in `/public/assets/games/tower-defense/models/`:
 
-3. Welle beendet
-   └── checkWaveComplete() && allSpawned
-       ├── gameState.endWave()
-       ├── clearAllEnemies() → Alle Modelle entfernen
-       ├── credits += 50
-       └── requestRender()
-```
+| Datei | Typ | Beschreibung |
+|-------|-----|--------------|
+| `tower_archer.glb` | Tower | Bogen-Turm |
+| `tower_cannon.glb` | Tower | Kanonen-Turm |
+| `tower_magic.glb` | Tower | Magie-Turm |
+| `tower_sniper.glb` | Tower | Sniper-Turm |
+| `zombie_alternative.glb` | Enemy | Zombie mit Animationen |
+| `tank.glb` | Enemy | Panzer |
 
 ## Koordinaten (Erlenbach, BW)
 
 ```typescript
-// Kamera-Zentrum
-ERLENBACH_COORDS = {
-  latitude: 49.1726836,
-  longitude: 9.2703122,
-  height: 400
-}
-
-// Basis (zu verteidigen)
+// HQ / Origin
 BASE_COORDS = {
   latitude: 49.17326887448299,
   longitude: 9.268588397188681
 }
 
-// Spawn-Punkt Nord
-SPAWN_POINTS = [{
-  id: 'spawn-north',
-  name: 'Nord',
-  latitude: 49.17554723547113,
-  longitude: 9.263870533891945
-}]
+// Spawn-Punkte
+SPAWN_POINTS = [
+  { name: 'Nord', latitude: 49.17554723, longitude: 9.26387053 },
+  { name: 'Sued', latitude: 49.16999715, longitude: 9.26636044 }
+]
 ```
-
-## Straßennetz-Konfiguration
-
-| Einstellung | Wert |
-|-------------|------|
-| Radius | 2000m (2km) |
-| Cache | localStorage |
-| Cache-Key | `td_streets_v1_{lat}_{lon}_{radius}` |
-| Typische Größe | 100-300 KB |
 
 ## Tower-Platzierung
 
@@ -219,7 +203,6 @@ SPAWN_POINTS = [{
 | Min. Abstand zu Basis | 30m |
 | Min. Abstand zu Spawn | 30m |
 | Min. Abstand zu anderen Towern | 20m |
-| Tower-Range | 60m |
 
 ## Steuerung
 
@@ -231,77 +214,25 @@ SPAWN_POINTS = [{
 | Tower selektieren | Klick auf Tower |
 | Tower platzieren | Build-Mode → Klick neben Straße |
 
-## Sound
+## Performance
 
-Projektil-Sound: `3ae29d3b4c96b913c63964373e218f08`
-- Wird bei jedem Schuss abgespielt
-- Lautstärke: 30%
-
-## Cesium Setup
-
-Voraussetzung: Cesium Ion Token in `environment.ts`:
-
-```typescript
-export const environment = {
-  cesiumAccessToken: 'dein-token-hier'
-};
-```
-
-Token erstellen: https://cesium.com/ion/tokens (kostenlos, 75k Tiles/Monat)
-
-## Viewer-Konfiguration
-
-```typescript
-// Zoom-Einstellungen
-zoomFactor: 1.5              // Feineres Zoomen (Standard: 3.0)
-minimumZoomDistance: 50      // Min 50m
-maximumZoomDistance: 2000    // Max 2km
-
-// Nur Mausrad-Zoom (kein Rechtsklick-Zoom)
-zoomEventTypes: [WHEEL, PINCH]
-```
-
-## Performance-Optimierungen
-
-- **Object Pooling**: Health Bars und Projektile werden wiederverwendet
-- **requestRenderMode**: Nur bei Änderungen rendern
-- **Primitive API**: Direkter Zugriff auf Animationen (statt Entity API)
-- **Terrain Height Cache**: Pfad-Höhen werden einmal gesampled, dann interpoliert
+- **AnimationMixer**: Pro Enemy-Typ ein Mixer
+- **Instanced Rendering**: Projektile als InstancedMesh
+- **Raycast-Cache**: Terrain-Höhen werden gecacht
 - **localStorage Cache**: OSM-Daten werden lokal gespeichert
-- **minimumPixelSize**: Modelle bleiben bei Zoom-Out sichtbar
-- **Max Blood Stains**: Limitiert auf 50 (FIFO)
 
-## Technische Details
+## Dokumentation
 
-### Primitive API vs Entity API
+| Datei | Inhalt |
+|-------|--------|
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | OO Game Engine Architektur |
+| [MIGRATION_TO_THREE_TILES.md](docs/MIGRATION_TO_THREE_TILES.md) | Migrations-Referenz |
 
-| Aspekt | Entity API | Primitive API (verwendet) |
-|--------|------------|---------------------------|
-| Animation-Kontrolle | Nur `runAnimations: true/false` | Voller Zugriff auf `activeAnimations` |
-| Spezifische Animation | Nicht möglich | `model.activeAnimations.add({ name: 'X' })` |
-| Height Reference | `CLAMP_TO_GROUND` | Manuell via Terrain-Sampling |
-| Position Update | Entity Position Property | `model.modelMatrix` |
+## Offene Features
 
-### Terrain Height Handling
-
-```typescript
-// Beim Pfad-Laden (einmalig):
-Cesium.sampleTerrainMostDetailed(terrainProvider, cartographics)
-
-// Während Bewegung (interpoliert):
-const currentHeight = path[currentIndex].height;
-const nextHeight = path[currentIndex + 1].height;
-const height = currentHeight + (nextHeight - currentHeight) * progress;
-```
-
-## TODO / Nächste Schritte
-
-- [ ] Mehr Spawn-Punkte aktivieren
+- [ ] Mehr Spawn-Punkte
 - [ ] Wave-Progression (mehr/stärkere Gegner)
 - [ ] Tower-Upgrades
-- [ ] Mehrere Tower-Typen
-- [ ] Game Over Screen
-- [ ] Score-System / Highscore
+- [ ] Game Over Screen mit Highscore
 - [ ] Tower-Verkauf
-- [ ] Verschiedene Gegner-Typen
-- [ ] Attack-Animation bei Basis-Erreichen
+- [ ] Weitere Gegner-Typen

@@ -16,7 +16,7 @@ import { FireRenderer, FireIntensity } from '../renderers/fire.renderer';
 import { EnemyTypeId } from '../models/enemy-types';
 import { TowerTypeId } from '../configs/tower-types.config';
 import { Tower } from '../entities/tower.entity';
-import { TdThreeEngine } from '../three-engine';
+import { TdThreeEngine, ThreeTilesEngine } from '../three-engine';
 
 /**
  * Main game state orchestrator - coordinates all managers
@@ -48,6 +48,7 @@ export class GameStateManager {
 
   private viewer: Cesium.Viewer | null = null;
   private threeEngine: TdThreeEngine | null = null;
+  private tilesEngine: ThreeTilesEngine | null = null;
   private lastUpdateTime = 0;
   private basePosition: GeoPosition | null = null;
   private onGameOverCallback?: () => void;
@@ -55,10 +56,17 @@ export class GameStateManager {
   private onDebugLogCallback?: (msg: string) => void;
 
   /**
-   * Check if Three.js rendering is enabled
+   * Check if Three.js rendering is enabled (via TdThreeEngine or ThreeTilesEngine)
    */
   get useThreeJs(): boolean {
-    return this.threeEngine !== null;
+    return this.threeEngine !== null || this.tilesEngine !== null;
+  }
+
+  /**
+   * Check if we're using the new 3DTilesRendererJS-based engine
+   */
+  get useTilesEngine(): boolean {
+    return this.tilesEngine !== null;
   }
 
   /**
@@ -127,6 +135,52 @@ export class GameStateManager {
   }
 
   /**
+   * Initialize game state with new ThreeTilesEngine (3DTilesRendererJS-based)
+   *
+   * This replaces Cesium entirely with a pure Three.js engine.
+   */
+  initializeWithTilesEngine(
+    tilesEngine: ThreeTilesEngine,
+    streetNetwork: StreetNetwork,
+    basePosition: GeoPosition,
+    spawnPoints: SpawnPoint[],
+    cachedPaths: Map<string, GeoPosition[]>,
+    onProjectileFired?: () => void,
+    onDebugLog?: (msg: string) => void,
+    onGameOver?: () => void
+  ): void {
+    this.tilesEngine = tilesEngine;
+    this.viewer = null; // No Cesium viewer
+    this.threeEngine = null; // Not using the old dual-engine
+    this.basePosition = basePosition;
+    this.onGameOverCallback = onGameOver;
+    this.onProjectileFiredCallback = onProjectileFired;
+    this.onDebugLogCallback = onDebugLog;
+
+    // Initialize managers with ThreeTilesEngine
+    this.enemyManager.initializeWithTilesEngine(
+      tilesEngine,
+      (enemy) => this.onEnemyReachedBase(enemy)
+    );
+    this.towerManager.initializeWithTilesEngine(
+      tilesEngine,
+      streetNetwork,
+      basePosition,
+      spawnPoints.map((s) => ({ lat: s.latitude, lon: s.longitude }))
+    );
+    this.projectileManager.initializeWithTilesEngine(
+      tilesEngine,
+      (proj, enemy) => this.onProjectileHit(proj, enemy),
+      () => {
+        this.onProjectileFiredCallback?.();
+      }
+    );
+    this.waveManager.initialize(spawnPoints, cachedPaths);
+
+    console.log('[GameStateManager] Initialized with ThreeTilesEngine');
+  }
+
+  /**
    * Main update loop
    */
   update(currentTime: number): void {
@@ -184,18 +238,23 @@ export class GameStateManager {
    * Handle projectile hitting enemy
    */
   private onProjectileHit(projectile: Projectile, enemy: Enemy): void {
-    if (!this.viewer) return;
-
     // Spawn blood effects only for enemies that can bleed
     if (enemy.typeConfig.canBleed) {
-      if (this.useThreeJs && this.threeEngine) {
-        // Three.js blood effects
+      if (this.tilesEngine) {
+        // ThreeTilesEngine blood effects
+        this.tilesEngine.effects.spawnBloodSplatter(
+          enemy.position.lat,
+          enemy.position.lon,
+          enemy.transform.terrainHeight + 1
+        );
+      } else if (this.useThreeJs && this.threeEngine) {
+        // TdThreeEngine blood effects
         this.threeEngine.effects.spawnBloodSplatter(
           enemy.position.lat,
           enemy.position.lon,
           enemy.transform.terrainHeight + 1
         );
-      } else {
+      } else if (this.viewer) {
         // Cesium blood effects (fallback)
         BloodRenderer.spawnBloodSplatter(
           this.viewer,
@@ -227,7 +286,7 @@ export class GameStateManager {
    * Update fire intensity based on base health
    */
   private updateFireIntensity(): void {
-    if (!this.basePosition || !this.viewer) return;
+    if (!this.basePosition) return;
 
     const health = this.baseHealth();
     let intensity: FireIntensity;
@@ -237,19 +296,29 @@ export class GameStateManager {
     else if (health < 60) intensity = 'small';
     else intensity = 'tiny';
 
-    if (this.useThreeJs && this.threeEngine) {
-      // Three.js fire effects
-      // Stop existing fire and start new one with updated intensity
+    if (this.tilesEngine) {
+      // ThreeTilesEngine fire effects
+      if (this.activeFireId) {
+        this.tilesEngine.effects.stopFire(this.activeFireId);
+      }
+      this.activeFireId = this.tilesEngine.effects.spawnFire(
+        this.basePosition.lat,
+        this.basePosition.lon,
+        this.basePosition.height || 235,
+        intensity
+      );
+    } else if (this.useThreeJs && this.threeEngine) {
+      // TdThreeEngine fire effects
       if (this.activeFireId) {
         this.threeEngine.effects.stopFire(this.activeFireId);
       }
       this.activeFireId = this.threeEngine.effects.spawnFire(
         this.basePosition.lat,
         this.basePosition.lon,
-        235, // Base terrain height
+        235,
         intensity
       );
-    } else {
+    } else if (this.viewer) {
       // Cesium fire effects (fallback)
       FireRenderer.startFire(this.viewer, this.basePosition.lon, this.basePosition.lat, intensity);
     }
@@ -262,9 +331,20 @@ export class GameStateManager {
     this.waveManager.phase.set('gameover');
     this.enemyManager.clear();
 
-    if (this.basePosition && this.viewer) {
-      if (this.useThreeJs && this.threeEngine) {
-        // Three.js inferno
+    if (this.basePosition) {
+      if (this.tilesEngine) {
+        // ThreeTilesEngine inferno
+        if (this.activeFireId) {
+          this.tilesEngine.effects.stopFire(this.activeFireId);
+        }
+        this.activeFireId = this.tilesEngine.effects.spawnFire(
+          this.basePosition.lat,
+          this.basePosition.lon,
+          this.basePosition.height || 235,
+          'inferno'
+        );
+      } else if (this.useThreeJs && this.threeEngine) {
+        // TdThreeEngine inferno
         if (this.activeFireId) {
           this.threeEngine.effects.stopFire(this.activeFireId);
         }
@@ -274,7 +354,7 @@ export class GameStateManager {
           235,
           'inferno'
         );
-      } else {
+      } else if (this.viewer) {
         // Cesium inferno (fallback)
         FireRenderer.startFire(this.viewer, this.basePosition.lon, this.basePosition.lat, 'inferno');
       }
@@ -306,7 +386,10 @@ export class GameStateManager {
    */
   healBase(): void {
     this.baseHealth.set(100);
-    if (this.useThreeJs && this.threeEngine) {
+    if (this.tilesEngine) {
+      this.tilesEngine.effects.stopAllFires();
+      this.activeFireId = null;
+    } else if (this.useThreeJs && this.threeEngine) {
       this.threeEngine.effects.stopAllFires();
       this.activeFireId = null;
     } else if (this.viewer) {
@@ -326,7 +409,10 @@ export class GameStateManager {
     this.audioManager.stopAll();
 
     // Clear visual effects
-    if (this.useThreeJs && this.threeEngine) {
+    if (this.tilesEngine) {
+      this.tilesEngine.effects.clear();
+      this.activeFireId = null;
+    } else if (this.useThreeJs && this.threeEngine) {
       this.threeEngine.effects.clear();
       this.activeFireId = null;
     } else if (this.viewer) {

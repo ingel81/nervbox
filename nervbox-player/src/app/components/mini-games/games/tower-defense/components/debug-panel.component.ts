@@ -78,6 +78,9 @@ export interface SpawnLocationConfig extends LocationConfig {
           <button class="icon-btn" [class.active]="routesVisible()" (click)="toggleRoutes.emit()" title="Routen">
             <mat-icon>timeline</mat-icon>
           </button>
+          <button class="icon-btn" [class.active]="heightDebugVisible()" (click)="toggleHeightDebug.emit()" title="Terrain-Höhen debuggen">
+            <mat-icon>terrain</mat-icon>
+          </button>
           <button class="icon-btn" (click)="logCamera.emit()" title="Kamera loggen">
             <mat-icon>videocam</mat-icon>
           </button>
@@ -661,6 +664,7 @@ export class DebugPanelComponent {
   spawnMode = input.required<'each' | 'random'>();
   streetsVisible = input.required<boolean>();
   routesVisible = input.required<boolean>();
+  heightDebugVisible = input.required<boolean>();
   waveActive = input.required<boolean>();
   baseHealth = input.required<number>();
   debugLog = input.required<string>();
@@ -677,6 +681,7 @@ export class DebugPanelComponent {
   toggleSpawnMode = output<void>();
   toggleStreets = output<void>();
   toggleRoutes = output<void>();
+  toggleHeightDebug = output<void>();
   killAll = output<void>();
   healHq = output<void>();
   clearLog = output<void>();
