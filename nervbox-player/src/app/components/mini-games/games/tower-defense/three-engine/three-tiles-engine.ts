@@ -240,6 +240,12 @@ export class ThreeTilesEngine {
     // This raycasts directly at local X,Z coordinates for exact terrain mesh intersection
     this.towers.setTerrainRaycaster((localX, localZ) => this.raycastTerrainHeight(localX, localZ));
 
+    // Set up Line-of-Sight raycaster for visibility checks
+    // Returns true if line of sight is BLOCKED
+    this.towers.setLineOfSightRaycaster((ox, oy, oz, tx, ty, tz) =>
+      this.raycastLineOfSight(ox, oy, oz, tx, ty, tz)
+    );
+
     console.log('[ThreeTilesEngine] 3D Tiles initialized');
   }
 
@@ -577,6 +583,38 @@ export class ThreeTilesEngine {
     }
 
     return null;
+  }
+
+  /**
+   * Raycast between two 3D points to check Line-of-Sight
+   * Returns true if the ray is BLOCKED (hits terrain/building before reaching target)
+   *
+   * @param originX, originY, originZ - Starting point (e.g., tower tip)
+   * @param targetX, targetY, targetZ - End point (e.g., hex cell or enemy position)
+   * @returns true if blocked, false if clear line of sight
+   */
+  private raycastLineOfSight(
+    originX: number, originY: number, originZ: number,
+    targetX: number, targetY: number, targetZ: number
+  ): boolean {
+    if (!this.tilesRenderer) return false;
+
+    // Calculate direction and distance
+    const origin = new THREE.Vector3(originX, originY, originZ);
+    const target = new THREE.Vector3(targetX, targetY, targetZ);
+    const direction = target.clone().sub(origin);
+    const distance = direction.length();
+    direction.normalize();
+
+    // Set up raycaster
+    this.raycaster.set(origin, direction);
+    this.raycaster.far = distance - 0.5; // Stop slightly before target
+
+    // Check for intersections
+    const results = this.raycaster.intersectObject(this.tilesRenderer.group, true);
+
+    // If we hit something before reaching the target, LoS is blocked
+    return results.length > 0;
   }
 
   /**
