@@ -11,12 +11,16 @@ export interface TowerRenderData {
   mesh: THREE.Object3D;
   rangeIndicator: THREE.Mesh | null;
   selectionRing: THREE.Mesh | null;
+  hexGrid: THREE.Group | null; // Hex grid for LoS visualization
+  hexCells: HexCell[]; // Individual hex cells for LoS updates
   typeConfig: TowerTypeConfig;
   isSelected: boolean;
   // Geo coordinates for terrain sampling
   lat: number;
   lon: number;
   height: number;
+  // Tower tip position for LoS calculations
+  tipY: number;
 }
 
 /**
@@ -30,6 +34,26 @@ export type TerrainHeightSampler = (lat: number, lon: number) => number | null;
  * More accurate than TerrainHeightSampler as it uses actual mesh intersection
  */
 export type TerrainRaycaster = (localX: number, localZ: number) => number | null;
+
+/**
+ * Function type for Line-of-Sight raycasting between two 3D points
+ * Returns true if line of sight is BLOCKED (ray hits something before target)
+ */
+export type LineOfSightRaycaster = (
+  originX: number, originY: number, originZ: number,
+  targetX: number, targetY: number, targetZ: number
+) => boolean;
+
+/**
+ * Data for a single hex cell in the range indicator
+ */
+interface HexCell {
+  mesh: THREE.Mesh;
+  centerX: number;
+  centerZ: number;
+  terrainY: number;
+  isBlocked: boolean;
+}
 
 /**
  * ThreeTowerRenderer - Renders towers using Three.js
@@ -61,9 +85,20 @@ export class ThreeTowerRenderer {
   // Direct terrain raycaster for accurate terrain-conforming meshes
   private terrainRaycaster: TerrainRaycaster | null = null;
 
+  // Line-of-Sight raycaster for visibility checks
+  private losRaycaster: LineOfSightRaycaster | null = null;
+
+  // Hex grid materials
+  private hexVisibleMaterial: THREE.MeshBasicMaterial;
+  private hexBlockedMaterial: THREE.MeshBasicMaterial;
+
   // Configuration for terrain-conforming range indicator
   private readonly RANGE_SEGMENTS = 48; // Number of segments around the circle
   private readonly RANGE_RINGS = 8; // Number of concentric rings
+
+  // Hex grid configuration
+  private readonly HEX_SIZE = 8; // Size of each hex cell in meters (flat-to-flat)
+  private readonly HEX_GAP = 0.5; // Small gap between hexes for visual clarity
 
   constructor(scene: THREE.Scene, sync: CoordinateSync) {
     this.scene = scene;
@@ -89,6 +124,26 @@ export class ThreeTowerRenderer {
       depthWrite: false,
       depthTest: false, // Always render on top
     });
+
+    // Hex cell material for visible areas (green)
+    this.hexVisibleMaterial = new THREE.MeshBasicMaterial({
+      color: 0x22c55e, // Green
+      transparent: true,
+      opacity: 0.4,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      depthTest: false,
+    });
+
+    // Hex cell material for blocked areas (red)
+    this.hexBlockedMaterial = new THREE.MeshBasicMaterial({
+      color: 0xdc2626, // Red
+      transparent: true,
+      opacity: 0.5,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      depthTest: false,
+    });
   }
 
   /**
@@ -105,6 +160,14 @@ export class ThreeTowerRenderer {
    */
   setTerrainRaycaster(raycaster: TerrainRaycaster): void {
     this.terrainRaycaster = raycaster;
+  }
+
+  /**
+   * Set Line-of-Sight raycaster for visibility checks
+   * This raycaster checks if there's a clear line between two 3D points
+   */
+  setLineOfSightRaycaster(raycaster: LineOfSightRaycaster): void {
+    this.losRaycaster = raycaster;
   }
 
   /**
@@ -212,16 +275,29 @@ export class ThreeTowerRenderer {
     selectionRing.renderOrder = 5; // Render on top
     this.scene.add(selectionRing);
 
+    // Calculate tower tip Y position (for LoS calculations)
+    // Tower tip is at terrain + heightOffset + model height (estimate based on scale)
+    const towerModelHeight = 15 * config.scale; // Approximate tower model height
+    const tipY = terrainPos.y + config.heightOffset + towerModelHeight;
+
+    // Create hex grid for LoS visualization (initially hidden)
+    const { hexGrid, hexCells } = this.createHexGrid(terrainPos.x, terrainPos.z, config.range, tipY);
+    hexGrid.visible = false;
+    this.scene.add(hexGrid);
+
     const renderData: TowerRenderData = {
       id,
       mesh,
       rangeIndicator,
       selectionRing,
+      hexGrid,
+      hexCells,
       typeConfig: config,
       isSelected: false,
       lat,
       lon,
       height,
+      tipY,
     };
 
     this.towers.set(id, renderData);
@@ -273,7 +349,7 @@ export class ThreeTowerRenderer {
   }
 
   /**
-   * Select tower (show range indicator and selection ring)
+   * Select tower (show range indicator, selection ring, and hex grid)
    */
   select(id: string): void {
     const data = this.towers.get(id);
@@ -282,6 +358,11 @@ export class ThreeTowerRenderer {
     data.isSelected = true;
     if (data.rangeIndicator) data.rangeIndicator.visible = true;
     if (data.selectionRing) data.selectionRing.visible = true;
+    if (data.hexGrid) {
+      data.hexGrid.visible = true;
+      // Recalculate LoS when tower is selected
+      this.updateHexGridLoS(data);
+    }
   }
 
   /**
@@ -294,6 +375,7 @@ export class ThreeTowerRenderer {
     data.isSelected = false;
     if (data.rangeIndicator) data.rangeIndicator.visible = false;
     if (data.selectionRing) data.selectionRing.visible = false;
+    if (data.hexGrid) data.hexGrid.visible = false;
   }
 
   /**
@@ -328,6 +410,16 @@ export class ThreeTowerRenderer {
       this.scene.remove(data.selectionRing);
       data.selectionRing.geometry.dispose();
       (data.selectionRing.material as THREE.Material).dispose();
+    }
+
+    // Remove hex grid
+    if (data.hexGrid) {
+      this.scene.remove(data.hexGrid);
+      // Dispose all hex cell meshes
+      for (const cell of data.hexCells) {
+        cell.mesh.geometry.dispose();
+        // Materials are shared, don't dispose them
+      }
     }
 
     this.towers.delete(id);
@@ -772,6 +864,150 @@ export class ThreeTowerRenderer {
   }
 
   /**
+   * Create a hex grid for Line-of-Sight visualization
+   * Uses flat-top hexagons arranged in a circular pattern within the tower's range
+   */
+  private createHexGrid(
+    centerX: number,
+    centerZ: number,
+    range: number,
+    towerTipY: number
+  ): { hexGrid: THREE.Group; hexCells: HexCell[] } {
+    const hexGrid = new THREE.Group();
+    const hexCells: HexCell[] = [];
+
+    // Hex dimensions (flat-top)
+    const hexRadius = (this.HEX_SIZE - this.HEX_GAP) / 2;
+    const hexWidth = hexRadius * 2;
+    const hexHeight = hexRadius * Math.sqrt(3);
+
+    // Horizontal and vertical spacing
+    const horizSpacing = hexWidth * 0.75;
+    const vertSpacing = hexHeight;
+
+    // Calculate how many hexes we need in each direction
+    const maxHexesX = Math.ceil(range / horizSpacing) + 1;
+    const maxHexesZ = Math.ceil(range / vertSpacing) + 1;
+
+    // Create hex geometry template (flat-top hexagon)
+    const hexShape = new THREE.Shape();
+    for (let i = 0; i < 6; i++) {
+      const angle = (i * Math.PI) / 3; // 60-degree increments, starting at 0 (flat-top)
+      const x = hexRadius * Math.cos(angle);
+      const y = hexRadius * Math.sin(angle);
+      if (i === 0) {
+        hexShape.moveTo(x, y);
+      } else {
+        hexShape.lineTo(x, y);
+      }
+    }
+    hexShape.closePath();
+    const hexGeometry = new THREE.ShapeGeometry(hexShape);
+
+    // Generate hexes in an offset grid pattern
+    for (let qx = -maxHexesX; qx <= maxHexesX; qx++) {
+      for (let qz = -maxHexesZ; qz <= maxHexesZ; qz++) {
+        // Offset every other row (offset coordinates)
+        const xOffset = qz % 2 === 0 ? 0 : horizSpacing / 2;
+        const localX = qx * horizSpacing + xOffset;
+        const localZ = qz * vertSpacing * 0.75; // 0.75 for hex row overlap
+
+        // Check if hex center is within range (with some margin for hex size)
+        const distFromCenter = Math.sqrt(localX * localX + localZ * localZ);
+        if (distFromCenter > range - hexRadius * 0.5) {
+          continue; // Skip hexes outside the circular range
+        }
+
+        // World position (Z is flipped in local coords)
+        const worldX = centerX + localX;
+        const worldZ = centerZ - localZ;
+
+        // Get terrain height at hex center
+        let terrainY = 0;
+        if (this.terrainRaycaster) {
+          const height = this.terrainRaycaster(worldX, worldZ);
+          if (height !== null) {
+            terrainY = height;
+          }
+        }
+
+        // Create hex mesh
+        const hexMesh = new THREE.Mesh(hexGeometry.clone(), this.hexVisibleMaterial);
+        hexMesh.rotation.x = -Math.PI / 2; // Lay flat on ground
+        hexMesh.position.set(worldX, terrainY + 1.0, worldZ); // Slightly above terrain
+        hexMesh.renderOrder = 2;
+
+        hexGrid.add(hexMesh);
+
+        // Store cell data for LoS updates
+        hexCells.push({
+          mesh: hexMesh,
+          centerX: worldX,
+          centerZ: worldZ,
+          terrainY: terrainY,
+          isBlocked: false,
+        });
+      }
+    }
+
+    console.log(`[ThreeTowerRenderer] Created hex grid with ${hexCells.length} cells`);
+
+    return { hexGrid, hexCells };
+  }
+
+  /**
+   * Update Line-of-Sight coloring for all hex cells in a tower's grid
+   * Raycasts from tower tip to each hex cell center at ground level
+   */
+  private updateHexGridLoS(data: TowerRenderData): void {
+    if (!data.hexCells || data.hexCells.length === 0) return;
+    if (!this.losRaycaster) {
+      console.warn('[ThreeTowerRenderer] No LoS raycaster set, skipping LoS update');
+      return;
+    }
+
+    const terrainPos = this.sync.geoToLocal(data.lat, data.lon, data.height);
+    const towerX = terrainPos.x;
+    const towerZ = terrainPos.z;
+
+    let blockedCount = 0;
+
+    for (const cell of data.hexCells) {
+      // Raycast from tower tip to cell center (at ground level + small offset)
+      const targetY = cell.terrainY + 1.0; // Target slightly above ground
+
+      const isBlocked = this.losRaycaster(
+        towerX, data.tipY, towerZ,
+        cell.centerX, targetY, cell.centerZ
+      );
+
+      // Update cell state and material
+      cell.isBlocked = isBlocked;
+      cell.mesh.material = isBlocked ? this.hexBlockedMaterial : this.hexVisibleMaterial;
+
+      if (isBlocked) blockedCount++;
+    }
+
+    console.log(`[ThreeTowerRenderer] LoS update: ${blockedCount}/${data.hexCells.length} cells blocked`);
+  }
+
+  /**
+   * Check if there's line of sight from a tower to a specific position
+   * Used for actual targeting decisions
+   */
+  hasLineOfSight(towerId: string, targetX: number, targetY: number, targetZ: number): boolean {
+    const data = this.towers.get(towerId);
+    if (!data || !this.losRaycaster) return true; // Assume clear if can't check
+
+    const terrainPos = this.sync.geoToLocal(data.lat, data.lon, data.height);
+
+    return !this.losRaycaster(
+      terrainPos.x, data.tipY, terrainPos.z,
+      targetX, targetY, targetZ
+    );
+  }
+
+  /**
    * Recursively dispose Three.js object
    */
   private disposeObject(obj: THREE.Object3D): void {
@@ -802,5 +1038,7 @@ export class ThreeTowerRenderer {
     this.modelTemplates.clear();
     this.rangeMaterial.dispose();
     this.selectionMaterial.dispose();
+    this.hexVisibleMaterial.dispose();
+    this.hexBlockedMaterial.dispose();
   }
 }
