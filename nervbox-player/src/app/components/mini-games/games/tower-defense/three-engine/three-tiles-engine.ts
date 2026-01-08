@@ -233,6 +233,13 @@ export class ThreeTilesEngine {
       this.onTilesLoadEnd();
     });
 
+    // Set up terrain height sampler for tower range indicators (legacy)
+    this.towers.setTerrainHeightSampler((lat, lon) => this.getTerrainHeightAtGeo(lat, lon));
+
+    // Set up direct terrain raycaster for accurate terrain-conforming range indicators
+    // This raycasts directly at local X,Z coordinates for exact terrain mesh intersection
+    this.towers.setTerrainRaycaster((localX, localZ) => this.raycastTerrainHeight(localX, localZ));
+
     console.log('[ThreeTilesEngine] 3D Tiles initialized');
   }
 
@@ -331,9 +338,10 @@ export class ThreeTilesEngine {
 
     // With ReorientationPlugin (recenter: true) and tiles.group.rotation.x = -PI/2:
     // - Origin (HQ) is at (0,0,0) in local space
-    // - Y is up, X is East, -Z is North
+    // - Y is up, -Z is South, +Z is North
     // Position camera south of origin, above ground, looking north toward origin
-    this.camera.position.set(0, 400, 300); // 400m up, 300m south
+    // 45° tilt angle: height = zDistance (tan(45°) = 1)
+    this.camera.position.set(0, 400, -400); // 400m up, 400m south = 45° angle, looking north
     this.camera.lookAt(0, 0, 0);
     console.log('[ThreeTilesEngine] Initial camera position:', this.camera.position.toArray());
   }

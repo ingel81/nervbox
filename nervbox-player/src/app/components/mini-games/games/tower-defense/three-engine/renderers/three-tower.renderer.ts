@@ -13,7 +13,23 @@ export interface TowerRenderData {
   selectionRing: THREE.Mesh | null;
   typeConfig: TowerTypeConfig;
   isSelected: boolean;
+  // Geo coordinates for terrain sampling
+  lat: number;
+  lon: number;
+  height: number;
 }
+
+/**
+ * Function type for terrain height sampling (geo coordinates)
+ * @deprecated Use TerrainRaycaster instead for accurate terrain-conforming meshes
+ */
+export type TerrainHeightSampler = (lat: number, lon: number) => number | null;
+
+/**
+ * Function type for direct terrain raycasting at local coordinates
+ * More accurate than TerrainHeightSampler as it uses actual mesh intersection
+ */
+export type TerrainRaycaster = (localX: number, localZ: number) => number | null;
 
 /**
  * ThreeTowerRenderer - Renders towers using Three.js
@@ -39,28 +55,56 @@ export class ThreeTowerRenderer {
   private rangeMaterial: THREE.MeshBasicMaterial;
   private selectionMaterial: THREE.MeshBasicMaterial;
 
+  // Terrain height sampler (optional - for terrain-conforming range indicators)
+  private terrainHeightSampler: TerrainHeightSampler | null = null;
+
+  // Direct terrain raycaster for accurate terrain-conforming meshes
+  private terrainRaycaster: TerrainRaycaster | null = null;
+
+  // Configuration for terrain-conforming range indicator
+  private readonly RANGE_SEGMENTS = 48; // Number of segments around the circle
+  private readonly RANGE_RINGS = 8; // Number of concentric rings
+
   constructor(scene: THREE.Scene, sync: CoordinateSync) {
     this.scene = scene;
     this.sync = sync;
     this.loader = new GLTFLoader();
 
-    // Range indicator material (semi-transparent green)
+    // Range indicator material (semi-transparent green, always visible)
     this.rangeMaterial = new THREE.MeshBasicMaterial({
       color: 0x22c55e,
       transparent: true,
-      opacity: 0.15,
+      opacity: 0.35,
       side: THREE.DoubleSide,
       depthWrite: false,
+      depthTest: false, // Always render on top of terrain
     });
 
-    // Selection ring material (purple glow)
+    // Selection ring material (gold for WC3 style, high visibility)
     this.selectionMaterial = new THREE.MeshBasicMaterial({
-      color: 0x9333ea,
+      color: 0xc9a44c, // TD gold from design system
       transparent: true,
-      opacity: 0.6,
+      opacity: 0.85,
       side: THREE.DoubleSide,
       depthWrite: false,
+      depthTest: false, // Always render on top
     });
+  }
+
+  /**
+   * Set terrain height sampler for terrain-conforming range indicators
+   * @deprecated Use setTerrainRaycaster instead for accurate terrain-conforming meshes
+   */
+  setTerrainHeightSampler(sampler: TerrainHeightSampler): void {
+    this.terrainHeightSampler = sampler;
+  }
+
+  /**
+   * Set direct terrain raycaster for accurate terrain-conforming range indicators
+   * This raycaster takes local X,Z coordinates and returns the terrain Y at that position
+   */
+  setTerrainRaycaster(raycaster: TerrainRaycaster): void {
+    this.terrainRaycaster = raycaster;
   }
 
   /**
@@ -142,30 +186,30 @@ export class ThreeTowerRenderer {
       }
     });
 
-    // Position in local coordinates with height offset
-    const localPos = this.sync.geoToLocal(lat, lon, height);
+    // Position in local coordinates - terrain level (without height offset)
+    const terrainPos = this.sync.geoToLocal(lat, lon, height);
+
+    // Tower mesh position with height offset
+    const localPos = terrainPos.clone();
     localPos.y += config.heightOffset;
     mesh.position.copy(localPos);
 
     // Add to scene
     this.scene.add(mesh);
 
-    // Create range indicator (hidden by default)
-    const rangeGeometry = new THREE.CircleGeometry(config.range, 64);
-    const rangeIndicator = new THREE.Mesh(rangeGeometry, this.rangeMaterial.clone());
-    rangeIndicator.rotation.x = -Math.PI / 2; // Horizontal
-    rangeIndicator.position.copy(localPos);
-    rangeIndicator.position.y += 0.5; // Slightly above ground
+    // Create range indicator at TERRAIN level (not tower level)
+    const rangeIndicator = this.createRangeIndicator(lat, lon, height, config.range, terrainPos);
     rangeIndicator.visible = false;
     this.scene.add(rangeIndicator);
 
-    // Create selection ring (hidden by default)
-    const selectionGeometry = new THREE.RingGeometry(4, 6, 32);
+    // Create selection ring at terrain level
+    const selectionGeometry = new THREE.RingGeometry(8, 12, 48);
     const selectionRing = new THREE.Mesh(selectionGeometry, this.selectionMaterial.clone());
     selectionRing.rotation.x = -Math.PI / 2;
-    selectionRing.position.copy(localPos);
-    selectionRing.position.y += 0.2;
+    selectionRing.position.copy(terrainPos);
+    selectionRing.position.y += 1.5; // Slightly above terrain
     selectionRing.visible = false;
+    selectionRing.renderOrder = 5; // Render on top
     this.scene.add(selectionRing);
 
     const renderData: TowerRenderData = {
@@ -175,6 +219,9 @@ export class ThreeTowerRenderer {
       selectionRing,
       typeConfig: config,
       isSelected: false,
+      lat,
+      lon,
+      height,
     };
 
     this.towers.set(id, renderData);
@@ -188,19 +235,31 @@ export class ThreeTowerRenderer {
     const data = this.towers.get(id);
     if (!data) return;
 
-    const localPos = this.sync.geoToLocal(lat, lon, height);
+    // Terrain level position (without heightOffset)
+    const terrainPos = this.sync.geoToLocal(lat, lon, height);
+
+    // Tower mesh gets heightOffset
+    const localPos = terrainPos.clone();
     localPos.y += data.typeConfig.heightOffset;
     data.mesh.position.copy(localPos);
 
-    if (data.rangeIndicator) {
-      data.rangeIndicator.position.copy(localPos);
+    // Range indicator stays at terrain level (for terrain-conforming geometry, position is 0,0,0)
+    // Only set position for simple flat geometry which doesn't use world coords
+    if (data.rangeIndicator && !this.terrainHeightSampler) {
+      data.rangeIndicator.position.copy(terrainPos);
       data.rangeIndicator.position.y += 0.5;
     }
 
+    // Selection ring at terrain level
     if (data.selectionRing) {
-      data.selectionRing.position.copy(localPos);
-      data.selectionRing.position.y += 0.2;
+      data.selectionRing.position.copy(terrainPos);
+      data.selectionRing.position.y += 1.5;
     }
+
+    // Update stored coordinates
+    data.lat = lat;
+    data.lon = lon;
+    data.height = height;
   }
 
   /**
@@ -314,6 +373,402 @@ export class ThreeTowerRenderer {
     for (const id of this.towers.keys()) {
       this.remove(id);
     }
+  }
+
+  /**
+   * Create a terrain-conforming range indicator disc with visible edge
+   * Uses direct raycasting for accurate terrain conformance
+   */
+  private createRangeIndicator(
+    centerLat: number,
+    centerLon: number,
+    centerHeight: number,
+    range: number,
+    localCenter: THREE.Vector3
+  ): THREE.Mesh {
+    // If no raycaster available, use simple flat circle with edge
+    if (!this.terrainRaycaster) {
+      const group = new THREE.Group() as unknown as THREE.Mesh;
+
+      // Filled disc
+      const discGeometry = new THREE.CircleGeometry(range, this.RANGE_SEGMENTS);
+      const discMesh = new THREE.Mesh(discGeometry, this.rangeMaterial.clone());
+      discMesh.rotation.x = -Math.PI / 2;
+      group.add(discMesh);
+
+      // Edge ring (gold border)
+      const edgeGeometry = new THREE.RingGeometry(range - 2, range, this.RANGE_SEGMENTS);
+      const edgeMaterial = new THREE.MeshBasicMaterial({
+        color: 0xc9a44c, // TD gold
+        transparent: true,
+        opacity: 0.7,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+      });
+      const edgeMesh = new THREE.Mesh(edgeGeometry, edgeMaterial);
+      edgeMesh.rotation.x = -Math.PI / 2;
+      edgeMesh.position.y = 0.1; // Slightly above disc
+      group.add(edgeMesh);
+
+      group.position.copy(localCenter);
+      group.position.y += 0.5;
+      return group;
+    }
+
+    // Create terrain-conforming group with disc and edge rings using raycasting
+    const group = new THREE.Group() as unknown as THREE.Mesh;
+
+    // Create terrain-conforming disc geometry using direct raycasts
+    const geometry = this.createTerrainDiscGeometryRaycast(localCenter.x, localCenter.z, range);
+
+    const discMesh = new THREE.Mesh(geometry, this.rangeMaterial.clone());
+    discMesh.renderOrder = 1;
+    group.add(discMesh);
+
+    // Create terrain-following edge rings using raycasting
+    const edgePoints = this.createTerrainEdgePointsRaycast(localCenter.x, localCenter.z, range);
+
+    if (edgePoints.length > 0) {
+      // Gold inner edge (slightly inside the range)
+      const goldEdgePoints = this.createTerrainEdgePointsRaycast(localCenter.x, localCenter.z, range - 1.5);
+      if (goldEdgePoints.length > 0) {
+        const goldGeometry = new THREE.BufferGeometry().setFromPoints([...goldEdgePoints, goldEdgePoints[0]]);
+        const goldMaterial = new THREE.LineBasicMaterial({
+          color: 0xc9a44c,
+          linewidth: 2,
+          transparent: true,
+          opacity: 0.9,
+          depthTest: false,
+          depthWrite: false,
+        });
+        const goldLine = new THREE.Line(goldGeometry, goldMaterial);
+        goldLine.renderOrder = 2;
+        group.add(goldLine);
+      }
+
+      // White outer edge (at the range boundary)
+      const whiteGeometry = new THREE.BufferGeometry().setFromPoints([...edgePoints, edgePoints[0]]);
+      const whiteMaterial = new THREE.LineBasicMaterial({
+        color: 0xffffff,
+        linewidth: 3,
+        transparent: true,
+        opacity: 0.95,
+        depthTest: false,
+        depthWrite: false,
+      });
+      const whiteLine = new THREE.Line(whiteGeometry, whiteMaterial);
+      whiteLine.renderOrder = 3;
+      group.add(whiteLine);
+    }
+
+    return group;
+  }
+
+  /**
+   * Create terrain-following edge points for a circle at given radius
+   */
+  private createTerrainEdgePoints(
+    centerLat: number,
+    centerLon: number,
+    centerHeight: number,
+    radius: number,
+    localCenter: THREE.Vector3
+  ): THREE.Vector3[] {
+    if (!this.terrainHeightSampler) return [];
+
+    const EDGE_OFFSET = 2.0; // Slightly higher than disc for visibility
+
+    const points: THREE.Vector3[] = [];
+    const metersPerDegreeLat = 111320;
+    const metersPerDegreeLon = 111320 * Math.cos((centerLat * Math.PI) / 180);
+
+    const centerTerrainHeight = this.terrainHeightSampler(centerLat, centerLon);
+    const baseCenterY = centerTerrainHeight !== null ? centerTerrainHeight : centerHeight;
+
+    for (let seg = 0; seg < this.RANGE_SEGMENTS; seg++) {
+      const angle = (seg / this.RANGE_SEGMENTS) * Math.PI * 2;
+
+      const localX = Math.cos(angle) * radius;
+      const localZ = Math.sin(angle) * radius;
+
+      const sampleLat = centerLat + (localZ / metersPerDegreeLat);
+      const sampleLon = centerLon + (localX / metersPerDegreeLon);
+
+      const terrainHeight = this.terrainHeightSampler(sampleLat, sampleLon);
+      const sampleY = terrainHeight !== null ? terrainHeight : baseCenterY;
+
+      const worldX = localCenter.x + localX;
+      const worldZ = localCenter.z - localZ;
+      const worldY = (sampleY - baseCenterY) + localCenter.y + EDGE_OFFSET;
+
+      points.push(new THREE.Vector3(worldX, worldY, worldZ));
+    }
+
+    return points;
+  }
+
+  /**
+   * Create disc geometry that conforms to terrain
+   * Samples terrain heights at multiple points and creates triangulated mesh
+   */
+  private createTerrainDiscGeometry(
+    centerLat: number,
+    centerLon: number,
+    centerHeight: number,
+    range: number,
+    localCenter: THREE.Vector3
+  ): THREE.BufferGeometry {
+    if (!this.terrainHeightSampler) {
+      return new THREE.CircleGeometry(range, this.RANGE_SEGMENTS);
+    }
+
+    const vertices: number[] = [];
+    const indices: number[] = [];
+
+    // Small offset above terrain for visibility
+    const TERRAIN_OFFSET = 1.5;
+
+    // Meters per degree (approximate at this latitude)
+    const metersPerDegreeLat = 111320;
+    const metersPerDegreeLon = 111320 * Math.cos((centerLat * Math.PI) / 180);
+
+    // Get center terrain height as reference for relative calculations
+    const centerTerrainHeight = this.terrainHeightSampler(centerLat, centerLon);
+    const baseCenterY = centerTerrainHeight !== null ? centerTerrainHeight : centerHeight;
+
+    // Add center vertex - use localCenter.y as base (which is at terrain level)
+    // localCenter already accounts for terrain height via geoToLocal
+    vertices.push(localCenter.x, localCenter.y + TERRAIN_OFFSET, localCenter.z);
+
+    // Sample points in concentric rings
+    for (let ring = 1; ring <= this.RANGE_RINGS; ring++) {
+      const ringRadius = (range * ring) / this.RANGE_RINGS;
+
+      for (let seg = 0; seg < this.RANGE_SEGMENTS; seg++) {
+        const angle = (seg / this.RANGE_SEGMENTS) * Math.PI * 2;
+
+        // Local offset from center
+        const localX = Math.cos(angle) * ringRadius;
+        const localZ = Math.sin(angle) * ringRadius;
+
+        // Convert to geo coordinates
+        const sampleLat = centerLat + (localZ / metersPerDegreeLat);
+        const sampleLon = centerLon + (localX / metersPerDegreeLon);
+
+        // Sample terrain height at this point
+        const terrainHeight = this.terrainHeightSampler(sampleLat, sampleLon);
+        const sampleY = terrainHeight !== null ? terrainHeight : baseCenterY;
+
+        // World coordinates - use height difference from center + localCenter.y
+        const worldX = localCenter.x + localX;
+        const worldZ = localCenter.z - localZ; // Note: Z is flipped in local coords
+        const worldY = (sampleY - baseCenterY) + localCenter.y + TERRAIN_OFFSET;
+
+        vertices.push(worldX, worldY, worldZ);
+      }
+    }
+
+    // Create triangles
+    // Center to first ring
+    for (let seg = 0; seg < this.RANGE_SEGMENTS; seg++) {
+      const next = (seg + 1) % this.RANGE_SEGMENTS;
+      indices.push(0, 1 + seg, 1 + next);
+    }
+
+    // Between rings
+    for (let ring = 1; ring < this.RANGE_RINGS; ring++) {
+      const innerOffset = 1 + (ring - 1) * this.RANGE_SEGMENTS;
+      const outerOffset = 1 + ring * this.RANGE_SEGMENTS;
+
+      for (let seg = 0; seg < this.RANGE_SEGMENTS; seg++) {
+        const nextSeg = (seg + 1) % this.RANGE_SEGMENTS;
+
+        // Two triangles per quad
+        indices.push(
+          innerOffset + seg,
+          outerOffset + seg,
+          outerOffset + nextSeg
+        );
+        indices.push(
+          innerOffset + seg,
+          outerOffset + nextSeg,
+          innerOffset + nextSeg
+        );
+      }
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+
+    return geometry;
+  }
+
+  /**
+   * Create terrain-following edge points using direct raycasting
+   * Much more accurate than geo-coordinate based sampling
+   */
+  private createTerrainEdgePointsRaycast(
+    centerX: number,
+    centerZ: number,
+    radius: number
+  ): THREE.Vector3[] {
+    if (!this.terrainRaycaster) return [];
+
+    const EDGE_OFFSET = 2.0; // Height above terrain for visibility
+    const points: THREE.Vector3[] = [];
+
+    for (let seg = 0; seg < this.RANGE_SEGMENTS; seg++) {
+      const angle = (seg / this.RANGE_SEGMENTS) * Math.PI * 2;
+
+      // Local offset from center
+      const dx = Math.cos(angle) * radius;
+      const dz = Math.sin(angle) * radius;
+
+      // World position (note: Z is flipped in local coords)
+      const worldX = centerX + dx;
+      const worldZ = centerZ - dz;
+
+      // Raycast to get actual terrain height at this position
+      const terrainY = this.terrainRaycaster(worldX, worldZ);
+
+      if (terrainY !== null) {
+        points.push(new THREE.Vector3(worldX, terrainY + EDGE_OFFSET, worldZ));
+      }
+    }
+
+    return points;
+  }
+
+  /**
+   * Create disc geometry using direct raycasting for terrain conformance
+   * Each vertex is placed exactly on the terrain surface via raycasting
+   */
+  private createTerrainDiscGeometryRaycast(
+    centerX: number,
+    centerZ: number,
+    range: number
+  ): THREE.BufferGeometry {
+    if (!this.terrainRaycaster) {
+      return new THREE.CircleGeometry(range, this.RANGE_SEGMENTS);
+    }
+
+    const vertices: number[] = [];
+    const indices: number[] = [];
+
+    // Small offset above terrain for visibility
+    const TERRAIN_OFFSET = 1.5;
+
+    // Get center terrain height via raycast
+    const centerY = this.terrainRaycaster(centerX, centerZ);
+    if (centerY === null) {
+      // Fallback to flat circle if center raycast fails
+      return new THREE.CircleGeometry(range, this.RANGE_SEGMENTS);
+    }
+
+    // Add center vertex
+    vertices.push(centerX, centerY + TERRAIN_OFFSET, centerZ);
+
+    // Sample points in concentric rings
+    for (let ring = 1; ring <= this.RANGE_RINGS; ring++) {
+      const ringRadius = (range * ring) / this.RANGE_RINGS;
+
+      for (let seg = 0; seg < this.RANGE_SEGMENTS; seg++) {
+        const angle = (seg / this.RANGE_SEGMENTS) * Math.PI * 2;
+
+        // Local offset from center
+        const dx = Math.cos(angle) * ringRadius;
+        const dz = Math.sin(angle) * ringRadius;
+
+        // World position (note: Z is flipped in local coords)
+        const worldX = centerX + dx;
+        const worldZ = centerZ - dz;
+
+        // Raycast to get actual terrain height
+        const terrainY = this.terrainRaycaster(worldX, worldZ);
+        const worldY = terrainY !== null ? terrainY + TERRAIN_OFFSET : centerY + TERRAIN_OFFSET;
+
+        vertices.push(worldX, worldY, worldZ);
+      }
+    }
+
+    // Create triangles
+    // Center to first ring
+    for (let seg = 0; seg < this.RANGE_SEGMENTS; seg++) {
+      const next = (seg + 1) % this.RANGE_SEGMENTS;
+      indices.push(0, 1 + seg, 1 + next);
+    }
+
+    // Between rings
+    for (let ring = 1; ring < this.RANGE_RINGS; ring++) {
+      const innerOffset = 1 + (ring - 1) * this.RANGE_SEGMENTS;
+      const outerOffset = 1 + ring * this.RANGE_SEGMENTS;
+
+      for (let seg = 0; seg < this.RANGE_SEGMENTS; seg++) {
+        const nextSeg = (seg + 1) % this.RANGE_SEGMENTS;
+
+        // Two triangles per quad
+        indices.push(
+          innerOffset + seg,
+          outerOffset + seg,
+          outerOffset + nextSeg
+        );
+        indices.push(
+          innerOffset + seg,
+          outerOffset + nextSeg,
+          innerOffset + nextSeg
+        );
+      }
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+
+    return geometry;
+  }
+
+  /**
+   * Update range indicator geometry with current terrain data
+   * Call this when terrain data might have changed
+   */
+  updateRangeIndicatorTerrain(id: string): void {
+    const data = this.towers.get(id);
+    if (!data || !data.rangeIndicator) return;
+
+    // Need either raycaster or height sampler
+    if (!this.terrainRaycaster && !this.terrainHeightSampler) return;
+
+    // Get terrain level position (without heightOffset - range indicator lies on terrain)
+    const terrainPos = this.sync.geoToLocal(data.lat, data.lon, data.height);
+
+    // Create new geometry using raycaster if available, otherwise fall back to height sampler
+    let newGeometry: THREE.BufferGeometry;
+    if (this.terrainRaycaster) {
+      newGeometry = this.createTerrainDiscGeometryRaycast(
+        terrainPos.x,
+        terrainPos.z,
+        data.typeConfig.range
+      );
+    } else {
+      newGeometry = this.createTerrainDiscGeometry(
+        data.lat,
+        data.lon,
+        data.height,
+        data.typeConfig.range,
+        terrainPos
+      );
+    }
+
+    // Dispose old geometry and replace
+    data.rangeIndicator.geometry.dispose();
+    data.rangeIndicator.geometry = newGeometry;
+
+    // Reset position (geometry is now in world coords)
+    data.rangeIndicator.position.set(0, 0, 0);
+    data.rangeIndicator.rotation.set(0, 0, 0);
   }
 
   /**

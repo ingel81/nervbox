@@ -31,6 +31,8 @@ import { WaveManager, SpawnPoint as WaveSpawnPoint } from './managers/wave.manag
 // Three.js Engine (new 3DTilesRendererJS-based)
 import { ThreeTilesEngine } from './three-engine';
 import * as THREE from 'three';
+// Theme
+import { TD_CSS_VARS } from './styles/td-theme';
 
 // Default locations - can be overridden via debug settings
 const DEFAULT_CENTER_COORDS = {
@@ -90,140 +92,86 @@ export interface SpawnPoint {
     EntityPoolService,
   ],
   template: `
-    <div class="tower-defense-container" [class.fullscreen]="!isDialog">
-      <div class="game-header">
-        <div class="header-glow"></div>
-        <mat-icon class="title-icon">cell_tower</mat-icon>
-        <h2>TOWER DEFENSE</h2>
-        <span class="subtitle">Erlenbach</span>
+    <div class="td-container" [class.td-fullscreen]="!isDialog">
+      <!-- Info Header -->
+      <header class="td-header">
+        <div class="td-header-left">
+          <mat-icon class="td-title-icon">cell_tower</mat-icon>
+          <h2 class="td-title">TOWER DEFENSE</h2>
+          <span class="td-location">Erlenbach</span>
+        </div>
+        <div class="td-header-stats">
+          <div class="td-stat hp">
+            <mat-icon>favorite</mat-icon>
+            <span>{{ gameState.baseHealth() }}</span>
+          </div>
+          <div class="td-stat wave">
+            <mat-icon>waves</mat-icon>
+            <span>{{ gameState.waveNumber() }}</span>
+          </div>
+          @if (waveActive()) {
+            <div class="td-stat enemies">
+              <mat-icon>pest_control</mat-icon>
+              <span>{{ gameState.enemiesAlive() }}</span>
+            </div>
+          }
+          <div class="td-stat fps">
+            <span>{{ fps() }} FPS</span>
+          </div>
+        </div>
         @if (isDialog) {
-          <button mat-icon-button class="close-btn" (click)="close()">
+          <button class="td-close-btn" (click)="close()" matTooltip="Schliessen">
             <mat-icon>close</mat-icon>
           </button>
         }
-      </div>
+      </header>
 
-      <div class="game-content">
-        @if (loading()) {
-          <div class="loading-overlay">
-            <mat-spinner diameter="48"></mat-spinner>
-            <p>{{ loadingMessage() }}</p>
-          </div>
-        }
-
-        @if (error()) {
-          <div class="error-overlay">
-            <mat-icon class="error-icon">error_outline</mat-icon>
-            <h3>Fehler</h3>
-            <p>{{ error() }}</p>
-            <div class="token-instructions">
-              <p>1. Erstelle einen kostenlosen Account bei <a href="https://cesium.com/ion/" target="_blank">cesium.com/ion</a></p>
-              <p>2. Kopiere deinen Access Token</p>
-              <p>3. Trage ihn in <code>appsettings.json</code> ein:</p>
-              <pre>"CesiumAccessToken": "dein-token-hier"</pre>
+      <!-- Main Content: Canvas + Sidebar -->
+      <div class="td-main">
+        <!-- Canvas Area -->
+        <div class="td-canvas-area">
+          @if (loading()) {
+            <div class="td-loading-overlay">
+              <mat-spinner diameter="48"></mat-spinner>
+              <p>{{ loadingMessage() }}</p>
             </div>
-            <button mat-flat-button color="primary" (click)="close()">Schliessen</button>
-          </div>
-        }
-
-        <canvas #gameCanvas class="game-canvas" [class.hidden]="loading() || error()"></canvas>
-
-        @if (!loading() && !error()) {
-          <!-- Status Panel (top left) -->
-          <div class="status-panel">
-            <div class="status-item hp">
-              <mat-icon>favorite</mat-icon>
-              <span>{{ gameState.baseHealth() }}</span>
-            </div>
-            <div class="status-item wave">
-              <mat-icon>waves</mat-icon>
-              <span>{{ gameState.waveNumber() }}</span>
-            </div>
-            <div class="status-item towers">
-              <mat-icon>cell_tower</mat-icon>
-              <span>{{ gameState.towerCount() }}</span>
-            </div>
-            @if (waveActive()) {
-              <div class="status-item enemies">
-                <mat-icon>pest_control</mat-icon>
-                <span>{{ gameState.enemiesAlive() }}</span>
-              </div>
-            }
-          </div>
-
-          <!-- Game Controls (bottom center) -->
-          <div class="game-controls">
-            <div class="controls-box">
-              <button class="control-btn tower-btn" [class.active]="buildMode()" (click)="toggleBuildMode()">
-                <mat-icon>{{ buildMode() ? 'close' : 'add_location' }}</mat-icon>
-                <span>{{ buildMode() ? 'Abbrechen' : 'Tower' }}</span>
-              </button>
-              <div class="control-divider"></div>
-              <button class="control-btn wave-btn" (click)="startWave()" [disabled]="waveActive() || buildMode() || isGameOver()">
-                <mat-icon>{{ waveActive() ? 'hourglass_empty' : 'play_arrow' }}</mat-icon>
-                <span>{{ waveActive() ? 'Welle...' : 'Start' }}</span>
-              </button>
-            </div>
-            @if (buildMode()) {
-              <div class="build-hint">Klicke neben Strasse</div>
-            }
-          </div>
-
-          <!-- Camera Controls (bottom right) -->
-          <div class="camera-controls">
-            <button mat-mini-fab (click)="resetCamera()" matTooltip="Kamera">
-              <mat-icon>my_location</mat-icon>
-            </button>
-            <button mat-mini-fab (click)="toggleTilt()" matTooltip="Neigung">
-              <mat-icon>3d_rotation</mat-icon>
-            </button>
-            <button mat-mini-fab (click)="toggleDebug()" matTooltip="Debug" [class.active]="debugMode()">
-              <mat-icon>bug_report</mat-icon>
-            </button>
-          </div>
-
-          <!-- Debug Panel -->
-          @if (debugMode()) {
-            <app-td-debug-panel
-              [streetCount]="streetCount()"
-              [enemyCount]="enemyCount()"
-              [enemySpeed]="enemySpeed()"
-              [enemyType]="enemyType()"
-              [enemyTypes]="enemyTypes"
-              [spawnMode]="spawnMode()"
-              [streetsVisible]="streetsVisible()"
-              [routesVisible]="routesVisible()"
-              [heightDebugVisible]="heightDebugVisible()"
-              [waveActive]="waveActive()"
-              [baseHealth]="gameState.baseHealth()"
-              [debugLog]="debugLog()"
-              [hqLocation]="editableHqLocation()"
-              [spawnLocations]="editableSpawnLocations()"
-              [isApplying]="isApplyingLocation()"
-              (enemyCountChange)="onEnemyCountChange($event)"
-              (enemySpeedChange)="onSpeedChange($event)"
-              (enemyTypeChange)="onEnemyTypeChange($event)"
-              (toggleSpawnMode)="toggleSpawnMode()"
-              (toggleStreets)="toggleStreets()"
-              (toggleRoutes)="toggleRoutes()"
-              (toggleHeightDebug)="toggleHeightDebug()"
-              (killAll)="killAllEnemies()"
-              (healHq)="healHq()"
-              (clearLog)="clearDebugLog()"
-              (logCamera)="logCameraPosition()"
-              (applyNewLocation)="onApplyNewLocation($event)"
-              (resetLocations)="onResetLocations()"
-            />
           }
 
-          <!-- Controls Hint (bottom left, minimal) -->
-          <div class="controls-hint">
-            <span>LMB: Move | Ctrl: Rotate | Scroll: Zoom</span>
-          </div>
+          @if (error()) {
+            <div class="td-error-overlay">
+              <mat-icon class="td-error-icon">error_outline</mat-icon>
+              <h3>Fehler</h3>
+              <p>{{ error() }}</p>
+              <div class="td-token-instructions">
+                <p>1. Erstelle einen Account bei <a href="https://cesium.com/ion/" target="_blank">cesium.com/ion</a></p>
+                <p>2. Kopiere deinen Access Token</p>
+                <p>3. Trage ihn in <code>appsettings.json</code> ein:</p>
+                <pre>"CesiumAccessToken": "dein-token"</pre>
+              </div>
+              <button class="td-btn td-btn-gold" (click)="close()">Schliessen</button>
+            </div>
+          }
 
-          <!-- Gathering Phase Info -->
+          <canvas #gameCanvas class="td-canvas" [class.hidden]="loading() || error()"></canvas>
+
+          <!-- Controls Hint -->
+          @if (!loading() && !error()) {
+            <div class="td-controls-hint">LMB: Pan | RMB: Rotate | Scroll: Zoom</div>
+
+            <!-- Quick Actions (bottom right) -->
+            <div class="td-quick-actions">
+              <button class="td-quick-btn" (click)="resetCamera()" matTooltip="Kamera zuruecksetzen">
+                <mat-icon>my_location</mat-icon>
+              </button>
+              <button class="td-quick-btn" [class.active]="debugMode()" (click)="toggleDebug()" matTooltip="Debug-Modus">
+                <mat-icon>bug_report</mat-icon>
+              </button>
+            </div>
+          }
+
+          <!-- Gathering Overlay -->
           @if (gatheringPhase()) {
-            <div class="gathering-overlay">
+            <div class="td-gathering-overlay">
               <mat-icon>groups</mat-icon>
               <span>Gegner sammeln sich...</span>
             </div>
@@ -231,120 +179,539 @@ export interface SpawnPoint {
 
           <!-- Game Over Overlay -->
           @if (gameState.showGameOverScreen()) {
-            <div class="gameover-overlay">
-              <div class="gameover-content">
+            <div class="td-gameover-overlay">
+              <div class="td-gameover-content">
                 <h1>GAME OVER</h1>
-                <p>Das HQ wurde zerstört!</p>
-                <button mat-flat-button color="primary" class="restart-btn" (click)="restartGame()">
+                <p>Das HQ wurde zerstoert!</p>
+                <button class="td-btn td-btn-green" (click)="restartGame()">
                   <mat-icon>replay</mat-icon>
                   NEUSTART
                 </button>
               </div>
             </div>
           }
-        }
+        </div>
+
+        <!-- Right Sidebar with WC3 Frame -->
+        <aside class="td-sidebar">
+          <div class="td-sidebar-frame-top"></div>
+          <div class="td-sidebar-frame-middle"></div>
+          <div class="td-sidebar-frame-bottom"></div>
+          <div class="td-sidebar-content">
+          <!-- Actions Section -->
+          <section class="td-panel">
+            <div class="td-panel-header">AKTIONEN</div>
+            <div class="td-panel-content td-actions">
+              <!-- Tower Button -->
+              <button class="td-action-btn" [class.active]="buildMode()" (click)="toggleBuildMode()"
+                      [disabled]="waveActive() || isGameOver()">
+                <mat-icon>{{ buildMode() ? 'close' : 'add_location' }}</mat-icon>
+                <span>{{ buildMode() ? 'Abbrechen' : 'Tower bauen' }}</span>
+              </button>
+              @if (buildMode()) {
+                <div class="td-build-hint">Klicke neben Strasse</div>
+              }
+              <!-- Start Wave Button -->
+              <button class="td-action-btn td-btn-green" (click)="startWave()"
+                      [disabled]="waveActive() || buildMode() || isGameOver()">
+                <mat-icon>{{ waveActive() ? 'hourglass_empty' : 'play_arrow' }}</mat-icon>
+                <span>{{ waveActive() ? 'Welle laeuft...' : 'Wave starten' }}</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- Debug Section (collapsible) -->
+          @if (debugMode()) {
+            <section class="td-panel td-debug-panel">
+              <div class="td-panel-header">DEBUG</div>
+              <div class="td-panel-content">
+                <app-td-debug-panel
+                  [streetCount]="streetCount()"
+                  [enemyCount]="enemyCount()"
+                  [enemySpeed]="enemySpeed()"
+                  [enemyType]="enemyType()"
+                  [enemyTypes]="enemyTypes"
+                  [spawnMode]="spawnMode()"
+                  [streetsVisible]="streetsVisible()"
+                  [routesVisible]="routesVisible()"
+                  [heightDebugVisible]="heightDebugVisible()"
+                  [waveActive]="waveActive()"
+                  [baseHealth]="gameState.baseHealth()"
+                  [debugLog]="debugLog()"
+                  [hqLocation]="editableHqLocation()"
+                  [spawnLocations]="editableSpawnLocations()"
+                  [isApplying]="isApplyingLocation()"
+                  (enemyCountChange)="onEnemyCountChange($event)"
+                  (enemySpeedChange)="onSpeedChange($event)"
+                  (enemyTypeChange)="onEnemyTypeChange($event)"
+                  (toggleSpawnMode)="toggleSpawnMode()"
+                  (toggleStreets)="toggleStreets()"
+                  (toggleRoutes)="toggleRoutes()"
+                  (toggleHeightDebug)="toggleHeightDebug()"
+                  (killAll)="killAllEnemies()"
+                  (healHq)="healHq()"
+                  (clearLog)="clearDebugLog()"
+                  (logCamera)="logCameraPosition()"
+                  (applyNewLocation)="onApplyNewLocation($event)"
+                  (resetLocations)="onResetLocations()"
+                />
+              </div>
+            </section>
+          }
+          </div><!-- /td-sidebar-content -->
+        </aside>
       </div>
     </div>
   `,
   styles: `
     :host {
       display: contents;
+      ${TD_CSS_VARS}
     }
 
-    .tower-defense-container {
+    /* === Container === */
+    .td-container {
       display: flex;
       flex-direction: column;
       width: 90vw;
-      max-width: 1200px;
-      height: 80vh;
-      max-height: 800px;
-      background: #0a0a0a;
-      border-radius: 12px;
+      max-width: 1400px;
+      height: 85vh;
+      max-height: 900px;
+      background: var(--td-bg-dark);
+      border: 2px solid var(--td-frame-mid);
+      border-top-color: var(--td-frame-light);
+      border-radius: 4px;
       overflow: hidden;
+      font-family: 'JetBrains Mono', monospace;
     }
 
-    .tower-defense-container.fullscreen {
+    .td-container.td-fullscreen {
       width: 100vw;
       max-width: 100vw;
       height: 100vh;
       max-height: 100vh;
       border-radius: 0;
+      border: none;
     }
 
-    .game-header {
+    /* === Header === */
+    .td-header {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 16px 20px;
-      background: linear-gradient(135deg, rgba(147, 51, 234, 0.3) 0%, rgba(34, 197, 94, 0.2) 100%);
-      border-bottom: 2px solid rgba(147, 51, 234, 0.5);
-      position: relative;
+      padding: 4px 12px;
+      background:
+        linear-gradient(rgba(15, 19, 15, 0.8), rgba(15, 19, 15, 0.8)),
+        url('/assets/games/tower-defense/images/425.jpg') repeat;
+      background-size: auto, 64px 64px;
+      border-bottom: 3px solid var(--td-panel-shadow);
+      border-top: 1px solid var(--td-frame-light);
+      box-shadow:
+        0 4px 8px rgba(0, 0, 0, 0.5),
+        0 2px 4px rgba(0, 0, 0, 0.3),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Textured Background Overlay - fuer Lesbarkeit auf Stein-Textur */
+    .td-text-badge {
+      background: var(--td-panel-shadow);
+      padding: 4px 10px;
+      border: 1px solid var(--td-frame-dark);
+      border-top-color: var(--td-frame-mid);
+    }
+
+    .td-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--td-panel-shadow);
+      padding: 4px 10px;
+      border: 1px solid var(--td-frame-dark);
+      border-top-color: var(--td-frame-mid);
+    }
+
+    .td-title-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: var(--td-gold);
+    }
+
+    .td-title {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--td-gold);
+      text-transform: uppercase;
+    }
+
+    .td-location {
+      font-size: 10px;
+      color: var(--td-text-secondary);
+      padding-left: 8px;
+      border-left: 1px solid var(--td-frame-mid);
+    }
+
+    .td-header-stats {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+      margin-right: 8px;
+    }
+
+    .td-stat {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--td-panel-shadow);
+      padding: 4px 10px;
+      min-width: 50px;
+      border: 1px solid var(--td-frame-dark);
+      border-top-color: var(--td-frame-mid);
+    }
+
+    .td-stat mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+
+    .td-stat.hp { color: var(--td-health-red); }
+    .td-stat.wave { color: var(--td-teal); }
+    .td-stat.enemies { color: var(--td-warn-orange); }
+    .td-stat.fps { color: var(--td-text-muted); font-size: 10px; min-width: auto; }
+
+    .td-close-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      background: var(--td-panel-shadow);
+      border: 1px solid var(--td-frame-mid);
+      border-top-color: var(--td-frame-light);
+      border-bottom-color: var(--td-frame-dark);
+      color: var(--td-text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .td-close-btn mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    .td-close-btn:hover {
+      background: var(--td-health-red);
+      color: var(--td-text-primary);
+    }
+
+    /* === Main Layout === */
+    .td-main {
+      flex: 1;
+      display: flex;
       overflow: hidden;
     }
 
-    .header-glow {
-      display: none;
-    }
-
-    .title-icon {
-      font-size: 28px;
-      width: 28px;
-      height: 28px;
-      color: #22c55e;
-      position: relative;
-      z-index: 1;
-    }
-
-    .game-header h2 {
-      margin: 0;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: 3px;
-      background: linear-gradient(135deg, #fff 0%, #22c55e 50%, #9333ea 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      position: relative;
-      z-index: 1;
-    }
-
-    .subtitle {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.5);
-      position: relative;
-      z-index: 1;
-    }
-
-    .close-btn {
-      margin-left: auto;
-      color: rgba(255, 255, 255, 0.7);
-      position: relative;
-      z-index: 1;
-    }
-
-    .close-btn:hover {
-      color: #ef4444;
-    }
-
-    .game-content {
+    /* === Canvas Area === */
+    .td-canvas-area {
       flex: 1;
       position: relative;
-      overflow: hidden;
+      background: #000;
     }
 
-    .game-canvas {
+    .td-canvas {
       width: 100%;
       height: 100%;
     }
 
-    .game-canvas.hidden {
+    .td-canvas.hidden {
       visibility: hidden;
     }
 
-    .loading-overlay,
-    .error-overlay {
+    .td-controls-hint {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      font-size: 11px;
+      color: var(--td-text-secondary);
+      background: rgba(20, 24, 21, 0.85);
+      padding: 4px 8px;
+      border-radius: 3px;
+      border: 1px solid var(--td-frame-dark);
+      z-index: 5;
+    }
+
+    /* Quick Actions (bottom right over canvas) */
+    .td-quick-actions {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      display: flex;
+      gap: 4px;
+      z-index: 5;
+    }
+
+    .td-quick-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: var(--td-panel-main);
+      border: 1px solid var(--td-frame-mid);
+      border-top-color: var(--td-frame-light);
+      border-bottom-color: var(--td-frame-dark);
+      color: var(--td-text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .td-quick-btn mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    .td-quick-btn:hover {
+      background: var(--td-frame-mid);
+      color: var(--td-text-primary);
+    }
+
+    .td-quick-btn.active {
+      background: var(--td-teal);
+      color: var(--td-bg-dark);
+    }
+
+    /* === Sidebar === */
+    .td-sidebar {
+      width: 200px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .td-sidebar-content {
+      flex: 1;
+      background:
+        linear-gradient(rgba(15, 19, 15, 0.75), rgba(15, 19, 15, 0.75)),
+        url('/assets/games/tower-defense/images/425.jpg') repeat;
+      background-size: auto, 100px 100px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 8px;
+      overflow-y: auto;
+      position: relative;
+      z-index: 1;
+      border-left: 4px solid var(--td-panel-shadow);
+      box-shadow:
+        -6px 0 12px rgba(0, 0, 0, 0.5),
+        -3px 0 6px rgba(0, 0, 0, 0.3),
+        inset 4px 0 8px rgba(0, 0, 0, 0.4);
+    }
+
+    /* === Panel (WC3 Style) === */
+    .td-panel {
+      background: var(--td-panel-main);
+      border-top: 1px solid var(--td-frame-light);
+      border-left: 1px solid var(--td-frame-mid);
+      border-right: 1px solid var(--td-frame-dark);
+      border-bottom: 2px solid var(--td-frame-dark);
+    }
+
+    .td-panel-header {
+      padding: 6px 10px;
+      background: var(--td-panel-secondary);
+      border-bottom: 1px solid var(--td-frame-dark);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--td-gold);
+      text-transform: uppercase;
+    }
+
+    .td-panel-content {
+      padding: 8px;
+    }
+
+    /* === Status Panel === */
+    .td-stat-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .td-stat-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .td-stat-label {
+      font-size: 10px;
+      color: var(--td-text-muted);
+      width: 50px;
+    }
+
+    .td-stat-value {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--td-text-primary);
+    }
+
+    .td-stat-value.td-gold { color: var(--td-gold); }
+    .td-stat-value.td-orange { color: var(--td-warn-orange); }
+
+    /* HP Bar */
+    .td-hp-bar {
+      flex: 1;
+      height: 10px;
+      background: var(--td-hp-bg);
+      border: 1px solid var(--td-frame-dark);
+      border-top-color: var(--td-frame-mid);
+    }
+
+    .td-hp-fill {
+      height: 100%;
+      background: var(--td-hp-fill);
+      transition: width 0.3s ease;
+    }
+
+    /* === Actions Panel === */
+    .td-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .td-action-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 8px 10px;
+      background: var(--td-panel-secondary);
+      border: 1px solid var(--td-frame-mid);
+      border-top-color: var(--td-frame-light);
+      border-bottom-color: var(--td-frame-dark);
+      color: var(--td-text-primary);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .td-action-btn mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: var(--td-teal);
+    }
+
+    .td-action-btn:hover:not(:disabled) {
+      background: var(--td-frame-mid);
+    }
+
+    .td-action-btn.active {
+      background: var(--td-gold-dark);
+      color: var(--td-bg-dark);
+    }
+
+    .td-action-btn.active mat-icon {
+      color: var(--td-bg-dark);
+    }
+
+    .td-action-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .td-action-btn.td-btn-green:not(:disabled) {
+      background: var(--td-green);
+      color: var(--td-bg-dark);
+    }
+
+    .td-action-btn.td-btn-green mat-icon {
+      color: var(--td-bg-dark);
+    }
+
+    .td-action-btn.td-btn-green:hover:not(:disabled) {
+      filter: brightness(1.1);
+    }
+
+    .td-build-hint {
+      padding: 4px 8px;
+      background: var(--td-warn-orange);
+      color: var(--td-bg-dark);
+      font-size: 10px;
+      font-weight: 600;
+      text-align: center;
+      animation: td-pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes td-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* === Camera Buttons === */
+    .td-camera-btns {
+      display: flex;
+      gap: 4px;
+    }
+
+    .td-icon-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      background: var(--td-panel-secondary);
+      border: 1px solid var(--td-frame-mid);
+      border-top-color: var(--td-frame-light);
+      border-bottom-color: var(--td-frame-dark);
+      color: var(--td-text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .td-icon-btn mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    .td-icon-btn:hover {
+      background: var(--td-frame-mid);
+      color: var(--td-text-primary);
+    }
+
+    .td-icon-btn.active {
+      background: var(--td-teal);
+      color: var(--td-bg-dark);
+    }
+
+    /* === Debug Panel === */
+    .td-debug-panel {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .td-debug-panel .td-panel-content {
+      padding: 0;
+      height: 100%;
+    }
+
+    /* === Overlays === */
+    .td-loading-overlay,
+    .td-error-overlay {
       position: absolute;
       top: 0;
       left: 0;
@@ -355,298 +722,118 @@ export interface SpawnPoint {
       align-items: center;
       justify-content: center;
       gap: 16px;
-      background: rgba(10, 10, 10, 0.95);
+      background: var(--td-bg-dark);
       z-index: 10;
     }
 
-    .loading-overlay p {
-      font-family: 'JetBrains Mono', monospace;
-      color: rgba(255, 255, 255, 0.7);
+    .td-loading-overlay p {
+      color: var(--td-text-secondary);
+      font-size: 13px;
     }
 
-    .error-overlay {
+    .td-error-overlay {
       padding: 40px;
       text-align: center;
     }
 
-    .error-icon {
+    .td-error-icon {
       font-size: 64px;
       width: 64px;
       height: 64px;
-      color: #f97316;
+      color: var(--td-warn-orange);
     }
 
-    .error-overlay h3 {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 24px;
-      color: #f97316;
+    .td-error-overlay h3 {
+      font-size: 20px;
+      color: var(--td-warn-orange);
       margin: 0;
     }
 
-    .error-overlay p {
-      color: rgba(255, 255, 255, 0.7);
+    .td-error-overlay p {
+      color: var(--td-text-secondary);
       max-width: 400px;
     }
 
-    .token-instructions {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(147, 51, 234, 0.3);
-      border-radius: 8px;
-      padding: 20px;
+    .td-token-instructions {
+      background: var(--td-panel-secondary);
+      border: 1px solid var(--td-frame-mid);
+      padding: 16px;
       text-align: left;
       margin: 16px 0;
     }
 
-    .token-instructions p {
-      margin: 8px 0;
-      font-size: 14px;
-    }
-
-    .token-instructions a {
-      color: #9333ea;
-    }
-
-    .token-instructions code {
-      background: rgba(147, 51, 234, 0.2);
+    .td-token-instructions p { margin: 8px 0; font-size: 12px; }
+    .td-token-instructions a { color: var(--td-teal); }
+    .td-token-instructions code {
+      background: var(--td-panel-shadow);
       padding: 2px 6px;
-      border-radius: 4px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-    }
-
-    .token-instructions pre {
-      background: rgba(0, 0, 0, 0.5);
-      border: 1px solid rgba(147, 51, 234, 0.3);
-      padding: 12px;
-      border-radius: 6px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      color: #22c55e;
-      overflow-x: auto;
-    }
-
-    .status-panel {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      display: flex;
-      gap: 8px;
-      z-index: 5;
-    }
-
-    .status-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: 6px 10px;
-      background: rgba(0, 0, 0, 0.8);
-      border-radius: 6px;
-    }
-
-    .status-item mat-icon {
-      font-size: 14px;
-      width: 14px;
-      height: 14px;
-    }
-
-    .status-item span {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .status-item.hp mat-icon { color: #ef4444; }
-    .status-item.hp span { color: #ef4444; }
-    .status-item.wave mat-icon { color: #3b82f6; }
-    .status-item.wave span { color: #3b82f6; }
-    .status-item.towers mat-icon { color: #22c55e; }
-    .status-item.towers span { color: #22c55e; }
-    .status-item.enemies mat-icon { color: #f97316; }
-    .status-item.enemies span { color: #f97316; }
-
-    .game-controls {
-      position: absolute;
-      bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      z-index: 5;
-    }
-
-    .controls-box {
-      display: flex;
-      align-items: center;
-      gap: 0;
-      background: rgba(10, 10, 10, 0.95);
-      border: 2px solid rgba(147, 51, 234, 0.5);
-      border-radius: 12px;
-      padding: 4px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 30px rgba(147, 51, 234, 0.2);
-    }
-
-    .control-btn {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 20px;
-      border: none;
-      border-radius: 8px;
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 600;
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .control-btn mat-icon {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-    }
-
-    .tower-btn {
-      background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
-      color: white;
-    }
-
-    .tower-btn:hover {
-      background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
-      transform: scale(1.02);
-    }
-
-    .tower-btn.active {
-      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
-    }
-
-    .control-divider {
-      width: 2px;
-      height: 32px;
-      background: rgba(147, 51, 234, 0.4);
-      margin: 0 4px;
-    }
-
-    .wave-btn {
-      background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
-      color: white;
-    }
-
-    .wave-btn:hover:not(:disabled) {
-      background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
-      transform: scale(1.02);
-    }
-
-    .wave-btn:disabled {
-      background: rgba(100, 100, 100, 0.4);
-      color: rgba(255, 255, 255, 0.4);
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .build-hint {
-      padding: 6px 12px;
-      background: rgba(147, 51, 234, 0.9);
-      border-radius: 6px;
-      font-family: 'JetBrains Mono', monospace;
       font-size: 11px;
-      color: white;
-      animation: pulse-hint 1.5s ease-in-out infinite;
+    }
+    .td-token-instructions pre {
+      background: var(--td-panel-shadow);
+      border: 1px solid var(--td-frame-dark);
+      padding: 10px;
+      font-size: 11px;
+      color: var(--td-green);
     }
 
-    @keyframes pulse-hint {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
+    /* Generic Buttons */
+    .td-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: var(--td-gold);
+      border: none;
+      border-top: 1px solid var(--td-edge-highlight);
+      border-bottom: 2px solid var(--td-gold-dark);
+      color: var(--td-bg-dark);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
     }
 
-    .camera-controls {
+    .td-btn:hover { filter: brightness(1.1); }
+
+    .td-btn-gold { background: var(--td-gold); border-bottom-color: var(--td-gold-dark); }
+    .td-btn-green {
+      background: var(--td-green);
+      border-bottom-color: #6aab6c;
+    }
+
+    /* Gathering Overlay */
+    .td-gathering-overlay {
       position: absolute;
-      bottom: 12px;
-      right: 12px;
-      display: flex;
-      gap: 6px;
-      z-index: 5;
-    }
-
-    .camera-controls button {
-      width: 36px !important;
-      height: 36px !important;
-      background: rgba(0, 0, 0, 0.7) !important;
-      color: rgba(255, 255, 255, 0.8) !important;
-    }
-
-    .camera-controls button:hover {
-      background: rgba(147, 51, 234, 0.8) !important;
-    }
-
-    .camera-controls button.active {
-      background: rgba(34, 197, 94, 0.8) !important;
-    }
-
-    .camera-controls button mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
-
-    .controls-hint {
-      position: absolute;
-      bottom: 12px;
-      left: 12px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 9px;
-      color: rgba(255, 255, 255, 0.4);
-      z-index: 5;
-    }
-
-    /* Attribution for Google 3D Tiles */
-    .attribution {
-      position: absolute;
-      bottom: 4px;
-      right: 4px;
-      font-size: 10px;
-      color: rgba(255, 255, 255, 0.5);
-      z-index: 5;
-    }
-
-    .gathering-overlay {
-      position: absolute;
-      top: 60px;
+      top: 20px;
       left: 50%;
       transform: translateX(-50%);
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 12px 24px;
-      background: rgba(0, 0, 0, 0.85);
-      border: 2px solid #f97316;
-      border-radius: 12px;
+      padding: 10px 20px;
+      background: var(--td-panel-main);
+      border: 2px solid var(--td-warn-orange);
       z-index: 10;
-      animation: pulse-gathering 1s ease-in-out infinite;
+      animation: td-pulse 1s ease-in-out infinite;
     }
 
-    .gathering-overlay mat-icon {
-      color: #f97316;
-      font-size: 24px;
-      width: 24px;
-      height: 24px;
+    .td-gathering-overlay mat-icon {
+      color: var(--td-warn-orange);
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
     }
 
-    .gathering-overlay span {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
+    .td-gathering-overlay span {
+      font-size: 12px;
       font-weight: 600;
-      color: #f97316;
-      letter-spacing: 1px;
+      color: var(--td-warn-orange);
     }
 
-    @keyframes pulse-gathering {
-      0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
-      50% { opacity: 0.8; transform: translateX(-50%) scale(1.02); }
-    }
-
-    .gameover-overlay {
+    /* Game Over Overlay */
+    .td-gameover-overlay {
       position: absolute;
       top: 0;
       left: 0;
@@ -655,74 +842,56 @@ export interface SpawnPoint {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.8);
       z-index: 20;
-      animation: fade-in 0.5s ease;
+      animation: td-fade-in 0.5s ease;
     }
 
-    @keyframes fade-in {
+    @keyframes td-fade-in {
       from { opacity: 0; }
       to { opacity: 1; }
     }
 
-    .gameover-content {
+    .td-gameover-content {
       text-align: center;
       padding: 40px 60px;
-      background: rgba(10, 10, 10, 0.95);
-      border: 3px solid #ef4444;
-      border-radius: 16px;
-      box-shadow: 0 0 60px rgba(239, 68, 68, 0.5);
+      background: var(--td-panel-main);
+      border: 3px solid var(--td-health-red);
+      box-shadow: 0 0 40px rgba(177, 68, 54, 0.5);
     }
 
-    .gameover-content h1 {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 64px;
+    .td-gameover-content h1 {
+      font-size: 48px;
       font-weight: 900;
-      color: #ef4444;
+      color: var(--td-health-red);
       margin: 0 0 16px 0;
-      letter-spacing: 8px;
-      text-shadow: 0 0 30px rgba(239, 68, 68, 0.8);
-      animation: shake 0.5s ease-in-out;
+      letter-spacing: 6px;
+      animation: td-shake 0.5s ease-in-out;
     }
 
-    @keyframes shake {
+    @keyframes td-shake {
       0%, 100% { transform: translateX(0); }
-      20% { transform: translateX(-8px); }
-      40% { transform: translateX(8px); }
-      60% { transform: translateX(-4px); }
-      80% { transform: translateX(4px); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-3px); }
+      80% { transform: translateX(3px); }
     }
 
-    .gameover-content p {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 16px;
-      color: rgba(255, 255, 255, 0.7);
-      margin: 0 0 32px 0;
+    .td-gameover-content p {
+      font-size: 14px;
+      color: var(--td-text-secondary);
+      margin: 0 0 24px 0;
     }
 
-    .restart-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 14px 32px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
-      color: white !important;
-      border-radius: 8px;
+    .td-gameover-content .td-btn {
+      padding: 12px 28px;
+      font-size: 14px;
     }
 
-    .restart-btn:hover {
-      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
-      transform: scale(1.05);
-    }
-
-    .restart-btn mat-icon {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
+    .td-gameover-content .td-btn mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
     }
   `,
 })
@@ -765,6 +934,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly baseCoords = signal(DEFAULT_BASE_COORDS);
   readonly centerCoords = signal(DEFAULT_CENTER_COORDS);
   readonly buildMode = signal(false);
+  readonly fps = signal(0);
 
   // Editable location settings (for debug panel)
   readonly editableHqLocation = signal<LocationConfig | null>(null);
@@ -789,7 +959,8 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly MIN_DISTANCE_TO_SPAWN = 30;
   private readonly TOWER_RANGE = 60;
 
-  private tiltAngle = 45;
+  // Stored initial camera position (captured after tiles load)
+  private initialCameraPosition: { x: number; y: number; z: number } | null = null;
 
   ngOnInit(): void {
     this.initializeEditableLocations();
@@ -894,10 +1065,21 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       // Start render loop
       this.engine.startRenderLoop();
 
-      this.resetCamera();
-
       // Schedule overlay height updates once tiles are loaded
       this.scheduleOverlayHeightUpdate();
+
+      // Capture initial camera position after tiles stabilize (2 seconds)
+      setTimeout(() => {
+        if (this.engine) {
+          const cam = this.engine.getCamera();
+          this.initialCameraPosition = {
+            x: cam.position.x,
+            y: cam.position.y,
+            z: cam.position.z,
+          };
+          console.log('[Camera] Initial position captured:', this.initialCameraPosition);
+        }
+      }, 2000);
 
       this.loading.set(false);
     } catch (err) {
@@ -945,7 +1127,8 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         let clickedTower = null;
 
         for (const tower of towers) {
-          const towerLocal = this.engine.sync.geoToLocal(tower.position.lat, tower.position.lon, tower.position.height || 0);
+          // Use geoToLocalSimple for consistency with raycast results
+          const towerLocal = this.engine.sync.geoToLocalSimple(tower.position.lat, tower.position.lon, tower.position.height || 0);
           const dist = hitPoint.distanceTo(towerLocal);
           if (dist < 15) { // 15m click radius
             clickedTower = tower;
@@ -1306,6 +1489,11 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
    * Called each frame for animations
    */
   private onEngineUpdate(deltaTime: number): void {
+    // Update FPS display
+    if (this.engine) {
+      this.fps.set(this.engine.getFPS());
+    }
+
     // Rotate HQ marker
     if (this.baseMarker) {
       this.baseMarker.rotation.y += deltaTime * 0.001; // Slow rotation
@@ -1876,15 +2064,20 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   resetCamera(): void {
     if (!this.engine) return;
 
-    // With ThreeTilesEngine + ReorientationPlugin, origin (HQ) is at (0,0,0)
-    // Camera position in local coordinates (meters):
-    // Y = height above ground, Z = distance south of origin
-    this.engine.setLocalCameraPosition(0, 350, 250, 0, 0, 0);
-  }
-
-  toggleTilt(): void {
-    this.tiltAngle = this.tiltAngle === 45 ? 70 : this.tiltAngle === 70 ? 20 : 45;
-    this.resetCamera();
+    // Use stored initial camera position if available
+    if (this.initialCameraPosition) {
+      const pos = this.initialCameraPosition;
+      // Look at terrain level (Y - 400 since camera is 400m above ground)
+      const lookAtY = pos.y - 400;
+      this.engine.setLocalCameraPosition(pos.x, pos.y, pos.z, 0, lookAtY, 0);
+    } else {
+      // Fallback: calculate from terrain (less accurate before tiles fully load)
+      const base = this.baseCoords();
+      const terrainY = this.engine.getTerrainHeightAtGeo(base.latitude, base.longitude) ?? 0;
+      const heightAboveGround = 400;
+      const cameraY = terrainY + heightAboveGround;
+      this.engine.setLocalCameraPosition(0, cameraY, -heightAboveGround, 0, terrainY, 0);
+    }
   }
 
   toggleStreets(): void {
@@ -1921,7 +2114,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         z: camera.position.z,
       },
       hq: this.baseCoords(),
-      tiltAngle: this.tiltAngle,
+      tiltAngle: 45, // fixed
     };
 
     const output = JSON.stringify(data, null, 2);
@@ -2523,8 +2716,8 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   private flyToCenter(): void {
     if (!this.engine) return;
 
-    // With ReorientationPlugin, center (HQ) is always at origin (0,0,0)
-    this.engine.setLocalCameraPosition(0, 400, 300, 0, 0, 0);
+    // Use resetCamera for consistent positioning
+    this.resetCamera();
   }
 
   private saveLocationsToStorage(): void {
