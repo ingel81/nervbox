@@ -68,6 +68,11 @@ export class ThreeTilesEngine {
   // Spatial audio manager
   readonly spatialAudio: SpatialAudioManager;
 
+  // Callback for when camera controls drag ends (for distinguishing clicks from pans)
+  onControlsDragEnd: (() => void) | null = null;
+  private controlsStartTime = 0;
+  private controlsStartCameraPos = new THREE.Vector3();
+
   // Test entities (for debugging)
   private testCube: THREE.Mesh | null = null;
   private debugHelpers: THREE.Object3D[] = [];
@@ -341,6 +346,26 @@ export class ThreeTilesEngine {
 
     // Set ellipsoid for controls (using deprecated method for now)
     this.controls.setEllipsoid(this.tilesRenderer.ellipsoid, this.tilesRenderer.group);
+
+    // Listen for drag start/end to distinguish clicks from pans
+    this.controls.addEventListener('start', () => {
+      this.controlsStartTime = performance.now();
+      this.controlsStartCameraPos.copy(this.camera.position);
+    });
+
+    this.controls.addEventListener('end', () => {
+      if (this.onControlsDragEnd) {
+        // Only consider it a drag if:
+        // - Duration > 150ms OR
+        // - Camera actually moved > 1 unit
+        const duration = performance.now() - this.controlsStartTime;
+        const cameraMoved = this.camera.position.distanceTo(this.controlsStartCameraPos) > 1;
+
+        if (duration > 150 || cameraMoved) {
+          this.onControlsDragEnd();
+        }
+      }
+    });
 
     // With ReorientationPlugin (recenter: true) and tiles.group.rotation.x = -PI/2:
     // - Origin (HQ) is at (0,0,0) in local space

@@ -1007,6 +1007,10 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   private cachedPaths = new Map<string, GeoPosition[]>();
   private buildPreviewMesh: THREE.Mesh | null = null;
   private lastPreviewValidation: boolean | null = null;
+
+  // Track when a camera drag ends to distinguish clicks from pans
+  private lastDragEndTime = 0;
+  private readonly DRAG_CLICK_THRESHOLD_MS = 100; // Ignore clicks within this time after drag end
   private previewThrottleId: number | null = null;
   private previewDebugCount = 0;
 
@@ -1151,13 +1155,20 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const canvas = this.gameCanvas.nativeElement;
 
+    // Track when camera controls finish dragging
+    this.engine.onControlsDragEnd = () => {
+      this.lastDragEndTime = performance.now();
+    };
+
     // Click handler
     canvas.addEventListener('click', (event: MouseEvent) => {
       if (!this.engine) return;
 
-      const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
+      // Ignore clicks that happen right after a camera drag (pan/rotate/zoom)
+      const timeSinceDragEnd = performance.now() - this.lastDragEndTime;
+      if (timeSinceDragEnd < this.DRAG_CLICK_THRESHOLD_MS) {
+        return;
+      }
 
       // Raycast to get world position
       const hitPoint = this.engine.raycastTerrain(event.clientX, event.clientY);
