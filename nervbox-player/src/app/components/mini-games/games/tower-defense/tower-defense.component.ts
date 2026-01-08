@@ -855,6 +855,11 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       await this.engine.initialize();
       this.engine.resize(rect.width, rect.height);
 
+      // Register callback for automatic terrain height refresh when tiles load
+      this.engine.setOnTilesLoadCallback(() => {
+        this.onTilesLoaded();
+      });
+
       // Preload 3D models in background
       this.engine.preloadModels().then(() => {
         console.log('[TD] All Three.js models preloaded');
@@ -1088,7 +1093,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     this.engine.setOverlayBaseY(originTerrainY);
 
     let hits = 0, misses = 0;
-    const showDebug = this.heightDebugVisible();
+    // Always create debug markers (hidden by default) so toggleHeightDebug doesn't need to re-render
     const debugMarkerInterval = 10; // Only show every Nth marker to reduce clutter
     let debugMarkerCount = 0;
 
@@ -1109,15 +1114,15 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
           local.y = (terrainY - originTerrainY) + HEIGHT_ABOVE_GROUND;
           points.push(local);
 
-          // Add debug marker if enabled (only every Nth point)
-          if (showDebug && debugMarkerCount % debugMarkerInterval === 0) {
+          // Add debug marker (only every Nth point) - always create, visibility controlled separately
+          if (debugMarkerCount % debugMarkerInterval === 0) {
             this.addHeightDebugMarker(local, terrainY, true);
           }
           debugMarkerCount++;
         } else {
           misses++;
-          // Add red debug marker for misses if enabled
-          if (showDebug && debugMarkerCount % debugMarkerInterval === 0) {
+          // Add red debug marker for misses (only every Nth point)
+          if (debugMarkerCount % debugMarkerInterval === 0) {
             const localMiss = this.engine.sync.geoToLocalSimple(node.lat, node.lon, 5);
             this.addHeightDebugMarker(localMiss, null, false);
           }
@@ -1148,10 +1153,11 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const overlayGroup = this.engine.getOverlayGroup();
 
-    // Create debug group if not exists
+    // Create debug group if not exists (hidden by default)
     if (!this.heightDebugGroup) {
       this.heightDebugGroup = new THREE.Group();
       this.heightDebugGroup.name = 'heightDebugGroup';
+      this.heightDebugGroup.visible = this.heightDebugVisible();
       overlayGroup.add(this.heightDebugGroup);
     }
 
@@ -1194,12 +1200,65 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Toggle height debug visualization
+   * Toggle height debug visualization (just visibility, no re-render)
    */
   toggleHeightDebug(): void {
     this.heightDebugVisible.update((v) => !v);
-    // Re-render streets to update debug markers
+    // Just toggle visibility of existing debug group - no re-render needed
+    if (this.heightDebugGroup) {
+      this.heightDebugGroup.visible = this.heightDebugVisible();
+    }
+  }
+
+  /**
+   * Called automatically when tiles finish loading (LOD changes)
+   * Re-renders terrain-following elements with updated geometry
+   */
+  private onTilesLoaded(): void {
+    if (!this.engine || !this.streetNetwork) return;
+
+    console.log('[TD] Tiles loaded - refreshing terrain heights');
+
+    // Re-render streets with new terrain data
     this.renderStreets();
+
+    // Update marker heights
+    this.updateMarkerHeights();
+
+    // Re-render route lines (clear and re-create)
+    this.refreshRouteLines();
+  }
+
+  /**
+   * Re-render all route lines with updated terrain heights
+   */
+  private refreshRouteLines(): void {
+    if (!this.engine) return;
+
+    const overlayGroup = this.engine.getOverlayGroup();
+    const wasVisible = this.routesVisible();
+
+    // Remove existing route lines
+    for (const line of this.routeLines) {
+      overlayGroup.remove(line);
+      line.geometry.dispose();
+      if (Array.isArray(line.material)) {
+        line.material.forEach((m) => m.dispose());
+      } else {
+        line.material.dispose();
+      }
+    }
+    this.routeLines = [];
+
+    // Re-create route lines for all spawns
+    for (const spawn of this.spawnPoints()) {
+      this.showPathFromSpawn(spawn);
+    }
+
+    // Restore visibility state
+    for (const line of this.routeLines) {
+      line.visible = wasVisible;
+    }
   }
 
   private addPredefinedSpawns(): void {
