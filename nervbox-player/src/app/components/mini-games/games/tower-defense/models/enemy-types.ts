@@ -20,6 +20,7 @@ export interface EnemyTypeConfig {
 
   // Animation
   hasAnimations: boolean;
+  idleAnimation?: string;
   walkAnimation?: string;
   deathAnimation?: string;
   animationSpeed?: number;
@@ -56,6 +57,7 @@ export const ENEMY_TYPES: Record<string, EnemyTypeConfig> = {
     damage: 10,
     reward: 10,
     hasAnimations: true,
+    idleAnimation: 'Armature|Idle',
     walkAnimation: 'Armature|Walk',
     deathAnimation: 'Armature|Die',
     animationSpeed: 2.0,

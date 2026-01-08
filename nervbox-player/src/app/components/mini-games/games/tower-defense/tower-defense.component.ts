@@ -5,6 +5,8 @@ import {
   AfterViewInit,
   ElementRef,
   ViewChild,
+  ViewChildren,
+  QueryList,
   signal,
   inject,
   computed,
@@ -18,8 +20,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { ConfigService } from '../../../../core/services/config.service';
 import { OsmStreetService, Street, StreetNetwork } from './services/osm-street.service';
 import { EntityPoolService } from './services/entity-pool.service';
+import { ModelPreviewService } from './services/model-preview.service';
 import { GeoPosition } from './models/game.types';
-import { EnemyTypeId, getAllEnemyTypes } from './models/enemy-types';
+import { EnemyTypeId, getAllEnemyTypes, getEnemyType, EnemyTypeConfig } from './models/enemy-types';
 import { ApiService } from '../../../../core/services/api.service';
 import { DebugPanelComponent, LocationConfig, SpawnLocationConfig } from './components/debug-panel.component';
 import { LocationDialogComponent } from './components/location-dialog/location-dialog.component';
@@ -37,7 +40,7 @@ import * as THREE from 'three';
 // Theme
 import { TD_CSS_VARS } from './styles/td-theme';
 // Tower config
-import { TOWER_TYPES } from './configs/tower-types.config';
+import { TOWER_TYPES, getAllTowerTypes, TowerTypeConfig, TowerTypeId } from './configs/tower-types.config';
 
 // Default locations - can be overridden via debug settings
 const DEFAULT_CENTER_COORDS = {
@@ -95,6 +98,7 @@ export interface SpawnPoint {
     ProjectileManager,
     WaveManager,
     EntityPoolService,
+    ModelPreviewService,
   ],
   template: `
     <div class="td-container" [class.td-fullscreen]="!isDialog">
@@ -172,6 +176,33 @@ export interface SpawnPoint {
 
             <!-- Quick Actions (bottom right) -->
             <div class="td-quick-actions">
+              <!-- Layer Toggles (collapsible) -->
+              <div class="td-layer-toggles" [class.expanded]="layerMenuExpanded()">
+                <button class="td-layer-btn"
+                        [class.active]="streetsVisible()"
+                        (click)="toggleStreets()"
+                        matTooltip="Strassen anzeigen">
+                  <mat-icon>route</mat-icon>
+                </button>
+                <button class="td-layer-btn"
+                        [class.active]="routesVisible()"
+                        (click)="toggleRoutes()"
+                        matTooltip="Routen anzeigen">
+                  <mat-icon>timeline</mat-icon>
+                </button>
+                <button class="td-layer-btn"
+                        [class.active]="heightDebugVisible()"
+                        (click)="toggleHeightDebug()"
+                        matTooltip="Terrain-Hoehen debuggen">
+                  <mat-icon>terrain</mat-icon>
+                </button>
+              </div>
+              <button class="td-quick-btn td-layer-toggle-btn"
+                      [class.active]="layerMenuExpanded()"
+                      (click)="toggleLayerMenu()"
+                      matTooltip="Ebenen">
+                <mat-icon>{{ layerMenuExpanded() ? 'layers_clear' : 'layers' }}</mat-icon>
+              </button>
               <button class="td-quick-btn" (click)="resetCamera()" matTooltip="Kamera zuruecksetzen">
                 <mat-icon>my_location</mat-icon>
               </button>
@@ -215,10 +246,20 @@ export interface SpawnPoint {
           <section class="td-panel">
             <div class="td-panel-header">WELLE {{ gameState.waveNumber() }}</div>
             <div class="td-panel-content td-wave-section">
-              <div class="td-wave-stats">
-                <div class="td-stat-row">
-                  <span class="td-stat-label">Gegner</span>
-                  <span class="td-stat-value">{{ gameState.enemiesAlive() }}</span>
+              <div class="td-wave-info">
+                <div class="td-enemy-preview-container">
+                  <canvas #enemyPreviewCanvas class="td-enemy-preview-canvas" width="72" height="72"></canvas>
+                </div>
+                <div class="td-wave-stats">
+                  <div class="td-enemy-name">{{ currentEnemyConfig().name }}</div>
+                  <div class="td-stat-row">
+                    <span class="td-stat-label">HP</span>
+                    <span class="td-stat-value">{{ currentEnemyConfig().baseHp }}</span>
+                  </div>
+                  <div class="td-stat-row">
+                    <span class="td-stat-label">Gegner</span>
+                    <span class="td-stat-value">{{ gameState.enemiesAlive() }}</span>
+                  </div>
                 </div>
               </div>
               <button class="td-action-btn td-btn-green td-wave-btn" (click)="startWave()"
@@ -233,14 +274,30 @@ export interface SpawnPoint {
           <section class="td-panel">
             <div class="td-panel-header">BAUEN</div>
             <div class="td-panel-content td-build-section">
-              <button class="td-action-btn" [class.active]="buildMode()" (click)="toggleBuildMode()"
-                      [disabled]="isGameOver() || gameState.credits() < archerTowerConfig.cost">
-                <mat-icon>{{ buildMode() ? 'close' : 'add_location' }}</mat-icon>
-                <span>{{ buildMode() ? 'Abbrechen' : archerTowerConfig.name }}</span>
-                <span class="td-cost">{{ archerTowerConfig.cost }}</span>
-              </button>
               @if (buildMode()) {
                 <div class="td-build-hint">Klicke neben Strasse</div>
+                <button class="td-action-btn td-cancel-btn" (click)="toggleBuildMode()">
+                  <mat-icon>close</mat-icon>
+                  <span>Abbrechen</span>
+                </button>
+              } @else {
+                <div class="td-tower-grid">
+                  @for (tower of towerTypes; track tower.id) {
+                    <button class="td-tower-card"
+                            [class.disabled]="gameState.credits() < tower.cost"
+                            [disabled]="isGameOver() || gameState.credits() < tower.cost"
+                            (click)="selectTowerType(tower.id)"
+                            [matTooltip]="tower.damage + ' DMG | ' + tower.range + 'm | ' + tower.fireRate + '/s'">
+                      <canvas #towerPreviewCanvas
+                              class="td-tower-preview-canvas"
+                              [attr.data-tower-id]="tower.id"
+                              width="120"
+                              height="70"></canvas>
+                      <span class="td-tower-card-name">{{ tower.name }}</span>
+                      <span class="td-tower-card-cost">{{ tower.cost }}</span>
+                    </button>
+                  }
+                </div>
               }
             </div>
           </section>
@@ -295,9 +352,6 @@ export interface SpawnPoint {
                   [enemyType]="enemyType()"
                   [enemyTypes]="enemyTypes"
                   [spawnMode]="spawnMode()"
-                  [streetsVisible]="streetsVisible()"
-                  [routesVisible]="routesVisible()"
-                  [heightDebugVisible]="heightDebugVisible()"
                   [waveActive]="waveActive()"
                   [baseHealth]="gameState.baseHealth()"
                   [debugLog]="debugLog()"
@@ -308,9 +362,6 @@ export interface SpawnPoint {
                   (enemySpeedChange)="onSpeedChange($event)"
                   (enemyTypeChange)="onEnemyTypeChange($event)"
                   (toggleSpawnMode)="toggleSpawnMode()"
-                  (toggleStreets)="toggleStreets()"
-                  (toggleRoutes)="toggleRoutes()"
-                  (toggleHeightDebug)="toggleHeightDebug()"
                   (killAll)="killAllEnemies()"
                   (healHq)="healHq()"
                   (clearLog)="clearDebugLog()"
@@ -549,8 +600,55 @@ export interface SpawnPoint {
       bottom: 8px;
       right: 8px;
       display: flex;
+      align-items: flex-end;
       gap: 4px;
       z-index: 5;
+    }
+
+    .td-layer-toggles {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height 0.2s ease, opacity 0.15s ease;
+    }
+
+    .td-layer-toggles.expanded {
+      max-height: 120px;
+      opacity: 1;
+    }
+
+    .td-layer-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: var(--td-panel-main);
+      border: 1px solid var(--td-frame-mid);
+      border-top-color: var(--td-frame-light);
+      border-bottom-color: var(--td-frame-dark);
+      color: var(--td-text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .td-layer-btn mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    .td-layer-btn:hover {
+      background: var(--td-frame-mid);
+      color: var(--td-text-primary);
+    }
+
+    .td-layer-btn.active {
+      background: var(--td-teal);
+      color: var(--td-bg-dark);
     }
 
     .td-quick-btn {
@@ -582,6 +680,11 @@ export interface SpawnPoint {
     .td-quick-btn.active {
       background: var(--td-teal);
       color: var(--td-bg-dark);
+    }
+
+    .td-layer-toggle-btn.active {
+      background: var(--td-gold-dark);
+      color: var(--td-text-primary);
     }
 
     /* === Sidebar === */
@@ -763,10 +866,40 @@ export interface SpawnPoint {
       gap: 8px;
     }
 
+    .td-wave-info {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .td-enemy-preview-container {
+      flex-shrink: 0;
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 100%);
+      border: 1px solid var(--td-frame-dark);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .td-enemy-preview-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .td-enemy-name {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--td-warn-orange);
+      margin-bottom: 4px;
+    }
+
     .td-wave-stats {
       display: flex;
       flex-direction: column;
       gap: 4px;
+      flex: 1;
     }
 
     .td-stat-row {
@@ -797,6 +930,89 @@ export interface SpawnPoint {
       display: flex;
       flex-direction: column;
       gap: 6px;
+    }
+
+    .td-tower-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+
+    .td-tower-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      background: var(--td-panel-secondary);
+      border: 1px solid var(--td-frame-mid);
+      border-top-color: var(--td-frame-light);
+      border-bottom-color: var(--td-frame-dark);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: inherit;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .td-tower-card:hover:not(:disabled) {
+      border-color: var(--td-gold-dark);
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    }
+
+    .td-tower-card:disabled,
+    .td-tower-card.disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .td-tower-preview-canvas {
+      width: 100%;
+      height: 70px;
+      display: block;
+      background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.4) 100%);
+    }
+
+    .td-tower-card-name {
+      display: block;
+      padding: 4px 6px;
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--td-text-secondary);
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      background: var(--td-panel-main);
+      border-top: 1px solid var(--td-frame-dark);
+    }
+
+    .td-tower-card-cost {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      padding: 2px 6px;
+      background: var(--td-gold-dark);
+      color: var(--td-bg-dark);
+      font-size: 9px;
+      font-weight: 700;
+      border-radius: 2px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+
+    .td-tower-card:hover:not(:disabled) .td-tower-card-name {
+      color: var(--td-gold);
+    }
+
+    .td-cancel-btn {
+      background: var(--td-panel-secondary);
+    }
+
+    .td-cancel-btn mat-icon {
+      color: var(--td-red);
+    }
+
+    .td-cancel-btn:hover {
+      background: rgba(244, 67, 54, 0.2);
     }
 
     .td-cost {
@@ -1107,6 +1323,8 @@ export interface SpawnPoint {
 })
 export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('gameCanvas') gameCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('enemyPreviewCanvas') enemyPreviewCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChildren('towerPreviewCanvas') towerPreviewCanvases!: QueryList<ElementRef<HTMLCanvasElement>>;
 
   private readonly dialogRef = inject(MatDialogRef<TowerDefenseComponent>, { optional: true });
   private readonly dialog = inject(MatDialog);
@@ -1116,10 +1334,15 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly geocodingService = inject(GeocodingService);
   readonly gameState = inject(GameStateManager);
   private readonly entityPool = inject(EntityPoolService);
+  private readonly modelPreview = inject(ModelPreviewService);
 
   // Expose Math and tower config for template
   readonly Math = Math;
   readonly archerTowerConfig = TOWER_TYPES.archer;
+  readonly towerTypes = getAllTowerTypes();
+
+  // Selected tower type for building
+  readonly selectedTowerType = signal<TowerTypeId>('archer');
 
   private engine: ThreeTilesEngine | null = null;
   private streetNetwork: StreetNetwork | null = null;
@@ -1138,6 +1361,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly routesVisible = signal(true);
   readonly debugMode = signal(false);
   readonly heightDebugVisible = signal(false);
+  readonly layerMenuExpanded = signal(false);
   readonly enemySpeed = signal(5); // Meter pro Sekunde
   readonly streetCount = signal(0);
   // Debug: Spawn-Einstellungen
@@ -1159,6 +1383,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
   readonly waveActive = computed(() => this.gameState.phase() === 'wave');
   readonly isGameOver = computed(() => this.gameState.phase() === 'gameover');
+  readonly currentEnemyConfig = computed(() => getEnemyType(this.enemyType()));
 
   // Location name for header display
   readonly currentLocationName = computed(() => {
@@ -1206,6 +1431,13 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.initEngine();
+    // Initialize 3D previews after a short delay to ensure DOM is ready
+    setTimeout(() => this.initPreviews(), 100);
+
+    // Re-initialize tower previews when the list changes (e.g., after exiting build mode)
+    this.towerPreviewCanvases.changes.subscribe(() => {
+      setTimeout(() => this.initTowerPreviews(), 50);
+    });
   }
 
   ngOnDestroy(): void {
@@ -1213,6 +1445,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       cancelAnimationFrame(this.animationFrameId);
     }
     this.entityPool.destroy();
+    this.modelPreview.dispose();
     if (this.engine) {
       this.engine.dispose();
       this.engine = null;
@@ -1962,10 +2195,10 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       markerY = (terrainY - originTerrainY) + HEIGHT_ABOVE_GROUND;
     }
 
-    // Create spawn marker - smaller diamond, no rings
+    // Create spawn marker - same size as HQ, but no rings
     const marker = this.createDiamondMarker({
       color,
-      size: 0.5, // Half size of HQ marker
+      size: 1.0,
       showRings: false,
       glowIntensity: 0.8,
     });
@@ -2212,10 +2445,11 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.engine) return;
 
     const position: GeoPosition = { lat, lon, height };
+    const typeId = this.selectedTowerType();
 
-    const tower = this.gameState.placeTower(position, 'archer');
+    const tower = this.gameState.placeTower(position, typeId);
     if (tower) {
-      console.log('[TD] Tower placed at:', lat.toFixed(6), lon.toFixed(6), 'height:', height.toFixed(1));
+      console.log('[TD] Tower placed at:', lat.toFixed(6), lon.toFixed(6), 'height:', height.toFixed(1), 'type:', typeId);
     }
   }
 
@@ -2229,11 +2463,12 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     const terrainHeight = await this.engine.getTerrainHeight(lat, lon);
 
     const position: GeoPosition = { lat, lon, height: terrainHeight };
+    const typeId = this.selectedTowerType();
 
     // Use the new manager API - it handles rendering automatically
-    const tower = this.gameState.placeTower(position, 'archer');
+    const tower = this.gameState.placeTower(position, typeId);
     if (tower) {
-      console.log('[TD] Tower placed at:', lat, lon);
+      console.log('[TD] Tower placed at:', lat, lon, 'type:', typeId);
     }
   }
 
@@ -2248,6 +2483,77 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       }
       this.lastPreviewValidation = null;
     }
+  }
+
+  /**
+   * Select a tower type and activate build mode
+   */
+  selectTowerType(typeId: TowerTypeId): void {
+    this.selectedTowerType.set(typeId);
+    this.buildMode.set(true);
+    this.gameState.deselectAll();
+  }
+
+  /**
+   * Initialize all 3D model previews
+   */
+  private initPreviews(): void {
+    this.modelPreview.initialize();
+    this.initEnemyPreview();
+    this.initTowerPreviews();
+  }
+
+  /**
+   * Initialize the enemy preview in the wave section
+   */
+  private initEnemyPreview(): void {
+    if (!this.enemyPreviewCanvas?.nativeElement) return;
+
+    const enemyConfig = this.currentEnemyConfig();
+    this.modelPreview.createPreview(
+      'enemy-preview',
+      this.enemyPreviewCanvas.nativeElement,
+      {
+        modelUrl: enemyConfig.modelUrl,
+        scale: enemyConfig.scale * 0.5,
+        rotationSpeed: 0.4,
+        cameraDistance: 7,
+        cameraAngle: Math.PI / 12,
+        animationName: enemyConfig.walkAnimation || enemyConfig.idleAnimation || undefined,
+        animationTimeScale: 0.7,
+        lightIntensity: 1.3,
+        groundModel: true,
+      }
+    );
+  }
+
+  /**
+   * Initialize tower previews in the build menu
+   */
+  private initTowerPreviews(): void {
+    if (!this.towerPreviewCanvases) return;
+
+    this.towerPreviewCanvases.forEach((canvasRef) => {
+      const canvas = canvasRef.nativeElement;
+      const towerId = canvas.getAttribute('data-tower-id') as TowerTypeId;
+      if (!towerId) return;
+
+      const towerConfig = TOWER_TYPES[towerId];
+      if (!towerConfig) return;
+
+      this.modelPreview.createPreview(
+        `tower-preview-${towerId}`,
+        canvas,
+        {
+          modelUrl: towerConfig.modelUrl,
+          scale: towerConfig.scale * 0.4,
+          rotationSpeed: 0.4,
+          cameraDistance: 20,
+          cameraAngle: Math.PI / 5,
+          lightIntensity: 1.2,
+        }
+      );
+    });
   }
 
   /**
@@ -2384,6 +2690,10 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
   toggleDebug(): void {
     this.debugMode.update((v: boolean) => !v);
+  }
+
+  toggleLayerMenu(): void {
+    this.layerMenuExpanded.update((v) => !v);
   }
 
   logCameraPosition(): void {
