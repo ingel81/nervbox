@@ -159,19 +159,66 @@ export class EllipsoidSync {
   }
 
   /**
-   * Calculate heading angle from one geo position to another
-   * Returns heading in radians (0 = North, PI/2 = East)
+   * Calculate heading angle (rotation.y) for Three.js from one geo position to another.
+   *
+   * This is the PRIMARY method for calculating entity orientation.
+   * Uses local 3D coordinates for accurate results at any position.
+   *
+   * Coordinate system (with ReorientationPlugin + tiles.group.rotation.x = -PI/2):
+   * - Local: -X = East, +Z = North, +Y = Up
+   * - Geo: +lon = East, +lat = North
+   *
+   * Three.js rotation.y (counterclockwise from above):
+   * - 0 = facing +Z (North)
+   * - PI/2 = facing -X (East)
+   * - PI or -PI = facing -Z (South)
+   * - -PI/2 = facing +X (West)
+   *
+   * @param fromLat - Start latitude in degrees
+   * @param fromLon - Start longitude in degrees
+   * @param toLat - Target latitude in degrees
+   * @param toLon - Target longitude in degrees
+   * @returns Heading in radians for Three.js rotation.y
    */
   calculateHeading(fromLat: number, fromLon: number, toLat: number, toLon: number): number {
-    const from = this.geoToLocal(fromLat, fromLon, 0);
-    const to = this.geoToLocal(toLat, toLon, 0);
+    // Convert both points to local coordinates
+    const from = this.geoToLocalSimple(fromLat, fromLon, 0);
+    const to = this.geoToLocalSimple(toLat, toLon, 0);
 
+    // Calculate direction vector in local space
     const dx = to.x - from.x;
     const dz = to.z - from.z;
 
-    // With ReorientationPlugin: -X = East, +Z = North
-    // atan2(-dx, dz) gives angle from North clockwise
-    return Math.atan2(-dx, dz);
+    // Skip if too close (prevents NaN/jitter)
+    const distSq = dx * dx + dz * dz;
+    if (distSq < 0.0001) return 0;
+
+    // Calculate rotation.y: angle from +Z axis
+    // atan2(x, z) gives angle from +Z, positive = counterclockwise
+    // In our system: -X = East, so moving East means dx < 0
+    // atan2(dx, dz) directly gives correct rotation.y
+    return Math.atan2(dx, dz);
+  }
+
+  /**
+   * Calculate heading from geo direction deltas (for efficiency when you already have deltas)
+   *
+   * @param dLat - Latitude delta (positive = North)
+   * @param dLon - Longitude delta (positive = East)
+   * @returns Heading in radians for Three.js rotation.y
+   */
+  calculateHeadingFromDeltas(dLat: number, dLon: number): number {
+    // Skip if too small
+    if (Math.abs(dLat) < 0.0000001 && Math.abs(dLon) < 0.0000001) return 0;
+
+    // Convert geo deltas to local direction:
+    // - dLon > 0 (East) → local dx < 0 (because -X = East)
+    // - dLat > 0 (North) → local dz > 0 (because +Z = North)
+    // Using simple approximation (accurate enough for small deltas):
+    const localDx = -dLon; // East in geo = -X in local
+    const localDz = dLat;  // North in geo = +Z in local
+
+    return Math.atan2(localDx, localDz);
   }
 
   /**

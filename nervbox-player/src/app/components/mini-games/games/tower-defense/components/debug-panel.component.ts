@@ -48,7 +48,7 @@ export interface SpawnLocationConfig extends LocationConfig {
         </div>
         <div class="slider-row">
           <span class="label">Anzahl</span>
-          <input type="range" min="1" max="20" step="1"
+          <input type="range" min="1" max="1000" step="1"
                  [value]="enemyCount()"
                  (input)="onEnemyCountChange($event)" />
           <span class="value">{{ enemyCount() }}</span>

@@ -57,6 +57,7 @@ export class Enemy extends GameObject {
     if (this.typeConfig.movingSound) {
       this._audio.registerSound('moving', this.typeConfig.movingSound, {
         volume: this.typeConfig.movingSoundVolume ?? 0.3,
+        refDistance: this.typeConfig.movingSoundRefDistance ?? 30,
         loop: true,
         randomStart: this.typeConfig.randomSoundStart ?? false,
       });

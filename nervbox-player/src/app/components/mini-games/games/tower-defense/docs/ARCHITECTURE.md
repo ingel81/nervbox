@@ -8,18 +8,20 @@ Component-basierte Game Engine Architektur mit **Three.js + 3DTilesRendererJS** 
 
 **Hinweis:** Cesium.js wurde vollständig entfernt. Die Engine basiert jetzt zu 100% auf Three.js.
 
-### Noch zu testen (nach Cesium-Cleanup)
+### Feature-Status (nach Cesium-Cleanup)
 
-Die folgenden Features wurden nach dem Cesium-Cleanup noch nicht getestet:
-
-- [ ] Tower-Platzierung
-- [ ] Tower-Rendering (GLB Modelle)
-- [ ] Enemy-Spawning und Rendering
-- [ ] Enemy-Animationen (Walk, Death)
-- [ ] Projektile (Instanced Rendering)
-- [ ] Blut-Effekte (Partikel)
-- [ ] Feuer-Effekte
+- [x] Tower-Platzierung (mit Terrain-Höhe)
+- [x] Tower-Rendering (GLB Modelle)
+- [x] Enemy-Spawning und Rendering
+- [x] Enemy-Animationen (Walk, Death)
+- [x] Enemy-Heading (folgt Bewegungsrichtung)
+- [x] Pfad-Smoothing (Gegner folgen geglätteten Routen)
+- [x] Projektile (Instanced Rendering mit GLB-Modell)
+- [x] Projektil-Sound (arrow_01.mp3)
+- [x] Blut-Effekte (Partikel + Decals)
+- [x] Feuer-Effekte (bei Basis-Schaden + Game Over)
 - [ ] Tower-Selektion (Range-Anzeige)
+- [ ] Line-of-Sight für Projektile
 
 ## Design Prinzipien
 
@@ -103,6 +105,59 @@ getTerrainHeightAtGeo(lat: number, lon: number): number | null {
   return results.length > 0 ? results[0].point.y : null;
 }
 ```
+
+### Pfad-Höhen und Smoothing
+
+Gegner folgen gecachten Pfaden mit **geglätteten Höhen** statt live vom Terrain zu samplen.
+
+**Problem ohne Smoothing:**
+- Live-Terrain-Sampling würde Gegner über Bäume/Gebäude laufen lassen
+- Routen sollen aber DURCH Hindernisse gehen (geglättete Linie)
+
+**Lösung:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Route Creation (tower-defense.component.ts)                │
+│  1. Sample terrain height per path point                    │
+│  2. Smooth heights with smoothPathHeights()                 │
+│  3. Convert back to geo heights                             │
+│  4. Store in cachedPaths with smoothed heights              │
+└─────────────────────────────────────────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Enemy Movement (movement.component.ts)                     │
+│  - Interpolates height between path waypoints               │
+│  - Sets transform.terrainHeight from path data              │
+└─────────────────────────────────────────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Enemy Update (enemy.manager.ts)                            │
+│  - Checks if path segment has valid heights                 │
+│  - If yes: uses interpolated path height                    │
+│  - If no: falls back to live terrain sampling               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Height Conversion:**
+```typescript
+// Path creation: local Y → geo height
+const localTerrainY = smoothedPoint.y - HEIGHT_ABOVE_GROUND + originTerrainY;
+const geoHeight = localTerrainY + origin.height;
+
+// Enemy update: check for valid path heights
+const pathHasHeights = segment.from.height !== 0 && segment.to.height !== 0;
+if (pathHasHeights) {
+  geoHeight = enemy.transform.terrainHeight; // From MovementComponent interpolation
+}
+```
+
+**smoothPathHeights():**
+- Erkennt Höhenanomalien (Sprünge > 10m, Steigung > 50%)
+- Ersetzt Ausreißer durch interpolierte Werte
+- Verhindert dass Gebäude/Bäume die Route beeinflussen
 
 ---
 
@@ -337,10 +392,18 @@ class ThreeProjectileRenderer {
 class ThreeEffectsRenderer {
   constructor(scene: THREE.Scene, sync: CoordinateSync);
 
-  spawnBloodSplatter(lat, lon, height): void;
+  // Blood effects
+  spawnBloodSplatter(lat, lon, height, count?): string;  // Particle splatter
+  spawnBloodDecal(lat, lon, height, size?): string;      // Persistent ground stain
+
+  // Fire effects
   spawnFire(lat, lon, height, intensity): string;
   stopFire(id: string): void;
+  stopAllFires(): void;
+
   update(deltaTime: number): void;
+  clear(): void;
+  dispose(): void;
 }
 ```
 

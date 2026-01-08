@@ -24,9 +24,10 @@ export interface EnemyTypeConfig {
   deathAnimation?: string;
   animationSpeed?: number;
 
-  // Audio
+  // Audio (Spatial)
   movingSound?: string; // Loop-Sound während Bewegung (Asset-Pfad)
   movingSoundVolume?: number; // 0.0 - 1.0
+  movingSoundRefDistance?: number; // Distanz für volle Lautstärke (default: 30m)
 
   // Visual
   heightOffset: number; // Model-Höhe über Boden
@@ -60,9 +61,11 @@ export const ENEMY_TYPES: Record<string, EnemyTypeConfig> = {
     animationSpeed: 2.0,
     movingSound: '/assets/sounds/zombie-sound-2-357976.mp3',
     movingSoundVolume: 0.4,
+    movingSoundRefDistance: 25, // Zombies sind leiser aus der Ferne
     heightOffset: 0,
     healthBarOffset: 8, // Höher über dem Kopf
     canBleed: true, // Zombies bluten
+    headingOffset: 0, // Model faces backward, rotate 180°
     randomAnimationStart: true, // Animation bei zufälligem Frame starten
     randomSoundStart: true, // Sound bei zufälliger Position starten
     lateralOffset: 3.0, // Max. 3m seitlicher Versatz
@@ -81,6 +84,7 @@ export const ENEMY_TYPES: Record<string, EnemyTypeConfig> = {
     hasAnimations: false,
     movingSound: '/assets/sounds/tank-moving-143104.mp3',
     movingSoundVolume: 0.3,
+    movingSoundRefDistance: 50, // Panzer sind lauter (größerer refDistance-Bereich)
     heightOffset: 0,
     healthBarOffset: 10, // Höher über dem Panzer
     canBleed: false, // Panzer bluten nicht

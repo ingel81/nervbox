@@ -25,6 +25,7 @@ import {
   ThreeProjectileRenderer,
   ThreeEffectsRenderer,
 } from './renderers';
+import { SpatialAudioManager } from '../managers/spatial-audio.manager';
 
 /**
  * ThreeTilesEngine - Main Three.js rendering engine for Tower Defense
@@ -63,6 +64,9 @@ export class ThreeTilesEngine {
   readonly towers: ThreeTowerRenderer;
   readonly projectiles: ThreeProjectileRenderer;
   readonly effects: ThreeEffectsRenderer;
+
+  // Spatial audio manager
+  readonly spatialAudio: SpatialAudioManager;
 
   // Test entities (for debugging)
   private testCube: THREE.Mesh | null = null;
@@ -154,6 +158,12 @@ export class ThreeTilesEngine {
     this.towers = new ThreeTowerRenderer(this.scene, coordinateSync);
     this.projectiles = new ThreeProjectileRenderer(this.scene, coordinateSync);
     this.effects = new ThreeEffectsRenderer(this.scene, coordinateSync);
+
+    // Initialize spatial audio with camera listener
+    this.spatialAudio = new SpatialAudioManager(this.scene, this.camera);
+    this.spatialAudio.setGeoToLocal((lat, lon, height) =>
+      this.sync.geoToLocalSimple(lat, lon, height)
+    );
 
     console.log('[ThreeTilesEngine] Initialized with origin:', originLat, originLon);
   }
@@ -281,18 +291,27 @@ export class ThreeTilesEngine {
   }
 
   private setupLighting(): void {
-    // Ambient light for base visibility
-    const ambient = new THREE.AmbientLight(0xffffff, 0.6);
-    this.scene.add(ambient);
+    // Hemisphere light - natural sky/ground gradient (replaces pure ambient)
+    const hemi = new THREE.HemisphereLight(
+      0x87ceeb, // Sky color (light blue)
+      0x3d5c35, // Ground color (earthy green)
+      1.0
+    );
+    this.scene.add(hemi);
 
-    // Directional light (sun-like)
-    const sun = new THREE.DirectionalLight(0xffffee, 1.2);
-    sun.position.set(1, 2, 1).normalize().multiplyScalar(100);
+    // Main sun light (key light) - warm afternoon sun from south-west
+    const sun = new THREE.DirectionalLight(0xfffaf0, 1.5);
+    sun.position.set(-50, 100, -30); // SW direction, high angle
     this.scene.add(sun);
 
-    // Hemisphere light for sky/ground color variation
-    const hemi = new THREE.HemisphereLight(0x87ceeb, 0x444444, 0.3);
-    this.scene.add(hemi);
+    // Fill light - softer, from opposite side to reduce harsh shadows
+    const fill = new THREE.DirectionalLight(0xb0c4de, 0.4);
+    fill.position.set(50, 50, 30); // NE direction
+    this.scene.add(fill);
+
+    // Subtle ambient for shadow areas (prevents pure black)
+    const ambient = new THREE.AmbientLight(0x404040, 0.3);
+    this.scene.add(ambient);
   }
 
   private setupControls(): void {
@@ -1002,6 +1021,9 @@ export class ThreeTilesEngine {
     this.towers.dispose();
     this.projectiles.dispose();
     this.effects.dispose();
+
+    // Dispose spatial audio
+    this.spatialAudio.dispose();
 
     // Dispose tiles renderer
     if (this.tilesRenderer) {
