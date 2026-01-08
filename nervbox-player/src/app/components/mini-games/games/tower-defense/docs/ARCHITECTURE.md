@@ -12,6 +12,34 @@ Component-basierte Game Engine Architektur mit **Three.js + 3DTilesRendererJS** 
 2. **Separation of Concerns** - Renderer getrennt von Game Logic
 3. **Manager Pattern** - Spezialisierte Manager für Entity-Lifecycle
 4. **Single Responsibility** - Jede Klasse hat eine klare Aufgabe
+5. **Reusable Factories** - Wiederverwendbare Factory-Methoden für ähnliche Objekte
+
+### Reusable Components
+
+Ähnliche visuelle Elemente sollten **immer** als wiederverwendbare Factory-Methoden implementiert werden:
+
+```typescript
+// ✅ GUT: Factory mit konfigurierbaren Optionen
+private createDiamondMarker(options: {
+  color: number;
+  size?: number;
+  showRings?: boolean;
+}): THREE.Group { ... }
+
+// Verwendung für verschiedene Marker-Typen
+this.baseMarker = this.createDiamondMarker({ color: 0x22c55e, size: 1, showRings: true });
+const spawnMarker = this.createDiamondMarker({ color: 0xef4444, size: 0.5, showRings: false });
+
+// ❌ SCHLECHT: Copy-Paste von ähnlichem Code
+private addBaseMarker() { /* 50 Zeilen Geometrie-Code */ }
+private addSpawnMarker() { /* Fast identische 50 Zeilen */ }
+```
+
+**Vorteile:**
+- Konsistentes Aussehen aller ähnlichen Elemente
+- Änderungen an einer Stelle wirken überall
+- Einfaches Hinzufügen neuer Varianten
+- Bessere Testbarkeit
 
 ---
 
