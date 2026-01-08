@@ -1177,9 +1177,9 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   private buildPreviewMesh: THREE.Mesh | null = null;
   private lastPreviewValidation: boolean | null = null;
 
-  // Track when a camera drag ends to distinguish clicks from pans
-  private lastDragEndTime = 0;
-  private readonly DRAG_CLICK_THRESHOLD_MS = 100; // Ignore clicks within this time after drag end
+  // Track mouse position to distinguish clicks from pans
+  private mouseDownPos: { x: number; y: number } | null = null;
+  private readonly PAN_THRESHOLD_PX = 10; // Pixels - movement beyond this is a pan
   private previewThrottleId: number | null = null;
   private previewDebugCount = 0;
 
@@ -1324,25 +1324,51 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const canvas = this.gameCanvas.nativeElement;
 
-    // Track when camera controls finish dragging
-    this.engine.onControlsDragEnd = () => {
-      this.lastDragEndTime = performance.now();
-    };
+    // Track pointerdown position - use document with capture to intercept before GlobeControls
+    document.addEventListener('pointerdown', (event: PointerEvent) => {
+      if (event.target === canvas || canvas.contains(event.target as Node)) {
+        this.mouseDownPos = { x: event.clientX, y: event.clientY };
+      }
+    }, { capture: true });
 
     // Click handler
     canvas.addEventListener('click', (event: MouseEvent) => {
       if (!this.engine) return;
 
-      // Ignore clicks that happen right after a camera drag (pan/rotate/zoom)
-      const timeSinceDragEnd = performance.now() - this.lastDragEndTime;
-      if (timeSinceDragEnd < this.DRAG_CLICK_THRESHOLD_MS) {
-        return;
+      // Check if mouse moved significantly (was a pan, not a click)
+      if (this.mouseDownPos) {
+        const dx = event.clientX - this.mouseDownPos.x;
+        const dy = event.clientY - this.mouseDownPos.y;
+        const pixelDist = Math.sqrt(dx * dx + dy * dy);
+        this.mouseDownPos = null;
+
+        if (pixelDist > this.PAN_THRESHOLD_PX) {
+          return; // Was a pan, ignore
+        }
       }
 
-      // Raycast to get world position
+      // First: Check tower selection via direct mesh raycast
+      if (!this.buildMode()) {
+        const clickedTowerId = this.engine.raycastTowers(event.clientX, event.clientY);
+
+        if (clickedTowerId) {
+          if (this.gameState.selectedTowerId() === clickedTowerId) {
+            this.gameState.deselectAll();
+          } else {
+            this.gameState.selectTower(clickedTowerId);
+          }
+          return; // Tower handled, done
+        } else {
+          this.gameState.deselectAll();
+        }
+      }
+
+      // Raycast to get world position (needed for build mode)
       const hitPoint = this.engine.raycastTerrain(event.clientX, event.clientY);
 
-      if (!hitPoint) return;
+      if (!hitPoint) {
+        return; // No terrain hit, but tower selection already handled above
+      }
 
       // Convert to geo coordinates
       const geo = this.engine.sync.localToGeo(hitPoint);
@@ -1357,30 +1383,6 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
           this.toggleBuildMode();
         } else {
           console.log('Invalid tower position:', validation.reason);
-        }
-      } else {
-        // Check if clicked near a tower (simple distance check)
-        const towers = this.gameState.towers();
-        let clickedTower = null;
-
-        for (const tower of towers) {
-          // Use geoToLocalSimple for consistency with raycast results
-          const towerLocal = this.engine.sync.geoToLocalSimple(tower.position.lat, tower.position.lon, tower.position.height || 0);
-          const dist = hitPoint.distanceTo(towerLocal);
-          if (dist < 15) { // 15m click radius
-            clickedTower = tower;
-            break;
-          }
-        }
-
-        if (clickedTower) {
-          if (this.gameState.selectedTowerId() === clickedTower.id) {
-            this.gameState.deselectAll();
-          } else {
-            this.gameState.selectTower(clickedTower.id);
-          }
-        } else {
-          this.gameState.deselectAll();
         }
       }
     });

@@ -72,6 +72,7 @@ export class ThreeTilesEngine {
   onControlsDragEnd: (() => void) | null = null;
   private controlsStartTime = 0;
   private controlsStartCameraPos = new THREE.Vector3();
+  private lastCameraMovement = 0;
 
   // Test entities (for debugging)
   private testCube: THREE.Mesh | null = null;
@@ -354,14 +355,13 @@ export class ThreeTilesEngine {
     });
 
     this.controls.addEventListener('end', () => {
-      if (this.onControlsDragEnd) {
-        // Only consider it a drag if:
-        // - Duration > 150ms OR
-        // - Camera actually moved > 1 unit
-        const duration = performance.now() - this.controlsStartTime;
-        const cameraMoved = this.camera.position.distanceTo(this.controlsStartCameraPos) > 1;
+      // Record camera movement for debugging
+      this.lastCameraMovement = this.camera.position.distanceTo(this.controlsStartCameraPos);
 
-        if (duration > 150 || cameraMoved) {
+      if (this.onControlsDragEnd) {
+        // Only consider it a drag if camera actually moved significantly
+        // Threshold of 5 units to ignore tiny jitter during normal clicks
+        if (this.lastCameraMovement > 5) {
           this.onControlsDragEnd();
         }
       }
@@ -746,6 +746,34 @@ export class ThreeTilesEngine {
   }
 
   /**
+   * Raycast against towers at screen coordinates
+   * Returns the tower ID if a tower was hit, null otherwise
+   */
+  raycastTowers(screenX: number, screenY: number): string | null {
+    // Convert screen coords to NDC
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    const mouse = new THREE.Vector2(
+      ((screenX - rect.left) / rect.width) * 2 - 1,
+      -((screenY - rect.top) / rect.height) * 2 + 1
+    );
+
+    // Create a FRESH raycaster - reusing this.raycaster causes issues after LoS checks
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, this.camera);
+
+    // Test each tower mesh
+    const towerMeshes = this.towers.getAllMeshes();
+    for (const { id, mesh } of towerMeshes) {
+      const intersects = raycaster.intersectObject(mesh, true);
+      if (intersects.length > 0) {
+        return id;
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Raycast against terrain at screen coordinates
    */
   raycastTerrain(screenX: number, screenY: number): THREE.Vector3 | null {
@@ -1057,6 +1085,32 @@ export class ThreeTilesEngine {
    */
   getCamera(): THREE.PerspectiveCamera {
     return this.camera;
+  }
+
+  /**
+   * Get the last recorded camera movement distance (for debugging click vs pan)
+   */
+  getLastCameraMovement(): number {
+    return this.lastCameraMovement;
+  }
+
+  /**
+   * Convert world position to screen coordinates
+   */
+  worldToScreen(worldPos: THREE.Vector3): { x: number; y: number } | null {
+    const vector = worldPos.clone();
+    vector.project(this.camera);
+
+    // Check if behind camera
+    if (vector.z > 1) {
+      return null;
+    }
+
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    return {
+      x: ((vector.x + 1) / 2) * rect.width + rect.left,
+      y: ((-vector.y + 1) / 2) * rect.height + rect.top,
+    };
   }
 
   /**

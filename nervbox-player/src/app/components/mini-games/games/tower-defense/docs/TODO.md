@@ -1,8 +1,10 @@
 Bug:
  [x] ist ein turm selektiert und man macht mit der LMB ein Pan und lässt los, wird der turm deselektiert. das soll nicht sein
-     - Fix: GlobeControls 'start'/'end' Events nutzen
-     - Nur als Drag werten wenn: Dauer > 150ms ODER Kamera bewegte sich > 1 unit
-     - Click Handler ignoriert Clicks innerhalb 100ms nach echtem Drag
+     - Fix: Pointerdown mit capture tracken, Pixel-Distanz prüfen (> 5px = Pan)
+     - Direkte Mesh-Raycasting für Tower-Selektion (statt Terrain-basiert)
+ [x] Tower Selektion/Deselektion funktionierte nicht zuverlässig nach erstem Select
+     - Fix: Frischen THREE.Raycaster() pro Aufruf erstellen
+     - Grund: LoS-Raycasting korrumpierte den geteilten Raycaster-Zustand
  [ ] gegner laufen am HQ angekommen die letzte etappe in der luft bis sie exakt am HQ Marker sind. liegt der in der Luft? Die sollten am boden bleiben und eher in das Gebäude  reinlaufen
 
 Performance:
