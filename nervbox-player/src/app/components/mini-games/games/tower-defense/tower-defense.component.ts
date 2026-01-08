@@ -191,6 +191,12 @@ export interface SpawnPoint {
                   <mat-icon>timeline</mat-icon>
                 </button>
                 <button class="td-layer-btn"
+                        [class.active]="towerDebugVisible()"
+                        (click)="toggleTowerDebug()"
+                        matTooltip="Tower-Schusshoehe anzeigen">
+                  <mat-icon>gps_fixed</mat-icon>
+                </button>
+                <button class="td-layer-btn"
                         [class.active]="heightDebugVisible()"
                         (click)="toggleHeightDebug()"
                         matTooltip="Terrain-Hoehen debuggen">
@@ -206,9 +212,28 @@ export interface SpawnPoint {
               <button class="td-quick-btn" (click)="resetCamera()" matTooltip="Kamera zuruecksetzen">
                 <mat-icon>my_location</mat-icon>
               </button>
-              <button class="td-quick-btn" [class.active]="debugMode()" (click)="toggleDebug()" matTooltip="Debug-Modus">
-                <mat-icon>bug_report</mat-icon>
-              </button>
+              <!-- Dev Menu (expands right and up) -->
+              <div class="td-dev-menu-wrapper">
+                <div class="td-dev-menu" [class.expanded]="devMenuExpanded()">
+                  <button class="td-dev-btn"
+                          [class.active]="debugMode()"
+                          (click)="toggleDebug()"
+                          matTooltip="Wave-Debug-Panel">
+                    <mat-icon>timeline</mat-icon>
+                  </button>
+                  <button class="td-dev-btn"
+                          (click)="resetToDefaultLocation()"
+                          matTooltip="Default-Ort laden">
+                    <mat-icon>home</mat-icon>
+                  </button>
+                </div>
+                <button class="td-quick-btn td-dev-toggle-btn"
+                        [class.active]="devMenuExpanded()"
+                        (click)="toggleDevMenu()"
+                        matTooltip="Entwickler-Optionen">
+                  <mat-icon>{{ devMenuExpanded() ? 'code_off' : 'code' }}</mat-icon>
+                </button>
+              </div>
             </div>
           }
 
@@ -682,6 +707,65 @@ export interface SpawnPoint {
     }
 
     .td-layer-toggle-btn.active {
+      background: var(--td-gold-dark);
+      color: var(--td-text-primary);
+    }
+
+    /* === Dev Menu (expands inline, pushes buttons left) === */
+    .td-dev-menu-wrapper {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-end;
+    }
+
+    .td-dev-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      max-width: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: all 0.2s ease;
+    }
+
+    .td-dev-menu.expanded {
+      max-width: 40px;
+      margin-right: 4px;
+      opacity: 1;
+    }
+
+    .td-dev-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: var(--td-panel-main);
+      border: 1px solid var(--td-frame-mid);
+      border-top-color: var(--td-frame-light);
+      border-bottom-color: var(--td-frame-dark);
+      color: var(--td-text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .td-dev-btn mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    .td-dev-btn:hover {
+      background: var(--td-frame-mid);
+      color: var(--td-text-primary);
+    }
+
+    .td-dev-btn.active {
+      background: var(--td-gold-dark);
+      color: var(--td-text-primary);
+    }
+
+    .td-dev-toggle-btn.active {
       background: var(--td-gold-dark);
       color: var(--td-text-primary);
     }
@@ -1358,9 +1442,11 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly error = signal<string | null>(null);
   readonly streetsVisible = signal(false);
   readonly routesVisible = signal(false);
+  readonly towerDebugVisible = signal(false);
   readonly debugMode = signal(false);
   readonly heightDebugVisible = signal(false);
   readonly layerMenuExpanded = signal(false);
+  readonly devMenuExpanded = signal(false);
   readonly enemySpeed = signal(5); // Meter pro Sekunde
   readonly streetCount = signal(0);
   // Debug: Spawn-Einstellungen
@@ -2711,12 +2797,37 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  toggleTowerDebug(): void {
+    this.towerDebugVisible.update((v) => !v);
+    const visible = this.towerDebugVisible();
+
+    console.log('[TowerDefense] toggleTowerDebug:', visible, 'engine:', !!this.engine);
+
+    if (this.engine) {
+      this.engine.towers.setDebugMode(visible);
+    }
+  }
+
   toggleDebug(): void {
     this.debugMode.update((v: boolean) => !v);
   }
 
   toggleLayerMenu(): void {
     this.layerMenuExpanded.update((v) => !v);
+  }
+
+  toggleDevMenu(): void {
+    this.devMenuExpanded.update((v) => !v);
+  }
+
+  resetToDefaultLocation(): void {
+    console.log('[TowerDefense] Resetting to default location: Erlenbach');
+
+    // Use the existing reset method
+    this.onResetLocations();
+
+    // Close dev menu
+    this.devMenuExpanded.set(false);
   }
 
   logCameraPosition(): void {
