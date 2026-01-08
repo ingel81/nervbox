@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CesiumThreeSync } from '../cesium-three-sync';
+import { CoordinateSync } from './index';
 
 /**
  * Particle data for GPU
@@ -37,7 +37,7 @@ interface EffectInstance {
  */
 export class ThreeEffectsRenderer {
   private scene: THREE.Scene;
-  private sync: CesiumThreeSync;
+  private sync: CoordinateSync;
 
   // Particle systems
   private bloodParticles: THREE.Points | null = null;
@@ -59,7 +59,7 @@ export class ThreeEffectsRenderer {
   private bloodMaterial: THREE.PointsMaterial;
   private fireMaterial: THREE.PointsMaterial;
 
-  constructor(scene: THREE.Scene, sync: CesiumThreeSync) {
+  constructor(scene: THREE.Scene, sync: CoordinateSync) {
     this.scene = scene;
     this.sync = sync;
 

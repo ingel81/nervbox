@@ -1,4 +1,3 @@
-import * as Cesium from 'cesium';
 import { Component } from '../core/component';
 import { GameObject } from '../core/game-object';
 import { GeoPosition } from '../models/game.types';
@@ -29,17 +28,6 @@ export class TransformComponent extends Component {
   }
 
   /**
-   * Get position as Cesium.Cartesian3
-   */
-  getCartesian3(): Cesium.Cartesian3 {
-    return Cesium.Cartesian3.fromDegrees(
-      this.position.lon,
-      this.position.lat,
-      this.terrainHeight
-    );
-  }
-
-  /**
    * Look at a target position (updates target rotation, smoothed in update)
    */
   lookAt(target: GeoPosition): void {
@@ -58,13 +46,6 @@ export class TransformComponent extends Component {
       this.rotation = this.targetRotation;
       this.rotationInitialized = true;
     }
-  }
-
-  /**
-   * Get heading, pitch, roll for Cesium
-   */
-  getHeadingPitchRoll(): Cesium.HeadingPitchRoll {
-    return new Cesium.HeadingPitchRoll(this.rotation, 0, 0);
   }
 
   update(deltaTime: number): void {

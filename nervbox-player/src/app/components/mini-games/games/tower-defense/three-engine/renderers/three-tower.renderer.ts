@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader, GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { CesiumThreeSync } from '../cesium-three-sync';
+import { CoordinateSync } from './index';
 import { TowerTypeConfig, TOWER_TYPES, TowerTypeId } from '../../configs/tower-types.config';
 
 /**
@@ -25,7 +25,7 @@ export interface TowerRenderData {
  */
 export class ThreeTowerRenderer {
   private scene: THREE.Scene;
-  private sync: CesiumThreeSync;
+  private sync: CoordinateSync;
   private loader: GLTFLoader;
 
   // Cached model templates per tower type
@@ -39,7 +39,7 @@ export class ThreeTowerRenderer {
   private rangeMaterial: THREE.MeshBasicMaterial;
   private selectionMaterial: THREE.MeshBasicMaterial;
 
-  constructor(scene: THREE.Scene, sync: CesiumThreeSync) {
+  constructor(scene: THREE.Scene, sync: CoordinateSync) {
     this.scene = scene;
     this.sync = sync;
     this.loader = new GLTFLoader();
@@ -142,8 +142,9 @@ export class ThreeTowerRenderer {
       }
     });
 
-    // Position in local coordinates
+    // Position in local coordinates with height offset
     const localPos = this.sync.geoToLocal(lat, lon, height);
+    localPos.y += config.heightOffset;
     mesh.position.copy(localPos);
 
     // Add to scene
@@ -188,6 +189,7 @@ export class ThreeTowerRenderer {
     if (!data) return;
 
     const localPos = this.sync.geoToLocal(lat, lon, height);
+    localPos.y += data.typeConfig.heightOffset;
     data.mesh.position.copy(localPos);
 
     if (data.rangeIndicator) {

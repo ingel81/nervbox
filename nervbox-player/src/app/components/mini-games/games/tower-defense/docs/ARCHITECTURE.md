@@ -6,6 +6,21 @@
 
 Component-basierte Game Engine Architektur mit **Three.js + 3DTilesRendererJS** für Google Photorealistic 3D Tiles.
 
+**Hinweis:** Cesium.js wurde vollständig entfernt. Die Engine basiert jetzt zu 100% auf Three.js.
+
+### Noch zu testen (nach Cesium-Cleanup)
+
+Die folgenden Features wurden nach dem Cesium-Cleanup noch nicht getestet:
+
+- [ ] Tower-Platzierung
+- [ ] Tower-Rendering (GLB Modelle)
+- [ ] Enemy-Spawning und Rendering
+- [ ] Enemy-Animationen (Walk, Death)
+- [ ] Projektile (Instanced Rendering)
+- [ ] Blut-Effekte (Partikel)
+- [ ] Feuer-Effekte
+- [ ] Tower-Selektion (Range-Anzeige)
+
 ## Design Prinzipien
 
 1. **Component-Based Architecture** - Flexibles GameObject-System mit austauschbaren Components
@@ -19,7 +34,7 @@ Component-basierte Game Engine Architektur mit **Three.js + 3DTilesRendererJS** 
 Ähnliche visuelle Elemente sollten **immer** als wiederverwendbare Factory-Methoden implementiert werden:
 
 ```typescript
-// ✅ GUT: Factory mit konfigurierbaren Optionen
+// GUT: Factory mit konfigurierbaren Optionen
 private createDiamondMarker(options: {
   color: number;
   size?: number;
@@ -29,17 +44,7 @@ private createDiamondMarker(options: {
 // Verwendung für verschiedene Marker-Typen
 this.baseMarker = this.createDiamondMarker({ color: 0x22c55e, size: 1, showRings: true });
 const spawnMarker = this.createDiamondMarker({ color: 0xef4444, size: 0.5, showRings: false });
-
-// ❌ SCHLECHT: Copy-Paste von ähnlichem Code
-private addBaseMarker() { /* 50 Zeilen Geometrie-Code */ }
-private addSpawnMarker() { /* Fast identische 50 Zeilen */ }
 ```
-
-**Vorteile:**
-- Konsistentes Aussehen aller ähnlichen Elemente
-- Änderungen an einer Stelle wirken überall
-- Einfaches Hinzufügen neuer Varianten
-- Bessere Testbarkeit
 
 ---
 
@@ -51,7 +56,7 @@ private addSpawnMarker() { /* Fast identische 50 Zeilen */ }
 ┌─────────────────────────────────────────────────────────────┐
 │  Three.js Scene                                              │
 │  ├─ TilesRenderer (3DTilesRendererJS)                       │
-│  │   └─ Google Photorealistic 3D Tiles                      │
+│  │   └─ Google Photorealistic 3D Tiles (via Cesium Ion)     │
 │  │                                                           │
 │  ├─ overlayGroup (synced with tiles)                        │
 │  │   ├─ Streets (LineSegments)                              │
@@ -61,18 +66,22 @@ private addSpawnMarker() { /* Fast identische 50 Zeilen */ }
 │  │                                                           │
 │  ├─ Enemies (GLTFLoader + AnimationMixer)                   │
 │  ├─ Towers (GLTFLoader)                                     │
-│  ├─ Projectiles (Sprites/InstancedMesh)                     │
+│  ├─ Projectiles (InstancedMesh)                             │
 │  └─ Effects (Particles)                                     │
 └─────────────────────────────────────────────────────────────┘
-         ✅ Automatische Depth-Occlusion
+         Automatische Depth-Occlusion
 ```
+
+**Hinweis:** `CesiumIonAuthPlugin` ist Teil von `3d-tiles-renderer` (NASA JPL), nicht Cesium.js!
+Es wird nur für die Authentifizierung zum Cesium Ion Hosting-Service verwendet.
 
 ### Kern-Komponenten
 
 | Datei | Beschreibung |
 |-------|--------------|
 | `three-tiles-engine.ts` | Haupt-Engine: Scene, Renderer, TilesRenderer, Overlays |
-| `ellipsoid-sync.ts` | WGS84 ↔ Three.js Koordinatentransformation |
+| `ellipsoid-sync.ts` | WGS84 - Three.js Koordinatentransformation |
+| `renderers/index.ts` | CoordinateSync Interface + Renderer Exports |
 
 ### Terrain-Höhenermittlung
 
@@ -93,23 +102,6 @@ getTerrainHeightAtGeo(lat: number, lon: number): number | null {
   // 3. Hit-Point Y-Koordinate zurückgeben
   return results.length > 0 ? results[0].point.y : null;
 }
-```
-
-### Overlay-Positionierung
-
-Overlays verwenden **relative Höhen** zum Origin-Terrain:
-
-```typescript
-// Origin-Terrain als Referenz
-const originTerrainY = engine.getTerrainHeightAtGeo(baseLat, baseLon);
-
-// Für jeden Overlay-Punkt
-const terrainY = engine.getTerrainHeightAtGeo(pointLat, pointLon);
-const local = engine.sync.geoToLocalSimple(pointLat, pointLon, 0);
-local.y = (terrainY - originTerrainY) + HEIGHT_ABOVE_GROUND;
-
-// overlayGroup.position.y = originTerrainY (automatisch gesetzt)
-overlayGroup.add(mesh);
 ```
 
 ---
@@ -146,7 +138,7 @@ abstract class GameObject {
 | `HealthComponent` | HP, maxHp, takeDamage(), heal() |
 | `MovementComponent` | Path-Following, speedMps, currentIndex |
 | `CombatComponent` | damage, range, fireRate, canFire() |
-| `RenderComponent` | Three.js Object3D Reference |
+| `RenderComponent` | Placeholder (Rendering via ThreeTilesEngine) |
 | `AudioComponent` | Sound-Verwaltung |
 
 ---
@@ -227,7 +219,7 @@ class GameStateManager {
   readonly baseHealth = signal(100);
   readonly credits = signal(100);
 
-  initialize(engine: ThreeTilesEngine, streetNetwork, spawnPoints, cachedPaths): void;
+  initialize(engine: ThreeTilesEngine, streetNetwork, basePosition, spawnPoints, cachedPaths): void;
   update(currentTime: number): void;
   reset(): void;
 }
@@ -251,6 +243,7 @@ class EnemyManager extends EntityManager<Enemy> {
 ```typescript
 @Injectable()
 class TowerManager extends EntityManager<Tower> {
+  initializeWithContext(engine, streetNetwork, basePosition, spawnPoints): void;
   placeTower(position: GeoPosition, typeId: TowerTypeId): Tower | null;
   validatePosition(position: GeoPosition): { valid: boolean; reason?: string };
   selectTower(id: string | null): void;
@@ -288,21 +281,27 @@ class WaveManager {
 
 ## 5. Renderer System
 
+Alle Renderer verwenden das `CoordinateSync` Interface für Geo-zu-Lokal Transformation:
+
+```typescript
+interface CoordinateSync {
+  geoToLocal(lat: number, lon: number, height: number): THREE.Vector3;
+  localToGeo?(vec: THREE.Vector3): { lat: number; lon: number; height: number };
+}
+```
+
 ### 5.1 ThreeEnemyRenderer
 
 ```typescript
 class ThreeEnemyRenderer {
-  private loader: GLTFLoader;
-  private models = new Map<string, THREE.Group>();
-  private mixers = new Map<string, THREE.AnimationMixer>();
+  constructor(scene: THREE.Scene, sync: CoordinateSync);
 
   preloadModel(typeId: EnemyTypeId): Promise<void>;
-  create(typeId: EnemyTypeId, position: THREE.Vector3): THREE.Group;
-  update(model: THREE.Group, position: THREE.Vector3, heading: number): void;
-  startWalkAnimation(model: THREE.Group): void;
-  playDeathAnimation(model: THREE.Group): void;
-  updateAnimations(deltaTime: number): void;
-  destroy(model: THREE.Group): void;
+  create(id, typeId, lat, lon, height): Promise<EnemyRenderData>;
+  update(id, lat, lon, height, rotation, healthPercent): void;
+  startWalkAnimation(id: string): void;
+  playDeathAnimation(id: string): void;
+  remove(id: string): void;
 }
 ```
 
@@ -310,11 +309,13 @@ class ThreeEnemyRenderer {
 
 ```typescript
 class ThreeTowerRenderer {
+  constructor(scene: THREE.Scene, sync: CoordinateSync);
+
   preloadModel(typeId: TowerTypeId): Promise<void>;
-  create(typeId: TowerTypeId, position: THREE.Vector3): THREE.Group;
-  setRangeVisible(model: THREE.Group, visible: boolean): void;
-  setSelected(model: THREE.Group, selected: boolean): void;
-  destroy(model: THREE.Group): void;
+  create(id, typeId, lat, lon, height): Promise<TowerRenderData>;
+  select(id: string): void;
+  deselect(id: string): void;
+  remove(id: string): void;
 }
 ```
 
@@ -322,9 +323,24 @@ class ThreeTowerRenderer {
 
 ```typescript
 class ThreeProjectileRenderer {
-  create(typeId: ProjectileTypeId, position: THREE.Vector3): THREE.Sprite;
-  update(sprite: THREE.Sprite, position: THREE.Vector3): void;
-  destroy(sprite: THREE.Sprite): void;
+  constructor(scene: THREE.Scene, sync: CoordinateSync);
+
+  create(id, typeId, lat, lon, height, heading): void;
+  update(id, lat, lon, height, heading): void;
+  remove(id: string): void;
+}
+```
+
+### 5.4 ThreeEffectsRenderer
+
+```typescript
+class ThreeEffectsRenderer {
+  constructor(scene: THREE.Scene, sync: CoordinateSync);
+
+  spawnBloodSplatter(lat, lon, height): void;
+  spawnFire(lat, lon, height, intensity): string;
+  stopFire(id: string): void;
+  update(deltaTime: number): void;
 }
 ```
 
@@ -391,6 +407,7 @@ Z = North/South Offset (+Z = North, -Z = South)
 ```typescript
 class EllipsoidSync {
   // WGS84 → Lokale Koordinaten (Meter)
+  geoToLocal(lat, lon, height): THREE.Vector3;
   geoToLocalSimple(lat, lon, height): THREE.Vector3;
 
   // Lokale Koordinaten → WGS84
@@ -417,13 +434,10 @@ function gameLoop(currentTime: number) {
   // 2. Three.js Update
   engine.update();
 
-  // 3. Animation Update
-  engine.enemies.updateAnimations(deltaTime);
-
-  // 4. Tiles Update
+  // 3. Tiles Update
   tilesRenderer.update();
 
-  // 5. Render
+  // 4. Render
   renderer.render(scene, camera);
 
   requestAnimationFrame(gameLoop);
@@ -437,52 +451,59 @@ function gameLoop(currentTime: number) {
 ```
 tower-defense/
 ├── tower-defense.component.ts    # Haupt-Component
-│
+
 ├── three-engine/
 │   ├── three-tiles-engine.ts     # Haupt-Engine
 │   ├── ellipsoid-sync.ts         # Koordinaten
+│   ├── index.ts                  # Exports
 │   └── renderers/
+│       ├── index.ts              # CoordinateSync Interface
 │       ├── three-enemy.renderer.ts
 │       ├── three-tower.renderer.ts
-│       └── three-projectile.renderer.ts
-│
+│       ├── three-projectile.renderer.ts
+│       └── three-effects.renderer.ts
+
 ├── core/
 │   ├── game-object.ts
 │   └── component.ts
-│
+
 ├── game-components/
 │   ├── transform.component.ts
 │   ├── health.component.ts
 │   ├── movement.component.ts
 │   ├── combat.component.ts
-│   └── render.component.ts
-│
+│   ├── render.component.ts
+│   └── audio.component.ts
+
 ├── entities/
 │   ├── enemy.entity.ts
 │   ├── tower.entity.ts
 │   └── projectile.entity.ts
-│
+
 ├── managers/
+│   ├── entity-manager.ts         # Base class
 │   ├── game-state.manager.ts
 │   ├── enemy.manager.ts
 │   ├── tower.manager.ts
 │   ├── projectile.manager.ts
-│   └── wave.manager.ts
-│
+│   ├── wave.manager.ts
+│   └── audio.manager.ts
+
 ├── configs/
 │   ├── tower-types.config.ts
 │   └── projectile-types.config.ts
-│
+
 ├── models/
 │   ├── enemy-types.ts
 │   └── game.types.ts
-│
+
 ├── services/
-│   └── osm-street.service.ts
-│
+│   ├── osm-street.service.ts
+│   └── entity-pool.service.ts    # Placeholder
+
 ├── components/
 │   └── debug-panel.component.ts
-│
+
 └── docs/
     └── ARCHITECTURE.md
 ```
@@ -505,6 +526,11 @@ tower-defense/
 - Neue Components ohne bestehenden Code zu ändern
 
 ### Performance
-- Three.js Instancing für Projektile
+- Three.js InstancedMesh für Projektile
 - Raycast-Cache für Terrain-Höhen
 - AnimationMixer für Skelett-Animationen
+
+### Cesium-frei
+- Keine Abhängigkeit von Cesium.js
+- Nur `3d-tiles-renderer` (NASA JPL) für Google 3D Tiles
+- Cesium Ion nur als Hosting-Service (Token-basiert)

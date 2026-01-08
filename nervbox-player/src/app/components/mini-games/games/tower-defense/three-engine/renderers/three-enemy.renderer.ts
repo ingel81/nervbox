@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader, GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { CesiumThreeSync } from '../cesium-three-sync';
+import { CoordinateSync } from './index';
 import { EnemyTypeConfig, ENEMY_TYPES, EnemyTypeId } from '../../models/enemy-types';
 
 /**
@@ -28,7 +28,7 @@ export interface EnemyRenderData {
  */
 export class ThreeEnemyRenderer {
   private scene: THREE.Scene;
-  private sync: CesiumThreeSync;
+  private sync: CoordinateSync;
   private loader: GLTFLoader;
 
   // Cached model templates per enemy type
@@ -41,7 +41,7 @@ export class ThreeEnemyRenderer {
   // Health bar texture
   private healthBarTextures = new Map<number, THREE.CanvasTexture>();
 
-  constructor(scene: THREE.Scene, sync: CesiumThreeSync) {
+  constructor(scene: THREE.Scene, sync: CoordinateSync) {
     this.scene = scene;
     this.sync = sync;
     this.loader = new GLTFLoader();
