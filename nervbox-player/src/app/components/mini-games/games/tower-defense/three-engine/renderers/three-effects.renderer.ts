@@ -38,6 +38,39 @@ interface BloodDecal {
 }
 
 /**
+ * Floating text configuration
+ */
+export interface FloatingTextConfig {
+  /** Text color (CSS format, default: '#FFD700' gold) */
+  color?: string;
+  /** Font size in pixels (default: 48) */
+  fontSize?: number;
+  /** Duration in ms (default: 1000) */
+  duration?: number;
+  /** Float speed - how fast it rises (default: 2) */
+  floatSpeed?: number;
+  /** Initial scale (default: 1) */
+  scale?: number;
+  /** Outline color (default: '#000000') */
+  outlineColor?: string;
+  /** Outline width (default: 3) */
+  outlineWidth?: number;
+}
+
+/**
+ * Active floating text instance
+ */
+interface FloatingTextInstance {
+  id: string;
+  sprite: THREE.Sprite;
+  startTime: number;
+  duration: number;
+  floatSpeed: number;
+  startY: number;
+  active: boolean;
+}
+
+/**
  * ThreeEffectsRenderer - Renders particle effects using Three.js
  *
  * Effects:
@@ -75,6 +108,11 @@ export class ThreeEffectsRenderer {
   private decalIdCounter = 0;
   private bloodDecalGeometry: THREE.CircleGeometry;
   private bloodDecalMaterial: THREE.MeshBasicMaterial;
+
+  // Floating text pool
+  private floatingTexts: FloatingTextInstance[] = [];
+  private readonly MAX_FLOATING_TEXTS = 50;
+  private floatingTextIdCounter = 0;
 
   // Shared materials
   private bloodMaterial: THREE.PointsMaterial;
@@ -391,6 +429,157 @@ export class ThreeEffectsRenderer {
   }
 
   /**
+   * Spawn floating text at a position (e.g., for rewards, damage numbers, status messages)
+   *
+   * @param text - The text to display
+   * @param lat - Latitude
+   * @param lon - Longitude
+   * @param height - Height above ground
+   * @param config - Optional configuration
+   * @returns Floating text ID
+   */
+  spawnFloatingText(
+    text: string,
+    lat: number,
+    lon: number,
+    height: number,
+    config: FloatingTextConfig = {}
+  ): string {
+    const {
+      color = '#FFD700', // Gold
+      fontSize = 48,
+      duration = 1000,
+      floatSpeed = 2,
+      scale = 1,
+      outlineColor = '#000000',
+      outlineWidth = 3,
+    } = config;
+
+    const localPos = this.sync.geoToLocal(lat, lon, height);
+    const id = `text_${this.floatingTextIdCounter++}`;
+
+    // Try to reuse inactive sprite
+    let instance = this.floatingTexts.find((t) => !t.active);
+
+    if (!instance) {
+      if (this.floatingTexts.length >= this.MAX_FLOATING_TEXTS) {
+        // Reuse oldest
+        let oldest = this.floatingTexts[0];
+        for (const t of this.floatingTexts) {
+          if (t.startTime < oldest.startTime) {
+            oldest = t;
+          }
+        }
+        instance = oldest;
+      } else {
+        // Create new sprite
+        const spriteMaterial = new THREE.SpriteMaterial({
+          transparent: true,
+          depthTest: false,
+          depthWrite: false,
+        });
+        const sprite = new THREE.Sprite(spriteMaterial);
+        this.scene.add(sprite);
+
+        instance = {
+          id: '',
+          sprite,
+          startTime: 0,
+          duration: 0,
+          floatSpeed: 0,
+          startY: 0,
+          active: false,
+        };
+        this.floatingTexts.push(instance);
+      }
+    }
+
+    // Create text texture
+    const texture = this.createTextTexture(text, color, fontSize, outlineColor, outlineWidth);
+    const material = instance.sprite.material as THREE.SpriteMaterial;
+
+    // Dispose old texture if exists
+    if (material.map) {
+      material.map.dispose();
+    }
+
+    material.map = texture;
+    material.opacity = 1;
+    material.needsUpdate = true;
+
+    // Calculate sprite size based on text
+    const aspect = texture.image.width / texture.image.height;
+    const baseSize = scale * 3; // Base size in world units
+    instance.sprite.scale.set(baseSize * aspect, baseSize, 1);
+
+    // Position sprite
+    instance.sprite.position.copy(localPos);
+    instance.sprite.visible = true;
+
+    // Configure instance
+    instance.id = id;
+    instance.startTime = performance.now();
+    instance.duration = duration;
+    instance.floatSpeed = floatSpeed;
+    instance.startY = localPos.y;
+    instance.active = true;
+
+    return id;
+  }
+
+  /**
+   * Create a canvas texture with text
+   */
+  private createTextTexture(
+    text: string,
+    color: string,
+    fontSize: number,
+    outlineColor: string,
+    outlineWidth: number
+  ): THREE.CanvasTexture {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
+
+    // Set font to measure text
+    const font = `bold ${fontSize}px Arial, sans-serif`;
+    ctx.font = font;
+    const metrics = ctx.measureText(text);
+
+    // Canvas size with padding for outline
+    const padding = outlineWidth * 2 + 4;
+    canvas.width = Math.ceil(metrics.width) + padding * 2;
+    canvas.height = fontSize + padding * 2;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Set font again after resize
+    ctx.font = font;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
+    // Draw outline
+    if (outlineWidth > 0) {
+      ctx.strokeStyle = outlineColor;
+      ctx.lineWidth = outlineWidth;
+      ctx.lineJoin = 'round';
+      ctx.strokeText(text, centerX, centerY);
+    }
+
+    // Draw fill
+    ctx.fillStyle = color;
+    ctx.fillText(text, centerX, centerY);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+
+    return texture;
+  }
+
+  /**
    * Update all active effects
    *
    * @param deltaTime - Time since last frame in milliseconds
@@ -467,6 +656,35 @@ export class ThreeEffectsRenderer {
           decal.active = false;
           decal.mesh.visible = false;
         }
+      }
+    }
+
+    // Update floating texts (rise + fade)
+    for (const textInstance of this.floatingTexts) {
+      if (!textInstance.active) continue;
+
+      const elapsed = now - textInstance.startTime;
+      const progress = Math.min(elapsed / textInstance.duration, 1);
+
+      // Float upward
+      textInstance.sprite.position.y = textInstance.startY + progress * textInstance.floatSpeed * 3;
+
+      // Fade out (start fading at 50% progress)
+      const fadeProgress = Math.max(0, (progress - 0.5) * 2);
+      (textInstance.sprite.material as THREE.SpriteMaterial).opacity = 1 - fadeProgress;
+
+      // Scale up slightly as it rises
+      const scaleMultiplier = 1 + progress * 0.3;
+      const baseScale = textInstance.sprite.scale.clone();
+      textInstance.sprite.scale.setScalar(scaleMultiplier);
+      // Preserve aspect ratio
+      const aspect = baseScale.x / baseScale.y;
+      textInstance.sprite.scale.x = textInstance.sprite.scale.y * aspect;
+
+      // Mark as inactive when done
+      if (progress >= 1) {
+        textInstance.active = false;
+        textInstance.sprite.visible = false;
       }
     }
 
@@ -549,6 +767,12 @@ export class ThreeEffectsRenderer {
       decal.active = false;
       decal.mesh.visible = false;
     }
+
+    // Hide all floating texts
+    for (const textInstance of this.floatingTexts) {
+      textInstance.active = false;
+      textInstance.sprite.visible = false;
+    }
   }
 
   /**
@@ -572,6 +796,17 @@ export class ThreeEffectsRenderer {
       (decal.mesh.material as THREE.Material).dispose();
     }
     this.bloodDecals = [];
+
+    // Dispose floating texts
+    for (const textInstance of this.floatingTexts) {
+      this.scene.remove(textInstance.sprite);
+      const material = textInstance.sprite.material as THREE.SpriteMaterial;
+      if (material.map) {
+        material.map.dispose();
+      }
+      material.dispose();
+    }
+    this.floatingTexts = [];
 
     this.bloodMaterial.dispose();
     this.fireMaterial.dispose();

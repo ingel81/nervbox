@@ -24,9 +24,9 @@ import { ModelPreviewService } from './services/model-preview.service';
 import { GeoPosition } from './models/game.types';
 import { EnemyTypeId, getAllEnemyTypes, getEnemyType, EnemyTypeConfig } from './models/enemy-types';
 import { ApiService } from '../../../../core/services/api.service';
-import { DebugPanelComponent, LocationConfig, SpawnLocationConfig } from './components/debug-panel.component';
+import { DebugPanelComponent } from './components/debug-panel.component';
 import { LocationDialogComponent } from './components/location-dialog/location-dialog.component';
-import { LocationDialogData, LocationDialogResult } from './models/location.types';
+import { LocationDialogData, LocationDialogResult, LocationConfig, SpawnLocationConfig } from './models/location.types';
 import { GeocodingService } from './services/geocoding.service';
 // New OO Game Engine imports
 import { GameStateManager } from './managers/game-state.manager';
@@ -61,12 +61,12 @@ const DEFAULT_SPAWN_POINTS = [
     latitude: 49.17554723547113,
     longitude: 9.263870533891945,
   },
-  {
-    id: 'spawn-south',
-    name: 'Sued',
-    latitude: 49.17000237788718,
-    longitude: 9.266037019764674,
-  },
+  // {
+  //   id: 'spawn-south',
+  //   name: 'Sued',
+  //   latitude: 49.17000237788718,
+  //   longitude: 9.266037019764674,
+  // },
 ];
 
 const LOCATION_STORAGE_KEY = 'td_custom_locations_v1';
@@ -352,22 +352,21 @@ export interface SpawnPoint {
                   [enemyType]="enemyType()"
                   [enemyTypes]="enemyTypes"
                   [spawnMode]="spawnMode()"
+                  [spawnDelay]="spawnDelay()"
+                  [useGathering]="useGathering()"
                   [waveActive]="waveActive()"
                   [baseHealth]="gameState.baseHealth()"
                   [debugLog]="debugLog()"
-                  [hqLocation]="editableHqLocation()"
-                  [spawnLocations]="editableSpawnLocations()"
-                  [isApplying]="isApplyingLocation()"
                   (enemyCountChange)="onEnemyCountChange($event)"
                   (enemySpeedChange)="onSpeedChange($event)"
                   (enemyTypeChange)="onEnemyTypeChange($event)"
                   (toggleSpawnMode)="toggleSpawnMode()"
+                  (spawnDelayChange)="onSpawnDelayChange($event)"
+                  (toggleGathering)="toggleGathering()"
                   (killAll)="killAllEnemies()"
                   (healHq)="healHq()"
                   (clearLog)="clearDebugLog()"
                   (logCamera)="logCameraPosition()"
-                  (applyNewLocation)="onApplyNewLocation($event)"
-                  (resetLocations)="onResetLocations()"
                 />
               </div>
             </section>
@@ -1357,8 +1356,8 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly loading = signal(true);
   readonly loadingMessage = signal('Lade 3D-Karte...');
   readonly error = signal<string | null>(null);
-  readonly streetsVisible = signal(true);
-  readonly routesVisible = signal(true);
+  readonly streetsVisible = signal(false);
+  readonly routesVisible = signal(false);
   readonly debugMode = signal(false);
   readonly heightDebugVisible = signal(false);
   readonly layerMenuExpanded = signal(false);
@@ -1368,7 +1367,9 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly enemyCount = signal(2);
   readonly enemyType = signal<EnemyTypeId>('zombie');
   readonly enemyTypes = getAllEnemyTypes(); // Für Debug-Panel Dropdown
-  readonly spawnMode = signal<'each' | 'random'>('each'); // each = einer pro Spawn, random = zufällig
+  readonly spawnMode = signal<'each' | 'random'>('each'); // each = verteilt, random = zufällig
+  readonly spawnDelay = signal(300); // ms zwischen Spawns
+  readonly useGathering = signal(false); // Alle sammeln und dann loslaufen
   readonly debugLog = signal('');
   readonly spawnPoints = signal<SpawnPoint[]>([]);
   readonly baseCoords = signal(DEFAULT_BASE_COORDS);
@@ -1403,6 +1404,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     return 'Erlenbach';
   });
   readonly gatheringPhase = signal(false);
+  private waveAborted = false; // Flag to stop spawning when kill-all is pressed
   readonly gatheringCountdown = signal(0);
 
   private animationFrameId: number | null = null;
@@ -2183,7 +2185,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     const overlayGroup = this.engine.getOverlayGroup();
 
     // Position marker on terrain with RELATIVE heights
-    const HEIGHT_ABOVE_GROUND = 15; // Spawn markers slightly lower than HQ
+    const HEIGHT_ABOVE_GROUND = 30; // Spawn markers ~30m above ground
     const base = this.baseCoords();
     const originTerrainY = this.engine.getTerrainHeightAtGeo(base.latitude, base.longitude);
     const terrainY = this.engine.getTerrainHeightAtGeo(lat, lon);
@@ -2587,28 +2589,47 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     if (spawns.length === 0) return;
 
     const totalEnemies = this.enemyCount();
-    const mode = this.spawnMode();
-    const speed = this.enemySpeed();
+    const gathering = this.useGathering();
+
+    // Reset abort flag at start of new wave
+    this.waveAborted = false;
 
     this.gameState.beginWave();
-    this.gatheringPhase.set(true);
 
-    // === PHASE 1: SAMMELN ===
+    if (gathering) {
+      this.gatheringPhase.set(true);
+    }
+
+    // Start game loop immediately (enemies will be updated as they spawn)
+    this.startGameLoop();
+
     let spawnedCount = 0;
-    const spawnDelay = 100; // ms zwischen Spawns
 
     const spawnNext = () => {
-      if (spawnedCount >= totalEnemies) {
-        // === PHASE 2: ANGRIFF ===
-        setTimeout(() => {
-          this.gatheringPhase.set(false);
-          this.gameState.startAllEnemies(300); // 300ms zwischen jedem Start
-          this.startGameLoop();
-        }, 500); // Kurze Pause nach Sammeln
+      // Stop spawning if wave was aborted
+      if (this.waveAborted) {
+        this.gatheringPhase.set(false);
         return;
       }
 
-      // Spawn-Punkt auswählen (Round-Robin oder Zufällig)
+      if (spawnedCount >= totalEnemies) {
+        if (gathering) {
+          // Gathering mode: Start all enemies together after short delay
+          setTimeout(() => {
+            if (!this.waveAborted) {
+              this.gatheringPhase.set(false);
+              this.gameState.startAllEnemies(300); // 300ms zwischen jedem Start
+            }
+          }, 500);
+        }
+        return;
+      }
+
+      // Read current settings live (allows changing during wave)
+      const mode = this.spawnMode();
+      const speed = this.enemySpeed();
+
+      // Spawn-Punkt auswählen (Verteilt oder Zufällig)
       let currentSpawn: SpawnPoint;
       if (mode === 'each') {
         currentSpawn = spawns[spawnedCount % spawns.length];
@@ -2619,11 +2640,13 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       const spawnPath = this.cachedPaths.get(currentSpawn.id);
 
       if (spawnPath && spawnPath.length > 1) {
-        this.gameState.spawnEnemy(spawnPath, this.enemyType(), speed, true); // paused=true
+        // In gathering mode: spawn paused, otherwise spawn and start immediately
+        this.gameState.spawnEnemy(spawnPath, this.enemyType(), speed, gathering);
         spawnedCount++;
       }
 
-      setTimeout(spawnNext, spawnDelay);
+      // Read delay live for next spawn
+      setTimeout(spawnNext, this.spawnDelay());
     };
 
     spawnNext();
@@ -2742,14 +2765,33 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     this.spawnMode.update((mode) => (mode === 'each' ? 'random' : 'each'));
   }
 
+  onSpawnDelayChange(value: number): void {
+    this.spawnDelay.set(value);
+  }
+
+  toggleGathering(): void {
+    this.useGathering.update((v) => !v);
+  }
+
   killAllEnemies(): void {
-    // Alle lebenden Gegner töten
+    // Stop spawning new enemies
+    this.waveAborted = true;
+    this.gatheringPhase.set(false);
+
+    // Kill all living enemies
     const enemies = this.gameState.enemies();
     for (const enemy of enemies) {
       if (enemy.alive) {
         this.gameState.killEnemy(enemy);
       }
     }
+
+    // End the wave after a short delay (to let death animations play)
+    setTimeout(() => {
+      if (this.waveActive()) {
+        this.gameState.endWave();
+      }
+    }, 500);
   }
 
   healHq(): void {
@@ -2845,7 +2887,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.engine) return;
 
     const HQ_MARKER_HEIGHT = 30; // HQ marker floats higher (animated diamond)
-    const SPAWN_MARKER_HEIGHT = 15; // Spawn markers slightly lower
+    const SPAWN_MARKER_HEIGHT = 30; // Spawn markers ~30m above ground
 
     // Get origin terrain height as reference
     const base = this.baseCoords();

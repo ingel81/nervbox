@@ -17,6 +17,8 @@ export interface WaveConfig {
   enemyType: EnemyTypeId;
   enemySpeed: number;
   spawnMode: 'each' | 'random';
+  spawnDelay: number; // Delay in ms between spawning each enemy
+  useGathering: boolean; // If true, all enemies spawn paused and start together
 }
 
 /**
@@ -52,19 +54,25 @@ export class WaveManager {
   startWave(config: WaveConfig): void {
     this.waveNumber.update((n) => n + 1);
     this.phase.set('wave');
-    this.gatheringPhase.set(true);
 
-    // Phase 1: Spawn enemies (paused)
+    const useGathering = config.useGathering;
+    const spawnDelay = config.spawnDelay;
+
+    if (useGathering) {
+      this.gatheringPhase.set(true);
+    }
+
     let spawnedCount = 0;
-    const spawnDelay = 100;
 
     const spawnNext = () => {
       if (spawnedCount >= config.enemyCount) {
-        // Phase 2: Start enemies
-        setTimeout(() => {
-          this.gatheringPhase.set(false);
-          this.enemyManager.startAll(300);
-        }, 500);
+        if (useGathering) {
+          // Gathering mode: Start all enemies together after short delay
+          setTimeout(() => {
+            this.gatheringPhase.set(false);
+            this.enemyManager.startAll(300);
+          }, 500);
+        }
         return;
       }
 
@@ -72,7 +80,8 @@ export class WaveManager {
       const path = this.cachedPaths.get(spawn.id);
 
       if (path && path.length > 1) {
-        this.enemyManager.spawn(path, config.enemyType, config.enemySpeed, true);
+        // In gathering mode: spawn paused, otherwise spawn and start immediately
+        this.enemyManager.spawn(path, config.enemyType, config.enemySpeed, useGathering);
         spawnedCount++;
       }
 

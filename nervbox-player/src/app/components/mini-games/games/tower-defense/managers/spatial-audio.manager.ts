@@ -42,7 +42,16 @@ interface RegisteredSound {
 interface ActiveSound {
   audio: THREE.PositionalAudio;
   soundId: string;
+  container?: THREE.Object3D;
+  ownerId?: string; // ID of the owner (e.g., enemy ID)
 }
+
+/**
+ * Sound budget configuration
+ * Enemy sounds have a strict limit to leave room for tower/projectile sounds
+ */
+const MAX_ENEMY_SOUNDS = 12; // Max concurrent enemy movement sounds
+const ENEMY_SOUND_PATTERNS = ['zombie', 'tank', 'enemy']; // Sound IDs containing these are enemy sounds
 
 /**
  * SpatialAudioManager - 3D positioned audio using Three.js Audio system
@@ -68,6 +77,9 @@ export class SpatialAudioManager {
 
   // Active sound instances
   private activeSounds: ActiveSound[] = [];
+
+  // Track enemy sounds separately for budget management
+  private enemySoundCount = 0;
 
   // Audio context state
   private contextResumed = false;
@@ -103,6 +115,50 @@ export class SpatialAudioManager {
   geoToLocalPosition(lat: number, lon: number, height: number): THREE.Vector3 | null {
     if (!this.geoToLocal) return null;
     return this.geoToLocal(lat, lon, height);
+  }
+
+  /**
+   * Check if a sound ID is an enemy sound (subject to budget limits)
+   */
+  private isEnemySound(soundId: string): boolean {
+    const lowerSoundId = soundId.toLowerCase();
+    return ENEMY_SOUND_PATTERNS.some((pattern) => lowerSoundId.includes(pattern));
+  }
+
+  /**
+   * Check if we can play a new enemy sound (within budget)
+   * Call this before creating a new enemy loop sound
+   */
+  canPlayEnemySound(): boolean {
+    return this.enemySoundCount < MAX_ENEMY_SOUNDS;
+  }
+
+  /**
+   * Get current enemy sound count and limit for debugging
+   */
+  getEnemySoundStats(): { current: number; max: number } {
+    return { current: this.enemySoundCount, max: MAX_ENEMY_SOUNDS };
+  }
+
+  /**
+   * Register an enemy sound (called when AudioComponent starts a loop)
+   * Returns false if budget exceeded
+   */
+  registerEnemySound(): boolean {
+    if (this.enemySoundCount >= MAX_ENEMY_SOUNDS) {
+      return false;
+    }
+    this.enemySoundCount++;
+    return true;
+  }
+
+  /**
+   * Unregister an enemy sound (called when AudioComponent stops a loop)
+   */
+  unregisterEnemySound(): void {
+    if (this.enemySoundCount > 0) {
+      this.enemySoundCount--;
+    }
   }
 
   /**

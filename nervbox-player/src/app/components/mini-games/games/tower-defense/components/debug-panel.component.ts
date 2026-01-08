@@ -1,26 +1,14 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { EnemyTypeConfig, EnemyTypeId } from '../models/enemy-types';
-import { AddressAutocompleteComponent } from './address-autocomplete.component';
 import { TD_CSS_VARS } from '../styles/td-theme';
-
-export interface LocationConfig {
-  lat: number;
-  lon: number;
-  name?: string;
-}
-
-export interface SpawnLocationConfig extends LocationConfig {
-  id: string;
-}
 
 @Component({
   selector: 'app-td-debug-panel',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, AddressAutocompleteComponent],
+  imports: [CommonModule, MatButtonModule, MatIconModule],
   template: `
     <div class="debug-panel">
       <div class="section">
@@ -65,7 +53,21 @@ export interface SpawnLocationConfig extends LocationConfig {
           <span class="label">Modus</span>
           <button class="toggle-btn" [class.active]="spawnMode() === 'each'" (click)="toggleSpawnMode.emit()">
             <mat-icon>{{ spawnMode() === 'each' ? 'call_split' : 'shuffle' }}</mat-icon>
-            {{ spawnMode() === 'each' ? 'Pro Spawn' : 'Zufällig' }}
+            {{ spawnMode() === 'each' ? 'Verteilt' : 'Zufällig' }}
+          </button>
+        </div>
+        <div class="slider-row">
+          <span class="label">Delay</span>
+          <input type="range" min="100" max="5000" step="100"
+                 [value]="spawnDelay()"
+                 (input)="onSpawnDelayChange($event)" />
+          <span class="value">{{ spawnDelay() / 1000 }}s</span>
+        </div>
+        <div class="toggle-row">
+          <span class="label">Sammeln</span>
+          <button class="toggle-btn" [class.active]="useGathering()" (click)="toggleGathering.emit()">
+            <mat-icon>{{ useGathering() ? 'groups' : 'directions_run' }}</mat-icon>
+            {{ useGathering() ? 'Alle zusammen' : 'Sofort los' }}
           </button>
         </div>
       </div>
@@ -83,89 +85,6 @@ export interface SpawnLocationConfig extends LocationConfig {
             <mat-icon>skull</mat-icon>
           </button>
         </div>
-      </div>
-
-      <!-- Location Section - Simplified -->
-      <div class="section location-section">
-        <div class="section-header">
-          <span class="section-title">Spielort</span>
-          @if (isApplying()) {
-            <mat-spinner diameter="12"></mat-spinner>
-          }
-        </div>
-
-        <!-- Current Location Display -->
-        <div class="current-location">
-          <mat-icon>place</mat-icon>
-          <span class="location-name">{{ getCurrentLocationName() }}</span>
-        </div>
-
-        <!-- Change Location Button -->
-        @if (!editMode()) {
-          <button class="change-location-btn" (click)="enterEditMode()">
-            <mat-icon>edit_location</mat-icon>
-            Ort ändern
-          </button>
-        }
-
-        <!-- Edit Mode -->
-        @if (editMode()) {
-          <div class="edit-mode">
-            <div class="edit-section">
-              <div class="edit-label">
-                <mat-icon>home</mat-icon>
-                HQ (Ziel)
-              </div>
-              <app-td-address-autocomplete
-                placeholder="Adresse eingeben..."
-                [currentValue]="pendingHq()"
-                (locationSelected)="onPendingHqChange($event)"
-                (locationCleared)="onPendingHqClear()"
-              />
-            </div>
-
-            <div class="edit-section">
-              <div class="edit-label">
-                <mat-icon>my_location</mat-icon>
-                Spawn (Start)
-              </div>
-              <app-td-address-autocomplete
-                placeholder="Adresse eingeben..."
-                [currentValue]="pendingSpawn()"
-                (locationSelected)="onPendingSpawnChange($event)"
-                (locationCleared)="onPendingSpawnClear()"
-              />
-              <div class="spawn-hint">Gegner starten hier und laufen zum HQ</div>
-            </div>
-
-            <div class="edit-actions">
-              <button
-                class="apply-btn"
-                [disabled]="!canApplyPending() || isApplying()"
-                (click)="applyPending()"
-              >
-                @if (isApplying()) {
-                  <mat-spinner diameter="12"></mat-spinner>
-                } @else {
-                  <mat-icon>check</mat-icon>
-                }
-                Laden
-              </button>
-              <button class="cancel-btn" (click)="cancelEdit()">
-                <mat-icon>close</mat-icon>
-                Abbrechen
-              </button>
-            </div>
-          </div>
-        }
-
-        <!-- Reset to Default -->
-        @if (!editMode() && !isDefaultLocation()) {
-          <button class="reset-btn" (click)="resetLocations.emit()">
-            <mat-icon>restart_alt</mat-icon>
-            Zurück zu Erlenbach
-          </button>
-        }
       </div>
 
       <div class="section log-section">
@@ -654,33 +573,23 @@ export class DebugPanelComponent {
   enemyType = input.required<EnemyTypeId>();
   enemyTypes = input.required<EnemyTypeConfig[]>();
   spawnMode = input.required<'each' | 'random'>();
+  spawnDelay = input.required<number>();
+  useGathering = input.required<boolean>();
   waveActive = input.required<boolean>();
   baseHealth = input.required<number>();
   debugLog = input.required<string>();
-
-  // Location inputs
-  hqLocation = input<LocationConfig | null>(null);
-  spawnLocations = input<SpawnLocationConfig[]>([]);
-  isApplying = input<boolean>(false);
 
   // Outputs
   enemyCountChange = output<number>();
   enemySpeedChange = output<number>();
   enemyTypeChange = output<EnemyTypeId>();
   toggleSpawnMode = output<void>();
+  spawnDelayChange = output<number>();
+  toggleGathering = output<void>();
   killAll = output<void>();
   healHq = output<void>();
   clearLog = output<void>();
   logCamera = output<void>();
-
-  // Location outputs - simplified
-  applyNewLocation = output<{ hq: LocationConfig; spawn: LocationConfig }>();
-  resetLocations = output<void>();
-
-  // Local state
-  editMode = signal(false);
-  pendingHq = signal<LocationConfig | null>(null);
-  pendingSpawn = signal<LocationConfig | null>(null);
 
   onEnemyCountChange(event: Event): void {
     const value = parseInt((event.target as HTMLInputElement).value, 10);
@@ -696,65 +605,8 @@ export class DebugPanelComponent {
     this.enemyTypeChange.emit(typeId);
   }
 
-  getCurrentLocationName(): string {
-    const hq = this.hqLocation();
-    if (!hq?.name) return 'Erlenbach (Default)';
-    // Get first part of address
-    return hq.name.split(',')[0] || hq.name;
-  }
-
-  isDefaultLocation(): boolean {
-    const hq = this.hqLocation();
-    if (!hq) return true;
-    // Check if it's roughly Erlenbach coordinates
-    return Math.abs(hq.lat - 49.173) < 0.01 && Math.abs(hq.lon - 9.269) < 0.01;
-  }
-
-  enterEditMode(): void {
-    // Pre-fill with current values
-    const hq = this.hqLocation();
-    const spawns = this.spawnLocations();
-
-    this.pendingHq.set(hq ? { ...hq } : null);
-    this.pendingSpawn.set(spawns.length > 0 ? { ...spawns[0] } : null);
-    this.editMode.set(true);
-  }
-
-  cancelEdit(): void {
-    this.editMode.set(false);
-    this.pendingHq.set(null);
-    this.pendingSpawn.set(null);
-  }
-
-  onPendingHqChange(location: { lat: number; lon: number; name: string }): void {
-    this.pendingHq.set(location);
-  }
-
-  onPendingHqClear(): void {
-    this.pendingHq.set(null);
-  }
-
-  onPendingSpawnChange(location: { lat: number; lon: number; name: string }): void {
-    this.pendingSpawn.set(location);
-  }
-
-  onPendingSpawnClear(): void {
-    this.pendingSpawn.set(null);
-  }
-
-  canApplyPending(): boolean {
-    const hq = this.pendingHq();
-    const spawn = this.pendingSpawn();
-    return hq !== null && spawn !== null;
-  }
-
-  applyPending(): void {
-    const hq = this.pendingHq();
-    const spawn = this.pendingSpawn();
-
-    if (!hq || !spawn) return;
-
-    this.applyNewLocation.emit({ hq, spawn });
-    this.editMode.set(false);
+  onSpawnDelayChange(event: Event): void {
+    const value = parseInt((event.target as HTMLInputElement).value, 10);
+    this.spawnDelayChange.emit(value);
   }
 }

@@ -85,6 +85,9 @@ export class EnemyManager extends EntityManager<Enemy> {
 
     if (paused) {
       enemy.movement.pause();
+    } else {
+      // Start moving sound immediately if not paused
+      enemy.audio.play('moving', true);
     }
 
     this.add(enemy);

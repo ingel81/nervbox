@@ -55,7 +55,7 @@ export const ENEMY_TYPES: Record<string, EnemyTypeConfig> = {
     baseHp: 100,
     baseSpeed: 5,
     damage: 10,
-    reward: 10,
+    reward: 1,
     hasAnimations: true,
     idleAnimation: 'Armature|Idle',
     walkAnimation: 'Armature|Walk',
