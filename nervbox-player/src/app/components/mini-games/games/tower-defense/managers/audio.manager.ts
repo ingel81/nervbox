@@ -1,18 +1,12 @@
 import { Injectable } from '@angular/core';
-import * as Cesium from 'cesium';
 
 /**
- * Manages global audio playback
+ * Manages global audio playback for the game
  */
 @Injectable()
 export class AudioManager {
   private sounds = new Map<string, string>(); // id -> URL
   private audioInstances = new Map<string, HTMLAudioElement[]>();
-  private viewer: Cesium.Viewer | null = null;
-
-  initialize(viewer: Cesium.Viewer): void {
-    this.viewer = viewer;
-  }
 
   /**
    * Register a sound
@@ -24,7 +18,7 @@ export class AudioManager {
   /**
    * Play a sound
    */
-  play(id: string, volume = 1.0, loop = false, position?: Cesium.Cartesian3): void {
+  play(id: string, volume = 1.0, loop = false): void {
     const url = this.sounds.get(id);
     if (!url) {
       console.warn(`Sound '${id}' not registered`);
@@ -32,7 +26,7 @@ export class AudioManager {
     }
 
     const audio = new Audio(url);
-    audio.volume = position ? this.calculateDistanceVolume(position, volume) : volume;
+    audio.volume = volume;
     audio.loop = loop;
 
     audio.play().catch(() => {
@@ -82,24 +76,5 @@ export class AudioManager {
       });
       instances.length = 0;
     }
-  }
-
-  /**
-   * Calculate volume based on distance from camera
-   */
-  private calculateDistanceVolume(position: Cesium.Cartesian3, baseVolume: number): number {
-    if (!this.viewer) return baseVolume;
-
-    const cameraPosition = this.viewer.camera.positionWC;
-    const distance = Cesium.Cartesian3.distance(cameraPosition, position);
-
-    const minDist = 10; // Full volume up to 10m
-    const maxDist = 300; // Silent at 300m
-
-    if (distance <= minDist) return baseVolume;
-    if (distance >= maxDist) return 0;
-
-    const attenuation = 1 - (distance - minDist) / (maxDist - minDist);
-    return baseVolume * attenuation;
   }
 }

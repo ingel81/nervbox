@@ -20,7 +20,6 @@ import { OsmStreetService, Street, StreetNetwork } from './services/osm-street.s
 import { EntityPoolService } from './services/entity-pool.service';
 import { GeoPosition } from './models/game.types';
 import { EnemyTypeId, getAllEnemyTypes } from './models/enemy-types';
-import { TowerRenderer } from './renderers/tower.renderer';
 import { ApiService } from '../../../../core/services/api.service';
 import { DebugPanelComponent, LocationConfig, SpawnLocationConfig } from './components/debug-panel.component';
 // New OO Game Engine imports
@@ -30,7 +29,6 @@ import { TowerManager } from './managers/tower.manager';
 import { ProjectileManager } from './managers/projectile.manager';
 import { WaveManager, SpawnPoint as WaveSpawnPoint } from './managers/wave.manager';
 import { AudioManager } from './managers/audio.manager';
-import { RenderManager } from './managers/render.manager';
 // Three.js Engine (new 3DTilesRendererJS-based)
 import { ThreeTilesEngine } from './three-engine';
 import * as THREE from 'three';
@@ -91,7 +89,6 @@ export interface SpawnPoint {
     ProjectileManager,
     WaveManager,
     AudioManager,
-    RenderManager,
     EntityPoolService,
   ],
   template: `
@@ -790,6 +787,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   private buildPreviewMesh: THREE.Mesh | null = null;
   private lastPreviewValidation: boolean | null = null;
   private previewThrottleId: number | null = null;
+  private previewDebugCount = 0;
 
   private readonly MIN_DISTANCE_TO_STREET = 10;
   private readonly MAX_DISTANCE_TO_STREET = 50;
@@ -892,14 +890,14 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       }));
 
       // Initialize game state with new engine
-      this.gameState.initializeWithTilesEngine(
+      this.gameState.initialize(
         this.engine,
         this.streetNetwork!,
         { lat: base.latitude, lon: base.longitude },
         waveSpawnPoints,
         this.cachedPaths,
         () => this.playProjectileSound(),
-        (msg) => this.appendDebugLog(msg),
+        (msg: string) => this.appendDebugLog(msg),
         () => this.onGameOver()
       );
 
@@ -945,7 +943,8 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         const validation = this.validateTowerPosition(geo.lat, geo.lon);
 
         if (validation.valid) {
-          this.placeTower(geo.lat, geo.lon);
+          // Use geo.height (derived from hitPoint.y via localToGeo) for correct round-trip
+          this.placeTowerAt(geo.lat, geo.lon, geo.height);
           this.toggleBuildMode();
         } else {
           console.log('Invalid tower position:', validation.reason);
@@ -994,6 +993,15 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
       // Validate position
       const geo = this.engine.sync.localToGeo(hitPoint);
+
+      // Debug logging (every 60 frames)
+      if (this.previewDebugCount++ % 60 === 0) {
+        const origin = this.baseCoords();
+        console.log('[BuildPreview] Hit:', hitPoint.x.toFixed(1), hitPoint.y.toFixed(1), hitPoint.z.toFixed(1));
+        console.log('[BuildPreview] Geo:', geo.lat.toFixed(6), geo.lon.toFixed(6));
+        console.log('[BuildPreview] Origin:', origin.latitude.toFixed(6), origin.longitude.toFixed(6));
+      }
+
       this.updatePreviewValidation(geo.lat, geo.lon);
     });
   }
@@ -1719,6 +1727,24 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     return { valid: true };
   }
 
+  /**
+   * Place tower at specific geo position with known height
+   * Height should come from localToGeo(raycastHit) for accuracy
+   */
+  private placeTowerAt(lat: number, lon: number, height: number): void {
+    if (!this.engine) return;
+
+    const position: GeoPosition = { lat, lon, height };
+
+    const tower = this.gameState.placeTower(position, 'archer');
+    if (tower) {
+      console.log('[TD] Tower placed at:', lat.toFixed(6), lon.toFixed(6), 'height:', height.toFixed(1));
+    }
+  }
+
+  /**
+   * @deprecated Use placeTowerAt with raycast Y instead
+   */
   private async placeTower(lat: number, lon: number): Promise<void> {
     if (!this.engine) return;
 
@@ -2401,14 +2427,14 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         this.engine.setOrigin(data.hq.lat, data.hq.lon);
         this.engine.clearDebugHelpers();
 
-        this.gameState.initializeWithTilesEngine(
+        this.gameState.initialize(
           this.engine,
           this.streetNetwork!,
           { lat: base.latitude, lon: base.longitude },
           waveSpawnPoints,
           this.cachedPaths,
           () => this.playProjectileSound(),
-          (msg) => this.appendDebugLog(msg),
+          (msg: string) => this.appendDebugLog(msg),
           () => this.onGameOver()
         );
       }

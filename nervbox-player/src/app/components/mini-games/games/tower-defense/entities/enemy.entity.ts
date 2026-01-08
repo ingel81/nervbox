@@ -1,4 +1,3 @@
-import * as Cesium from 'cesium';
 import { GameObject } from '../core/game-object';
 import { ComponentType } from '../core/component';
 import {
@@ -17,7 +16,7 @@ import { EnemyTypeId, getEnemyType, EnemyTypeConfig } from '../models/enemy-type
 export class Enemy extends GameObject {
   readonly typeConfig: EnemyTypeConfig;
 
-  // Component shortcuts for convenience
+  // Component shortcuts
   private _transform!: TransformComponent;
   private _health!: HealthComponent;
   private _render!: RenderComponent;
@@ -59,7 +58,6 @@ export class Enemy extends GameObject {
       this._audio.registerSound('moving', this.typeConfig.movingSound, {
         volume: this.typeConfig.movingSoundVolume ?? 0.3,
         loop: true,
-        spatial: true,
         randomStart: this.typeConfig.randomSoundStart ?? false,
       });
     }
@@ -103,12 +101,5 @@ export class Enemy extends GameObject {
   stopMoving(): void {
     this.movement.pause();
     this.audio.stop('moving');
-  }
-
-  /**
-   * Set viewer for spatial audio
-   */
-  setViewer(viewer: Cesium.Viewer): void {
-    this.audio.setViewer(viewer);
   }
 }

@@ -6,6 +6,7 @@ export interface TowerTypeConfig {
   name: string;
   modelUrl: string;
   scale: number;
+  heightOffset: number; // Vertical offset to place model above ground
 
   damage: number;
   range: number;
@@ -24,6 +25,7 @@ export const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
     name: 'Archer Tower',
     modelUrl: ARCHER_MODEL_URL,
     scale: 1.8,
+    heightOffset: 2.0,
     damage: 25,
     range: 60,
     fireRate: 1, // 1 shot/sec
@@ -35,6 +37,7 @@ export const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
     name: 'Cannon Tower',
     modelUrl: ARCHER_MODEL_URL, // TODO: Replace with tower_cannon.glb when available
     scale: 2.0,
+    heightOffset: 2.0,
     damage: 75,
     range: 80,
     fireRate: 0.5, // 0.5 shots/sec (slower)
@@ -46,6 +49,7 @@ export const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
     name: 'Magic Tower',
     modelUrl: ARCHER_MODEL_URL, // TODO: Replace with tower_magic.glb when available
     scale: 1.5,
+    heightOffset: 2.0,
     damage: 40,
     range: 70,
     fireRate: 1.5, // 1.5 shots/sec (faster)
@@ -57,6 +61,7 @@ export const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
     name: 'Sniper Tower',
     modelUrl: ARCHER_MODEL_URL, // TODO: Replace with tower_sniper.glb when available
     scale: 1.6,
+    heightOffset: 2.0,
     damage: 150,
     range: 120,
     fireRate: 0.3, // Very slow but powerful

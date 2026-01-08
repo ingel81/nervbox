@@ -115,29 +115,38 @@ export class EllipsoidSync {
   /**
    * Convert local Three.js coordinates to WGS84
    *
+   * This is the inverse of geoToLocalSimple() - uses simple geometry.
+   * With ReorientationPlugin (recenter: true):
+   * - X = East/West offset (-X = East, +X = West)
+   * - Y = Height
+   * - Z = North/South offset (+Z = North, -Z = South)
+   *
    * @param vec - Three.js Vector3 in local coordinates
    * @returns Object with lat, lon (degrees), height (meters)
    */
   localToGeo(vec: THREE.Vector3): { lat: number; lon: number; height: number } {
-    // Transform from local to ECEF
-    const ecefPos = vec.clone();
+    const originLat = this.originLatRad * MathUtils.RAD2DEG;
+    const originLon = this.originLonRad * MathUtils.RAD2DEG;
 
-    if (this.tilesRenderer) {
-      // Apply tiles group world matrix
-      ecefPos.applyMatrix4(this.tilesRenderer.group.matrixWorld);
-    } else {
-      // Use our origin matrix
-      ecefPos.applyMatrix4(this.originMatrix);
-    }
+    // Earth radius in meters
+    const R = 6371000;
 
-    // Convert ECEF to cartographic
-    const result: { lat: number; lon: number; height: number } = { lat: 0, lon: 0, height: 0 };
-    WGS84_ELLIPSOID.getPositionToCartographic(ecefPos, result);
+    // Convert X offset to longitude delta
+    // -X = East, so positive X means West (negative lon delta)
+    // At the origin latitude, 1 degree longitude = R * cos(lat) * DEG2RAD meters
+    const metersPerDegreeLon = R * Math.cos(originLat * MathUtils.DEG2RAD) * MathUtils.DEG2RAD;
+    const lonDelta = -vec.x / metersPerDegreeLon; // Negate because -X = East
+
+    // Convert Z offset to latitude delta
+    // +Z = North, so positive Z means positive lat delta
+    // 1 degree latitude = R * DEG2RAD meters (approximately)
+    const metersPerDegreeLat = R * MathUtils.DEG2RAD;
+    const latDelta = vec.z / metersPerDegreeLat;
 
     return {
-      lat: result.lat * MathUtils.RAD2DEG,
-      lon: result.lon * MathUtils.RAD2DEG,
-      height: result.height,
+      lat: originLat + latDelta,
+      lon: originLon + lonDelta,
+      height: vec.y + this.originHeight,
     };
   }
 

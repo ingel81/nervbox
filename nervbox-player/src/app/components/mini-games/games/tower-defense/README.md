@@ -226,7 +226,9 @@ SPAWN_POINTS = [
 | Datei | Inhalt |
 |-------|--------|
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | OO Game Engine Architektur |
-| [MIGRATION_TO_THREE_TILES.md](docs/MIGRATION_TO_THREE_TILES.md) | Migrations-Referenz |
+
+**Hinweis:** Die Migration von Cesium.js zu Three.js + 3DTilesRendererJS ist abgeschlossen.
+Cesium.js wurde vollständig aus der Codebasis entfernt.
 
 ## Offene Features
 

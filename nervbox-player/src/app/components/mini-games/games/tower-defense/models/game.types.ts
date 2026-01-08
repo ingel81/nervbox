@@ -1,11 +1,15 @@
-import * as Cesium from 'cesium';
-
+/**
+ * Geographic position with optional height
+ */
 export interface GeoPosition {
   lat: number;
   lon: number;
-  height?: number; // Terrain height (optional, sampled async)
+  height?: number;
 }
 
+/**
+ * Tower configuration
+ */
 export interface TowerConfig {
   range: number;
   fireRate: number;
@@ -13,48 +17,23 @@ export interface TowerConfig {
   projectileSpeed: number;
 }
 
+/**
+ * Enemy configuration
+ */
 export interface EnemyConfig {
   maxHp: number;
   speed: number;
   reward: number;
 }
 
-export interface TowerData {
-  id: string;
-  position: GeoPosition;
-  config: TowerConfig;
-  entity: Cesium.Entity;
-  rangeEntity: Cesium.Entity | null;
-  lastFireTime: number;
-  selected: boolean;
-}
-
-export interface EnemyData {
-  id: string;
-  position: GeoPosition;
-  path: GeoPosition[];
-  currentIndex: number;
-  progress: number;
-  hp: number;
-  maxHp: number;
-  speed: number;
-  entity: Cesium.Entity;
-  healthBarEntity: Cesium.Entity;
-  alive: boolean;
-}
-
-export interface ProjectileData {
-  id: string;
-  position: GeoPosition;
-  targetEnemyId: string;
-  damage: number;
-  speed: number;
-  entity: Cesium.Entity;
-  active: boolean;
-}
-
+/**
+ * Game phases
+ */
 export type GamePhase = 'setup' | 'wave' | 'paused' | 'gameover' | 'victory';
 
+/**
+ * Wave configuration
+ */
 export interface WaveConfig {
   enemyCount: number;
   enemyHp: number;
@@ -62,4 +41,7 @@ export interface WaveConfig {
   spawnDelay: number;
 }
 
+/**
+ * Distance calculator function type
+ */
 export type DistanceCalculator = (p1: GeoPosition, p2: GeoPosition) => number;

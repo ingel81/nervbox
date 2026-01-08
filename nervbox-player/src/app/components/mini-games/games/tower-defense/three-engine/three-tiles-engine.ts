@@ -18,10 +18,13 @@ import {
 } from '3d-tiles-renderer/plugins';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { EllipsoidSync } from './ellipsoid-sync';
-import { ThreeEnemyRenderer } from './renderers/three-enemy.renderer';
-import { ThreeTowerRenderer } from './renderers/three-tower.renderer';
-import { ThreeProjectileRenderer } from './renderers/three-projectile.renderer';
-import { ThreeEffectsRenderer } from './renderers/three-effects.renderer';
+import {
+  CoordinateSync,
+  ThreeEnemyRenderer,
+  ThreeTowerRenderer,
+  ThreeProjectileRenderer,
+  ThreeEffectsRenderer,
+} from './renderers';
 
 /**
  * ThreeTilesEngine - Main Three.js rendering engine for Tower Defense
@@ -140,18 +143,17 @@ export class ThreeTilesEngine {
     // Setup lighting
     this.setupLighting();
 
-    // Initialize entity renderers (they need sync, not cesium-three-sync)
-    // Note: We pass a compatibility layer that matches the CesiumThreeSync interface
-    const syncAdapter = {
-      geoToLocal: (lat: number, lon: number, height: number) => this.sync.geoToLocal(lat, lon, height),
+    // Initialize entity renderers with coordinate sync adapter
+    // Use geoToLocalSimple for consistency with raycast results
+    const coordinateSync: CoordinateSync = {
+      geoToLocal: (lat: number, lon: number, height: number) => this.sync.geoToLocalSimple(lat, lon, height),
       localToGeo: (vec: THREE.Vector3) => this.sync.localToGeo(vec),
-      camera: this.camera,
     };
 
-    this.enemies = new ThreeEnemyRenderer(this.scene, syncAdapter as any);
-    this.towers = new ThreeTowerRenderer(this.scene, syncAdapter as any);
-    this.projectiles = new ThreeProjectileRenderer(this.scene, syncAdapter as any);
-    this.effects = new ThreeEffectsRenderer(this.scene, syncAdapter as any);
+    this.enemies = new ThreeEnemyRenderer(this.scene, coordinateSync);
+    this.towers = new ThreeTowerRenderer(this.scene, coordinateSync);
+    this.projectiles = new ThreeProjectileRenderer(this.scene, coordinateSync);
+    this.effects = new ThreeEffectsRenderer(this.scene, coordinateSync);
 
     console.log('[ThreeTilesEngine] Initialized with origin:', originLat, originLon);
   }

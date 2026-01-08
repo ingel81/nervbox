@@ -1,6 +1,5 @@
 import * as THREE from 'three';
-import { CesiumThreeSync } from '../cesium-three-sync';
-import { InstancedEntityManager } from '../instanced-entity-manager';
+import { CoordinateSync } from './index';
 import {
   ProjectileTypeId,
   ProjectileVisualType,
@@ -16,27 +15,120 @@ export interface ProjectileRenderData {
 }
 
 /**
+ * Simple instanced entity manager for projectiles
+ */
+class ProjectileInstanceManager {
+  readonly instancedMesh: THREE.InstancedMesh;
+  private entities = new Map<string, number>(); // id -> instanceIndex
+  private freeIndices: number[] = [];
+  private activeCount = 0;
+  private readonly matrix = new THREE.Matrix4();
+
+  constructor(
+    geometry: THREE.BufferGeometry,
+    material: THREE.Material,
+    maxCount: number
+  ) {
+    this.instancedMesh = new THREE.InstancedMesh(geometry, material, maxCount);
+    this.instancedMesh.count = 0;
+    this.instancedMesh.frustumCulled = false;
+  }
+
+  add(
+    id: string,
+    position: THREE.Vector3,
+    rotation: THREE.Euler,
+    scale: THREE.Vector3
+  ): void {
+    if (this.entities.has(id)) return;
+
+    let index: number;
+    if (this.freeIndices.length > 0) {
+      index = this.freeIndices.pop()!;
+    } else {
+      index = this.activeCount;
+    }
+
+    this.entities.set(id, index);
+    this.activeCount = Math.max(this.activeCount, index + 1);
+    this.instancedMesh.count = this.activeCount;
+
+    this.matrix.compose(
+      position,
+      new THREE.Quaternion().setFromEuler(rotation),
+      scale
+    );
+    this.instancedMesh.setMatrixAt(index, this.matrix);
+    this.instancedMesh.instanceMatrix.needsUpdate = true;
+  }
+
+  update(id: string, position: THREE.Vector3, rotation: THREE.Euler): void {
+    const index = this.entities.get(id);
+    if (index === undefined) return;
+
+    this.instancedMesh.getMatrixAt(index, this.matrix);
+    const scale = new THREE.Vector3();
+    this.matrix.decompose(new THREE.Vector3(), new THREE.Quaternion(), scale);
+
+    this.matrix.compose(
+      position,
+      new THREE.Quaternion().setFromEuler(rotation),
+      scale
+    );
+    this.instancedMesh.setMatrixAt(index, this.matrix);
+    this.instancedMesh.instanceMatrix.needsUpdate = true;
+  }
+
+  remove(id: string): void {
+    const index = this.entities.get(id);
+    if (index === undefined) return;
+
+    // Move to infinity (hide)
+    this.matrix.makeTranslation(0, -10000, 0);
+    this.instancedMesh.setMatrixAt(index, this.matrix);
+    this.instancedMesh.instanceMatrix.needsUpdate = true;
+
+    this.entities.delete(id);
+    this.freeIndices.push(index);
+  }
+
+  get count(): number {
+    return this.entities.size;
+  }
+
+  clear(): void {
+    for (const id of this.entities.keys()) {
+      this.remove(id);
+    }
+    this.entities.clear();
+    this.freeIndices = [];
+    this.activeCount = 0;
+    this.instancedMesh.count = 0;
+  }
+
+  dispose(): void {
+    this.clear();
+    this.instancedMesh.geometry.dispose();
+    (this.instancedMesh.material as THREE.Material).dispose();
+  }
+}
+
+/**
  * ThreeProjectileRenderer - Renders projectiles using GPU instancing
- *
- * Uses InstancedMesh for maximum performance with many projectiles.
- * Different visual types (arrow, cannonball, magic) use separate instanced meshes.
  */
 export class ThreeProjectileRenderer {
   private scene: THREE.Scene;
-  private sync: CesiumThreeSync;
+  private sync: CoordinateSync;
 
   // Instanced managers per visual type
-  private arrowManager: InstancedEntityManager<ProjectileRenderData>;
-  private cannonballManager: InstancedEntityManager<ProjectileRenderData>;
-  private magicManager: InstancedEntityManager<ProjectileRenderData>;
+  private arrowManager: ProjectileInstanceManager;
+  private cannonballManager: ProjectileInstanceManager;
+  private magicManager: ProjectileInstanceManager;
 
   // Track which manager owns each projectile
   private projectileTypes = new Map<string, ProjectileVisualType>();
 
-  // Trail particles for magic projectiles (optional future enhancement)
-  // private trailParticles: THREE.Points | null = null;
-
-  constructor(scene: THREE.Scene, sync: CesiumThreeSync) {
+  constructor(scene: THREE.Scene, sync: CoordinateSync) {
     this.scene = scene;
     this.sync = sync;
 
@@ -51,63 +143,46 @@ export class ThreeProjectileRenderer {
     scene.add(this.magicManager.instancedMesh);
   }
 
-  /**
-   * Create instanced manager for arrows
-   */
-  private createArrowManager(): InstancedEntityManager<ProjectileRenderData> {
-    // Arrow: Elongated cone pointing forward
+  private createArrowManager(): ProjectileInstanceManager {
     const geometry = new THREE.ConeGeometry(0.15, 1.5, 8);
-    geometry.rotateX(Math.PI / 2); // Point forward (along Z)
+    geometry.rotateX(Math.PI / 2);
 
     const material = new THREE.MeshStandardMaterial({
-      color: 0x8b4513, // Brown (wood)
+      color: 0x8b4513,
       metalness: 0.3,
       roughness: 0.7,
     });
 
-    return new InstancedEntityManager(geometry, material, 500);
+    return new ProjectileInstanceManager(geometry, material, 500);
   }
 
-  /**
-   * Create instanced manager for cannonballs
-   */
-  private createCannonballManager(): InstancedEntityManager<ProjectileRenderData> {
-    // Cannonball: Sphere
+  private createCannonballManager(): ProjectileInstanceManager {
     const geometry = new THREE.SphereGeometry(0.5, 16, 16);
 
     const material = new THREE.MeshStandardMaterial({
-      color: 0x333333, // Dark gray (iron)
+      color: 0x333333,
       metalness: 0.8,
       roughness: 0.3,
     });
 
-    return new InstancedEntityManager(geometry, material, 200);
+    return new ProjectileInstanceManager(geometry, material, 200);
   }
 
-  /**
-   * Create instanced manager for magic projectiles
-   */
-  private createMagicManager(): InstancedEntityManager<ProjectileRenderData> {
-    // Magic: Glowing sphere
+  private createMagicManager(): ProjectileInstanceManager {
     const geometry = new THREE.SphereGeometry(0.3, 16, 16);
 
     const material = new THREE.MeshStandardMaterial({
-      color: 0xff6600, // Orange (fire)
+      color: 0xff6600,
       emissive: 0xff3300,
       emissiveIntensity: 2.0,
       metalness: 0.0,
       roughness: 0.0,
     });
 
-    return new InstancedEntityManager(geometry, material, 500);
+    return new ProjectileInstanceManager(geometry, material, 500);
   }
 
-  /**
-   * Get manager for a visual type
-   */
-  private getManager(
-    visualType: ProjectileVisualType
-  ): InstancedEntityManager<ProjectileRenderData> {
+  private getManager(visualType: ProjectileVisualType): ProjectileInstanceManager {
     switch (visualType) {
       case 'arrow':
         return this.arrowManager;
@@ -120,14 +195,6 @@ export class ThreeProjectileRenderer {
 
   /**
    * Create a new projectile
-   *
-   * @param id - Unique projectile ID
-   * @param typeId - Projectile type (arrow, cannonball, fireball, ice-shard)
-   * @param startLat - Start latitude
-   * @param startLon - Start longitude
-   * @param startHeight - Start height
-   * @param heading - Direction heading in radians
-   * @param pitch - Elevation angle in radians (optional)
    */
   create(
     id: string,
@@ -147,14 +214,11 @@ export class ThreeProjectileRenderer {
     const visualType = config.visualType;
     const manager = this.getManager(visualType);
 
-    const renderData: ProjectileRenderData = { id, visualType };
     const localPos = this.sync.geoToLocal(startLat, startLon, startHeight);
-
-    // Rotation: heading for Y axis, pitch for X axis
     const rotation = new THREE.Euler(-pitch, heading, 0, 'YXZ');
     const scale = new THREE.Vector3(config.scale, config.scale, config.scale);
 
-    manager.add(renderData, localPos, rotation, scale);
+    manager.add(id, localPos, rotation, scale);
     this.projectileTypes.set(id, visualType);
   }
 
@@ -191,19 +255,6 @@ export class ThreeProjectileRenderer {
     this.projectileTypes.delete(id);
   }
 
-  /**
-   * Commit all changes to GPU
-   * Call at end of frame
-   */
-  commitToGPU(): void {
-    this.arrowManager.commitToGPU();
-    this.cannonballManager.commitToGPU();
-    this.magicManager.commitToGPU();
-  }
-
-  /**
-   * Get projectile count
-   */
   get count(): number {
     return (
       this.arrowManager.count +
@@ -213,8 +264,12 @@ export class ThreeProjectileRenderer {
   }
 
   /**
-   * Clear all projectiles
+   * Commit all changes to GPU (no-op in simplified implementation)
    */
+  commitToGPU(): void {
+    // Instance matrix updates are done automatically in add/update/remove
+  }
+
   clear(): void {
     this.arrowManager.clear();
     this.cannonballManager.clear();
@@ -222,9 +277,6 @@ export class ThreeProjectileRenderer {
     this.projectileTypes.clear();
   }
 
-  /**
-   * Dispose all resources
-   */
   dispose(): void {
     this.scene.remove(this.arrowManager.instancedMesh);
     this.scene.remove(this.cannonballManager.instancedMesh);
