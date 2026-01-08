@@ -491,7 +491,7 @@ export interface SpawnPoint {
 
     /* === Sidebar === */
     .td-sidebar {
-      width: 200px;
+      width: 300px;
       position: relative;
       display: flex;
       flex-direction: column;
