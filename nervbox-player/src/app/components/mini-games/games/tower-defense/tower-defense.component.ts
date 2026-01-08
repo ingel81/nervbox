@@ -860,6 +860,11 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         this.onTilesLoaded();
       });
 
+      // Register callback for per-frame animations (HQ marker rotation)
+      this.engine.setOnUpdateCallback((deltaTime) => {
+        this.onEngineUpdate(deltaTime);
+      });
+
       // Preload 3D models in background
       this.engine.preloadModels().then(() => {
         console.log('[TD] All Three.js models preloaded');
@@ -1230,6 +1235,16 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
+   * Called each frame for animations
+   */
+  private onEngineUpdate(deltaTime: number): void {
+    // Rotate HQ marker
+    if (this.baseMarker) {
+      this.baseMarker.rotation.y += deltaTime * 0.001; // Slow rotation
+    }
+  }
+
+  /**
    * Re-render all route lines with updated terrain heights
    */
   private refreshRouteLines(): void {
@@ -1290,22 +1305,25 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       (this.baseMarker.material as THREE.Material).dispose();
     }
 
-    // Create a simple 3D marker for HQ - position on terrain
-    // Base marker is at ORIGIN, so relative Y = 0 + HEIGHT_ABOVE_GROUND
-    const HEIGHT_ABOVE_GROUND = 5; // Marker floats above ground
+    // Create a floating, rotating diamond marker for HQ
+    // Higher position for better visibility
+    const HEIGHT_ABOVE_GROUND = 25; // Higher floating marker
     const local = this.engine.sync.geoToLocalSimple(base.latitude, base.longitude, 0);
     local.y = HEIGHT_ABOVE_GROUND; // At origin, relative height is 0
 
-    const geometry = new THREE.ConeGeometry(8, 20, 8);
+    // Diamond shape using OctahedronGeometry (stretched vertically)
+    const geometry = new THREE.OctahedronGeometry(10, 0);
+    geometry.scale(1, 1.5, 1); // Stretch vertically for diamond shape
+
     const material = new THREE.MeshBasicMaterial({
       color: 0x22c55e,
       depthTest: true,
       transparent: true,
-      opacity: 0.9
+      opacity: 0.85,
+      wireframe: false
     });
     this.baseMarker = new THREE.Mesh(geometry, material);
     this.baseMarker.position.copy(local);
-    this.baseMarker.rotation.x = Math.PI; // Point down
     this.baseMarker.renderOrder = 2;
 
     overlayGroup.add(this.baseMarker);
@@ -1821,7 +1839,8 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   private updateMarkerHeights(): void {
     if (!this.engine) return;
 
-    const MARKER_HEIGHT = 5;
+    const HQ_MARKER_HEIGHT = 25; // HQ marker floats higher (animated diamond)
+    const SPAWN_MARKER_HEIGHT = 5;
 
     // Get origin terrain height as reference
     const base = this.baseCoords();
@@ -1838,8 +1857,8 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     // Update base marker - at origin, so relative height = 0
     if (this.baseMarker) {
       const local = this.engine.sync.geoToLocalSimple(base.latitude, base.longitude, 0);
-      this.baseMarker.position.set(local.x, MARKER_HEIGHT, local.z);
-      console.log(`[Heights] Base marker at relative Y=${MARKER_HEIGHT}`);
+      this.baseMarker.position.set(local.x, HQ_MARKER_HEIGHT, local.z);
+      console.log(`[Heights] Base marker at relative Y=${HQ_MARKER_HEIGHT}`);
     }
 
     // Update spawn markers
@@ -1850,7 +1869,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       const terrainY = this.engine.getTerrainHeightAtGeo(spawn.latitude, spawn.longitude);
       if (terrainY !== null) {
         const local = this.engine.sync.geoToLocalSimple(spawn.latitude, spawn.longitude, 0);
-        const relativeY = (terrainY - originTerrainY) + MARKER_HEIGHT;
+        const relativeY = (terrainY - originTerrainY) + SPAWN_MARKER_HEIGHT;
         marker.position.set(local.x, relativeY, local.z);
         console.log(`[Heights] Spawn ${spawn.name} at relative Y=${relativeY.toFixed(1)} (terrain diff: ${(terrainY - originTerrainY).toFixed(1)})`);
       }

@@ -80,6 +80,9 @@ export class ThreeTilesEngine {
   private tilesLoadDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly TILES_LOAD_DEBOUNCE_MS = 500; // Wait 500ms after last tile load
 
+  // Callback for per-frame updates (animations)
+  private onUpdateCallback: ((deltaTime: number) => void) | null = null;
+
   // Performance stats
   private lastFrameTime = 0;
   private frameCount = 0;
@@ -248,6 +251,13 @@ export class ThreeTilesEngine {
    */
   setOnTilesLoadCallback(callback: () => void): void {
     this.onTilesLoadCallback = callback;
+  }
+
+  /**
+   * Register a callback to be called each frame for animations
+   */
+  setOnUpdateCallback(callback: (deltaTime: number) => void): void {
+    this.onUpdateCallback = callback;
   }
 
   private setupLighting(): void {
@@ -724,6 +734,11 @@ export class ThreeTilesEngine {
     // Rotate test cube if exists
     if (this.testCube) {
       this.testCube.rotation.y += deltaTime * 0.001;
+    }
+
+    // Call external update callback (for component animations)
+    if (this.onUpdateCallback) {
+      this.onUpdateCallback(deltaTime);
     }
   }
 
