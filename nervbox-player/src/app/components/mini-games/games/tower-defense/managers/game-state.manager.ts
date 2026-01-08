@@ -9,7 +9,7 @@ import { GameObject } from '../core/game-object';
 import { Enemy } from '../entities/enemy.entity';
 import { Projectile } from '../entities/projectile.entity';
 import { EnemyTypeId } from '../models/enemy-types';
-import { TowerTypeId } from '../configs/tower-types.config';
+import { TowerTypeId, TOWER_TYPES } from '../configs/tower-types.config';
 import { Tower } from '../entities/tower.entity';
 import { ThreeTilesEngine } from '../three-engine';
 
@@ -363,7 +363,7 @@ export class GameStateManager {
    * Sell a tower and refund 50% of its cost
    */
   sellTower(tower: Tower): number {
-    const refund = Math.floor(tower.typeConfig.cost * 0.5);
+    const refund = tower.typeConfig.sellValue;
     this.towerManager.selectTower(null);
     this.towerManager.remove(tower);
     this.credits.update((c) => c + refund);
@@ -374,7 +374,21 @@ export class GameStateManager {
    * Place a new tower
    */
   placeTower(position: GeoPosition, typeId: TowerTypeId = 'archer'): Tower | null {
-    return this.towerManager.placeTower(position, typeId);
+    const config = TOWER_TYPES[typeId];
+    if (!config) return null;
+
+    // Check if player has enough credits
+    if (this.credits() < config.cost) {
+      console.log(`[GameState] Not enough credits: have ${this.credits()}, need ${config.cost}`);
+      return null;
+    }
+
+    const tower = this.towerManager.placeTower(position, typeId);
+    if (tower) {
+      // Deduct cost
+      this.credits.update((c) => c - config.cost);
+    }
+    return tower;
   }
 
   /**

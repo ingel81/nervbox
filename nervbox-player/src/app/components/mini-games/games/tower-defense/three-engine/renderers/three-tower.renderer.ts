@@ -398,18 +398,21 @@ export class ThreeTowerRenderer {
     this.scene.remove(data.mesh);
     this.disposeObject(data.mesh);
 
-    // Remove range indicator
+    // Remove range indicator (may be a Group with children)
     if (data.rangeIndicator) {
       this.scene.remove(data.rangeIndicator);
-      data.rangeIndicator.geometry.dispose();
-      (data.rangeIndicator.material as THREE.Material).dispose();
+      this.disposeObject(data.rangeIndicator);
     }
 
     // Remove selection ring
     if (data.selectionRing) {
       this.scene.remove(data.selectionRing);
-      data.selectionRing.geometry.dispose();
-      (data.selectionRing.material as THREE.Material).dispose();
+      if (data.selectionRing.geometry) {
+        data.selectionRing.geometry.dispose();
+      }
+      if (data.selectionRing.material) {
+        (data.selectionRing.material as THREE.Material).dispose();
+      }
     }
 
     // Remove hex grid
