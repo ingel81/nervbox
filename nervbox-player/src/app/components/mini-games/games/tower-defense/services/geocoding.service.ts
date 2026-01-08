@@ -6,6 +6,36 @@ export interface GeocodingResult {
   lon: number;
   type: string;
   importance: number;
+  address?: NominatimAddress;
+}
+
+/**
+ * Nominatim address details structure
+ */
+export interface NominatimAddress {
+  city?: string;
+  town?: string;
+  village?: string;
+  municipality?: string;
+  suburb?: string;
+  city_district?: string;
+  county?: string;
+  state?: string;
+  country?: string;
+  postcode?: string;
+  road?: string;
+  house_number?: string;
+}
+
+/**
+ * Result from reverse geocoding with full address details
+ */
+export interface ReverseGeocodeResult {
+  displayName: string;
+  locationName: string;
+  address: NominatimAddress;
+  lat: number;
+  lon: number;
 }
 
 /**
@@ -87,19 +117,23 @@ export class GeocodingService {
 
       const data = await response.json();
 
-      const results: GeocodingResult[] = data.map((item: {
-        display_name: string;
-        lat: string;
-        lon: string;
-        type: string;
-        importance: number;
-      }) => ({
-        displayName: item.display_name,
-        lat: parseFloat(item.lat),
-        lon: parseFloat(item.lon),
-        type: item.type,
-        importance: item.importance,
-      }));
+      const results: GeocodingResult[] = data.map(
+        (item: {
+          display_name: string;
+          lat: string;
+          lon: string;
+          type: string;
+          importance: number;
+          address?: NominatimAddress;
+        }) => ({
+          displayName: item.display_name,
+          lat: parseFloat(item.lat),
+          lon: parseFloat(item.lon),
+          type: item.type,
+          importance: item.importance,
+          address: item.address,
+        })
+      );
 
       this.results.set(results);
       this.error.set(null);
@@ -120,11 +154,20 @@ export class GeocodingService {
    * Reverse geocoding: get address from coordinates
    */
   async reverseGeocode(lat: number, lon: number): Promise<string | null> {
+    const result = await this.reverseGeocodeDetailed(lat, lon);
+    return result?.displayName ?? null;
+  }
+
+  /**
+   * Reverse geocoding with full address details
+   */
+  async reverseGeocodeDetailed(lat: number, lon: number): Promise<ReverseGeocodeResult | null> {
     try {
       const params = new URLSearchParams({
         lat: lat.toString(),
         lon: lon.toString(),
         format: 'json',
+        addressdetails: '1',
       });
 
       const response = await fetch(`${this.NOMINATIM_URL}/reverse?${params}`, {
@@ -138,10 +181,45 @@ export class GeocodingService {
       }
 
       const data = await response.json();
-      return data.display_name || null;
+
+      if (!data || data.error) {
+        return null;
+      }
+
+      return {
+        displayName: data.display_name || '',
+        locationName: this.extractLocationName(data.address || {}),
+        address: data.address || {},
+        lat: parseFloat(data.lat),
+        lon: parseFloat(data.lon),
+      };
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Extract a human-readable location name from Nominatim address
+   * Priority: city > town > village > municipality > suburb > county
+   */
+  extractLocationName(address: NominatimAddress): string {
+    const candidates = [
+      address.city,
+      address.town,
+      address.village,
+      address.municipality,
+      address.suburb,
+      address.city_district,
+      address.county,
+    ];
+
+    for (const name of candidates) {
+      if (name?.trim()) {
+        return name.trim();
+      }
+    }
+
+    return 'Unbekannter Ort';
   }
 
   /**

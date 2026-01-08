@@ -12,6 +12,8 @@ Component-basierte Game Engine Architektur mit **Three.js + 3DTilesRendererJS** 
 
 - [x] Tower-Platzierung (mit Terrain-Höhe)
 - [x] Tower-Rendering (GLB Modelle)
+- [x] Tower-Selektion (Range-Anzeige mit Terrain-Raycasting)
+- [x] Hex-Grid Line-of-Sight Visualisierung
 - [x] Enemy-Spawning und Rendering
 - [x] Enemy-Animationen (Walk, Death)
 - [x] Enemy-Heading (folgt Bewegungsrichtung)
@@ -20,8 +22,8 @@ Component-basierte Game Engine Architektur mit **Three.js + 3DTilesRendererJS** 
 - [x] Projektil-Sound (arrow_01.mp3)
 - [x] Blut-Effekte (Partikel + Decals)
 - [x] Feuer-Effekte (bei Basis-Schaden + Game Over)
-- [ ] Tower-Selektion (Range-Anzeige)
-- [ ] Line-of-Sight für Projektile
+- [x] Location-System (Dialog, Random Spawn, Reset-Fix)
+- [ ] Projektil-LoS (nur bei Sichtverbindung treffen)
 
 ## Design Prinzipien
 

@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { RandomSpawnCandidate } from '../models/location.types';
 
 export interface StreetNode {
   id: number;
@@ -23,6 +24,11 @@ export interface StreetNetwork {
     maxLon: number;
   };
 }
+
+/**
+ * Street types suitable for enemy spawning (exclude footpaths)
+ */
+const SPAWNABLE_STREET_TYPES = ['residential', 'primary', 'secondary', 'tertiary', 'unclassified', 'living_street'];
 
 @Injectable({
   providedIn: 'root',
@@ -428,9 +434,9 @@ export class OsmStreetService {
       }
     }
 
-    // No path found - return direct line
-    console.warn('No path found, returning start and end only');
-    return [start, end];
+    // No path found - return empty array (NOT a direct line!)
+    console.warn('No path found between nodes');
+    return [];
   }
 
   /**
@@ -448,5 +454,100 @@ export class OsmStreetService {
         Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
+  }
+
+  /**
+   * Clear cache for specific coordinates or all street caches
+   */
+  clearCache(centerLat?: number, centerLon?: number, radiusMeters?: number): void {
+    if (centerLat !== undefined && centerLon !== undefined && radiusMeters !== undefined) {
+      // Clear specific cache
+      const cacheKey = this.getCacheKey(centerLat, centerLon, radiusMeters);
+      localStorage.removeItem(cacheKey);
+      console.log(`[OSM] Cleared cache for ${centerLat}, ${centerLon}`);
+    } else {
+      // Clear all street caches
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith(this.CACHE_PREFIX)) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((key) => localStorage.removeItem(key));
+      console.log(`[OSM] Cleared ${keysToRemove.length} cached street networks`);
+    }
+  }
+
+  /**
+   * Find a random street point within a distance range from center
+   * Used for generating random spawn points
+   *
+   * @param network - The loaded street network
+   * @param centerLat - Center latitude (HQ position)
+   * @param centerLon - Center longitude (HQ position)
+   * @param minDistance - Minimum distance from center in meters (default 500m)
+   * @param maxDistance - Maximum distance from center in meters (default 1000m)
+   * @returns A random spawn candidate or null if none found
+   */
+  findRandomStreetPoint(
+    network: StreetNetwork,
+    centerLat: number,
+    centerLon: number,
+    minDistance: number = 500,
+    maxDistance: number = 1000
+  ): RandomSpawnCandidate | null {
+    // 1. Collect all street nodes in distance range (excluding footpaths)
+    const candidates: RandomSpawnCandidate[] = [];
+
+    for (const street of network.streets) {
+      // Skip footpaths and paths - enemies should spawn on roads
+      if (!SPAWNABLE_STREET_TYPES.includes(street.type)) {
+        continue;
+      }
+
+      for (const node of street.nodes) {
+        const distance = this.haversineDistance(centerLat, centerLon, node.lat, node.lon);
+        if (distance >= minDistance && distance <= maxDistance) {
+          candidates.push({
+            lat: node.lat,
+            lon: node.lon,
+            distance,
+            streetName: street.name,
+            nodeId: node.id,
+          });
+        }
+      }
+    }
+
+    if (candidates.length === 0) {
+      console.warn('[OSM] No street points found in distance range');
+      return null;
+    }
+
+    console.log(`[OSM] Found ${candidates.length} street nodes in ${minDistance}-${maxDistance}m range`);
+
+    // 2. Shuffle candidates
+    const shuffled = candidates.sort(() => Math.random() - 0.5);
+
+    // 3. Check path validity for top candidates
+    let testedCount = 0;
+    for (const candidate of shuffled.slice(0, 50)) {
+      testedCount++;
+      const path = this.findPath(network, candidate.lat, candidate.lon, centerLat, centerLon);
+
+      // Path must exist (length > 0) and have at least 2 nodes
+      if (path.length >= 2) {
+        console.log(
+          `[OSM] Found valid spawn point at ${candidate.lat.toFixed(5)}, ${candidate.lon.toFixed(5)} ` +
+            `(${Math.round(candidate.distance)}m from HQ, on ${candidate.streetName || 'unnamed street'}, ` +
+            `path has ${path.length} nodes, tested ${testedCount} candidates)`
+        );
+        return candidate;
+      }
+    }
+
+    console.warn(`[OSM] No reachable street points found after testing ${testedCount} candidates`);
+    return null;
   }
 }
