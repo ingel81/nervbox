@@ -78,6 +78,7 @@ export class ThreeTilesEngine {
   private testCube: THREE.Mesh | null = null;
   private debugHelpers: THREE.Object3D[] = [];
 
+
   // Overlay group for markers, streets, routes
   // Added to scene root, but synced with tiles movement each frame
   private overlayGroup: THREE.Group;
@@ -150,8 +151,9 @@ export class ThreeTilesEngine {
       160000000
     );
 
-    // Setup lighting
+    // Setup lighting and sky
     this.setupLighting();
+    this.setupSky();
 
     // Initialize entity renderers with coordinate sync adapter
     // Use geoToLocalSimple for consistency with raycast results
@@ -331,6 +333,28 @@ export class ThreeTilesEngine {
     // Subtle ambient for shadow areas (prevents pure black)
     const ambient = new THREE.AmbientLight(0x404040, 0.3);
     this.scene.add(ambient);
+  }
+
+  /**
+   * Setup sky background from equirectangular texture
+   */
+  private setupSky(): void {
+    const loader = new THREE.TextureLoader();
+
+    loader.load(
+      '/assets/games/tower-defense/images/kloppenheim_06_puresky.jpg',
+      (texture) => {
+        texture.mapping = THREE.EquirectangularReflectionMapping;
+        texture.colorSpace = THREE.SRGBColorSpace;
+        this.scene.background = texture;
+        console.log('[ThreeTilesEngine] Sky texture loaded');
+      },
+      undefined,
+      (error) => {
+        console.warn('[ThreeTilesEngine] Failed to load sky texture, using fallback color', error);
+        this.scene.background = new THREE.Color(0x87ceeb); // Light blue fallback
+      }
+    );
   }
 
   private setupControls(): void {
