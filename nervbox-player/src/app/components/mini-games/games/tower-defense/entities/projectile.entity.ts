@@ -23,6 +23,7 @@ import { Enemy } from './enemy.entity';
 export class Projectile extends GameObject {
   readonly typeConfig: ProjectileTypeConfig;
   readonly targetEnemy: Enemy;
+  readonly sourceTowerId: string;
 
   private _transform!: TransformComponent;
   private _combat!: CombatComponent;
@@ -40,11 +41,13 @@ export class Projectile extends GameObject {
     targetEnemy: Enemy,
     typeId: ProjectileTypeId,
     damage: number,
-    startHeight: number
+    startHeight: number,
+    sourceTowerId: string
   ) {
     super('projectile');
     this.typeConfig = getProjectileType(typeId);
     this.targetEnemy = targetEnemy;
+    this.sourceTowerId = sourceTowerId;
     this._startHeight = startHeight;
     this._flightHeight = startHeight;
 

@@ -17,6 +17,9 @@ export class CombatComponent extends Component {
   readonly range: number;
   readonly fireRate: number;
 
+  /** Number of kills this unit has made */
+  kills = 0;
+
   private lastFireTime = 0;
 
   constructor(gameObject: GameObject, config: CombatConfig) {
