@@ -15,27 +15,27 @@ export interface ProjectileTypeConfig {
 export const PROJECTILE_TYPES: Record<ProjectileTypeId, ProjectileTypeConfig> = {
   arrow: {
     id: 'arrow',
-    speed: 100, // m/s
+    speed: 80,
     visualType: 'arrow',
-    scale: 0.5,
+    scale: 8, // Model is tiny (~0.8m), scale up significantly
   },
   cannonball: {
     id: 'cannonball',
-    speed: 60, // m/s (slower, heavier)
+    speed: 50,
     visualType: 'cannonball',
-    scale: 0.8,
+    scale: 0.5,
   },
   fireball: {
     id: 'fireball',
-    speed: 120, // m/s (fast magic)
+    speed: 100,
     visualType: 'magic',
-    scale: 0.6,
+    scale: 0.4,
   },
   'ice-shard': {
     id: 'ice-shard',
-    speed: 110,
+    speed: 90,
     visualType: 'magic',
-    scale: 0.5,
+    scale: 0.4,
   },
 };
 

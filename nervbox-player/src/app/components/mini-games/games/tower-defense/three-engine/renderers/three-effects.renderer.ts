@@ -26,6 +26,18 @@ interface EffectInstance {
 }
 
 /**
+ * Blood decal instance (persistent ground stain)
+ */
+interface BloodDecal {
+  id: string;
+  mesh: THREE.Mesh;
+  spawnTime: number;
+  fadeStartTime: number;
+  fadeDuration: number;
+  active: boolean;
+}
+
+/**
  * ThreeEffectsRenderer - Renders particle effects using Three.js
  *
  * Effects:
@@ -55,6 +67,15 @@ export class ThreeEffectsRenderer {
   private firePool: Particle[] = [];
   private readonly MAX_FIRE_PARTICLES = 2000;
 
+  // Blood decal pool (persistent ground stains)
+  private bloodDecals: BloodDecal[] = [];
+  private readonly MAX_BLOOD_DECALS = 100;
+  private readonly DECAL_FADE_DELAY = 20000; // Start fading after 20 seconds
+  private readonly DECAL_FADE_DURATION = 10000; // Fade out over 10 seconds
+  private decalIdCounter = 0;
+  private bloodDecalGeometry: THREE.CircleGeometry;
+  private bloodDecalMaterial: THREE.MeshBasicMaterial;
+
   // Shared materials
   private bloodMaterial: THREE.PointsMaterial;
   private fireMaterial: THREE.PointsMaterial;
@@ -82,6 +103,16 @@ export class ThreeEffectsRenderer {
       sizeAttenuation: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
+    });
+
+    // Create blood decal geometry and material (for persistent ground stains)
+    this.bloodDecalGeometry = new THREE.CircleGeometry(1, 16);
+    this.bloodDecalMaterial = new THREE.MeshBasicMaterial({
+      color: 0x8b0000, // Dark red
+      transparent: true,
+      opacity: 0.7,
+      side: THREE.DoubleSide,
+      depthWrite: false,
     });
 
     this.initParticleSystems();
@@ -184,6 +215,86 @@ export class ThreeEffectsRenderer {
     }
 
     this.activeEffects.set(id, effect);
+    return id;
+  }
+
+  /**
+   * Spawn a persistent blood decal on the ground
+   *
+   * @param lat - Latitude
+   * @param lon - Longitude
+   * @param height - Height (terrain height)
+   * @param size - Size of the decal (0.5-3.0 meters, default 1.0)
+   * @returns Decal ID
+   */
+  spawnBloodDecal(lat: number, lon: number, height: number, size: number = 1.0): string {
+    const localPos = this.sync.geoToLocal(lat, lon, height);
+    const id = `decal_${this.decalIdCounter++}`;
+
+    // Check if we have room for more decals
+    let decal = this.bloodDecals.find((d) => !d.active);
+
+    if (!decal) {
+      // Pool is full - either reuse oldest or create new if under limit
+      if (this.bloodDecals.length >= this.MAX_BLOOD_DECALS) {
+        // Find and reuse the oldest decal
+        let oldest = this.bloodDecals[0];
+        for (const d of this.bloodDecals) {
+          if (d.spawnTime < oldest.spawnTime) {
+            oldest = d;
+          }
+        }
+        decal = oldest;
+      } else {
+        // Create new decal mesh
+        const mesh = new THREE.Mesh(
+          this.bloodDecalGeometry,
+          this.bloodDecalMaterial.clone() // Clone material for individual opacity
+        );
+        mesh.rotation.x = -Math.PI / 2; // Lay flat on ground
+        this.scene.add(mesh);
+
+        decal = {
+          id: '',
+          mesh,
+          spawnTime: 0,
+          fadeStartTime: 0,
+          fadeDuration: this.DECAL_FADE_DURATION,
+          active: false,
+        };
+        this.bloodDecals.push(decal);
+      }
+    }
+
+    // Configure decal
+    decal.id = id;
+    decal.active = true;
+    decal.spawnTime = performance.now();
+    decal.fadeStartTime = decal.spawnTime + this.DECAL_FADE_DELAY;
+
+    // Set position and size
+    decal.mesh.position.copy(localPos);
+    decal.mesh.position.y += 0.05; // Slightly above ground to avoid z-fighting
+
+    // Random rotation around Y axis for variety
+    decal.mesh.rotation.z = Math.random() * Math.PI * 2;
+
+    // Apply size with some randomness
+    const finalSize = size * (0.8 + Math.random() * 0.4);
+    decal.mesh.scale.set(finalSize, finalSize, 1);
+
+    // Reset opacity
+    (decal.mesh.material as THREE.MeshBasicMaterial).opacity = 0.7;
+    decal.mesh.visible = true;
+
+    // Randomize color slightly (dark red variations)
+    const colorVariation = Math.random() * 0.2;
+    (decal.mesh.material as THREE.MeshBasicMaterial).color.setRGB(
+      0.55 + colorVariation,
+      0,
+      0
+    );
+
     return id;
   }
 
@@ -338,6 +449,27 @@ export class ThreeEffectsRenderer {
       }
     }
 
+    // Update blood decals (fading)
+    for (const decal of this.bloodDecals) {
+      if (!decal.active) continue;
+
+      const elapsed = now - decal.fadeStartTime;
+
+      if (elapsed > 0) {
+        // Calculate fade progress (0-1)
+        const fadeProgress = Math.min(elapsed / decal.fadeDuration, 1);
+        const opacity = 0.7 * (1 - fadeProgress);
+
+        (decal.mesh.material as THREE.MeshBasicMaterial).opacity = opacity;
+
+        // Mark as inactive when fully faded
+        if (fadeProgress >= 1) {
+          decal.active = false;
+          decal.mesh.visible = false;
+        }
+      }
+    }
+
     // Update GPU buffers
     this.updateParticleBuffers();
   }
@@ -411,6 +543,12 @@ export class ThreeEffectsRenderer {
       p.life = 0;
     }
     this.activeEffects.clear();
+
+    // Hide all blood decals
+    for (const decal of this.bloodDecals) {
+      decal.active = false;
+      decal.mesh.visible = false;
+    }
   }
 
   /**
@@ -428,7 +566,16 @@ export class ThreeEffectsRenderer {
       this.fireParticles.geometry.dispose();
     }
 
+    // Dispose blood decals
+    for (const decal of this.bloodDecals) {
+      this.scene.remove(decal.mesh);
+      (decal.mesh.material as THREE.Material).dispose();
+    }
+    this.bloodDecals = [];
+
     this.bloodMaterial.dispose();
     this.fireMaterial.dispose();
+    this.bloodDecalGeometry.dispose();
+    this.bloodDecalMaterial.dispose();
   }
 }

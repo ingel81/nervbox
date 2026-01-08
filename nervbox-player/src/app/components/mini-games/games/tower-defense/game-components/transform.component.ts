@@ -29,17 +29,34 @@ export class TransformComponent extends Component {
 
   /**
    * Look at a target position (updates target rotation, smoothed in update)
+   *
+   * Uses the same heading calculation as EllipsoidSync.calculateHeadingFromDeltas()
+   *
+   * Coordinate system (with ReorientationPlugin + tiles.group.rotation.x = -PI/2):
+   * - Local: -X = East, +Z = North, +Y = Up
+   * - Geo: +lon = East, +lat = North
+   *
+   * Three.js rotation.y (counterclockwise from above):
+   * - 0 = facing +Z (North)
+   * - PI/2 = facing -X (East)
+   * - PI or -PI = facing -Z (South)
+   * - -PI/2 = facing +X (West)
    */
   lookAt(target: GeoPosition): void {
     const dLon = target.lon - this.position.lon;
     const dLat = target.lat - this.position.lat;
 
     // Skip if movement is too small (prevents jitter)
-    const dist = Math.sqrt(dLon * dLon + dLat * dLat);
-    if (dist < 0.0000001) return;
+    if (Math.abs(dLat) < 0.0000001 && Math.abs(dLon) < 0.0000001) return;
 
-    // Model faces -Y in local coords, so subtract PI/2 to align with movement direction
-    this.targetRotation = Math.atan2(dLon, dLat) - Math.PI / 2;
+    // Convert geo deltas to local direction:
+    // - dLon > 0 (East) → local dx < 0 (because -X = East)
+    // - dLat > 0 (North) → local dz > 0 (because +Z = North)
+    const localDx = -dLon;
+    const localDz = dLat;
+
+    // Calculate rotation.y: atan2(x, z) gives angle from +Z axis
+    this.targetRotation = Math.atan2(localDx, localDz);
 
     // Initialize rotation immediately on first call
     if (!this.rotationInitialized) {

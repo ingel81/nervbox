@@ -6,6 +6,16 @@ import { Enemy } from '../entities/enemy.entity';
 import { EntityPoolService } from '../services/entity-pool.service';
 import { ThreeTilesEngine } from '../three-engine';
 
+// Sound configuration for projectiles
+const PROJECTILE_SOUNDS = {
+  arrow: {
+    url: '/assets/games/tower-defense/sounds/arrow_01.mp3',
+    refDistance: 50, // Full volume at 50m
+    rolloffFactor: 1,
+    volume: 0.5,
+  },
+} as const;
+
 /**
  * Manages all projectile entities - spawning, updating, and collision
  */
@@ -13,19 +23,30 @@ import { ThreeTilesEngine } from '../three-engine';
 export class ProjectileManager extends EntityManager<Projectile> {
   private entityPool = inject(EntityPoolService);
   private onProjectileHit?: (projectile: Projectile, enemy: Enemy) => void;
-  private onProjectileFired?: () => void;
+  private soundsRegistered = false;
 
   /**
    * Initialize projectile manager with ThreeTilesEngine and callbacks
    */
   override initialize(
     tilesEngine: ThreeTilesEngine,
-    onProjectileHit?: (projectile: Projectile, enemy: Enemy) => void,
-    onProjectileFired?: () => void
+    onProjectileHit?: (projectile: Projectile, enemy: Enemy) => void
   ): void {
     super.initialize(tilesEngine);
     this.onProjectileHit = onProjectileHit;
-    this.onProjectileFired = onProjectileFired;
+
+    // Register projectile sounds with spatial audio
+    if (!this.soundsRegistered && tilesEngine.spatialAudio) {
+      for (const [id, config] of Object.entries(PROJECTILE_SOUNDS)) {
+        tilesEngine.spatialAudio.registerSound(id, config.url, {
+          refDistance: config.refDistance,
+          rolloffFactor: config.rolloffFactor,
+          volume: config.volume,
+        });
+      }
+      this.soundsRegistered = true;
+      console.log('[ProjectileManager] Spatial sounds registered');
+    }
   }
 
   /**
@@ -36,27 +57,35 @@ export class ProjectileManager extends EntityManager<Projectile> {
       throw new Error('ProjectileManager not initialized');
     }
 
+    // Calculate spawn height: tower terrain height + tower model offset + firing position offset
+    const terrainHeight = tower.position.height ?? 0;
+    const spawnHeight = terrainHeight + tower.typeConfig.heightOffset + 8;
+
     const projectile = new Projectile(
       tower.position,
       targetEnemy,
       tower.typeConfig.projectileType,
-      tower.combat.damage
+      tower.combat.damage,
+      spawnHeight
     );
 
-    const terrainHeight = tower.position.height!;
-    const heading = this.calculateHeading(tower.position, targetEnemy.position);
+    console.log(
+      `[ProjectileManager] Spawning ${projectile.typeConfig.id} from tower at height ${terrainHeight.toFixed(1)} -> spawn height ${spawnHeight.toFixed(1)}, dir: (${projectile.direction.dx.toFixed(2)}, ${projectile.direction.dy.toFixed(2)}, ${projectile.direction.dz.toFixed(2)})`
+    );
 
     this.tilesEngine.projectiles.create(
       projectile.id,
       projectile.typeConfig.id,
       tower.position.lat,
       tower.position.lon,
-      terrainHeight + 5, // Spawn slightly above tower
-      heading
+      spawnHeight,
+      projectile.direction
     );
 
     this.add(projectile);
-    this.onProjectileFired?.();
+
+    // Play spatial sound at tower position
+    this.playProjectileSound(tower, projectile.typeConfig.id);
 
     return projectile;
   }
@@ -77,21 +106,32 @@ export class ProjectileManager extends EntityManager<Projectile> {
         // Target died, remove projectile
         toRemove.push(projectile);
       } else {
-        // Update visual position
-        const terrainHeight = projectile.position.height!;
-        const heading = this.calculateHeading(projectile.position, projectile.targetEnemy.position);
-
+        // Update visual position (rotation is fixed at spawn)
         this.tilesEngine?.projectiles.update(
           projectile.id,
           projectile.position.lat,
           projectile.position.lon,
-          terrainHeight,
-          heading
+          projectile.flightHeight
         );
       }
     }
 
     toRemove.forEach((p) => this.remove(p));
+  }
+
+  /**
+   * Play spatial sound for a projectile at the tower's position
+   */
+  private playProjectileSound(tower: Tower, projectileType: string): void {
+    if (!this.tilesEngine?.spatialAudio) return;
+
+    // Use 'arrow' sound for all projectile types for now
+    // TODO: Add different sounds for different projectile types
+    const soundId = 'arrow';
+    const pos = tower.position;
+    const height = (pos.height ?? 0) + tower.typeConfig.heightOffset;
+
+    this.tilesEngine.spatialAudio.playAtGeo(soundId, pos.lat, pos.lon, height);
   }
 
   /**

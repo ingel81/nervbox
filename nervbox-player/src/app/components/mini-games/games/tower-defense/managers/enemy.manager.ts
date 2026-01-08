@@ -43,6 +43,11 @@ export class EnemyManager extends EntityManager<Enemy> {
 
     const enemy = new Enemy(typeId, path, speedOverride);
 
+    // Initialize audio with spatial audio manager
+    if (this.tilesEngine.spatialAudio) {
+      enemy.audio.initialize(this.tilesEngine.spatialAudio);
+    }
+
     // Apply random lateral offset for movement variety
     if (enemy.typeConfig.lateralOffset && enemy.typeConfig.lateralOffset > 0) {
       const maxOffset = enemy.typeConfig.lateralOffset;
@@ -50,18 +55,28 @@ export class EnemyManager extends EntityManager<Enemy> {
       enemy.movement.setLateralOffset(randomOffset);
     }
 
-    // Initialize rendering
+    // Get height at spawn position - prefer path height (smoothed) over live sampling
     const startPos = path[0];
-    if (startPos.height === undefined) {
-      console.error('[EnemyManager] Path has no height data! startPos:', startPos);
+    const origin = this.tilesEngine.sync.getOrigin();
+    let geoHeight: number;
+
+    if (startPos.height !== undefined && startPos.height !== 0) {
+      // Path has pre-computed smoothed height - use it
+      geoHeight = startPos.height;
+    } else {
+      // Fallback: sample terrain height at spawn position
+      const localTerrainY = this.tilesEngine.getTerrainHeightAtGeo(startPos.lat, startPos.lon);
+      // Convert local Y to geo height for proper round-trip through geoToLocalSimple
+      // geoToLocalSimple does: Y = height - originHeight
+      // So we need: geoHeight = localY + originHeight
+      geoHeight = localTerrainY !== null ? localTerrainY + origin.height : origin.height;
     }
 
-    const terrainHeight = startPos.height!;
-    enemy.transform.terrainHeight = terrainHeight;
+    enemy.transform.terrainHeight = geoHeight;
 
     // Create 3D model and start animation
     this.tilesEngine.enemies
-      .create(enemy.id, typeId, startPos.lat, startPos.lon, terrainHeight)
+      .create(enemy.id, typeId, startPos.lat, startPos.lon, geoHeight)
       .then((renderData) => {
         if (renderData && !paused) {
           this.tilesEngine!.enemies.startWalkAnimation(enemy.id);
@@ -105,6 +120,7 @@ export class EnemyManager extends EntityManager<Enemy> {
    */
   override update(deltaTime: number): void {
     const toRemove: Enemy[] = [];
+    const origin = this.tilesEngine?.sync.getOrigin();
 
     for (const enemy of this.getAllActive()) {
       if (!enemy.alive) continue;
@@ -120,12 +136,36 @@ export class EnemyManager extends EntityManager<Enemy> {
         continue;
       }
 
+      // Check if path has valid heights (set by MovementComponent during interpolation)
+      // If the path segment has defined heights, MovementComponent already set terrainHeight
+      // via interpolation - we should use that instead of sampling terrain live
+      const segment = enemy.movement.getCurrentSegment();
+      const pathHasHeights = segment &&
+        segment.from.height !== undefined && segment.from.height !== 0 &&
+        segment.to.height !== undefined && segment.to.height !== 0;
+
+      let geoHeight: number;
+      if (pathHasHeights) {
+        // Path has smoothed heights - use the interpolated height from MovementComponent
+        geoHeight = enemy.transform.terrainHeight;
+      } else {
+        // Path doesn't have heights - sample terrain live (fallback)
+        const localTerrainY = this.tilesEngine?.getTerrainHeightAtGeo(
+          enemy.position.lat,
+          enemy.position.lon
+        );
+        geoHeight = localTerrainY != null && origin
+          ? localTerrainY + origin.height
+          : enemy.transform.terrainHeight;
+        enemy.transform.terrainHeight = geoHeight;
+      }
+
       // Update visual representation
       this.tilesEngine?.enemies.update(
         enemy.id,
         enemy.position.lat,
         enemy.position.lon,
-        enemy.transform.terrainHeight,
+        geoHeight,
         enemy.transform.rotation,
         enemy.health.healthPercent
       );

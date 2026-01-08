@@ -16,6 +16,9 @@ import { Enemy } from './enemy.entity';
 
 /**
  * Projectile entity - combines Transform, Combat, Movement, and Render components
+ *
+ * Flight path is calculated based on start height and target enemy position.
+ * The projectile maintains its own flight height throughout its trajectory.
  */
 export class Projectile extends GameObject {
   readonly typeConfig: ProjectileTypeConfig;
@@ -26,15 +29,24 @@ export class Projectile extends GameObject {
   private _movement!: MovementComponent;
   private _render!: RenderComponent;
 
+  // Flight path properties
+  private _startHeight: number;
+  private _flightHeight: number;
+  private _totalDistance: number = 0;
+  private _traveledDistance: number = 0;
+
   constructor(
     startPosition: GeoPosition,
     targetEnemy: Enemy,
     typeId: ProjectileTypeId,
-    damage: number
+    damage: number,
+    startHeight: number
   ) {
     super('projectile');
     this.typeConfig = getProjectileType(typeId);
     this.targetEnemy = targetEnemy;
+    this._startHeight = startHeight;
+    this._flightHeight = startHeight;
 
     // Add components
     this._transform = this.addComponent(
@@ -58,8 +70,50 @@ export class Projectile extends GameObject {
       ComponentType.RENDER
     );
 
-    this._transform.setPosition(startPosition.lat, startPosition.lon, startPosition.height);
+    this._transform.setPosition(startPosition.lat, startPosition.lon, startHeight);
     this._movement.speedMps = this.typeConfig.speed;
+
+    // Calculate total distance to target for progress tracking
+    this._totalDistance = this.calculateDistance(startPosition, targetEnemy.position);
+
+    // Calculate fixed direction vector (once, at spawn)
+    // This direction never changes during flight
+    this._direction = this.calculateDirectionVector(startPosition, startHeight);
+  }
+
+  /**
+   * Calculate normalized direction vector from start to target
+   * Uses geo coordinates converted to local offsets
+   */
+  private calculateDirectionVector(
+    startPos: GeoPosition,
+    startHeight: number
+  ): { dx: number; dy: number; dz: number } {
+    const targetPos = this.targetEnemy.position;
+    const targetHeight = this.targetEnemy.transform.terrainHeight + 3; // Head height
+
+    // Calculate horizontal deltas (in geo coords, convert to local direction)
+    // +lon = East = -X in local, +lat = North = +Z in local
+    const dLon = targetPos.lon - startPos.lon;
+    const dLat = targetPos.lat - startPos.lat;
+
+    // Convert to local coordinate deltas
+    // Scale doesn't matter since we normalize
+    const dx = -dLon * 100000; // -X = East
+    const dz = dLat * 100000;  // +Z = North
+    const dy = targetHeight - startHeight; // Vertical difference
+
+    // Normalize
+    const length = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    if (length < 0.001) {
+      return { dx: 0, dy: 0, dz: 1 }; // Default: forward
+    }
+
+    return {
+      dx: dx / length,
+      dy: dy / length,
+      dz: dz / length,
+    };
   }
 
   get transform(): TransformComponent {
@@ -83,6 +137,30 @@ export class Projectile extends GameObject {
   }
 
   /**
+   * Get current flight height (interpolated along trajectory)
+   */
+  get flightHeight(): number {
+    return this._flightHeight;
+  }
+
+  /**
+   * Get flight progress (0 = start, 1 = target)
+   */
+  get flightProgress(): number {
+    return this._totalDistance > 0 ? this._traveledDistance / this._totalDistance : 1;
+  }
+
+  /**
+   * Get the fixed direction vector (calculated once at spawn, never changes)
+   * This is the normalized direction from start to target
+   */
+  get direction(): { dx: number; dy: number; dz: number } {
+    return this._direction;
+  }
+
+  private _direction: { dx: number; dy: number; dz: number } = { dx: 0, dy: 0, dz: 1 };
+
+  /**
    * Move towards target enemy
    * @returns true if hit target, false otherwise
    */
@@ -95,9 +173,13 @@ export class Projectile extends GameObject {
     const dist = this.calculateDistance(this.position, targetPos);
     const moveDistance = (this.movement.speedMps * deltaTime) / 1000;
 
+    // Track traveled distance for progress calculation
+    this._traveledDistance += moveDistance;
+
     if (dist <= moveDistance) {
       // Hit target
       this.transform.setPosition(targetPos.lat, targetPos.lon);
+      this._flightHeight = this.getTargetHeight();
       return true;
     }
 
@@ -107,9 +189,42 @@ export class Projectile extends GameObject {
     const newLon = this.position.lon + (targetPos.lon - this.position.lon) * ratio;
 
     this.transform.setPosition(newLat, newLon);
-    this.transform.lookAt(targetPos);
+
+    // Calculate flight height along trajectory
+    this._flightHeight = this.calculateFlightHeight();
+
+    // Note: Direction is fixed at spawn, no rotation updates needed
 
     return false;
+  }
+
+  /**
+   * Calculate flight height at current position
+   * Creates a slight arc trajectory from start to target
+   */
+  private calculateFlightHeight(): number {
+    const targetHeight = this.getTargetHeight();
+    const progress = this.flightProgress;
+
+    // Linear interpolation between start and target height
+    const baseHeight = this._startHeight + (targetHeight - this._startHeight) * progress;
+
+    // Add arc: parabolic curve that peaks at midpoint
+    // arcHeight = maxArc * 4 * progress * (1 - progress)
+    // This gives 0 at progress=0, maxArc at progress=0.5, 0 at progress=1
+    const maxArcHeight = Math.min(this._totalDistance * 0.05, 10); // Arc height proportional to distance, max 10m
+    const arcOffset = maxArcHeight * 4 * progress * (1 - progress);
+
+    return baseHeight + arcOffset;
+  }
+
+  /**
+   * Get target height (enemy position + offset for head height)
+   */
+  private getTargetHeight(): number {
+    const enemyTerrainHeight = this.targetEnemy.transform.terrainHeight ?? 0;
+    // Target head height (approximately 2-3m above terrain for humanoid enemies)
+    return enemyTerrainHeight + 3;
   }
 
   /**

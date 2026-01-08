@@ -28,7 +28,6 @@ import { EnemyManager } from './managers/enemy.manager';
 import { TowerManager } from './managers/tower.manager';
 import { ProjectileManager } from './managers/projectile.manager';
 import { WaveManager, SpawnPoint as WaveSpawnPoint } from './managers/wave.manager';
-import { AudioManager } from './managers/audio.manager';
 // Three.js Engine (new 3DTilesRendererJS-based)
 import { ThreeTilesEngine } from './three-engine';
 import * as THREE from 'three';
@@ -88,7 +87,6 @@ export interface SpawnPoint {
     TowerManager,
     ProjectileManager,
     WaveManager,
-    AudioManager,
     EntityPoolService,
   ],
   template: `
@@ -738,10 +736,6 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly gameState = inject(GameStateManager);
   private readonly entityPool = inject(EntityPoolService);
 
-  // Sound
-  private readonly PROJECTILE_SOUND_HASH = '3ae29d3b4c96b913c63964373e218f08';
-  private projectileSoundUrl = '';
-
   private engine: ThreeTilesEngine | null = null;
   private streetNetwork: StreetNetwork | null = null;
 
@@ -868,9 +862,6 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         console.log('[TD] All Three.js models preloaded');
       });
 
-      // Set up sound URL
-      this.projectileSoundUrl = this.api.getFullUrl(`/sound/${this.PROJECTILE_SOUND_HASH}/file`);
-
       // Setup click handler and build preview
       this.setupClickHandler();
       this.createBuildPreview();
@@ -896,7 +887,6 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         { lat: base.latitude, lon: base.longitude },
         waveSpawnPoints,
         this.cachedPaths,
-        () => this.playProjectileSound(),
         (msg: string) => this.appendDebugLog(msg),
         () => this.onGameOver()
       );
@@ -1610,39 +1600,65 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     // Add HQ as final destination
     geoPath.push({ lat: base.latitude, lon: base.longitude });
 
-    // Cache path with default heights (will be updated when tiles load)
-    const pathWithHeights: GeoPosition[] = geoPath.map((pos) => ({
-      ...pos,
-      height: 0, // Will be sampled later when enemies spawn
-    }));
-    this.cachedPaths.set(spawn.id, pathWithHeights);
-
-    console.log(`[Path] Cached ${pathWithHeights.length} points for ${spawn.name}`);
-
     // Create route line in Three.js - on terrain with RELATIVE heights
     const HEIGHT_ABOVE_GROUND = 1;
     const overlayGroup = this.engine.getOverlayGroup();
     const points: THREE.Vector3[] = [];
 
     // Get origin terrain height as reference
+    const origin = this.engine.sync.getOrigin();
     const originTerrainY = this.engine.getTerrainHeightAtGeo(base.latitude, base.longitude);
     if (originTerrainY === null) {
       console.log(`[Path] Cannot render route for ${spawn.name} - origin terrain not available`);
+      // Cache path with default heights (fallback)
+      const pathWithHeights: GeoPosition[] = geoPath.map((pos) => ({
+        ...pos,
+        height: origin.height, // Use origin height as fallback
+      }));
+      this.cachedPaths.set(spawn.id, pathWithHeights);
       return;
     }
 
-    for (const pos of geoPath) {
+    // Track which positions got valid terrain samples
+    const validIndices: number[] = [];
+    const terrainHeights: number[] = []; // Raw local terrain Y values
+
+    for (let i = 0; i < geoPath.length; i++) {
+      const pos = geoPath[i];
       const terrainY = this.engine.getTerrainHeightAtGeo(pos.lat, pos.lon);
       if (terrainY !== null) {
         const local = this.engine.sync.geoToLocalSimple(pos.lat, pos.lon, 0);
         // Y = height difference from origin + offset above ground
         local.y = (terrainY - originTerrainY) + HEIGHT_ABOVE_GROUND;
         points.push(local);
+        validIndices.push(i);
+        terrainHeights.push(terrainY);
       }
     }
 
     // Smooth out height anomalies
     const smoothedPoints = this.smoothPathHeights(points);
+
+    // Convert smoothed heights back to geo heights and update cached path
+    const pathWithHeights: GeoPosition[] = geoPath.map((pos, i) => {
+      // Find if this position has a corresponding smoothed point
+      const smoothedIdx = validIndices.indexOf(i);
+      if (smoothedIdx !== -1 && smoothedIdx < smoothedPoints.length) {
+        // Convert smoothed local.y back to terrain Y, then to geo height
+        // local.y = (terrainY - originTerrainY) + HEIGHT_ABOVE_GROUND
+        // => terrainY = local.y - HEIGHT_ABOVE_GROUND + originTerrainY
+        const smoothedLocalY = smoothedPoints[smoothedIdx].y;
+        const localTerrainY = smoothedLocalY - HEIGHT_ABOVE_GROUND + originTerrainY;
+        const geoHeight = localTerrainY + origin.height;
+        return { ...pos, height: geoHeight };
+      } else {
+        // Position didn't get a valid terrain sample, use origin height
+        return { ...pos, height: origin.height };
+      }
+    });
+    this.cachedPaths.set(spawn.id, pathWithHeights);
+
+    console.log(`[Path] Cached ${pathWithHeights.length} points with smoothed heights for ${spawn.name}`);
 
     const geometry = new THREE.BufferGeometry().setFromPoints(smoothedPoints);
     const material = new THREE.LineBasicMaterial({
@@ -2180,15 +2196,6 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     this.gameState.reset();
   }
 
-  private playProjectileSound(): void {
-    const audio = new Audio(this.projectileSoundUrl);
-    audio.volume = 0.3;
-    audio.play().catch(() => {
-      // Ignore autoplay restrictions
-    });
-  }
-
-  
   /**
    * Find the closest point on a line segment to a target point
    */
@@ -2433,7 +2440,6 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
           { lat: base.latitude, lon: base.longitude },
           waveSpawnPoints,
           this.cachedPaths,
-          () => this.playProjectileSound(),
           (msg: string) => this.appendDebugLog(msg),
           () => this.onGameOver()
         );

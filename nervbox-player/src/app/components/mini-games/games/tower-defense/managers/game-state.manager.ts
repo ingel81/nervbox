@@ -49,7 +49,6 @@ export class GameStateManager {
 
   // Callbacks
   private onGameOverCallback?: () => void;
-  private onProjectileFiredCallback?: () => void;
   private onDebugLogCallback?: (msg: string) => void;
 
   // Track active fire effect ID
@@ -64,14 +63,12 @@ export class GameStateManager {
     basePosition: GeoPosition,
     spawnPoints: SpawnPoint[],
     cachedPaths: Map<string, GeoPosition[]>,
-    onProjectileFired?: () => void,
     onDebugLog?: (msg: string) => void,
     onGameOver?: () => void
   ): void {
     this.tilesEngine = tilesEngine;
     this.basePosition = basePosition;
     this.onGameOverCallback = onGameOver;
-    this.onProjectileFiredCallback = onProjectileFired;
     this.onDebugLogCallback = onDebugLog;
 
     // Initialize entity managers
@@ -89,8 +86,7 @@ export class GameStateManager {
 
     this.projectileManager.initialize(
       tilesEngine,
-      (proj, enemy) => this.onProjectileHit(proj, enemy),
-      () => this.onProjectileFiredCallback?.()
+      (proj, enemy) => this.onProjectileHit(proj, enemy)
     );
 
     this.waveManager.initialize(spawnPoints, cachedPaths);
@@ -157,18 +153,52 @@ export class GameStateManager {
   private onProjectileHit(projectile: Projectile, enemy: Enemy): void {
     // Spawn blood effects for enemies that can bleed
     if (enemy.typeConfig.canBleed && this.tilesEngine) {
+      // Blood particle splatter
       this.tilesEngine.effects.spawnBloodSplatter(
         enemy.position.lat,
         enemy.position.lon,
-        enemy.transform.terrainHeight + 1
+        enemy.transform.terrainHeight + 1,
+        15 // Fewer particles for hits
+      );
+
+      // Blood decal on ground (small)
+      this.tilesEngine.effects.spawnBloodDecal(
+        enemy.position.lat,
+        enemy.position.lon,
+        enemy.transform.terrainHeight,
+        0.8 // Small decal for hit
       );
     }
 
     const killed = enemy.health.takeDamage(projectile.damage);
     if (killed) {
+      this.spawnDeathBloodEffect(enemy);
       this.enemyManager.kill(enemy);
-      this.credits.update((c) => c + 10);
+      this.credits.update((c) => c + enemy.typeConfig.reward);
     }
+  }
+
+  /**
+   * Spawn large blood effect when enemy dies
+   */
+  private spawnDeathBloodEffect(enemy: Enemy): void {
+    if (!enemy.typeConfig.canBleed || !this.tilesEngine) return;
+
+    // Large blood splatter
+    this.tilesEngine.effects.spawnBloodSplatter(
+      enemy.position.lat,
+      enemy.position.lon,
+      enemy.transform.terrainHeight + 1,
+      40 // More particles for death
+    );
+
+    // Large blood decal on ground
+    this.tilesEngine.effects.spawnBloodDecal(
+      enemy.position.lat,
+      enemy.position.lon,
+      enemy.transform.terrainHeight,
+      2.0 // Larger decal for death
+    );
   }
 
   /**
