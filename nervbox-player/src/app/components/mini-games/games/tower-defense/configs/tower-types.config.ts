@@ -14,6 +14,7 @@ export interface TowerTypeConfig {
   projectileType: ProjectileTypeId;
 
   cost: number;
+  sellValue: number; // Credits returned when selling
 }
 
 // NOTE: Currently only tower_archer.glb exists. Using it for all tower types until more models are created.
@@ -30,7 +31,8 @@ export const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
     range: 60,
     fireRate: 1, // 1 shot/sec
     projectileType: 'arrow',
-    cost: 100,
+    cost: 50,
+    sellValue: 30,
   },
   cannon: {
     id: 'cannon',
@@ -43,6 +45,7 @@ export const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
     fireRate: 0.5, // 0.5 shots/sec (slower)
     projectileType: 'cannonball',
     cost: 200,
+    sellValue: 120,
   },
   magic: {
     id: 'magic',
@@ -55,6 +58,7 @@ export const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
     fireRate: 1.5, // 1.5 shots/sec (faster)
     projectileType: 'fireball',
     cost: 150,
+    sellValue: 90,
   },
   sniper: {
     id: 'sniper',
@@ -67,6 +71,7 @@ export const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
     fireRate: 0.3, // Very slow but powerful
     projectileType: 'arrow',
     cost: 300,
+    sellValue: 180,
   },
 };
 

@@ -36,6 +36,8 @@ import { ThreeTilesEngine } from './three-engine';
 import * as THREE from 'three';
 // Theme
 import { TD_CSS_VARS } from './styles/td-theme';
+// Tower config
+import { TOWER_TYPES } from './configs/tower-types.config';
 
 // Default locations - can be overridden via debug settings
 const DEFAULT_CENTER_COORDS = {
@@ -110,6 +112,10 @@ export interface SpawnPoint {
           <div class="td-stat hp">
             <mat-icon>favorite</mat-icon>
             <span>{{ gameState.baseHealth() }}</span>
+          </div>
+          <div class="td-stat credits">
+            <mat-icon>paid</mat-icon>
+            <span>{{ gameState.credits() }}</span>
           </div>
           <div class="td-stat wave">
             <mat-icon>waves</mat-icon>
@@ -228,10 +234,10 @@ export interface SpawnPoint {
             <div class="td-panel-header">BAUEN</div>
             <div class="td-panel-content td-build-section">
               <button class="td-action-btn" [class.active]="buildMode()" (click)="toggleBuildMode()"
-                      [disabled]="waveActive() || isGameOver() || gameState.credits() < 100">
+                      [disabled]="isGameOver() || gameState.credits() < archerTowerConfig.cost">
                 <mat-icon>{{ buildMode() ? 'close' : 'add_location' }}</mat-icon>
-                <span>{{ buildMode() ? 'Abbrechen' : 'Archer Tower' }}</span>
-                <span class="td-cost">100</span>
+                <span>{{ buildMode() ? 'Abbrechen' : archerTowerConfig.name }}</span>
+                <span class="td-cost">{{ archerTowerConfig.cost }}</span>
               </button>
               @if (buildMode()) {
                 <div class="td-build-hint">Klicke neben Strasse</div>
@@ -270,7 +276,7 @@ export interface SpawnPoint {
                   <button class="td-action-btn td-btn-sell" (click)="sellSelectedTower()">
                     <mat-icon>sell</mat-icon>
                     <span>Verkaufen</span>
-                    <span class="td-cost td-refund">+{{ Math.floor(tower.typeConfig.cost * 0.5) }}</span>
+                    <span class="td-cost td-refund">+{{ tower.typeConfig.sellValue }}</span>
                   </button>
                 </div>
               </div>
@@ -470,6 +476,7 @@ export interface SpawnPoint {
     }
 
     .td-stat.hp { color: var(--td-health-red); }
+    .td-stat.credits { color: var(--td-gold); }
     .td-stat.wave { color: var(--td-teal); }
     .td-stat.enemies { color: var(--td-warn-orange); }
     .td-stat.fps { color: var(--td-text-muted); font-size: 10px; min-width: auto; }
@@ -1110,8 +1117,9 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly gameState = inject(GameStateManager);
   private readonly entityPool = inject(EntityPoolService);
 
-  // Expose Math for template
+  // Expose Math and tower config for template
   readonly Math = Math;
+  readonly archerTowerConfig = TOWER_TYPES.archer;
 
   private engine: ThreeTilesEngine | null = null;
   private streetNetwork: StreetNetwork | null = null;

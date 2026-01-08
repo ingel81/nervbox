@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { EntityManager } from './entity-manager';
 import { Tower } from '../entities/tower.entity';
 import { TowerTypeId } from '../configs/tower-types.config';
@@ -13,7 +13,8 @@ import { ThreeTilesEngine } from '../three-engine';
 export class TowerManager extends EntityManager<Tower> {
   private osmService = inject(OsmStreetService);
 
-  private selectedTowerId: string | null = null;
+  // Use signal for reactive updates
+  private readonly _selectedTowerId = signal<string | null>(null);
   private streetNetwork: StreetNetwork | null = null;
   private basePosition: GeoPosition | null = null;
   private spawnPoints: GeoPosition[] = [];
@@ -129,17 +130,19 @@ export class TowerManager extends EntityManager<Tower> {
    * Select a tower
    */
   selectTower(id: string | null): void {
+    const currentId = this._selectedTowerId();
+
     // Deselect previous
-    if (this.selectedTowerId) {
-      const prev = this.getById(this.selectedTowerId);
+    if (currentId) {
+      const prev = this.getById(currentId);
       if (prev) {
         prev.deselect();
-        this.tilesEngine?.towers.deselect(this.selectedTowerId);
+        this.tilesEngine?.towers.deselect(currentId);
       }
     }
 
     // Select new
-    this.selectedTowerId = id;
+    this._selectedTowerId.set(id);
     if (id) {
       const tower = this.getById(id);
       if (tower) {
@@ -153,14 +156,15 @@ export class TowerManager extends EntityManager<Tower> {
    * Get currently selected tower
    */
   getSelected(): Tower | null {
-    return this.selectedTowerId ? this.getById(this.selectedTowerId) : null;
+    const id = this._selectedTowerId();
+    return id ? this.getById(id) : null;
   }
 
   /**
    * Get ID of currently selected tower
    */
   getSelectedId(): string | null {
-    return this.selectedTowerId;
+    return this._selectedTowerId();
   }
 
   /**
@@ -200,7 +204,7 @@ export class TowerManager extends EntityManager<Tower> {
    */
   override clear(): void {
     this.tilesEngine?.towers.clear();
-    this.selectedTowerId = null;
+    this._selectedTowerId.set(null);
     super.clear();
   }
 }
