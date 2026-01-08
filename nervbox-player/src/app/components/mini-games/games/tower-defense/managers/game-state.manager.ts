@@ -175,7 +175,25 @@ export class GameStateManager {
     if (killed) {
       this.spawnDeathBloodEffect(enemy);
       this.enemyManager.kill(enemy);
-      this.credits.update((c) => c + enemy.typeConfig.reward);
+
+      const reward = enemy.typeConfig.reward;
+      this.credits.update((c) => c + reward);
+
+      // Show reward popup
+      if (this.tilesEngine && reward > 0) {
+        this.tilesEngine.effects.spawnFloatingText(
+          `+${reward}`,
+          enemy.position.lat,
+          enemy.position.lon,
+          enemy.transform.terrainHeight + 5,
+          {
+            color: '#FFD700', // Gold
+            duration: 1200,
+            floatSpeed: 1.5,
+            scale: 0.8,
+          }
+        );
+      }
 
       // Track kill on the source tower
       const sourceTower = this.towerManager.getById(projectile.sourceTowerId);

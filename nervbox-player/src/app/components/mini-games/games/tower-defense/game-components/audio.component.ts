@@ -26,6 +26,7 @@ export interface AudioConfig {
 interface ActiveLoop {
   audio: THREE.PositionalAudio;
   container: THREE.Object3D;
+  isEnemySound: boolean; // Track if this counts against enemy sound budget
 }
 
 /**
@@ -111,10 +112,24 @@ export class AudioComponent extends Component {
   private async playLoop(id: string, url: string, config: AudioConfig): Promise<void> {
     if (!this.spatialAudio) return;
 
+    // Check if this is an enemy sound and if we have budget
+    const isEnemySound = this.isEnemySound(url);
+    if (isEnemySound && !this.spatialAudio.canPlayEnemySound()) {
+      // Budget exceeded - skip this sound silently
+      return;
+    }
+
     const pos = this.getPosition();
     if (!pos) return;
 
     await this.spatialAudio.resumeContext();
+
+    // Register enemy sound BEFORE creating audio
+    if (isEnemySound) {
+      if (!this.spatialAudio.registerEnemySound()) {
+        return; // Race condition - budget filled while we were waiting
+      }
+    }
 
     const listener = this.spatialAudio.getListener();
     const scene = this.spatialAudio.getScene();
@@ -129,6 +144,10 @@ export class AudioComponent extends Component {
       });
     } catch {
       console.error(`[AudioComponent] Failed to load: ${url}`);
+      // Unregister if we registered
+      if (isEnemySound) {
+        this.spatialAudio.unregisterEnemySound();
+      }
       return;
     }
 
@@ -155,8 +174,16 @@ export class AudioComponent extends Component {
     container.add(audio);
     scene.add(container);
 
-    this.activeLoops.set(id, { audio, container });
+    this.activeLoops.set(id, { audio, container, isEnemySound });
     audio.play();
+  }
+
+  /**
+   * Check if a URL is an enemy sound
+   */
+  private isEnemySound(url: string): boolean {
+    const lowerUrl = url.toLowerCase();
+    return lowerUrl.includes('zombie') || lowerUrl.includes('tank') || lowerUrl.includes('enemy');
   }
 
   /**
@@ -165,6 +192,11 @@ export class AudioComponent extends Component {
   stop(id: string): void {
     const loop = this.activeLoops.get(id);
     if (loop) {
+      // Unregister enemy sound from budget
+      if (loop.isEnemySound && this.spatialAudio) {
+        this.spatialAudio.unregisterEnemySound();
+      }
+
       if (loop.audio.isPlaying) {
         loop.audio.stop();
       }

@@ -12,6 +12,15 @@ export interface LocationCoords {
 }
 
 /**
+ * Location config with optional name (for debug/editable locations)
+ */
+export interface LocationConfig {
+  lat: number;
+  lon: number;
+  name?: string;
+}
+
+/**
  * Full location info with display name
  */
 export interface LocationInfo extends LocationCoords {
