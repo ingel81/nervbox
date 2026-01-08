@@ -75,6 +75,11 @@ export class ThreeTilesEngine {
   // This ensures overlays are placed on the terrain surface, not at world Y=0
   private overlayBaseY = 0;
 
+  // Callback when tiles finish loading (for terrain height refresh)
+  private onTilesLoadCallback: (() => void) | null = null;
+  private tilesLoadDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly TILES_LOAD_DEBOUNCE_MS = 500; // Wait 500ms after last tile load
+
   // Performance stats
   private lastFrameTime = 0;
   private frameCount = 0;
@@ -205,7 +210,44 @@ export class ThreeTilesEngine {
     // Performance settings
     this.tilesRenderer.errorTarget = 20;
 
+    // Listen for tile loading events to refresh terrain heights
+    // 'tiles-load-end' fires when ALL currently visible tiles have finished loading
+    this.tilesRenderer.addEventListener('tiles-load-end', () => {
+      this.onTilesLoadEnd();
+    });
+
     console.log('[ThreeTilesEngine] 3D Tiles initialized');
+  }
+
+  /**
+   * Called when all visible tiles finish loading
+   * Uses debounce to avoid multiple rapid refreshes during camera movement
+   */
+  private onTilesLoadEnd(): void {
+    // Clear existing debounce timer
+    if (this.tilesLoadDebounceTimer) {
+      clearTimeout(this.tilesLoadDebounceTimer);
+    }
+
+    // Start new debounce timer - wait for camera to settle
+    this.tilesLoadDebounceTimer = setTimeout(() => {
+      // Clear height cache so next raycasts get fresh data
+      this.heightCache.clear();
+
+      // Notify listener (component) to refresh terrain heights
+      if (this.onTilesLoadCallback) {
+        console.log('[ThreeTilesEngine] All tiles loaded, triggering terrain refresh');
+        this.onTilesLoadCallback();
+      }
+    }, this.TILES_LOAD_DEBOUNCE_MS);
+  }
+
+  /**
+   * Register a callback to be called when tiles finish loading
+   * Used by component to refresh terrain heights after LOD changes
+   */
+  setOnTilesLoadCallback(callback: () => void): void {
+    this.onTilesLoadCallback = callback;
   }
 
   private setupLighting(): void {
