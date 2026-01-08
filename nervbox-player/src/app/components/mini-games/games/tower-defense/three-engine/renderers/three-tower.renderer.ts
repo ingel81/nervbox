@@ -459,6 +459,18 @@ export class ThreeTowerRenderer {
   }
 
   /**
+   * Get all tower meshes for raycasting
+   * Returns array of { id, mesh } for intersection testing
+   */
+  getAllMeshes(): Array<{ id: string; mesh: THREE.Object3D }> {
+    const result: Array<{ id: string; mesh: THREE.Object3D }> = [];
+    for (const [id, data] of this.towers) {
+      result.push({ id, mesh: data.mesh });
+    }
+    return result;
+  }
+
+  /**
    * Clear all towers
    */
   clear(): void {
