@@ -66,7 +66,8 @@ export class ProjectileManager extends EntityManager<Projectile> {
       targetEnemy,
       tower.typeConfig.projectileType,
       tower.combat.damage,
-      spawnHeight
+      spawnHeight,
+      tower.id
     );
 
     console.log(

@@ -204,27 +204,78 @@ export interface SpawnPoint {
           <div class="td-sidebar-frame-middle"></div>
           <div class="td-sidebar-frame-bottom"></div>
           <div class="td-sidebar-content">
-          <!-- Actions Section -->
+
+          <!-- WAVE Section -->
           <section class="td-panel">
-            <div class="td-panel-header">AKTIONEN</div>
-            <div class="td-panel-content td-actions">
-              <!-- Tower Button -->
+            <div class="td-panel-header">WELLE {{ gameState.waveNumber() }}</div>
+            <div class="td-panel-content td-wave-section">
+              <div class="td-wave-stats">
+                <div class="td-stat-row">
+                  <span class="td-stat-label">Gegner</span>
+                  <span class="td-stat-value">{{ gameState.enemiesAlive() }}</span>
+                </div>
+              </div>
+              <button class="td-action-btn td-btn-green td-wave-btn" (click)="startWave()"
+                      [disabled]="waveActive() || buildMode() || isGameOver()">
+                <mat-icon>{{ waveActive() ? 'hourglass_empty' : 'play_arrow' }}</mat-icon>
+                <span>{{ waveActive() ? 'Welle laeuft...' : 'Naechste Welle' }}</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- BUILD Section -->
+          <section class="td-panel">
+            <div class="td-panel-header">BAUEN</div>
+            <div class="td-panel-content td-build-section">
               <button class="td-action-btn" [class.active]="buildMode()" (click)="toggleBuildMode()"
-                      [disabled]="waveActive() || isGameOver()">
+                      [disabled]="waveActive() || isGameOver() || gameState.credits() < 100">
                 <mat-icon>{{ buildMode() ? 'close' : 'add_location' }}</mat-icon>
-                <span>{{ buildMode() ? 'Abbrechen' : 'Tower bauen' }}</span>
+                <span>{{ buildMode() ? 'Abbrechen' : 'Archer Tower' }}</span>
+                <span class="td-cost">100</span>
               </button>
               @if (buildMode()) {
                 <div class="td-build-hint">Klicke neben Strasse</div>
               }
-              <!-- Start Wave Button -->
-              <button class="td-action-btn td-btn-green" (click)="startWave()"
-                      [disabled]="waveActive() || buildMode() || isGameOver()">
-                <mat-icon>{{ waveActive() ? 'hourglass_empty' : 'play_arrow' }}</mat-icon>
-                <span>{{ waveActive() ? 'Welle laeuft...' : 'Wave starten' }}</span>
-              </button>
             </div>
           </section>
+
+          <!-- TOWER Section (only when tower selected) -->
+          @if (gameState.selectedTower(); as tower) {
+            <section class="td-panel td-tower-panel">
+              <div class="td-panel-header">{{ tower.typeConfig.name | uppercase }}</div>
+              <div class="td-panel-content td-tower-section">
+                <div class="td-tower-stats">
+                  <div class="td-stat-row">
+                    <span class="td-stat-label">Schaden</span>
+                    <span class="td-stat-value td-damage">{{ tower.typeConfig.damage }}</span>
+                  </div>
+                  <div class="td-stat-row">
+                    <span class="td-stat-label">Reichweite</span>
+                    <span class="td-stat-value">{{ tower.typeConfig.range }}m</span>
+                  </div>
+                  <div class="td-stat-row">
+                    <span class="td-stat-label">Feuerrate</span>
+                    <span class="td-stat-value">{{ tower.typeConfig.fireRate }}/s</span>
+                  </div>
+                  <div class="td-stat-row">
+                    <span class="td-stat-label">Kills</span>
+                    <span class="td-stat-value td-kills">{{ tower.combat.kills }}</span>
+                  </div>
+                </div>
+                <div class="td-tower-actions">
+                  <button class="td-action-btn td-btn-upgrade" disabled matTooltip="Bald verfuegbar">
+                    <mat-icon>arrow_upward</mat-icon>
+                    <span>Upgrade</span>
+                  </button>
+                  <button class="td-action-btn td-btn-sell" (click)="sellSelectedTower()">
+                    <mat-icon>sell</mat-icon>
+                    <span>Verkaufen</span>
+                    <span class="td-cost td-refund">+{{ Math.floor(tower.typeConfig.cost * 0.5) }}</span>
+                  </button>
+                </div>
+              </div>
+            </section>
+          }
 
           <!-- Debug Section (collapsible) -->
           @if (debugMode()) {
@@ -698,6 +749,121 @@ export interface SpawnPoint {
       50% { opacity: 0.7; }
     }
 
+    /* === Wave Section === */
+    .td-wave-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .td-wave-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .td-stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2px 0;
+    }
+
+    .td-stat-label {
+      color: var(--td-text-secondary);
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+
+    .td-stat-value {
+      color: var(--td-text-primary);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .td-wave-btn {
+      margin-top: 4px;
+    }
+
+    /* === Build Section === */
+    .td-build-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .td-cost {
+      margin-left: auto;
+      padding: 2px 6px;
+      background: var(--td-gold-dark);
+      color: var(--td-bg-dark);
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 2px;
+    }
+
+    /* === Tower Section === */
+    .td-tower-panel {
+      border-color: var(--td-teal);
+    }
+
+    .td-tower-panel .td-panel-header {
+      background: linear-gradient(180deg, var(--td-teal) 0%, rgba(0, 188, 212, 0.3) 100%);
+      color: var(--td-bg-dark);
+    }
+
+    .td-tower-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .td-tower-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--td-frame-dark);
+    }
+
+    .td-stat-value.td-damage {
+      color: var(--td-red);
+    }
+
+    .td-stat-value.td-kills {
+      color: var(--td-gold);
+    }
+
+    .td-tower-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .td-btn-upgrade {
+      background: var(--td-panel-secondary);
+    }
+
+    .td-btn-upgrade mat-icon {
+      color: var(--td-teal);
+    }
+
+    .td-btn-sell {
+      background: var(--td-panel-secondary);
+    }
+
+    .td-btn-sell mat-icon {
+      color: var(--td-red);
+    }
+
+    .td-btn-sell:hover:not(:disabled) {
+      background: rgba(244, 67, 54, 0.2);
+    }
+
+    .td-refund {
+      background: var(--td-green);
+    }
+
     /* === Camera Buttons === */
     .td-camera-btns {
       display: flex;
@@ -943,6 +1109,9 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly geocodingService = inject(GeocodingService);
   readonly gameState = inject(GameStateManager);
   private readonly entityPool = inject(EntityPoolService);
+
+  // Expose Math for template
+  readonly Math = Math;
 
   private engine: ThreeTilesEngine | null = null;
   private streetNetwork: StreetNetwork | null = null;
@@ -2068,6 +2237,17 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         this.buildPreviewMesh.visible = false;
       }
       this.lastPreviewValidation = null;
+    }
+  }
+
+  /**
+   * Sell the currently selected tower
+   */
+  sellSelectedTower(): void {
+    const tower = this.gameState.selectedTower();
+    if (tower) {
+      const refund = this.gameState.sellTower(tower);
+      console.log(`[TD] Tower sold for ${refund} credits`);
     }
   }
 

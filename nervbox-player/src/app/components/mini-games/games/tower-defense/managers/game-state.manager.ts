@@ -41,6 +41,7 @@ export class GameStateManager {
   readonly towerCount = computed(() => this.towerManager.getAll().length);
   readonly enemiesAlive = computed(() => this.enemyManager.getAliveCount());
   readonly selectedTowerId = computed(() => this.towerManager.getSelectedId());
+  readonly selectedTower = computed(() => this.towerManager.getSelected());
 
   // Engine reference
   private tilesEngine: ThreeTilesEngine | null = null;
@@ -175,6 +176,12 @@ export class GameStateManager {
       this.spawnDeathBloodEffect(enemy);
       this.enemyManager.kill(enemy);
       this.credits.update((c) => c + enemy.typeConfig.reward);
+
+      // Track kill on the source tower
+      const sourceTower = this.towerManager.getById(projectile.sourceTowerId);
+      if (sourceTower) {
+        sourceTower.combat.kills++;
+      }
     }
   }
 
@@ -350,6 +357,17 @@ export class GameStateManager {
    */
   deselectAll(): void {
     this.towerManager.selectTower(null);
+  }
+
+  /**
+   * Sell a tower and refund 50% of its cost
+   */
+  sellTower(tower: Tower): number {
+    const refund = Math.floor(tower.typeConfig.cost * 0.5);
+    this.towerManager.selectTower(null);
+    this.towerManager.remove(tower);
+    this.credits.update((c) => c + refund);
+    return refund;
   }
 
   /**

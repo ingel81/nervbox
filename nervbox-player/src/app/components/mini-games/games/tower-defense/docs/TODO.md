@@ -38,7 +38,10 @@ Türme:
      - Selection Ring Animation mit Pulse-Effekt
      - Radius-Anzeige wird eingeblendet
      - Bug-Fix: geoToLocalSimple statt geoToLocal für korrekte Distanzberechnung
-     [ ] wenn ein turm selektiert ist sollen seine details (Type, range, damage,etc)) in der sidebar ersichtlich sein, mit später optionen für upgrade, verkaufen, etc.
+ [x] Tower-Details in Sidebar bei Selektion
+     - TOWER Section zeigt: Name, Schaden, Reichweite, Feuerrate, Kills
+     - Verkaufen-Button (50% Erstattung)
+     - Upgrade-Button (disabled, "Bald verfuegbar")
 
  [x] Benötigen eine Radius-Anzeige wenn selektiert (diese soll wirklich satt auf dem Terrain liegen)
      - TerrainRaycaster: Direktes Raycasting für lokale X,Z Koordinaten
@@ -55,10 +58,15 @@ Türme:
 UI:
  [x] Sidebar rechts mit den Optionen wie "Start Welle" und "Tower platzieren" sowie Debug
      alles in eine einheitliche Sidebar bringen (WC3/Ancient Command Style)
+ [x] Sidebar neu strukturiert in Sections:
+     - WELLE Section: Wave-Nummer, Gegner-Count, "Naechste Welle" Button
+     - BAUEN Section: Tower-Buttons mit Kosten
+     - TOWER Section: Details bei Selektion (Name, Stats, Upgrade/Verkaufen)
+     - DEBUG Section: wie bisher
  [x] FPS Anzeige
      - Im Header rechts neben den Stats
      - Aktualisiert jedes Frame vom Engine
- [ ] Locationj Dialog nicht in unserem Style des TD. bitte Styleguide anwenden und selben background und schatten wie sidebar verwenden für dialog background. KEIN PURPLE
+ [ ] Location Dialog nicht in unserem Style des TD. bitte Styleguide anwenden und selben background und schatten wie sidebar verwenden für dialog background. KEIN PURPLE
 
 Kamera:
  [x] Initiale Position optimiert
