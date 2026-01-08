@@ -1,3 +1,8 @@
+// New 3DTilesRendererJS-based engine (replaces Cesium)
+export { ThreeTilesEngine } from './three-tiles-engine';
+export { EllipsoidSync } from './ellipsoid-sync';
+
+// Legacy exports (deprecated - to be removed)
 export { TdThreeEngine } from './td-three-engine';
 export { CesiumThreeSync } from './cesium-three-sync';
 export { TerrainAdapter } from './terrain-adapter';

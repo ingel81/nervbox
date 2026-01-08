@@ -6,7 +6,7 @@ import { Tower } from '../entities/tower.entity';
 import { Enemy } from '../entities/enemy.entity';
 import { EntityPoolService } from '../services/entity-pool.service';
 import { ProjectileRenderer, ProjectileRenderConfig } from '../renderers/projectile.renderer';
-import { TdThreeEngine } from '../three-engine';
+import { TdThreeEngine, ThreeTilesEngine } from '../three-engine';
 
 /**
  * Manages all projectile entities
@@ -33,10 +33,23 @@ export class ProjectileManager extends EntityManager<Projectile> {
   }
 
   /**
+   * Initialize with ThreeTilesEngine (no Cesium viewer)
+   */
+  initializeWithTilesEngine(
+    tilesEngine: ThreeTilesEngine,
+    onProjectileHit?: (projectile: Projectile, enemy: Enemy) => void,
+    onProjectileFired?: () => void
+  ): void {
+    super.initializeTilesEngine(tilesEngine);
+    this.onProjectileHit = onProjectileHit;
+    this.onProjectileFired = onProjectileFired;
+  }
+
+  /**
    * Spawn a new projectile from a tower to a target
    */
   spawn(tower: Tower, targetEnemy: Enemy): Projectile {
-    if (!this.viewer) {
+    if (!this.viewer && !this.tilesEngine) {
       throw new Error('ProjectileManager not initialized');
     }
 
@@ -47,20 +60,31 @@ export class ProjectileManager extends EntityManager<Projectile> {
       tower.combat.damage
     );
 
-    if (this.useThreeJs && this.threeEngine) {
-      // Three.js rendering - tower must have valid height
+    if (this.tilesEngine) {
+      // ThreeTilesEngine rendering
       const terrainHeight = tower.position.height!;
-      // Calculate initial heading towards target
+      const heading = this.calculateHeading(tower.position, targetEnemy.position);
+      this.tilesEngine.projectiles.create(
+        projectile.id,
+        projectile.typeConfig.id,
+        tower.position.lat,
+        tower.position.lon,
+        terrainHeight + 5,
+        heading
+      );
+    } else if (this.useThreeJs && this.threeEngine) {
+      // TdThreeEngine rendering
+      const terrainHeight = tower.position.height!;
       const heading = this.calculateHeading(tower.position, targetEnemy.position);
       this.threeEngine.projectiles.create(
         projectile.id,
         projectile.typeConfig.id,
         tower.position.lat,
         tower.position.lon,
-        terrainHeight + 5, // Spawn above tower
+        terrainHeight + 5,
         heading
       );
-    } else {
+    } else if (this.viewer) {
       // Cesium rendering (fallback)
       const renderConfig: ProjectileRenderConfig = {
         position: tower.position,
@@ -95,8 +119,19 @@ export class ProjectileManager extends EntityManager<Projectile> {
         toRemove.push(projectile);
       } else {
         // Update visual position
-        if (this.useThreeJs && this.threeEngine) {
-          // Projectile height is interpolated between tower and target
+        if (this.tilesEngine) {
+          // ThreeTilesEngine projectile update
+          const terrainHeight = projectile.position.height!;
+          const heading = this.calculateHeading(projectile.position, projectile.targetEnemy.position);
+          this.tilesEngine.projectiles.update(
+            projectile.id,
+            projectile.position.lat,
+            projectile.position.lon,
+            terrainHeight,
+            heading
+          );
+        } else if (this.useThreeJs && this.threeEngine) {
+          // TdThreeEngine projectile update
           const terrainHeight = projectile.position.height!;
           const heading = this.calculateHeading(projectile.position, projectile.targetEnemy.position);
           this.threeEngine.projectiles.update(
@@ -132,7 +167,9 @@ export class ProjectileManager extends EntityManager<Projectile> {
    * Override remove to cleanup Three.js resources
    */
   override remove(entity: Projectile): void {
-    if (this.useThreeJs && this.threeEngine) {
+    if (this.tilesEngine) {
+      this.tilesEngine.projectiles.remove(entity.id);
+    } else if (this.useThreeJs && this.threeEngine) {
       this.threeEngine.projectiles.remove(entity.id);
     }
     super.remove(entity);
@@ -142,7 +179,9 @@ export class ProjectileManager extends EntityManager<Projectile> {
    * Override clear to cleanup all Three.js resources
    */
   override clear(): void {
-    if (this.useThreeJs && this.threeEngine) {
+    if (this.tilesEngine) {
+      this.tilesEngine.projectiles.clear();
+    } else if (this.useThreeJs && this.threeEngine) {
       this.threeEngine.projectiles.clear();
     }
     super.clear();

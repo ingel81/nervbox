@@ -31,10 +31,9 @@ import { ProjectileManager } from './managers/projectile.manager';
 import { WaveManager, SpawnPoint as WaveSpawnPoint } from './managers/wave.manager';
 import { AudioManager } from './managers/audio.manager';
 import { RenderManager } from './managers/render.manager';
-// Three.js Engine
-import { TdThreeEngine } from './three-engine';
-
-import * as Cesium from 'cesium';
+// Three.js Engine (new 3DTilesRendererJS-based)
+import { ThreeTilesEngine } from './three-engine';
+import * as THREE from 'three';
 
 // Default locations - can be overridden via debug settings
 const DEFAULT_CENTER_COORDS = {
@@ -70,7 +69,7 @@ export interface SpawnPoint {
   name: string;
   latitude: number;
   longitude: number;
-  color: Cesium.Color;
+  color: number; // Three.js hex color
 }
 
 @Component({
@@ -132,8 +131,7 @@ export interface SpawnPoint {
           </div>
         }
 
-        <div #cesiumContainer class="cesium-container" [class.hidden]="loading() || error()"></div>
-        <canvas #threeCanvas class="three-canvas" [class.hidden]="loading() || error()"></canvas>
+        <canvas #gameCanvas class="game-canvas" [class.hidden]="loading() || error()"></canvas>
 
         @if (!loading() && !error()) {
           <!-- Status Panel (top left) -->
@@ -200,6 +198,7 @@ export interface SpawnPoint {
               [spawnMode]="spawnMode()"
               [streetsVisible]="streetsVisible()"
               [routesVisible]="routesVisible()"
+              [heightDebugVisible]="heightDebugVisible()"
               [waveActive]="waveActive()"
               [baseHealth]="gameState.baseHealth()"
               [debugLog]="debugLog()"
@@ -212,6 +211,7 @@ export interface SpawnPoint {
               (toggleSpawnMode)="toggleSpawnMode()"
               (toggleStreets)="toggleStreets()"
               (toggleRoutes)="toggleRoutes()"
+              (toggleHeightDebug)="toggleHeightDebug()"
               (killAll)="killAllEnemies()"
               (healHq)="healHq()"
               (clearLog)="clearDebugLog()"
@@ -339,27 +339,12 @@ export interface SpawnPoint {
       overflow: hidden;
     }
 
-    .cesium-container {
+    .game-canvas {
       width: 100%;
       height: 100%;
     }
 
-    .cesium-container.hidden {
-      visibility: hidden;
-    }
-
-    .three-canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 10;
-      pointer-events: none;
-      background: transparent;
-    }
-
-    .three-canvas.hidden {
+    .game-canvas.hidden {
       visibility: hidden;
     }
 
@@ -620,16 +605,14 @@ export interface SpawnPoint {
       z-index: 5;
     }
 
-    :host ::ng-deep .cesium-viewer-toolbar,
-    :host ::ng-deep .cesium-viewer-animationContainer,
-    :host ::ng-deep .cesium-viewer-timelineContainer,
-    :host ::ng-deep .cesium-viewer-bottom {
-      display: none !important;
-    }
-
-    :host ::ng-deep .cesium-widget-credits {
-      font-size: 10px !important;
-      opacity: 0.5;
+    /* Attribution for Google 3D Tiles */
+    .attribution {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.5);
+      z-index: 5;
     }
 
     .gathering-overlay {
@@ -749,8 +732,7 @@ export interface SpawnPoint {
   `,
 })
 export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
-  @ViewChild('cesiumContainer') cesiumContainer!: ElementRef<HTMLDivElement>;
-  @ViewChild('threeCanvas') threeCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('gameCanvas') gameCanvas!: ElementRef<HTMLCanvasElement>;
 
   private readonly dialogRef = inject(MatDialogRef<TowerDefenseComponent>, { optional: true });
   private readonly osmService = inject(OsmStreetService);
@@ -763,20 +745,23 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly PROJECTILE_SOUND_HASH = '3ae29d3b4c96b913c63964373e218f08';
   private projectileSoundUrl = '';
 
-  private viewer: Cesium.Viewer | null = null;
-  private threeEngine: TdThreeEngine | null = null;
+  private engine: ThreeTilesEngine | null = null;
   private streetNetwork: StreetNetwork | null = null;
-  private streetEntities: Cesium.Entity[] = [];
-  private spawnEntities: Cesium.Entity[] = [];
-  private routeEntities: Cesium.Entity[] = []; // Spawn routes (red paths)
-  private baseEntity: Cesium.Entity | null = null;
+
+  // Three.js objects for markers and routes
+  private streetLines: THREE.Line[] = [];
+  private routeLines: THREE.Line[] = [];
+  private spawnMarkers: THREE.Mesh[] = [];
+  private baseMarker: THREE.Mesh | null = null;
+  private heightDebugGroup: THREE.Group | null = null;
 
   readonly loading = signal(true);
   readonly loadingMessage = signal('Lade 3D-Karte...');
   readonly error = signal<string | null>(null);
-  readonly streetsVisible = signal(false);
-  readonly routesVisible = signal(false);
+  readonly streetsVisible = signal(true);
+  readonly routesVisible = signal(true);
   readonly debugMode = signal(false);
+  readonly heightDebugVisible = signal(false);
   readonly enemySpeed = signal(5); // Meter pro Sekunde
   readonly streetCount = signal(0);
   // Debug: Spawn-Einstellungen
@@ -800,10 +785,9 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly gatheringPhase = signal(false);
   readonly gatheringCountdown = signal(0);
 
-  private clickHandler: Cesium.ScreenSpaceEventHandler | null = null;
   private animationFrameId: number | null = null;
   private cachedPaths = new Map<string, GeoPosition[]>();
-  private buildPreviewEntity: Cesium.Entity | null = null;
+  private buildPreviewMesh: THREE.Mesh | null = null;
   private lastPreviewValidation: boolean | null = null;
   private previewThrottleId: number | null = null;
 
@@ -814,130 +798,30 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly TOWER_RANGE = 60;
 
   private tiltAngle = 45;
-  private threeRenderCallback: Cesium.Event.RemoveCallback | null = null;
 
   ngOnInit(): void {
-    (window as unknown as { CESIUM_BASE_URL: string }).CESIUM_BASE_URL = '/cesium/';
     this.initializeEditableLocations();
   }
 
   ngAfterViewInit(): void {
-    this.initCesium();
+    this.initEngine();
   }
 
   ngOnDestroy(): void {
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
     }
-    if (this.threeRenderCallback) {
-      this.viewer?.scene.postRender.removeEventListener(this.threeRenderCallback);
-    }
-    if (this.clickHandler) {
-      this.clickHandler.destroy();
-    }
-    if (this.buildPreviewEntity && this.viewer) {
-      this.viewer.entities.remove(this.buildPreviewEntity);
-    }
     this.entityPool.destroy();
-    if (this.threeEngine) {
-      this.threeEngine.dispose();
-      this.threeEngine = null;
-    }
-    if (this.viewer) {
-      this.viewer.destroy();
-      this.viewer = null;
+    if (this.engine) {
+      this.engine.dispose();
+      this.engine = null;
     }
   }
 
   /**
-   * Initialize Three.js rendering engine
+   * Initialize Three.js rendering engine with 3DTilesRendererJS
    */
-  private async initThreeEngine(): Promise<void> {
-    if (!this.viewer || !this.threeCanvas?.nativeElement) {
-      console.warn('[TD] Cannot initialize Three.js engine - viewer or canvas not ready');
-      return;
-    }
-
-    const canvas = this.threeCanvas.nativeElement;
-    const rect = this.cesiumContainer.nativeElement.getBoundingClientRect();
-
-    // Set canvas size to match Cesium container
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-
-    // Get terrain height at HQ for origin
-    const base = this.baseCoords();
-    const positions = [Cesium.Cartographic.fromDegrees(base.longitude, base.latitude)];
-    const sampled = await Cesium.sampleTerrainMostDetailed(this.viewer.terrainProvider, positions);
-    const baseHeight = sampled[0].height;
-    console.log('[TD] Sampled terrain height at HQ:', baseHeight);
-
-    // Create Three.js engine with separate canvas
-    this.threeEngine = new TdThreeEngine(canvas, this.viewer, base.latitude, base.longitude, baseHeight);
-    this.threeEngine.resize(rect.width, rect.height);
-
-    // Preload 3D models in background
-    this.threeEngine.preloadModels().then(() => {
-      console.log('[TD] All Three.js models preloaded');
-    });
-
-    // Add test cube at HQ position (Phase 1 test - can be removed later)
-    this.threeEngine.addTestCube(base.latitude, base.longitude).then(() => {
-      console.log('[TD] Test cube added at HQ');
-    });
-
-    // Add test cubes at spawn points
-    const spawns = this.spawnPoints();
-    if (spawns.length > 0) {
-      this.threeEngine.addTestCubesAtSpawns(
-        spawns.map((s) => ({ lat: s.latitude, lon: s.longitude }))
-      );
-    }
-
-    // Add axis helper for debugging
-    this.threeEngine.addAxisHelper();
-
-    // Register postRender callback to sync Three.js with Cesium
-    // This ensures Three.js renders AFTER Cesium each frame (in same WebGL context)
-    this.threeRenderCallback = this.viewer.scene.postRender.addEventListener(() => {
-      if (this.threeEngine) {
-        this.threeEngine.render();
-      }
-    });
-
-    // Start continuous render loop for Three.js (independent of game wave state)
-    // This ensures test cubes and entities are always visible
-    this.startThreeRenderLoop();
-
-    console.log('[TD] Three.js engine initialized, canvas:', canvas.width, 'x', canvas.height);
-  }
-
-  private threeRenderLoopId: number | null = null;
-
-  private startThreeRenderLoop(): void {
-    const renderLoop = () => {
-      if (!this.viewer || !this.threeEngine) {
-        this.threeRenderLoopId = null;
-        return;
-      }
-
-      // Request Cesium render (triggers postRender callback which renders Three.js)
-      this.viewer.scene.requestRender();
-
-      this.threeRenderLoopId = requestAnimationFrame(renderLoop);
-    };
-
-    this.threeRenderLoopId = requestAnimationFrame(renderLoop);
-  }
-
-  private stopThreeRenderLoop(): void {
-    if (this.threeRenderLoopId !== null) {
-      cancelAnimationFrame(this.threeRenderLoopId);
-      this.threeRenderLoopId = null;
-    }
-  }
-
-  private async initCesium(): Promise<void> {
+  private async initEngine(): Promise<void> {
     try {
       // Get token from ConfigService (loaded from backend /api/config)
       const token = this.configService.cesiumAccessToken();
@@ -947,72 +831,37 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         return;
       }
 
-      Cesium.Ion.defaultAccessToken = token;
+      const canvas = this.gameCanvas.nativeElement;
+      const container = canvas.parentElement!;
+      const rect = container.getBoundingClientRect();
 
-      this.viewer = new Cesium.Viewer(this.cesiumContainer.nativeElement, {
-        terrain: Cesium.Terrain.fromWorldTerrain(),
-        animation: false,
-        timeline: false,
-        baseLayerPicker: false,
-        fullscreenButton: false,
-        geocoder: false,
-        homeButton: false,
-        infoBox: false,
-        sceneModePicker: false,
-        selectionIndicator: false,
-        navigationHelpButton: false,
-        shadows: false,
-        requestRenderMode: true,
-        maximumRenderTimeChange: Infinity,
+      // Set canvas size
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+
+      // Get origin coordinates
+      const base = this.baseCoords();
+
+      // Create Three.js engine with 3DTilesRendererJS
+      this.engine = new ThreeTilesEngine(
+        canvas,
+        token,
+        base.latitude,
+        base.longitude,
+        0
+      );
+
+      // Initialize 3D tiles (async)
+      await this.engine.initialize();
+      this.engine.resize(rect.width, rect.height);
+
+      // Preload 3D models in background
+      this.engine.preloadModels().then(() => {
+        console.log('[TD] All Three.js models preloaded');
       });
-
-      // Configure clock for smooth animations
-      this.viewer.clock.shouldAnimate = true;
-      this.viewer.clock.multiplier = 1.0;
-      this.viewer.clock.clockRange = Cesium.ClockRange.UNBOUNDED;
-
-      try {
-        const tileset = await Cesium.createGooglePhotorealistic3DTileset();
-
-        // Performance: Increase error tolerance = load less detail at distance
-        tileset.maximumScreenSpaceError = 24; // default 16, higher = less detail loaded
-
-        // Don't load tiles while camera is moving fast
-        tileset.cullRequestsWhileMoving = true;
-        tileset.cullRequestsWhileMovingMultiplier = 60;
-
-        // Prefer loading final detail tiles over intermediate ones
-        tileset.preferLeaves = true;
-
-        // Reduce tile cache size
-        tileset.cacheBytes = 256 * 1024 * 1024; // 256 MB cache
-
-        this.viewer.scene.primitives.add(tileset);
-      } catch {
-        console.warn('Google 3D Tiles not available');
-      }
-
-      this.viewer.scene.globe.depthTestAgainstTerrain = true;
-
-      // Disable right-click zoom (only use scroll wheel for zoom)
-      this.viewer.scene.screenSpaceCameraController.zoomEventTypes = [
-        Cesium.CameraEventType.WHEEL,
-        Cesium.CameraEventType.PINCH,
-      ];
-
-      // Smoother and finer zoom with mouse wheel
-      this.viewer.scene.screenSpaceCameraController.zoomFactor = 1.5; // Default is 3.0
-      this.viewer.scene.screenSpaceCameraController.minimumZoomDistance = 50;
-      this.viewer.scene.screenSpaceCameraController.maximumZoomDistance = 1200; // Limit zoom out to reduce tile loading
 
       // Set up sound URL
       this.projectileSoundUrl = this.api.getFullUrl(`/sound/${this.PROJECTILE_SOUND_HASH}/file`);
-
-      // Initialize entity pool
-      this.entityPool.initialize(this.viewer);
-
-      // Initialize Three.js engine (async - waits for terrain height)
-      await this.initThreeEngine();
 
       // Setup click handler and build preview
       this.setupClickHandler();
@@ -1025,122 +874,118 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       this.addPredefinedSpawns();
 
       // Initialize game state AFTER streets and spawns are loaded
-      const base = this.baseCoords();
       const waveSpawnPoints: WaveSpawnPoint[] = this.spawnPoints().map((sp) => ({
         id: sp.id,
         name: sp.name,
         latitude: sp.latitude,
         longitude: sp.longitude,
       }));
-      this.gameState.initialize(
-        this.viewer,
+
+      // Initialize game state with new engine
+      this.gameState.initializeWithTilesEngine(
+        this.engine,
         this.streetNetwork!,
         { lat: base.latitude, lon: base.longitude },
         waveSpawnPoints,
         this.cachedPaths,
         () => this.playProjectileSound(),
         (msg) => this.appendDebugLog(msg),
-        () => this.onGameOver(),
-        this.threeEngine ?? undefined
+        () => this.onGameOver()
       );
+
+      // Start render loop
+      this.engine.startRenderLoop();
 
       this.resetCamera();
 
+      // Schedule overlay height updates once tiles are loaded
+      this.scheduleOverlayHeightUpdate();
+
       this.loading.set(false);
     } catch (err) {
-      console.error('Cesium initialization error:', err);
+      console.error('Engine initialization error:', err);
       this.error.set(err instanceof Error ? err.message : 'Fehler beim Laden der 3D-Karte');
       this.loading.set(false);
     }
   }
 
   private setupClickHandler(): void {
-    if (!this.viewer) return;
+    if (!this.engine) return;
 
-    this.clickHandler = new Cesium.ScreenSpaceEventHandler(this.viewer.scene.canvas);
+    const canvas = this.gameCanvas.nativeElement;
 
-    this.clickHandler.setInputAction((event: { position: Cesium.Cartesian2 }) => {
-      if (!this.viewer) return;
+    // Click handler
+    canvas.addEventListener('click', (event: MouseEvent) => {
+      if (!this.engine) return;
 
-      // Check if clicked on a tower
-      const picked = this.viewer.scene.pick(event.position);
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
 
-      if (Cesium.defined(picked) && picked.id) {
-        const tower = this.gameState.towers().find((t) => t.render.entity === picked.id);
-        if (tower) {
-          if (this.gameState.selectedTowerId() === tower.id) {
-            this.gameState.deselectAll();
-          } else {
-            this.gameState.selectTower(tower.id);
-          }
-          return;
-        }
-      }
+      // Raycast to get world position
+      const hitPoint = this.engine.raycastTerrain(event.clientX, event.clientY);
+
+      if (!hitPoint) return;
+
+      // Convert to geo coordinates
+      const geo = this.engine.sync.localToGeo(hitPoint);
 
       // If in build mode, try to place tower
       if (this.buildMode()) {
-        const cartesian = this.viewer.scene.pickPosition(event.position);
-        if (!cartesian || !Cesium.defined(cartesian)) return;
-
-        const cartographic = Cesium.Cartographic.fromCartesian(cartesian);
-        const lat = Cesium.Math.toDegrees(cartographic.latitude);
-        const lon = Cesium.Math.toDegrees(cartographic.longitude);
-
-        const validation = this.validateTowerPosition(lat, lon);
+        const validation = this.validateTowerPosition(geo.lat, geo.lon);
 
         if (validation.valid) {
-          this.placeTower(lat, lon);
-          this.toggleBuildMode(); // This also hides the preview
+          this.placeTower(geo.lat, geo.lon);
+          this.toggleBuildMode();
         } else {
           console.log('Invalid tower position:', validation.reason);
         }
       } else {
-        // Deselect tower when clicking elsewhere
-        this.gameState.deselectAll();
-      }
-    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+        // Check if clicked near a tower (simple distance check)
+        const towers = this.gameState.towers();
+        let clickedTower = null;
 
-    // Mouse move handler for build preview (optimized)
-    this.clickHandler.setInputAction(
-      (movement: { endPosition: Cesium.Cartesian2 }) => {
-        if (!this.buildMode() || !this.buildPreviewEntity || !this.viewer) return;
-
-        // Use pickPosition to get position on 3D tiles surface (buildings)
-        const cartesian = this.viewer.scene.pickPosition(movement.endPosition);
-        if (!cartesian || !Cesium.defined(cartesian)) {
-          // Fallback to globe.pick if pickPosition fails
-          const ray = this.viewer.camera.getPickRay(movement.endPosition);
-          if (!ray) {
-            this.buildPreviewEntity.show = false;
-            return;
+        for (const tower of towers) {
+          const towerLocal = this.engine.sync.geoToLocal(tower.position.lat, tower.position.lon, tower.position.height || 0);
+          const dist = hitPoint.distanceTo(towerLocal);
+          if (dist < 15) { // 15m click radius
+            clickedTower = tower;
+            break;
           }
-          const groundCartesian = this.viewer.scene.globe.pick(ray, this.viewer.scene);
-          if (!groundCartesian) {
-            this.buildPreviewEntity.show = false;
-            return;
-          }
-          const cartographic = Cesium.Cartographic.fromCartesian(groundCartesian);
-          const lat = Cesium.Math.toDegrees(cartographic.latitude);
-          const lon = Cesium.Math.toDegrees(cartographic.longitude);
-
-          (this.buildPreviewEntity.position as Cesium.ConstantPositionProperty).setValue(groundCartesian);
-          this.buildPreviewEntity.show = true;
-          this.updatePreviewValidation(lat, lon);
-          return;
         }
 
-        const cartographic = Cesium.Cartographic.fromCartesian(cartesian);
-        const lat = Cesium.Math.toDegrees(cartographic.latitude);
-        const lon = Cesium.Math.toDegrees(cartographic.longitude);
+        if (clickedTower) {
+          if (this.gameState.selectedTowerId() === clickedTower.id) {
+            this.gameState.deselectAll();
+          } else {
+            this.gameState.selectTower(clickedTower.id);
+          }
+        } else {
+          this.gameState.deselectAll();
+        }
+      }
+    });
 
-        // Update position on 3D surface
-        (this.buildPreviewEntity.position as Cesium.ConstantPositionProperty).setValue(cartesian);
-        this.buildPreviewEntity.show = true;
+    // Mouse move handler for build preview
+    canvas.addEventListener('mousemove', (event: MouseEvent) => {
+      if (!this.buildMode() || !this.buildPreviewMesh || !this.engine) return;
 
-        this.updatePreviewValidation(lat, lon);
-      },
-      Cesium.ScreenSpaceEventType.MOUSE_MOVE
-    );
+      const hitPoint = this.engine.raycastTerrain(event.clientX, event.clientY);
+
+      if (!hitPoint) {
+        this.buildPreviewMesh.visible = false;
+        return;
+      }
+
+      // Update preview position
+      this.buildPreviewMesh.position.copy(hitPoint);
+      this.buildPreviewMesh.position.y += 1; // Slightly above ground
+      this.buildPreviewMesh.visible = true;
+
+      // Validate position
+      const geo = this.engine.sync.localToGeo(hitPoint);
+      this.updatePreviewValidation(geo.lat, geo.lon);
+    });
   }
 
   private updatePreviewValidation(lat: number, lon: number): void {
@@ -1148,57 +993,36 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.previewThrottleId === null) {
       this.previewThrottleId = window.setTimeout(() => {
         this.previewThrottleId = null;
-        if (!this.buildPreviewEntity?.billboard) return;
+        if (!this.buildPreviewMesh) return;
 
         const validation = this.validateTowerPosition(lat, lon);
         if (this.lastPreviewValidation !== validation.valid) {
           this.lastPreviewValidation = validation.valid;
-          // Update billboard image
-          this.buildPreviewEntity.billboard.image = new Cesium.ConstantProperty(
-            this.createPreviewCanvas(validation.valid)
-          );
+          // Update material color
+          const material = this.buildPreviewMesh.material as THREE.MeshBasicMaterial;
+          material.color.setHex(validation.valid ? 0x22c55e : 0xef4444);
         }
       }, 30);
     }
   }
 
   private createBuildPreview(): void {
-    if (!this.viewer) return;
+    if (!this.engine) return;
 
-    // Use a billboard instead of ellipse for better visibility on 3D tiles
-    const canvas = this.createPreviewCanvas(true);
-    this.buildPreviewEntity = this.viewer.entities.add({
-      position: Cesium.Cartesian3.fromDegrees(0, 0, 0),
-      billboard: {
-        image: canvas,
-        scale: 1.0,
-        verticalOrigin: Cesium.VerticalOrigin.CENTER,
-        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-        disableDepthTestDistance: Number.POSITIVE_INFINITY,
-      },
-      show: false,
+    // Create a simple circle mesh for preview
+    const geometry = new THREE.CircleGeometry(8, 32);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x22c55e,
+      transparent: true,
+      opacity: 0.5,
+      side: THREE.DoubleSide,
+      depthWrite: false,
     });
-  }
+    this.buildPreviewMesh = new THREE.Mesh(geometry, material);
+    this.buildPreviewMesh.rotation.x = -Math.PI / 2; // Horizontal
+    this.buildPreviewMesh.visible = false;
 
-  private createPreviewCanvas(valid: boolean): HTMLCanvasElement {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d')!;
-    const size = 64;
-    canvas.width = size;
-    canvas.height = size;
-
-    const color = valid ? 'rgba(34, 197, 94, 0.6)' : 'rgba(239, 68, 68, 0.6)';
-    const borderColor = valid ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)';
-
-    ctx.beginPath();
-    ctx.arc(size / 2, size / 2, size / 2 - 4, 0, Math.PI * 2);
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.strokeStyle = borderColor;
-    ctx.lineWidth = 4;
-    ctx.stroke();
-
-    return canvas;
+    this.engine.getScene().add(this.buildPreviewMesh);
   }
 
   private async loadStreets(): Promise<void> {
@@ -1223,36 +1047,163 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private renderStreets(): void {
-    if (!this.viewer || !this.streetNetwork) return;
+    if (!this.engine || !this.streetNetwork) return;
 
-    for (const entity of this.streetEntities) {
-      this.viewer.entities.remove(entity);
+    const overlayGroup = this.engine.getOverlayGroup();
+
+    // Remove existing street lines
+    for (const line of this.streetLines) {
+      overlayGroup.remove(line);
+      line.geometry.dispose();
+      (line.material as THREE.Material).dispose();
     }
-    this.streetEntities = [];
+    this.streetLines = [];
+
+    // Clear height debug markers
+    this.clearHeightDebugMarkers();
+
+    // Street overlay material - depthTest: true for correct occlusion
+    const material = new THREE.LineBasicMaterial({
+      color: 0xffd700,
+      linewidth: 2,
+      depthTest: true,
+      depthWrite: false,
+      transparent: true,
+      opacity: 0.9
+    });
+
+    // Height offset above terrain (0 = directly on terrain)
+    const HEIGHT_ABOVE_GROUND = 0.5;
+
+    // Get terrain height at HQ (origin) as reference
+    const base = this.baseCoords();
+    const originTerrainY = this.engine.getTerrainHeightAtGeo(base.latitude, base.longitude);
+    if (originTerrainY === null) {
+      console.log('[Streets] Cannot render - origin terrain height not available');
+      return;
+    }
+    console.log(`[Streets] Origin terrain Y: ${originTerrainY.toFixed(1)}`);
+
+    // Set overlay base Y so overlayGroup is positioned at terrain surface
+    this.engine.setOverlayBaseY(originTerrainY);
+
+    let hits = 0, misses = 0;
+    const showDebug = this.heightDebugVisible();
+    const debugMarkerInterval = 10; // Only show every Nth marker to reduce clutter
+    let debugMarkerCount = 0;
 
     for (const street of this.streetNetwork.streets) {
-      const positions = street.nodes.map((node) =>
-        Cesium.Cartesian3.fromDegrees(node.lon, node.lat)
-      );
+      if (street.nodes.length < 2) continue;
 
-      if (positions.length < 2) continue;
+      const points: THREE.Vector3[] = [];
 
-      const entity = this.viewer.entities.add({
-        polyline: {
-          positions,
-          width: 6,
-          material: Cesium.Color.GOLD,
-          clampToGround: true,
-        },
-        show: this.streetsVisible(),
-      });
+      for (const node of street.nodes) {
+        // Get terrain height at this position using local raycast
+        const terrainY = this.engine.getTerrainHeightAtGeo(node.lat, node.lon);
 
-      this.streetEntities.push(entity);
+        if (terrainY !== null) {
+          hits++;
+          // Use geoToLocalSimple for X/Z
+          const local = this.engine.sync.geoToLocalSimple(node.lat, node.lon, 0);
+          // Y = height difference from origin + offset above ground
+          local.y = (terrainY - originTerrainY) + HEIGHT_ABOVE_GROUND;
+          points.push(local);
+
+          // Add debug marker if enabled (only every Nth point)
+          if (showDebug && debugMarkerCount % debugMarkerInterval === 0) {
+            this.addHeightDebugMarker(local, terrainY, true);
+          }
+          debugMarkerCount++;
+        } else {
+          misses++;
+          // Add red debug marker for misses if enabled
+          if (showDebug && debugMarkerCount % debugMarkerInterval === 0) {
+            const localMiss = this.engine.sync.geoToLocalSimple(node.lat, node.lon, 5);
+            this.addHeightDebugMarker(localMiss, null, false);
+          }
+          debugMarkerCount++;
+        }
+      }
+
+      // Only render street if we have at least 2 points
+      if (points.length < 2) continue;
+
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const line = new THREE.Line(geometry, material.clone());
+      line.visible = this.streetsVisible();
+      line.renderOrder = 1;
+      line.frustumCulled = false;  // Prevent disappearing at certain angles
+      overlayGroup.add(line);
+      this.streetLines.push(line);
     }
+
+    console.log(`[Streets] Rendered with ECEF raycast: ${hits} hits, ${misses} misses, ${this.streetLines.length} lines`);
+  }
+
+  /**
+   * Add a debug marker at a position showing terrain height
+   */
+  private addHeightDebugMarker(position: THREE.Vector3, height: number | null, isHit: boolean): void {
+    if (!this.engine) return;
+
+    const overlayGroup = this.engine.getOverlayGroup();
+
+    // Create debug group if not exists
+    if (!this.heightDebugGroup) {
+      this.heightDebugGroup = new THREE.Group();
+      this.heightDebugGroup.name = 'heightDebugGroup';
+      overlayGroup.add(this.heightDebugGroup);
+    }
+
+    // Create small sphere marker
+    const geometry = new THREE.SphereGeometry(1, 8, 8);
+    const material = new THREE.MeshBasicMaterial({
+      color: isHit ? 0x00ff00 : 0xff0000, // Green for hits, red for misses
+      transparent: true,
+      opacity: 0.7,
+      depthTest: true,
+    });
+
+    const marker = new THREE.Mesh(geometry, material);
+    marker.position.copy(position);
+    marker.position.y += 2; // Slightly above the street
+    marker.renderOrder = 10;
+
+    this.heightDebugGroup.add(marker);
+  }
+
+  /**
+   * Clear all height debug markers
+   */
+  private clearHeightDebugMarkers(): void {
+    if (!this.heightDebugGroup || !this.engine) return;
+
+    const overlayGroup = this.engine.getOverlayGroup();
+
+    // Dispose all markers
+    this.heightDebugGroup.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        (obj as THREE.Mesh).geometry.dispose();
+        ((obj as THREE.Mesh).material as THREE.Material).dispose();
+      }
+    });
+
+    // Remove from overlay
+    overlayGroup.remove(this.heightDebugGroup);
+    this.heightDebugGroup = null;
+  }
+
+  /**
+   * Toggle height debug visualization
+   */
+  toggleHeightDebug(): void {
+    this.heightDebugVisible.update((v) => !v);
+    // Re-render streets to update debug markers
+    this.renderStreets();
   }
 
   private addPredefinedSpawns(): void {
-    const colors = [Cesium.Color.RED, Cesium.Color.ORANGE, Cesium.Color.CYAN, Cesium.Color.MAGENTA];
+    const colors = [0xef4444, 0xf97316, 0x00bcd4, 0xff00ff]; // red, orange, cyan, magenta
 
     // Use editable spawn locations if available, otherwise defaults
     const spawns = this.editableSpawnLocations();
@@ -1268,47 +1219,84 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private addBaseMarker(): void {
-    if (!this.viewer) return;
+    if (!this.engine) return;
 
+    const overlayGroup = this.engine.getOverlayGroup();
     const base = this.baseCoords();
 
-    if (this.baseEntity) {
-      this.viewer.entities.remove(this.baseEntity);
+    // Remove existing marker
+    if (this.baseMarker) {
+      overlayGroup.remove(this.baseMarker);
+      this.baseMarker.geometry.dispose();
+      (this.baseMarker.material as THREE.Material).dispose();
     }
 
-    this.baseEntity = this.viewer.entities.add({
-      position: Cesium.Cartesian3.fromDegrees(base.longitude, base.latitude, 0),
-      billboard: {
-        image: this.createMarkerCanvas('HQ', '#22c55e', 60),
-        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-        scale: 1.0,
-      },
+    // Create a simple 3D marker for HQ - position on terrain
+    // Base marker is at ORIGIN, so relative Y = 0 + HEIGHT_ABOVE_GROUND
+    const HEIGHT_ABOVE_GROUND = 5; // Marker floats above ground
+    const local = this.engine.sync.geoToLocalSimple(base.latitude, base.longitude, 0);
+    local.y = HEIGHT_ABOVE_GROUND; // At origin, relative height is 0
+
+    const geometry = new THREE.ConeGeometry(8, 20, 8);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x22c55e,
+      depthTest: true,
+      transparent: true,
+      opacity: 0.9
     });
+    this.baseMarker = new THREE.Mesh(geometry, material);
+    this.baseMarker.position.copy(local);
+    this.baseMarker.rotation.x = Math.PI; // Point down
+    this.baseMarker.renderOrder = 2;
+
+    overlayGroup.add(this.baseMarker);
+    console.log('[addBaseMarker] HQ marker at:', local.x, local.y, local.z);
   }
 
-  addSpawnPoint(id: string, name: string, lat: number, lon: number, color: Cesium.Color): void {
-    if (!this.viewer) return;
+  addSpawnPoint(id: string, name: string, lat: number, lon: number, color: number): void {
+    if (!this.engine) return;
 
     const spawn: SpawnPoint = { id, name, latitude: lat, longitude: lon, color };
     this.spawnPoints.update((points) => [...points, spawn]);
 
-    const entity = this.viewer.entities.add({
-      position: Cesium.Cartesian3.fromDegrees(lon, lat, 0),
-      billboard: {
-        image: this.createMarkerCanvas(`SPAWN: ${name}`, color.toCssColorString(), 80),
-        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-        scale: 1.0,
-      },
-    });
+    const overlayGroup = this.engine.getOverlayGroup();
 
-    this.spawnEntities.push(entity);
+    // Position marker on terrain with RELATIVE heights
+    const HEIGHT_ABOVE_GROUND = 5;
+    const base = this.baseCoords();
+    const originTerrainY = this.engine.getTerrainHeightAtGeo(base.latitude, base.longitude);
+    const terrainY = this.engine.getTerrainHeightAtGeo(lat, lon);
+    const local = this.engine.sync.geoToLocalSimple(lat, lon, 0);
+
+    // Calculate relative Y (height difference from origin)
+    if (originTerrainY !== null && terrainY !== null) {
+      local.y = (terrainY - originTerrainY) + HEIGHT_ABOVE_GROUND;
+    } else {
+      local.y = HEIGHT_ABOVE_GROUND; // Fallback until tiles load
+    }
+
+    // Create spawn marker
+    const geometry = new THREE.ConeGeometry(6, 15, 6);
+    const material = new THREE.MeshBasicMaterial({
+      color,
+      depthTest: true,
+      transparent: true,
+      opacity: 0.9
+    });
+    const marker = new THREE.Mesh(geometry, material);
+    marker.position.copy(local);
+    marker.rotation.x = Math.PI; // Point down
+    marker.renderOrder = 2;
+
+    overlayGroup.add(marker);
+    this.spawnMarkers.push(marker);
+    console.log('[addSpawnPoint]', name, 'at:', local.x.toFixed(1), local.y.toFixed(1), local.z.toFixed(1));
+
     this.showPathFromSpawn(spawn);
   }
 
-  private async showPathFromSpawn(spawn: SpawnPoint): Promise<void> {
-    if (!this.viewer || !this.streetNetwork) return;
+  private showPathFromSpawn(spawn: SpawnPoint): void {
+    if (!this.engine || !this.streetNetwork) return;
 
     const base = this.baseCoords();
     const path = this.osmService.findPath(
@@ -1325,12 +1313,9 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     let geoPath = path.map((n) => ({ lat: n.lat, lon: n.lon }));
 
     // Extend the path along the street to find the optimal turn-off point
-    // The A* path ends at the nearest street node to HQ, but the optimal 90° turn-off
-    // point might be further along the street
     geoPath = this.extendPathToOptimalTurnoff(geoPath, base);
 
-    // Find the closest point to HQ on the path (including points ON segments, not just nodes)
-    // This ensures enemies leave the street at the optimal point
+    // Find the closest point to HQ on the path
     let closestSegmentIndex = geoPath.length - 2;
     let closestPointOnSegment: { lat: number; lon: number } | null = null;
     let closestDist = Infinity;
@@ -1339,7 +1324,6 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       const a = geoPath[i];
       const b = geoPath[i + 1];
 
-      // Find closest point on this segment to HQ
       const closest = this.closestPointOnSegment(a, b, { lat: base.latitude, lon: base.longitude });
       const dist = this.osmService.haversineDistance(closest.lat, closest.lon, base.latitude, base.longitude);
 
@@ -1353,7 +1337,6 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     // Cut path at the segment and insert the closest point
     geoPath = geoPath.slice(0, closestSegmentIndex + 1);
     if (closestPointOnSegment) {
-      // Only add if it's different from the last point
       const lastPoint = geoPath[geoPath.length - 1];
       const distToLast = this.osmService.haversineDistance(
         closestPointOnSegment.lat,
@@ -1362,43 +1345,60 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         lastPoint.lon
       );
       if (distToLast > 1) {
-        // More than 1m away
         geoPath.push(closestPointOnSegment);
       }
     }
 
     // Add HQ as final destination
     geoPath.push({ lat: base.latitude, lon: base.longitude });
-    this.cachedPaths.set(spawn.id, geoPath);
 
-    // Sample terrain heights for all path points (including HQ)
-    const terrainProvider = this.viewer.terrainProvider;
-    const cartographics = geoPath.map((n) => Cesium.Cartographic.fromDegrees(n.lon, n.lat));
-
-    // Sample terrain heights synchronously before continuing
-    const sampled = await Cesium.sampleTerrainMostDetailed(terrainProvider, cartographics);
-    // Update path with terrain heights
-    const pathWithHeights = geoPath.map((pos, i) => ({
+    // Cache path with default heights (will be updated when tiles load)
+    const pathWithHeights: GeoPosition[] = geoPath.map((pos) => ({
       ...pos,
-      height: sampled[i].height,
+      height: 0, // Will be sampled later when enemies spawn
     }));
     this.cachedPaths.set(spawn.id, pathWithHeights);
-    console.log(`[Path] Sampled ${pathWithHeights.length} terrain heights for ${spawn.name}:`,
-      `first=${pathWithHeights[0].height?.toFixed(1)}m, last=${pathWithHeights[pathWithHeights.length-1].height?.toFixed(1)}m`);
 
-    const positions = geoPath.map((node) => Cesium.Cartesian3.fromDegrees(node.lon, node.lat));
+    console.log(`[Path] Cached ${pathWithHeights.length} points for ${spawn.name}`);
 
-    const routeEntity = this.viewer.entities.add({
-      polyline: {
-        positions,
-        width: 10,
-        material: spawn.color,
-        clampToGround: true,
-      },
-      show: this.routesVisible(),
+    // Create route line in Three.js - on terrain with RELATIVE heights
+    const HEIGHT_ABOVE_GROUND = 1;
+    const overlayGroup = this.engine.getOverlayGroup();
+    const points: THREE.Vector3[] = [];
+
+    // Get origin terrain height as reference
+    const originTerrainY = this.engine.getTerrainHeightAtGeo(base.latitude, base.longitude);
+    if (originTerrainY === null) {
+      console.log(`[Path] Cannot render route for ${spawn.name} - origin terrain not available`);
+      return;
+    }
+
+    for (const pos of geoPath) {
+      const terrainY = this.engine.getTerrainHeightAtGeo(pos.lat, pos.lon);
+      if (terrainY !== null) {
+        const local = this.engine.sync.geoToLocalSimple(pos.lat, pos.lon, 0);
+        // Y = height difference from origin + offset above ground
+        local.y = (terrainY - originTerrainY) + HEIGHT_ABOVE_GROUND;
+        points.push(local);
+      }
+    }
+
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const material = new THREE.LineBasicMaterial({
+      color: spawn.color,
+      linewidth: 3,
+      depthTest: true,
+      depthWrite: false,
+      transparent: true,
+      opacity: 0.9
     });
+    const routeLine = new THREE.Line(geometry, material);
+    routeLine.visible = this.routesVisible();
+    routeLine.renderOrder = 1;
+    routeLine.frustumCulled = false;  // Prevent disappearing at certain angles
 
-    this.routeEntities.push(routeEntity);
+    overlayGroup.add(routeLine);
+    this.routeLines.push(routeLine);
   }
 
   private validateTowerPosition(lat: number, lon: number): { valid: boolean; reason?: string } {
@@ -1467,19 +1467,17 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private async placeTower(lat: number, lon: number): Promise<void> {
-    if (!this.viewer) return;
+    if (!this.engine) return;
 
     // Sample terrain height at placement position
-    const positions = [Cesium.Cartographic.fromDegrees(lon, lat)];
-    const sampled = await Cesium.sampleTerrainMostDetailed(this.viewer.terrainProvider, positions);
-    const terrainHeight = sampled[0].height;
+    const terrainHeight = await this.engine.getTerrainHeight(lat, lon);
 
     const position: GeoPosition = { lat, lon, height: terrainHeight };
 
     // Use the new manager API - it handles rendering automatically
     const tower = this.gameState.placeTower(position, 'archer');
     if (tower) {
-      this.viewer.scene.requestRender();
+      console.log('[TD] Tower placed at:', lat, lon);
     }
   }
 
@@ -1487,21 +1485,12 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     this.buildMode.update((v) => !v);
     if (this.buildMode()) {
       this.gameState.deselectAll();
-      // Enable continuous rendering for smooth preview
-      if (this.viewer) {
-        this.viewer.scene.requestRenderMode = false;
-      }
     } else {
       // Hide build preview when exiting build mode
-      if (this.buildPreviewEntity) {
-        this.buildPreviewEntity.show = false;
+      if (this.buildPreviewMesh) {
+        this.buildPreviewMesh.visible = false;
       }
       this.lastPreviewValidation = null;
-      // Restore render-on-demand mode
-      if (this.viewer) {
-        this.viewer.scene.requestRenderMode = true;
-        this.viewer.scene.requestRender();
-      }
     }
   }
 
@@ -1519,7 +1508,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
    * - Game-Loop beginnt
    */
   startWave(): void {
-    if (!this.viewer || this.waveActive() || this.isGameOver()) return;
+    if (!this.engine || this.waveActive() || this.isGameOver()) return;
 
     const spawns = this.spawnPoints();
     if (spawns.length === 0) return;
@@ -1569,7 +1558,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private startGameLoop(): void {
     const animate = () => {
-      if (!this.viewer || this.gameState.phase() === 'gameover') {
+      if (!this.engine || this.gameState.phase() === 'gameover') {
         this.animationFrameId = null;
         return;
       }
@@ -1577,20 +1566,12 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       const currentTime = performance.now();
       this.gameState.update(currentTime);
 
-      // Update and render Three.js
-      if (this.threeEngine) {
-        this.threeEngine.update(16); // ~60fps
-        this.threeEngine.render();
-      }
-
       if (this.gameState.checkWaveComplete()) {
         this.gameState.endWave();
-        this.viewer.scene.requestRender();
         this.animationFrameId = null;
         return;
       }
 
-      this.viewer.scene.requestRender();
       this.animationFrameId = requestAnimationFrame(animate);
     };
 
@@ -1598,22 +1579,12 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   resetCamera(): void {
-    if (!this.viewer) return;
+    if (!this.engine) return;
 
-    // Fixed camera position with good view of HQ
-    this.viewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(
-        9.271721912730355,
-        49.171930814355285,
-        370
-      ),
-      orientation: {
-        heading: Cesium.Math.toRadians(296),
-        pitch: Cesium.Math.toRadians(-18.5),
-        roll: 0,
-      },
-      duration: 1.5,
-    });
+    // With ThreeTilesEngine + ReorientationPlugin, origin (HQ) is at (0,0,0)
+    // Camera position in local coordinates (meters):
+    // Y = height above ground, Z = distance south of origin
+    this.engine.setLocalCameraPosition(0, 350, 250, 0, 0, 0);
   }
 
   toggleTilt(): void {
@@ -1625,22 +1596,18 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     this.streetsVisible.update((v) => !v);
     const visible = this.streetsVisible();
 
-    for (const entity of this.streetEntities) {
-      entity.show = visible;
+    for (const line of this.streetLines) {
+      line.visible = visible;
     }
-
-    this.viewer?.scene.requestRender();
   }
 
   toggleRoutes(): void {
     this.routesVisible.update((v) => !v);
     const visible = this.routesVisible();
 
-    for (const entity of this.routeEntities) {
-      entity.show = visible;
+    for (const line of this.routeLines) {
+      line.visible = visible;
     }
-
-    this.viewer?.scene.requestRender();
   }
 
   toggleDebug(): void {
@@ -1648,21 +1615,15 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   logCameraPosition(): void {
-    if (!this.viewer) return;
+    if (!this.engine) return;
 
-    const camera = this.viewer.camera;
-    const pos = camera.positionCartographic;
+    const camera = this.engine.getCamera();
 
     const data = {
       position: {
-        latitude: Cesium.Math.toDegrees(pos.latitude),
-        longitude: Cesium.Math.toDegrees(pos.longitude),
-        height: pos.height,
-      },
-      orientation: {
-        heading: Cesium.Math.toDegrees(camera.heading),
-        pitch: Cesium.Math.toDegrees(camera.pitch),
-        roll: Cesium.Math.toDegrees(camera.roll),
+        x: camera.position.x,
+        y: camera.position.y,
+        z: camera.position.z,
       },
       hq: this.baseCoords(),
       tiltAngle: this.tiltAngle,
@@ -1746,9 +1707,197 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  private overlayHeightsUpdated = false;
+  private heightUpdateIntervalId: ReturnType<typeof setInterval> | null = null;
+
+  private heightUpdateAttempts = 0;
+  private lastMissCount = Infinity;
+
+  /**
+   * Schedule periodic re-rendering of streets once tiles are loaded.
+   * Uses correct ECEF raycast for terrain heights.
+   */
+  private scheduleOverlayHeightUpdate(): void {
+    const MAX_ATTEMPTS = 20; // Max 20 attempts (10 seconds total)
+
+    this.heightUpdateIntervalId = setInterval(() => {
+      if (!this.engine) {
+        this.stopHeightUpdates();
+        return;
+      }
+
+      this.heightUpdateAttempts++;
+
+      // Re-render streets with current terrain data
+      const previousLineCount = this.streetLines.length;
+      this.renderStreets();
+      const newLineCount = this.streetLines.length;
+
+      // Stop if we have streets rendered or max attempts reached
+      if (newLineCount > 0 && newLineCount >= previousLineCount) {
+        console.log(`[Heights] Streets rendered: ${newLineCount} lines`);
+        // Also update marker positions now that tiles are loaded
+        this.updateMarkerHeights();
+        this.stopHeightUpdates();
+      } else if (this.heightUpdateAttempts >= MAX_ATTEMPTS) {
+        console.log(`[Heights] Max attempts reached, ${newLineCount} lines rendered`);
+        this.updateMarkerHeights();
+        this.stopHeightUpdates();
+      }
+    }, 500);
+  }
+
+  private stopHeightUpdates(): void {
+    if (this.heightUpdateIntervalId) {
+      clearInterval(this.heightUpdateIntervalId);
+      this.heightUpdateIntervalId = null;
+    }
+    this.overlayHeightsUpdated = true;
+  }
+
+  /**
+   * Update marker heights after tiles are loaded
+   * Heights are relative to origin (HQ) terrain height
+   */
+  private updateMarkerHeights(): void {
+    if (!this.engine) return;
+
+    const MARKER_HEIGHT = 5;
+
+    // Get origin terrain height as reference
+    const base = this.baseCoords();
+    const originTerrainY = this.engine.getTerrainHeightAtGeo(base.latitude, base.longitude);
+    if (originTerrainY === null) {
+      console.log('[Heights] Cannot update markers - origin terrain not available');
+      return;
+    }
+    console.log(`[Heights] Origin terrain Y: ${originTerrainY.toFixed(1)}`);
+
+    // Set the overlay base Y so overlayGroup is positioned at terrain surface
+    this.engine.setOverlayBaseY(originTerrainY);
+
+    // Update base marker - at origin, so relative height = 0
+    if (this.baseMarker) {
+      const local = this.engine.sync.geoToLocalSimple(base.latitude, base.longitude, 0);
+      this.baseMarker.position.set(local.x, MARKER_HEIGHT, local.z);
+      console.log(`[Heights] Base marker at relative Y=${MARKER_HEIGHT}`);
+    }
+
+    // Update spawn markers
+    const spawns = this.spawnPoints();
+    for (let i = 0; i < spawns.length && i < this.spawnMarkers.length; i++) {
+      const spawn = spawns[i];
+      const marker = this.spawnMarkers[i];
+      const terrainY = this.engine.getTerrainHeightAtGeo(spawn.latitude, spawn.longitude);
+      if (terrainY !== null) {
+        const local = this.engine.sync.geoToLocalSimple(spawn.latitude, spawn.longitude, 0);
+        const relativeY = (terrainY - originTerrainY) + MARKER_HEIGHT;
+        marker.position.set(local.x, relativeY, local.z);
+        console.log(`[Heights] Spawn ${spawn.name} at relative Y=${relativeY.toFixed(1)} (terrain diff: ${(terrainY - originTerrainY).toFixed(1)})`);
+      }
+    }
+  }
+
+  /**
+   * Update all overlay heights using terrain raycasting
+   * @returns Number of vertices that couldn't be resolved (misses)
+   */
+  private updateAllOverlayHeights(): number {
+    if (!this.engine || !this.streetNetwork) return 0;
+
+    const HEIGHT_STREETS = 2;
+    const HEIGHT_ROUTES = 3;
+    const HEIGHT_MARKERS = 4;
+
+    // Get reference terrain height at origin (where camera points)
+    const refY = this.engine.getOverlayTerrainHeight(0, 0) ?? 240;
+
+    let hits = 0, misses = 0;
+
+    // Update street lines
+    for (const line of this.streetLines) {
+      const positions = line.geometry.getAttribute('position');
+      if (!positions) continue;
+
+      const array = positions.array as Float32Array;
+      let needsUpdate = false;
+
+      for (let i = 0; i < positions.count; i++) {
+        const x = array[i * 3];
+        const currentY = array[i * 3 + 1];
+        const z = array[i * 3 + 2];
+
+        // Only try raycast if vertex is at reference height (not yet resolved)
+        const isAtRefHeight = Math.abs(currentY - (refY + HEIGHT_STREETS)) < 1;
+        if (isAtRefHeight || this.heightUpdateAttempts <= 1) {
+          const terrainY = this.engine.getOverlayTerrainHeight(x, z);
+          if (terrainY !== null) {
+            array[i * 3 + 1] = terrainY + HEIGHT_STREETS;
+            hits++;
+            needsUpdate = true;
+          } else {
+            array[i * 3 + 1] = refY + HEIGHT_STREETS;
+            misses++;
+          }
+        } else {
+          hits++; // Already resolved
+        }
+      }
+      if (needsUpdate) {
+        positions.needsUpdate = true;
+        line.geometry.computeBoundingSphere();
+      }
+    }
+
+    // Update route lines
+    for (const line of this.routeLines) {
+      const positions = line.geometry.getAttribute('position');
+      if (!positions) continue;
+
+      const array = positions.array as Float32Array;
+      let needsUpdate = false;
+
+      for (let i = 0; i < positions.count; i++) {
+        const x = array[i * 3];
+        const currentY = array[i * 3 + 1];
+        const z = array[i * 3 + 2];
+
+        const isAtRefHeight = Math.abs(currentY - (refY + HEIGHT_ROUTES)) < 1;
+        if (isAtRefHeight || this.heightUpdateAttempts <= 1) {
+          const terrainY = this.engine.getOverlayTerrainHeight(x, z);
+          if (terrainY !== null) {
+            array[i * 3 + 1] = terrainY + HEIGHT_ROUTES;
+            needsUpdate = true;
+          } else {
+            array[i * 3 + 1] = refY + HEIGHT_ROUTES;
+            misses++;
+          }
+        }
+      }
+      if (needsUpdate) {
+        positions.needsUpdate = true;
+        line.geometry.computeBoundingSphere();
+      }
+    }
+
+    // Update base marker (at origin, should always hit)
+    if (this.baseMarker) {
+      const terrainY = this.engine.getOverlayTerrainHeight(0, 0);
+      this.baseMarker.position.y = (terrainY ?? refY) + HEIGHT_MARKERS;
+    }
+
+    // Update spawn markers
+    for (const marker of this.spawnMarkers) {
+      const terrainY = this.engine.getOverlayTerrainHeight(marker.position.x, marker.position.z);
+      marker.position.y = (terrainY ?? refY) + HEIGHT_MARKERS;
+    }
+
+    console.log(`[Heights] Attempt ${this.heightUpdateAttempts}: ${hits} hits, ${misses} misses`);
+    return misses;
+  }
+
   restartGame(): void {
     this.gameState.reset();
-    this.viewer?.scene.requestRender();
   }
 
   private playProjectileSound(): void {
@@ -1759,50 +1908,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  private createMarkerCanvas(text: string, color: string, size: number): HTMLCanvasElement {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d')!;
-
-    canvas.width = 200;
-    canvas.height = size + 40;
-
-    const centerX = canvas.width / 2;
-    const pinRadius = size / 2;
-
-    ctx.beginPath();
-    ctx.arc(centerX, pinRadius, pinRadius, 0, Math.PI * 2);
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.strokeStyle = 'white';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(centerX - 12, pinRadius + pinRadius * 0.7);
-    ctx.lineTo(centerX, pinRadius + pinRadius + 15);
-    ctx.lineTo(centerX + 12, pinRadius + pinRadius * 0.7);
-    ctx.fillStyle = color;
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.arc(centerX, pinRadius, pinRadius * 0.6, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    ctx.fill();
-
-    ctx.fillStyle = '#000';
-    ctx.font = 'bold 14px JetBrains Mono, monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    const maxWidth = 180;
-    if (ctx.measureText(text).width > maxWidth) {
-      ctx.font = 'bold 11px JetBrains Mono, monospace';
-    }
-    ctx.fillText(text, centerX, pinRadius);
-
-    return canvas;
-  }
-
+  
   /**
    * Find the closest point on a line segment to a target point
    */
@@ -2026,7 +2132,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       this.addBaseMarker();
 
       // Add spawn point
-      this.addSpawnPoint('spawn-1', data.spawn.name?.split(',')[0] || 'Spawn', data.spawn.lat, data.spawn.lon, Cesium.Color.RED);
+      this.addSpawnPoint('spawn-1', data.spawn.name?.split(',')[0] || 'Spawn', data.spawn.lat, data.spawn.lon, 0xef4444);
 
       // Reinitialize game state
       const base = this.baseCoords();
@@ -2036,29 +2142,25 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         latitude: sp.latitude,
         longitude: sp.longitude,
       }));
-      this.gameState.initialize(
-        this.viewer!,
-        this.streetNetwork!,
-        { lat: base.latitude, lon: base.longitude },
-        waveSpawnPoints,
-        this.cachedPaths,
-        () => this.playProjectileSound(),
-        (msg) => this.appendDebugLog(msg),
-        () => this.onGameOver(),
-        this.threeEngine ?? undefined
-      );
+
+      if (this.engine) {
+        this.engine.setOrigin(data.hq.lat, data.hq.lon);
+        this.engine.clearDebugHelpers();
+
+        this.gameState.initializeWithTilesEngine(
+          this.engine,
+          this.streetNetwork!,
+          { lat: base.latitude, lon: base.longitude },
+          waveSpawnPoints,
+          this.cachedPaths,
+          () => this.playProjectileSound(),
+          (msg) => this.appendDebugLog(msg),
+          () => this.onGameOver()
+        );
+      }
 
       // Save to localStorage
       this.saveLocationsToStorage();
-
-      // Update Three.js engine origin and debug helpers
-      if (this.threeEngine) {
-        this.threeEngine.setOrigin(data.hq.lat, data.hq.lon);
-        this.threeEngine.clearDebugHelpers();
-        // Debug helpers removed for production - uncomment for testing
-        // this.threeEngine.addTestCube(data.hq.lat, data.hq.lon);
-        // this.threeEngine.addAxisHelper();
-      }
 
       // Fly to new location
       this.flyToCenter();
@@ -2081,30 +2183,40 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private clearMapEntities(): void {
-    if (!this.viewer) return;
+    if (!this.engine) return;
 
-    // Clear spawn entities
-    for (const entity of this.spawnEntities) {
-      this.viewer.entities.remove(entity);
+    const overlayGroup = this.engine.getOverlayGroup();
+
+    // Clear spawn markers
+    for (const marker of this.spawnMarkers) {
+      overlayGroup.remove(marker);
+      marker.geometry.dispose();
+      (marker.material as THREE.Material).dispose();
     }
-    this.spawnEntities = [];
+    this.spawnMarkers = [];
 
-    // Clear route entities
-    for (const entity of this.routeEntities) {
-      this.viewer.entities.remove(entity);
+    // Clear route lines
+    for (const line of this.routeLines) {
+      overlayGroup.remove(line);
+      line.geometry.dispose();
+      (line.material as THREE.Material).dispose();
     }
-    this.routeEntities = [];
+    this.routeLines = [];
 
-    // Clear street entities
-    for (const entity of this.streetEntities) {
-      this.viewer.entities.remove(entity);
+    // Clear street lines
+    for (const line of this.streetLines) {
+      overlayGroup.remove(line);
+      line.geometry.dispose();
+      (line.material as THREE.Material).dispose();
     }
-    this.streetEntities = [];
+    this.streetLines = [];
 
-    // Clear base entity
-    if (this.baseEntity) {
-      this.viewer.entities.remove(this.baseEntity);
-      this.baseEntity = null;
+    // Clear base marker
+    if (this.baseMarker) {
+      overlayGroup.remove(this.baseMarker);
+      this.baseMarker.geometry.dispose();
+      (this.baseMarker.material as THREE.Material).dispose();
+      this.baseMarker = null;
     }
 
     // Clear spawn points signal
@@ -2115,18 +2227,10 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private flyToCenter(): void {
-    if (!this.viewer) return;
+    if (!this.engine) return;
 
-    const center = this.centerCoords();
-    this.viewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(center.longitude, center.latitude, 500),
-      orientation: {
-        heading: Cesium.Math.toRadians(0),
-        pitch: Cesium.Math.toRadians(-45),
-        roll: 0,
-      },
-      duration: 2.0,
-    });
+    // With ReorientationPlugin, center (HQ) is always at origin (0,0,0)
+    this.engine.setLocalCameraPosition(0, 400, 300, 0, 0, 0);
   }
 
   private saveLocationsToStorage(): void {

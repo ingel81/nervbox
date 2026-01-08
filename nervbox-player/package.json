@@ -35,6 +35,7 @@
     "@cesium/engine": "^22.1.0",
     "@microsoft/signalr": "^10.0.0",
     "@types/three": "^0.182.0",
+    "3d-tiles-renderer": "^0.4.19",
     "cesium": "^1.136.0",
     "kaplay": "^3001.0.19",
     "ngx-image-cropper": "^9.1.5",
