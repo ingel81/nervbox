@@ -1138,7 +1138,10 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       // Only render street if we have at least 2 points
       if (points.length < 2) continue;
 
-      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      // Smooth out height anomalies (e.g., hitting buildings instead of ground)
+      const smoothedPoints = this.smoothPathHeights(points);
+
+      const geometry = new THREE.BufferGeometry().setFromPoints(smoothedPoints);
       const line = new THREE.Line(geometry, material.clone());
       line.visible = this.streetsVisible();
       line.renderOrder = 1;
@@ -1148,6 +1151,73 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     console.log(`[Streets] Rendered with ECEF raycast: ${hits} hits, ${misses} misses, ${this.streetLines.length} lines`);
+  }
+
+  /**
+   * Smooth out height anomalies in a path of points.
+   * Detects points where the height deviates significantly from neighbors
+   * and replaces them with interpolated values.
+   *
+   * This helps when raycasts hit buildings/trees instead of ground.
+   */
+  private smoothPathHeights(points: THREE.Vector3[]): THREE.Vector3[] {
+    if (points.length < 3) return points;
+
+    const MAX_SLOPE = 0.5; // Max 50% grade (rise/run) before considered anomaly
+    const MAX_HEIGHT_DIFF = 10; // Max 10m sudden jump
+
+    const result: THREE.Vector3[] = [];
+
+    for (let i = 0; i < points.length; i++) {
+      const current = points[i];
+
+      if (i === 0 || i === points.length - 1) {
+        // Keep first and last points as-is
+        result.push(current.clone());
+        continue;
+      }
+
+      const prev = points[i - 1];
+      const next = points[i + 1];
+
+      // Calculate horizontal distances
+      const distToPrev = Math.sqrt(
+        Math.pow(current.x - prev.x, 2) + Math.pow(current.z - prev.z, 2)
+      );
+      const distToNext = Math.sqrt(
+        Math.pow(next.x - current.x, 2) + Math.pow(next.z - current.z, 2)
+      );
+      const totalDist = distToPrev + distToNext;
+
+      if (totalDist < 0.001) {
+        result.push(current.clone());
+        continue;
+      }
+
+      // Interpolated Y between prev and next
+      const t = distToPrev / totalDist;
+      const interpolatedY = prev.y + t * (next.y - prev.y);
+
+      // Check if current Y deviates too much
+      const heightDiff = Math.abs(current.y - interpolatedY);
+
+      // Check slope to neighbors
+      const slopeToPrev = distToPrev > 0 ? Math.abs(current.y - prev.y) / distToPrev : 0;
+      const slopeToNext = distToNext > 0 ? Math.abs(current.y - next.y) / distToNext : 0;
+
+      const isAnomaly =
+        heightDiff > MAX_HEIGHT_DIFF ||
+        (slopeToPrev > MAX_SLOPE && slopeToNext > MAX_SLOPE);
+
+      if (isAnomaly) {
+        // Replace with interpolated value
+        result.push(new THREE.Vector3(current.x, interpolatedY, current.z));
+      } else {
+        result.push(current.clone());
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -1460,7 +1530,10 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    // Smooth out height anomalies
+    const smoothedPoints = this.smoothPathHeights(points);
+
+    const geometry = new THREE.BufferGeometry().setFromPoints(smoothedPoints);
     const material = new THREE.LineBasicMaterial({
       color: spawn.color,
       linewidth: 3,
