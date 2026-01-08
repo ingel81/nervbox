@@ -5,6 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { EnemyTypeConfig, EnemyTypeId } from '../models/enemy-types';
 import { AddressAutocompleteComponent } from './address-autocomplete.component';
+import { TD_CSS_VARS } from '../styles/td-theme';
 
 export interface LocationConfig {
   lat: number;
@@ -188,25 +189,24 @@ export interface SpawnLocationConfig extends LocationConfig {
     </div>
   `,
   styles: `
+    :host {
+      display: block;
+      height: 100%;
+      ${TD_CSS_VARS}
+    }
+
     .debug-panel {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      width: 280px;
-      background: rgba(0, 0, 0, 0.92);
-      border: 1px solid rgba(34, 197, 94, 0.4);
-      border-radius: 8px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
       font-family: 'JetBrains Mono', monospace;
       font-size: 10px;
-      z-index: 5;
-      overflow: hidden;
-      max-height: calc(100vh - 100px);
       overflow-y: auto;
     }
 
     .section {
-      padding: 8px 10px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 8px;
+      border-bottom: 1px solid var(--td-frame-dark);
     }
 
     .section:last-child {
@@ -216,7 +216,7 @@ export interface SpawnLocationConfig extends LocationConfig {
     .section-title {
       font-size: 9px;
       font-weight: 600;
-      color: #9333ea;
+      color: var(--td-gold);
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-bottom: 6px;
@@ -240,11 +240,11 @@ export interface SpawnLocationConfig extends LocationConfig {
     }
 
     .label {
-      color: rgba(255, 255, 255, 0.6);
+      color: var(--td-text-muted);
     }
 
     .value {
-      color: #22c55e;
+      color: var(--td-teal);
       font-weight: 600;
       min-width: 36px;
       text-align: right;
@@ -269,7 +269,7 @@ export interface SpawnLocationConfig extends LocationConfig {
     .slider-row input[type="range"] {
       flex: 1;
       height: 4px;
-      accent-color: #22c55e;
+      accent-color: var(--td-teal);
       cursor: pointer;
     }
 
@@ -296,10 +296,11 @@ export interface SpawnLocationConfig extends LocationConfig {
       justify-content: center;
       gap: 4px;
       padding: 4px 8px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 4px;
-      color: rgba(255, 255, 255, 0.7);
+      background: var(--td-panel-secondary);
+      border: 1px solid var(--td-frame-mid);
+      border-top-color: var(--td-frame-light);
+      border-bottom-color: var(--td-frame-dark);
+      color: var(--td-text-secondary);
       font-size: 9px;
       cursor: pointer;
       transition: all 0.15s ease;
@@ -312,13 +313,12 @@ export interface SpawnLocationConfig extends LocationConfig {
     }
 
     .toggle-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: var(--td-frame-mid);
     }
 
     .toggle-btn.active {
-      background: rgba(34, 197, 94, 0.2);
-      border-color: #22c55e;
-      color: #22c55e;
+      background: var(--td-teal);
+      color: var(--td-bg-dark);
     }
 
     .type-buttons {
@@ -330,29 +330,28 @@ export interface SpawnLocationConfig extends LocationConfig {
     .type-btn {
       flex: 1;
       padding: 4px 6px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 4px;
-      color: rgba(255, 255, 255, 0.7);
-      font-family: 'JetBrains Mono', monospace;
+      background: var(--td-panel-secondary);
+      border: 1px solid var(--td-frame-mid);
+      color: var(--td-text-secondary);
+      font-family: inherit;
       font-size: 9px;
       cursor: pointer;
       transition: all 0.15s ease;
     }
 
     .type-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: var(--td-frame-mid);
     }
 
     .type-btn.active {
-      background: rgba(147, 51, 234, 0.3);
-      border-color: #9333ea;
-      color: #9333ea;
+      background: var(--td-gold-dark);
+      border-color: var(--td-gold);
+      color: var(--td-text-primary);
     }
 
     .btn-row {
       display: flex;
-      gap: 6px;
+      gap: 4px;
     }
 
     .icon-btn {
@@ -361,46 +360,49 @@ export interface SpawnLocationConfig extends LocationConfig {
       align-items: center;
       justify-content: center;
       padding: 6px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 4px;
-      color: rgba(255, 255, 255, 0.7);
+      background: var(--td-panel-secondary);
+      border: 1px solid var(--td-frame-mid);
+      border-top-color: var(--td-frame-light);
+      border-bottom-color: var(--td-frame-dark);
+      color: var(--td-text-secondary);
       cursor: pointer;
       transition: all 0.15s ease;
     }
 
     .icon-btn mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
     }
 
     .icon-btn:hover:not(:disabled) {
-      background: rgba(255, 255, 255, 0.1);
+      background: var(--td-frame-mid);
+      color: var(--td-text-primary);
     }
 
     .icon-btn.active {
-      background: rgba(34, 197, 94, 0.2);
-      border-color: #22c55e;
-      color: #22c55e;
+      background: var(--td-teal);
+      color: var(--td-bg-dark);
     }
 
     .icon-btn.danger {
-      border-color: rgba(239, 68, 68, 0.4);
-      color: #ef4444;
+      border-color: var(--td-health-red);
+      color: var(--td-health-red);
     }
 
     .icon-btn.danger:hover:not(:disabled) {
-      background: rgba(239, 68, 68, 0.2);
+      background: var(--td-health-red);
+      color: var(--td-text-primary);
     }
 
     .icon-btn.heal {
-      border-color: rgba(34, 197, 94, 0.4);
-      color: #22c55e;
+      border-color: var(--td-green);
+      color: var(--td-green);
     }
 
     .icon-btn.heal:hover:not(:disabled) {
-      background: rgba(34, 197, 94, 0.2);
+      background: var(--td-green);
+      color: var(--td-bg-dark);
     }
 
     .icon-btn:disabled {
@@ -413,22 +415,21 @@ export interface SpawnLocationConfig extends LocationConfig {
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 8px;
-      background: rgba(34, 197, 94, 0.1);
-      border: 1px solid rgba(34, 197, 94, 0.3);
-      border-radius: 6px;
-      margin-bottom: 8px;
+      padding: 6px 8px;
+      background: var(--td-panel-secondary);
+      border: 1px solid var(--td-frame-mid);
+      margin-bottom: 6px;
     }
 
     .current-location mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-      color: #22c55e;
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+      color: var(--td-teal);
     }
 
     .location-name {
-      color: #22c55e;
+      color: var(--td-teal);
       font-weight: 500;
       flex: 1;
       overflow: hidden;
@@ -442,32 +443,31 @@ export interface SpawnLocationConfig extends LocationConfig {
       align-items: center;
       justify-content: center;
       gap: 6px;
-      padding: 8px;
-      background: rgba(147, 51, 234, 0.15);
-      border: 1px solid rgba(147, 51, 234, 0.4);
-      border-radius: 6px;
-      color: #9333ea;
-      font-family: 'JetBrains Mono', monospace;
+      padding: 6px;
+      background: var(--td-panel-secondary);
+      border: 1px solid var(--td-gold-dark);
+      color: var(--td-gold);
+      font-family: inherit;
       font-size: 10px;
       cursor: pointer;
       transition: all 0.15s ease;
     }
 
     .change-location-btn:hover {
-      background: rgba(147, 51, 234, 0.25);
-      border-color: #9333ea;
+      background: var(--td-gold-dark);
+      color: var(--td-bg-dark);
     }
 
     .change-location-btn mat-icon {
-      font-size: 14px;
-      width: 14px;
-      height: 14px;
+      font-size: 12px;
+      width: 12px;
+      height: 12px;
     }
 
     .edit-mode {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
     }
 
     .edit-section {
@@ -481,7 +481,7 @@ export interface SpawnLocationConfig extends LocationConfig {
       align-items: center;
       gap: 4px;
       font-size: 9px;
-      color: rgba(255, 255, 255, 0.7);
+      color: var(--td-text-muted);
       font-weight: 500;
     }
 
@@ -489,18 +489,18 @@ export interface SpawnLocationConfig extends LocationConfig {
       font-size: 12px;
       width: 12px;
       height: 12px;
-      color: #9333ea;
+      color: var(--td-gold);
     }
 
     .spawn-hint {
       font-size: 8px;
-      color: rgba(255, 255, 255, 0.4);
+      color: var(--td-text-disabled);
       font-style: italic;
     }
 
     .edit-actions {
       display: flex;
-      gap: 6px;
+      gap: 4px;
       margin-top: 4px;
     }
 
@@ -509,13 +509,13 @@ export interface SpawnLocationConfig extends LocationConfig {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      padding: 8px 12px;
-      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      gap: 4px;
+      padding: 6px 10px;
+      background: var(--td-green);
       border: none;
-      border-radius: 6px;
-      color: white;
-      font-family: 'JetBrains Mono', monospace;
+      border-bottom: 2px solid #6aab6c;
+      color: var(--td-bg-dark);
+      font-family: inherit;
       font-size: 10px;
       font-weight: 600;
       cursor: pointer;
@@ -523,21 +523,19 @@ export interface SpawnLocationConfig extends LocationConfig {
     }
 
     .apply-btn:hover:not(:disabled) {
-      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
-      transform: translateY(-1px);
+      filter: brightness(1.1);
     }
 
     .apply-btn:disabled {
-      background: rgba(100, 100, 100, 0.3);
-      color: rgba(255, 255, 255, 0.4);
+      background: var(--td-disabled);
+      color: var(--td-text-disabled);
       cursor: not-allowed;
-      transform: none;
     }
 
     .apply-btn mat-icon {
-      font-size: 14px;
-      width: 14px;
-      height: 14px;
+      font-size: 12px;
+      width: 12px;
+      height: 12px;
     }
 
     .cancel-btn {
@@ -546,21 +544,20 @@ export interface SpawnLocationConfig extends LocationConfig {
       align-items: center;
       justify-content: center;
       gap: 4px;
-      padding: 8px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 6px;
-      color: rgba(255, 255, 255, 0.7);
-      font-family: 'JetBrains Mono', monospace;
+      padding: 6px;
+      background: var(--td-panel-secondary);
+      border: 1px solid var(--td-frame-mid);
+      color: var(--td-text-secondary);
+      font-family: inherit;
       font-size: 10px;
       cursor: pointer;
       transition: all 0.15s ease;
     }
 
     .cancel-btn:hover {
-      background: rgba(239, 68, 68, 0.2);
-      border-color: #ef4444;
-      color: #ef4444;
+      background: var(--td-health-red);
+      border-color: var(--td-health-red);
+      color: var(--td-text-primary);
     }
 
     .cancel-btn mat-icon {
@@ -574,22 +571,21 @@ export interface SpawnLocationConfig extends LocationConfig {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      padding: 6px;
+      gap: 4px;
+      padding: 4px;
       background: transparent;
-      border: 1px dashed rgba(255, 255, 255, 0.2);
-      border-radius: 4px;
-      color: rgba(255, 255, 255, 0.5);
-      font-family: 'JetBrains Mono', monospace;
+      border: 1px dashed var(--td-frame-mid);
+      color: var(--td-text-muted);
+      font-family: inherit;
       font-size: 9px;
       cursor: pointer;
       transition: all 0.15s ease;
-      margin-top: 6px;
+      margin-top: 4px;
     }
 
     .reset-btn:hover {
-      border-color: rgba(255, 255, 255, 0.4);
-      color: rgba(255, 255, 255, 0.8);
+      border-color: var(--td-text-secondary);
+      color: var(--td-text-secondary);
     }
 
     .reset-btn mat-icon {
@@ -599,7 +595,11 @@ export interface SpawnLocationConfig extends LocationConfig {
     }
 
     .log-section {
-      padding: 6px 10px 10px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      padding: 6px 8px 8px;
     }
 
     .log-header {
@@ -620,13 +620,13 @@ export interface SpawnLocationConfig extends LocationConfig {
       padding: 2px;
       background: transparent;
       border: none;
-      color: rgba(255, 255, 255, 0.4);
+      color: var(--td-text-muted);
       cursor: pointer;
       transition: color 0.15s ease;
     }
 
     .clear-btn:hover {
-      color: #ef4444;
+      color: var(--td-health-red);
     }
 
     .clear-btn mat-icon {
@@ -636,12 +636,13 @@ export interface SpawnLocationConfig extends LocationConfig {
     }
 
     .log {
+      flex: 1;
       width: 100%;
-      height: 80px;
-      background: rgba(0, 0, 0, 0.5);
-      border: 1px solid rgba(34, 197, 94, 0.2);
-      border-radius: 4px;
-      color: #22c55e;
+      min-height: 60px;
+      background: var(--td-panel-shadow);
+      border: 1px solid var(--td-frame-dark);
+      border-top-color: var(--td-frame-mid);
+      color: var(--td-green);
       font-family: inherit;
       font-size: 8px;
       padding: 4px 6px;
