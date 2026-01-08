@@ -10,7 +10,7 @@ import {
   computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatDialogModule, MatDialogRef, MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -22,6 +22,9 @@ import { GeoPosition } from './models/game.types';
 import { EnemyTypeId, getAllEnemyTypes } from './models/enemy-types';
 import { ApiService } from '../../../../core/services/api.service';
 import { DebugPanelComponent, LocationConfig, SpawnLocationConfig } from './components/debug-panel.component';
+import { LocationDialogComponent } from './components/location-dialog/location-dialog.component';
+import { LocationDialogData, LocationDialogResult } from './models/location.types';
+import { GeocodingService } from './services/geocoding.service';
 // New OO Game Engine imports
 import { GameStateManager } from './managers/game-state.manager';
 import { EnemyManager } from './managers/enemy.manager';
@@ -98,7 +101,10 @@ export interface SpawnPoint {
         <div class="td-header-left">
           <mat-icon class="td-title-icon">cell_tower</mat-icon>
           <h2 class="td-title">TOWER DEFENSE</h2>
-          <span class="td-location">Erlenbach</span>
+          <button class="td-location-btn" (click)="openLocationDialog()" matTooltip="Spielort ändern">
+            <span class="td-location-name">{{ currentLocationName() }}</span>
+            <mat-icon class="td-location-edit">edit</mat-icon>
+          </button>
         </div>
         <div class="td-header-stats">
           <div class="td-stat hp">
@@ -346,11 +352,42 @@ export interface SpawnPoint {
       text-transform: uppercase;
     }
 
-    .td-location {
-      font-size: 10px;
-      color: var(--td-text-secondary);
-      padding-left: 8px;
+    .td-location-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      margin-left: 8px;
+      background: transparent;
+      border: 1px solid transparent;
       border-left: 1px solid var(--td-frame-mid);
+      color: var(--td-text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border-radius: 0 3px 3px 0;
+      font-family: inherit;
+      font-size: 10px;
+    }
+
+    .td-location-btn:hover {
+      border-color: var(--td-gold-dark);
+      background: rgba(255, 215, 0, 0.1);
+      color: var(--td-gold);
+    }
+
+    .td-location-name {
+      font-weight: 500;
+    }
+
+    .td-location-edit {
+      font-size: 12px;
+      width: 12px;
+      height: 12px;
+      opacity: 0.5;
+    }
+
+    .td-location-btn:hover .td-location-edit {
+      opacity: 1;
     }
 
     .td-header-stats {
@@ -899,9 +936,11 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('gameCanvas') gameCanvas!: ElementRef<HTMLCanvasElement>;
 
   private readonly dialogRef = inject(MatDialogRef<TowerDefenseComponent>, { optional: true });
+  private readonly dialog = inject(MatDialog);
   private readonly osmService = inject(OsmStreetService);
   private readonly api = inject(ApiService);
   private readonly configService = inject(ConfigService);
+  private readonly geocodingService = inject(GeocodingService);
   readonly gameState = inject(GameStateManager);
   private readonly entityPool = inject(EntityPoolService);
 
@@ -943,6 +982,24 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
   readonly waveActive = computed(() => this.gameState.phase() === 'wave');
   readonly isGameOver = computed(() => this.gameState.phase() === 'gameover');
+
+  // Location name for header display
+  readonly currentLocationName = computed(() => {
+    const hq = this.editableHqLocation();
+    if (hq?.name) {
+      // Extract first part (usually street or place name)
+      const parts = hq.name.split(',');
+      // Try to find a city-like part
+      for (let i = 1; i < Math.min(parts.length, 4); i++) {
+        const part = parts[i]?.trim();
+        if (part && !part.match(/^\d/) && part.length > 2) {
+          return part;
+        }
+      }
+      return parts[0]?.trim() || 'Erlenbach';
+    }
+    return 'Erlenbach';
+  });
   readonly gatheringPhase = signal(false);
   readonly gatheringCountdown = signal(0);
 
@@ -1690,7 +1747,8 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     this.baseMarker.position.set(local.x, HEIGHT_ABOVE_GROUND, local.z);
 
     overlayGroup.add(this.baseMarker);
-    console.log('[addBaseMarker] HQ diamond at:', local.x.toFixed(1), HEIGHT_ABOVE_GROUND, local.z.toFixed(1));
+    console.log(`[addBaseMarker] HQ at geo: ${base.latitude.toFixed(6)}, ${base.longitude.toFixed(6)}`);
+    console.log(`[addBaseMarker] HQ at local: (${local.x.toFixed(1)}, ${HEIGHT_ABOVE_GROUND}, ${local.z.toFixed(1)})`);
   }
 
   addSpawnPoint(id: string, name: string, lat: number, lon: number, color: number): void {
@@ -1731,6 +1789,25 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showPathFromSpawn(spawn);
   }
 
+  /**
+   * Snap spawn marker to the actual path start position
+   * This ensures the marker is exactly where the route begins
+   */
+  private snapSpawnMarkerToPathStart(spawnId: string, lat: number, lon: number): void {
+    if (!this.engine) return;
+
+    const marker = this.spawnMarkers.find((m) => m.name === `spawnMarker_${spawnId}`);
+    if (!marker) return;
+
+    const local = this.engine.sync.geoToLocalSimple(lat, lon, 0);
+
+    // Keep existing Y position (already calculated with terrain)
+    const oldY = marker.position.y;
+    marker.position.set(local.x, oldY, local.z);
+
+    console.log(`[snapSpawnMarker] Snapped ${spawnId} to path start: (${local.x.toFixed(1)}, ${local.z.toFixed(1)})`);
+  }
+
   private showPathFromSpawn(spawn: SpawnPoint): void {
     if (!this.engine || !this.streetNetwork) return;
 
@@ -1744,6 +1821,12 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     );
 
     if (path.length < 2) return;
+
+    // Snap spawn marker to actual path start (in case findNearestStreetPoint found a different node)
+    const pathStart = path[0];
+    if (pathStart) {
+      this.snapSpawnMarkerToPathStart(spawn.id, pathStart.lat, pathStart.lon);
+    }
 
     // Convert path to geoPath
     let geoPath = path.map((n) => ({ lat: n.lat, lon: n.lon }));
@@ -2585,36 +2668,53 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
   /**
    * Apply new location - simplified: just HQ + single spawn
+   * CRITICAL: Follow correct reset sequence to avoid ghost entities
    */
   async onApplyNewLocation(data: { hq: LocationConfig; spawn: LocationConfig }): Promise<void> {
     this.isApplyingLocation.set(true);
     this.appendDebugLog(`Lade: ${data.hq.name?.split(',')[0]}...`);
 
     try {
-      // Update coords
+      // STEP 1: Reset game state FIRST (before coordinate change!)
+      // This clears towers, enemies, projectiles from the scene
+      this.gameState.reset();
+      this.appendDebugLog('Spielstand zurückgesetzt');
+
+      // STEP 2: Clear map entities (markers, routes, streets)
+      this.clearMapEntities();
+
+      // STEP 3: Clear cached paths
+      this.cachedPaths.clear();
+
+      // STEP 4: Update engine origin (before coordinate update!)
+      console.log(`[Location] Input HQ coords: ${data.hq.lat.toFixed(6)}, ${data.hq.lon.toFixed(6)} (${data.hq.name})`);
+      if (this.engine) {
+        this.engine.setOrigin(data.hq.lat, data.hq.lon);
+        this.engine.clearDebugHelpers();
+      }
+
+      // STEP 5: Update coordinates
       this.baseCoords.set({ latitude: data.hq.lat, longitude: data.hq.lon });
       this.centerCoords.set({ latitude: data.hq.lat, longitude: data.hq.lon, height: 400 });
+      console.log(`[Location] baseCoords set to: ${data.hq.lat.toFixed(6)}, ${data.hq.lon.toFixed(6)}`);
 
       // Update editable state
       this.editableHqLocation.set(data.hq);
       const spawnConfig: SpawnLocationConfig = { id: 'spawn-1', ...data.spawn };
       this.editableSpawnLocations.set([spawnConfig]);
 
-      // Clear existing entities
-      this.clearMapEntities();
-
-      // Reload streets for new center
+      // STEP 6: Load new streets (clears old cache if needed)
       this.streetNetwork = await this.osmService.loadStreets(data.hq.lat, data.hq.lon, 2000);
       this.streetCount.set(this.streetNetwork.streets.length);
+
+      // STEP 7: Render new streets
       this.renderStreets();
 
-      // Add new base marker
+      // STEP 8: Add new markers
       this.addBaseMarker();
-
-      // Add spawn point
       this.addSpawnPoint('spawn-1', data.spawn.name?.split(',')[0] || 'Spawn', data.spawn.lat, data.spawn.lon, 0xef4444);
 
-      // Reinitialize game state
+      // STEP 9: Reinitialize game state with new location
       const base = this.baseCoords();
       const waveSpawnPoints: WaveSpawnPoint[] = this.spawnPoints().map((sp) => ({
         id: sp.id,
@@ -2624,9 +2724,6 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       }));
 
       if (this.engine) {
-        this.engine.setOrigin(data.hq.lat, data.hq.lon);
-        this.engine.clearDebugHelpers();
-
         this.gameState.initialize(
           this.engine,
           this.streetNetwork!,
@@ -2638,10 +2735,10 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         );
       }
 
-      // Save to localStorage
+      // STEP 10: Save to localStorage
       this.saveLocationsToStorage();
 
-      // Fly to new location
+      // STEP 11: Fly to new location
       this.flyToCenter();
 
       this.appendDebugLog(`Geladen: ${this.streetCount()} Strassen`);
@@ -2651,6 +2748,82 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     } finally {
       this.isApplyingLocation.set(false);
     }
+  }
+
+  /**
+   * Open location dialog to change HQ and spawn point
+   */
+  openLocationDialog(): void {
+    const hq = this.editableHqLocation();
+    const spawn = this.editableSpawnLocations()[0];
+
+    const dialogData: LocationDialogData = {
+      currentLocation: hq
+        ? {
+            lat: hq.lat,
+            lon: hq.lon,
+            name: this.currentLocationName(),
+            displayName: hq.name || '',
+          }
+        : null,
+      currentSpawn: spawn
+        ? {
+            id: spawn.id,
+            lat: spawn.lat,
+            lon: spawn.lon,
+            name: spawn.name,
+          }
+        : null,
+      isGameInProgress: this.gameState.phase() !== 'setup' || this.gameState.waveNumber() > 0,
+    };
+
+    const dialogRef = this.dialog.open(LocationDialogComponent, {
+      data: dialogData,
+      panelClass: 'td-dialog-panel',
+      disableClose: false,
+    });
+
+    dialogRef.afterClosed().subscribe(async (result: LocationDialogResult | null) => {
+      if (!result?.confirmed) return;
+
+      let spawnLat = result.spawn.lat;
+      let spawnLon = result.spawn.lon;
+      let spawnName = result.spawn.name;
+
+      // Generate random spawn if requested
+      if (result.spawn.isRandom && this.streetNetwork) {
+        // First load streets for the new location to find spawn
+        const newNetwork = await this.osmService.loadStreets(result.hq.lat, result.hq.lon, 2000);
+        const randomSpawn = this.osmService.findRandomStreetPoint(newNetwork, result.hq.lat, result.hq.lon, 500, 1000);
+
+        if (randomSpawn) {
+          spawnLat = randomSpawn.lat;
+          spawnLon = randomSpawn.lon;
+          spawnName = randomSpawn.streetName || 'Zufälliger Spawn';
+          this.appendDebugLog(`Zufälliger Spawn: ${Math.round(randomSpawn.distance)}m entfernt`);
+        } else {
+          this.appendDebugLog('Kein gültiger Spawn gefunden, verwende Fallback');
+          // Fallback: use a point 700m north
+          spawnLat = result.hq.lat + 0.0063; // ~700m north
+          spawnLon = result.hq.lon;
+          spawnName = 'Fallback Spawn';
+        }
+      }
+
+      // Apply the new location
+      await this.onApplyNewLocation({
+        hq: {
+          lat: result.hq.lat,
+          lon: result.hq.lon,
+          name: result.hq.displayName,
+        },
+        spawn: {
+          lat: spawnLat,
+          lon: spawnLon,
+          name: spawnName,
+        },
+      });
+    });
   }
 
   onResetLocations(): void {
