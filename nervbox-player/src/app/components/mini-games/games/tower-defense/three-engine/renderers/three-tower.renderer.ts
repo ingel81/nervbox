@@ -13,6 +13,7 @@ export interface TowerRenderData {
   selectionRing: THREE.Mesh | null;
   hexGrid: THREE.Group | null; // Hex grid for LoS visualization
   hexCells: HexCell[]; // Individual hex cells for LoS updates
+  tipMarker: THREE.Mesh | null; // Debug marker showing LoS origin point
   typeConfig: TowerTypeConfig;
   isSelected: boolean;
   // Geo coordinates for terrain sampling
@@ -91,6 +92,9 @@ export class ThreeTowerRenderer {
   // Hex grid materials
   private hexVisibleMaterial: THREE.MeshBasicMaterial;
   private hexBlockedMaterial: THREE.MeshBasicMaterial;
+
+  // Debug mode - shows tip markers for all towers
+  private debugMode = false;
 
   // Configuration for terrain-conforming range indicator
   private readonly RANGE_SEGMENTS = 48; // Number of segments around the circle
@@ -275,15 +279,26 @@ export class ThreeTowerRenderer {
     selectionRing.renderOrder = 5; // Render on top
     this.scene.add(selectionRing);
 
-    // Calculate tower tip Y position (for LoS calculations)
-    // Tower tip is at terrain + heightOffset + model height (estimate based on scale)
-    const towerModelHeight = 15 * config.scale; // Approximate tower model height
-    const tipY = terrainPos.y + config.heightOffset + towerModelHeight;
+    // Calculate tower shooting position Y (for LoS calculations)
+    // Uses configurable shootHeight per tower type
+    const tipY = terrainPos.y + config.heightOffset + config.shootHeight;
 
     // Create hex grid for LoS visualization (initially hidden)
     const { hexGrid, hexCells } = this.createHexGrid(terrainPos.x, terrainPos.z, config.range, tipY);
     hexGrid.visible = false;
     this.scene.add(hexGrid);
+
+    // Create tip marker (magenta sphere showing LoS origin point)
+    const tipMarkerGeometry = new THREE.SphereGeometry(2, 16, 16);
+    const tipMarkerMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff00ff, // Magenta
+      depthTest: false, // Always visible, even inside tower mesh
+    });
+    const tipMarker = new THREE.Mesh(tipMarkerGeometry, tipMarkerMaterial);
+    tipMarker.position.set(terrainPos.x, tipY, terrainPos.z);
+    tipMarker.renderOrder = 999; // Render on top
+    tipMarker.visible = this.debugMode; // Visible in debug mode, or when tower is selected
+    this.scene.add(tipMarker);
 
     const renderData: TowerRenderData = {
       id,
@@ -292,6 +307,7 @@ export class ThreeTowerRenderer {
       selectionRing,
       hexGrid,
       hexCells,
+      tipMarker,
       typeConfig: config,
       isSelected: false,
       lat,
@@ -363,6 +379,7 @@ export class ThreeTowerRenderer {
       // Recalculate LoS when tower is selected
       this.updateHexGridLoS(data);
     }
+    if (data.tipMarker) data.tipMarker.visible = true;
   }
 
   /**
@@ -376,6 +393,8 @@ export class ThreeTowerRenderer {
     if (data.rangeIndicator) data.rangeIndicator.visible = false;
     if (data.selectionRing) data.selectionRing.visible = false;
     if (data.hexGrid) data.hexGrid.visible = false;
+    // Keep tip marker visible in debug mode
+    if (data.tipMarker) data.tipMarker.visible = this.debugMode;
   }
 
   /**
@@ -385,6 +404,31 @@ export class ThreeTowerRenderer {
     for (const id of this.towers.keys()) {
       this.deselect(id);
     }
+  }
+
+  /**
+   * Set debug mode - shows tip markers (shoot height indicators) for all towers
+   */
+  setDebugMode(enabled: boolean): void {
+    this.debugMode = enabled;
+
+    let updatedCount = 0;
+    for (const data of this.towers.values()) {
+      if (data.tipMarker) {
+        // In debug mode, always show. Otherwise, only show if selected.
+        data.tipMarker.visible = enabled || data.isSelected;
+        updatedCount++;
+      }
+    }
+
+    console.log(`[ThreeTowerRenderer] Debug mode: ${enabled ? 'ON' : 'OFF'}, towers: ${this.towers.size}, updated: ${updatedCount}`);
+  }
+
+  /**
+   * Get current debug mode state
+   */
+  isDebugMode(): boolean {
+    return this.debugMode;
   }
 
   /**
@@ -423,6 +467,13 @@ export class ThreeTowerRenderer {
         cell.mesh.geometry.dispose();
         // Materials are shared, don't dispose them
       }
+    }
+
+    // Remove tip marker
+    if (data.tipMarker) {
+      this.scene.remove(data.tipMarker);
+      data.tipMarker.geometry.dispose();
+      (data.tipMarker.material as THREE.Material).dispose();
     }
 
     this.towers.delete(id);
