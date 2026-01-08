@@ -751,7 +751,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   // Three.js objects for markers and routes
   private streetLines: THREE.Line[] = [];
   private routeLines: THREE.Line[] = [];
-  private spawnMarkers: THREE.Mesh[] = [];
+  private spawnMarkers: THREE.Group[] = [];
   private baseMarker: THREE.Group | null = null;
   private heightDebugGroup: THREE.Group | null = null;
 
@@ -1312,6 +1312,11 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.baseMarker) {
       this.baseMarker.rotation.y += deltaTime * 0.001; // Slow rotation
     }
+
+    // Rotate spawn markers (slightly faster, opposite direction)
+    for (const marker of this.spawnMarkers) {
+      marker.rotation.y -= deltaTime * 0.0015;
+    }
   }
 
   /**
@@ -1362,41 +1367,36 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private addBaseMarker(): void {
-    if (!this.engine) return;
+  /**
+   * Create a diamond marker with configurable appearance.
+   * Used for HQ and spawn point markers.
+   */
+  private createDiamondMarker(options: {
+    color: number;
+    size?: number;
+    glowIntensity?: number;
+    showRings?: boolean;
+  }): THREE.Group {
+    const {
+      color,
+      size = 1,
+      glowIntensity = 1,
+      showRings = true,
+    } = options;
 
-    const overlayGroup = this.engine.getOverlayGroup();
-    const base = this.baseCoords();
+    const group = new THREE.Group();
 
-    // Remove existing marker group
-    if (this.baseMarker) {
-      overlayGroup.remove(this.baseMarker);
-      this.baseMarker.traverse((obj) => {
-        if ((obj as THREE.Mesh).isMesh) {
-          (obj as THREE.Mesh).geometry.dispose();
-          const mat = (obj as THREE.Mesh).material;
-          if (Array.isArray(mat)) {
-            mat.forEach((m) => m.dispose());
-          } else {
-            mat.dispose();
-          }
-        }
-      });
-    }
-
-    // Create marker group
-    this.baseMarker = new THREE.Group();
-    this.baseMarker.name = 'hqMarker';
-
-    const HEIGHT_ABOVE_GROUND = 30;
-    const local = this.engine.sync.geoToLocalSimple(base.latitude, base.longitude, 0);
+    // Derive colors from base color
+    const baseColor = new THREE.Color(color);
+    const lighterColor = baseColor.clone().lerp(new THREE.Color(0xffffff), 0.4);
+    const emissiveColor = baseColor.clone().multiplyScalar(0.3);
 
     // === MAIN DIAMOND (inner core) ===
-    const coreGeom = new THREE.OctahedronGeometry(8, 0);
-    coreGeom.scale(1, 1.8, 1); // Tall diamond shape
+    const coreGeom = new THREE.OctahedronGeometry(8 * size, 0);
+    coreGeom.scale(1, 1.8, 1);
     const coreMat = new THREE.MeshPhongMaterial({
-      color: 0x22c55e,
-      emissive: 0x115522,
+      color: color,
+      emissive: emissiveColor,
       shininess: 100,
       transparent: true,
       opacity: 0.9,
@@ -1404,64 +1404,107 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     });
     const coreMesh = new THREE.Mesh(coreGeom, coreMat);
     coreMesh.renderOrder = 3;
-    this.baseMarker.add(coreMesh);
+    group.add(coreMesh);
 
     // === OUTER WIREFRAME (edge glow) ===
-    const wireGeom = new THREE.OctahedronGeometry(9, 0);
+    const wireGeom = new THREE.OctahedronGeometry(9 * size, 0);
     wireGeom.scale(1, 1.8, 1);
     const wireMat = new THREE.MeshBasicMaterial({
-      color: 0x4ade80,
+      color: lighterColor,
       wireframe: true,
       transparent: true,
-      opacity: 0.6,
+      opacity: 0.6 * glowIntensity,
     });
     const wireMesh = new THREE.Mesh(wireGeom, wireMat);
     wireMesh.renderOrder = 4;
-    this.baseMarker.add(wireMesh);
+    group.add(wireMesh);
 
     // === OUTER GLOW SHELL ===
-    const glowGeom = new THREE.OctahedronGeometry(12, 0);
+    const glowGeom = new THREE.OctahedronGeometry(12 * size, 0);
     glowGeom.scale(1, 1.8, 1);
     const glowMat = new THREE.MeshBasicMaterial({
-      color: 0x22c55e,
+      color: color,
       transparent: true,
-      opacity: 0.15,
+      opacity: 0.15 * glowIntensity,
       side: THREE.BackSide,
     });
     const glowMesh = new THREE.Mesh(glowGeom, glowMat);
     glowMesh.renderOrder = 2;
-    this.baseMarker.add(glowMesh);
+    group.add(glowMesh);
 
-    // === HORIZONTAL RING ===
-    const ringGeom = new THREE.TorusGeometry(14, 0.8, 8, 32);
-    const ringMat = new THREE.MeshBasicMaterial({
-      color: 0x4ade80,
-      transparent: true,
-      opacity: 0.7,
+    if (showRings) {
+      // === HORIZONTAL RING ===
+      const ringGeom = new THREE.TorusGeometry(14 * size, 0.8 * size, 8, 32);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: lighterColor,
+        transparent: true,
+        opacity: 0.7 * glowIntensity,
+      });
+      const ringMesh = new THREE.Mesh(ringGeom, ringMat);
+      ringMesh.rotation.x = Math.PI / 2;
+      ringMesh.renderOrder = 2;
+      group.add(ringMesh);
+
+      // === SECOND RING (tilted) ===
+      const ring2Geom = new THREE.TorusGeometry(16 * size, 0.5 * size, 8, 32);
+      const ring2Mat = new THREE.MeshBasicMaterial({
+        color: lighterColor,
+        transparent: true,
+        opacity: 0.4 * glowIntensity,
+      });
+      const ring2Mesh = new THREE.Mesh(ring2Geom, ring2Mat);
+      ring2Mesh.rotation.x = Math.PI / 2;
+      ring2Mesh.rotation.z = Math.PI / 6;
+      ring2Mesh.renderOrder = 2;
+      group.add(ring2Mesh);
+    }
+
+    return group;
+  }
+
+  /**
+   * Dispose a diamond marker group properly
+   */
+  private disposeDiamondMarker(marker: THREE.Group): void {
+    marker.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        (obj as THREE.Mesh).geometry.dispose();
+        const mat = (obj as THREE.Mesh).material;
+        if (Array.isArray(mat)) {
+          mat.forEach((m) => m.dispose());
+        } else {
+          mat.dispose();
+        }
+      }
     });
-    const ringMesh = new THREE.Mesh(ringGeom, ringMat);
-    ringMesh.rotation.x = Math.PI / 2; // Horizontal
-    ringMesh.renderOrder = 2;
-    this.baseMarker.add(ringMesh);
+  }
 
-    // === SECOND RING (tilted) ===
-    const ring2Geom = new THREE.TorusGeometry(16, 0.5, 8, 32);
-    const ring2Mat = new THREE.MeshBasicMaterial({
-      color: 0x86efac,
-      transparent: true,
-      opacity: 0.4,
+  private addBaseMarker(): void {
+    if (!this.engine) return;
+
+    const overlayGroup = this.engine.getOverlayGroup();
+    const base = this.baseCoords();
+
+    // Remove existing marker
+    if (this.baseMarker) {
+      overlayGroup.remove(this.baseMarker);
+      this.disposeDiamondMarker(this.baseMarker);
+    }
+
+    // Create HQ marker - green, full size with rings
+    this.baseMarker = this.createDiamondMarker({
+      color: 0x22c55e, // Green
+      size: 1,
+      showRings: true,
     });
-    const ring2Mesh = new THREE.Mesh(ring2Geom, ring2Mat);
-    ring2Mesh.rotation.x = Math.PI / 2;
-    ring2Mesh.rotation.z = Math.PI / 6; // Slightly tilted
-    ring2Mesh.renderOrder = 2;
-    this.baseMarker.add(ring2Mesh);
+    this.baseMarker.name = 'hqMarker';
 
-    // Position the whole group
+    const HEIGHT_ABOVE_GROUND = 30;
+    const local = this.engine.sync.geoToLocalSimple(base.latitude, base.longitude, 0);
     this.baseMarker.position.set(local.x, HEIGHT_ABOVE_GROUND, local.z);
 
     overlayGroup.add(this.baseMarker);
-    console.log('[addBaseMarker] HQ diamond marker at:', local.x, HEIGHT_ABOVE_GROUND, local.z);
+    console.log('[addBaseMarker] HQ diamond at:', local.x.toFixed(1), HEIGHT_ABOVE_GROUND, local.z.toFixed(1));
   }
 
   addSpawnPoint(id: string, name: string, lat: number, lon: number, color: number): void {
@@ -1473,35 +1516,31 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     const overlayGroup = this.engine.getOverlayGroup();
 
     // Position marker on terrain with RELATIVE heights
-    const HEIGHT_ABOVE_GROUND = 5;
+    const HEIGHT_ABOVE_GROUND = 15; // Spawn markers slightly lower than HQ
     const base = this.baseCoords();
     const originTerrainY = this.engine.getTerrainHeightAtGeo(base.latitude, base.longitude);
     const terrainY = this.engine.getTerrainHeightAtGeo(lat, lon);
     const local = this.engine.sync.geoToLocalSimple(lat, lon, 0);
 
     // Calculate relative Y (height difference from origin)
+    let markerY = HEIGHT_ABOVE_GROUND;
     if (originTerrainY !== null && terrainY !== null) {
-      local.y = (terrainY - originTerrainY) + HEIGHT_ABOVE_GROUND;
-    } else {
-      local.y = HEIGHT_ABOVE_GROUND; // Fallback until tiles load
+      markerY = (terrainY - originTerrainY) + HEIGHT_ABOVE_GROUND;
     }
 
-    // Create spawn marker
-    const geometry = new THREE.ConeGeometry(6, 15, 6);
-    const material = new THREE.MeshBasicMaterial({
+    // Create spawn marker - smaller diamond, no rings
+    const marker = this.createDiamondMarker({
       color,
-      depthTest: true,
-      transparent: true,
-      opacity: 0.9
+      size: 0.5, // Half size of HQ marker
+      showRings: false,
+      glowIntensity: 0.8,
     });
-    const marker = new THREE.Mesh(geometry, material);
-    marker.position.copy(local);
-    marker.rotation.x = Math.PI; // Point down
-    marker.renderOrder = 2;
+    marker.name = `spawnMarker_${id}`;
+    marker.position.set(local.x, markerY, local.z);
 
     overlayGroup.add(marker);
     this.spawnMarkers.push(marker);
-    console.log('[addSpawnPoint]', name, 'at:', local.x.toFixed(1), local.y.toFixed(1), local.z.toFixed(1));
+    console.log('[addSpawnPoint]', name, 'at:', local.x.toFixed(1), markerY.toFixed(1), local.z.toFixed(1));
 
     this.showPathFromSpawn(spawn);
   }
@@ -1977,7 +2016,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.engine) return;
 
     const HQ_MARKER_HEIGHT = 30; // HQ marker floats higher (animated diamond)
-    const SPAWN_MARKER_HEIGHT = 5;
+    const SPAWN_MARKER_HEIGHT = 15; // Spawn markers slightly lower
 
     // Get origin terrain height as reference
     const base = this.baseCoords();
@@ -2402,11 +2441,10 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const overlayGroup = this.engine.getOverlayGroup();
 
-    // Clear spawn markers
+    // Clear spawn markers (Groups)
     for (const marker of this.spawnMarkers) {
       overlayGroup.remove(marker);
-      marker.geometry.dispose();
-      (marker.material as THREE.Material).dispose();
+      this.disposeDiamondMarker(marker);
     }
     this.spawnMarkers = [];
 
