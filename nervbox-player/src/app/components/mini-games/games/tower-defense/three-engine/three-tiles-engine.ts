@@ -96,6 +96,10 @@ export class ThreeTilesEngine {
   private tilesLoadDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly TILES_LOAD_DEBOUNCE_MS = 500; // Wait 500ms after last tile load
 
+  // Callback when first tiles are loaded (for loading indicator)
+  private onFirstTilesLoadedCallback: (() => void) | null = null;
+  private firstTilesLoaded = false;
+
   // Callback for per-frame updates (animations)
   private onUpdateCallback: ((deltaTime: number) => void) | null = null;
 
@@ -272,6 +276,15 @@ export class ThreeTilesEngine {
       const freshOriginHeight = this.raycastTerrainHeight(0, 0);
 
       if (freshOriginHeight !== null) {
+        // Fire first tiles loaded callback (only once)
+        if (!this.firstTilesLoaded) {
+          this.firstTilesLoaded = true;
+          console.log('[ThreeTilesEngine] First tiles loaded');
+          if (this.onFirstTilesLoadedCallback) {
+            this.onFirstTilesLoadedCallback();
+          }
+        }
+
         const heightDelta = this.lastOriginHeight !== null
           ? Math.abs(freshOriginHeight - this.lastOriginHeight)
           : Infinity; // First load always triggers refresh
@@ -300,6 +313,18 @@ export class ThreeTilesEngine {
    */
   setOnTilesLoadCallback(callback: () => void): void {
     this.onTilesLoadCallback = callback;
+  }
+
+  /**
+   * Register a callback to be called when first tiles are loaded
+   * Used by component to hide "loading tiles" indicator
+   */
+  setOnFirstTilesLoadedCallback(callback: () => void): void {
+    this.onFirstTilesLoadedCallback = callback;
+    // If tiles already loaded, call immediately
+    if (this.firstTilesLoaded) {
+      callback();
+    }
   }
 
   /**
@@ -476,6 +501,7 @@ export class ThreeTilesEngine {
 
   /**
    * Update origin (when game location changes)
+   * Also resets firstTilesLoaded so the callback fires again for the new location
    */
   setOrigin(lat: number, lon: number, height: number = 0): void {
     this.sync.setOrigin(lat, lon, height);
@@ -492,7 +518,11 @@ export class ThreeTilesEngine {
     // Clear height cache
     this.clearHeightCache();
 
-    console.log('[ThreeTilesEngine] Origin updated to:', lat, lon);
+    // Reset first tiles loaded flag so callback fires again for new location
+    this.firstTilesLoaded = false;
+    this.lastOriginHeight = null;
+
+    console.log('[ThreeTilesEngine] Origin updated to:', lat, lon, '(tiles loading reset)');
   }
 
   /**

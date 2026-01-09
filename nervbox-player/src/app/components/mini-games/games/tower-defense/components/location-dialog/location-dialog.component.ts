@@ -7,7 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AddressAutocompleteComponent } from '../address-autocomplete.component';
-import { GeocodingService, GeocodingResult } from '../../services/geocoding.service';
+import { GeocodingService, NominatimAddress } from '../../services/geocoding.service';
 import {
   LocationDialogData,
   LocationDialogResult,
@@ -480,7 +480,7 @@ export class LocationDialogComponent {
   readonly data: LocationDialogData = inject(MAT_DIALOG_DATA);
 
   // State
-  readonly selectedHQ = signal<{ lat: number; lon: number; name?: string } | null>(null);
+  readonly selectedHQ = signal<{ lat: number; lon: number; name?: string; address?: NominatimAddress } | null>(null);
   readonly selectedSpawn = signal<{ lat: number; lon: number; name?: string } | null>(null);
   readonly spawnMode = signal<SpawnMode>('random');
   readonly showCoordinates = signal(false);
@@ -538,6 +538,7 @@ export class LocationDialogComponent {
           lat,
           lon,
           name: result.displayName,
+          address: result.address,
         });
       } else {
         // Use coordinates directly if reverse geocoding fails
@@ -552,7 +553,7 @@ export class LocationDialogComponent {
     }
   }
 
-  onHQSelected(location: { lat: number; lon: number; name: string }): void {
+  onHQSelected(location: { lat: number; lon: number; name: string; address?: NominatimAddress }): void {
     this.selectedHQ.set(location);
     // Update coordinate fields
     this.coordLat.set(location.lat);
@@ -586,32 +587,18 @@ export class LocationDialogComponent {
     const hq = this.selectedHQ();
     if (!hq) return;
 
+    // Use structured address for name extraction, fall back to displayName
+    const extractedName = hq.address
+      ? this.geocodingService.extractLocationName(hq.address)
+      : 'Unbekannter Ort';
+
     const hqInfo: LocationInfo = {
       lat: hq.lat,
       lon: hq.lon,
-      name: this.geocodingService.extractLocationName({
-        city: undefined,
-        town: undefined,
-        village: undefined,
-      }),
+      name: extractedName !== 'Unbekannter Ort' ? extractedName : (hq.name || `${hq.lat.toFixed(4)}, ${hq.lon.toFixed(4)}`),
       displayName: hq.name || '',
+      address: hq.address,
     };
-
-    // Try to extract location name from full display name
-    if (hq.name) {
-      const parts = hq.name.split(',');
-      // Look for city-like part (usually 2nd or 3rd)
-      for (let i = 1; i < Math.min(parts.length, 4); i++) {
-        const part = parts[i]?.trim();
-        if (part && !part.match(/^\d/) && part.length > 2) {
-          hqInfo.name = part;
-          break;
-        }
-      }
-      if (!hqInfo.name || hqInfo.name === 'Unbekannter Ort') {
-        hqInfo.name = parts[0]?.trim() || 'Unbekannter Ort';
-      }
-    }
 
     let spawnConfig: SpawnLocationConfig;
 
