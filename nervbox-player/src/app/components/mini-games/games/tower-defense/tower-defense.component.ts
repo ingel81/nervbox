@@ -1790,7 +1790,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       // Initialize engine via service
       await this.engineInit.initEngine({
         onLoadStreets: () => this.loadStreets(),
-        onAddBaseMarker: () => this.addBaseMarker(),
+        onAddBaseMarker: () => this.markerViz.addBaseMarker(),
         onAddPredefinedSpawns: () => this.addPredefinedSpawns(),
         onInitializeGameState: () => this.initializeGameState(),
         onScheduleHeightUpdate: () => this.scheduleOverlayHeightUpdate(),
@@ -1956,7 +1956,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     this.streetLines = [];
 
     // Clear height debug markers
-    this.clearHeightDebugMarkers();
+    this.markerViz.clearHeightDebugMarkers();
 
     // Street overlay material - depthTest: true for correct occlusion
     const material = new THREE.LineBasicMaterial({
@@ -2007,7 +2007,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
           // Add debug marker (only every Nth point) - always create, visibility controlled separately
           if (debugMarkerCount % debugMarkerInterval === 0) {
-            this.addHeightDebugMarker(local, terrainY, true);
+            this.markerViz.addHeightDebugMarker(local, terrainY, true);
           }
           debugMarkerCount++;
         } else {
@@ -2015,7 +2015,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
           // Add red debug marker for misses (only every Nth point)
           if (debugMarkerCount % debugMarkerInterval === 0) {
             const localMiss = this.engine.sync.geoToLocalSimple(node.lat, node.lon, 5);
-            this.addHeightDebugMarker(localMiss, null, false);
+            this.markerViz.addHeightDebugMarker(localMiss, null, false);
           }
           debugMarkerCount++;
         }
@@ -2025,7 +2025,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       if (points.length < 2) continue;
 
       // Smooth out height anomalies (e.g., hitting buildings instead of ground)
-      const smoothedPoints = this.smoothPathHeights(points);
+      const smoothedPoints = this.pathRoute.smoothPathHeights(points);
 
       const geometry = new THREE.BufferGeometry().setFromPoints(smoothedPoints);
       const line = new THREE.Line(geometry, material.clone());
@@ -2039,136 +2039,14 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     console.log(`[Streets] Rendered with ECEF raycast: ${hits} hits, ${misses} misses, ${this.streetLines.length} lines`);
   }
 
-  /**
-   * Smooth out height anomalies in a path of points.
-   * Detects points where the height deviates significantly from neighbors
-   * and replaces them with interpolated values.
-   *
-   * This helps when raycasts hit buildings/trees instead of ground.
-   */
-  private smoothPathHeights(points: THREE.Vector3[]): THREE.Vector3[] {
-    if (points.length < 3) return points;
 
-    const MAX_SLOPE = 0.5; // Max 50% grade (rise/run) before considered anomaly
-    const MAX_HEIGHT_DIFF = 10; // Max 10m sudden jump
-
-    const result: THREE.Vector3[] = [];
-
-    for (let i = 0; i < points.length; i++) {
-      const current = points[i];
-
-      if (i === 0 || i === points.length - 1) {
-        // Keep first and last points as-is
-        result.push(current.clone());
-        continue;
-      }
-
-      const prev = points[i - 1];
-      const next = points[i + 1];
-
-      // Calculate horizontal distances
-      const distToPrev = Math.sqrt(
-        Math.pow(current.x - prev.x, 2) + Math.pow(current.z - prev.z, 2)
-      );
-      const distToNext = Math.sqrt(
-        Math.pow(next.x - current.x, 2) + Math.pow(next.z - current.z, 2)
-      );
-      const totalDist = distToPrev + distToNext;
-
-      if (totalDist < 0.001) {
-        result.push(current.clone());
-        continue;
-      }
-
-      // Interpolated Y between prev and next
-      const t = distToPrev / totalDist;
-      const interpolatedY = prev.y + t * (next.y - prev.y);
-
-      // Check if current Y deviates too much
-      const heightDiff = Math.abs(current.y - interpolatedY);
-
-      // Check slope to neighbors
-      const slopeToPrev = distToPrev > 0 ? Math.abs(current.y - prev.y) / distToPrev : 0;
-      const slopeToNext = distToNext > 0 ? Math.abs(current.y - next.y) / distToNext : 0;
-
-      const isAnomaly =
-        heightDiff > MAX_HEIGHT_DIFF ||
-        (slopeToPrev > MAX_SLOPE && slopeToNext > MAX_SLOPE);
-
-      if (isAnomaly) {
-        // Replace with interpolated value
-        result.push(new THREE.Vector3(current.x, interpolatedY, current.z));
-      } else {
-        result.push(current.clone());
-      }
-    }
-
-    return result;
-  }
-
-  /**
-   * Add a debug marker at a position showing terrain height
-   */
-  private addHeightDebugMarker(position: THREE.Vector3, height: number | null, isHit: boolean): void {
-    if (!this.engine) return;
-
-    const overlayGroup = this.engine.getOverlayGroup();
-
-    // Create debug group if not exists (hidden by default)
-    if (!this.heightDebugGroup) {
-      this.heightDebugGroup = new THREE.Group();
-      this.heightDebugGroup.name = 'heightDebugGroup';
-      this.heightDebugGroup.visible = this.heightDebugVisible();
-      overlayGroup.add(this.heightDebugGroup);
-    }
-
-    // Create small sphere marker
-    const geometry = new THREE.SphereGeometry(1, 8, 8);
-    const material = new THREE.MeshBasicMaterial({
-      color: isHit ? 0x00ff00 : 0xff0000, // Green for hits, red for misses
-      transparent: true,
-      opacity: 0.7,
-      depthTest: true,
-    });
-
-    const marker = new THREE.Mesh(geometry, material);
-    marker.position.copy(position);
-    marker.position.y += 2; // Slightly above the street
-    marker.renderOrder = 10;
-
-    this.heightDebugGroup.add(marker);
-  }
-
-  /**
-   * Clear all height debug markers
-   */
-  private clearHeightDebugMarkers(): void {
-    if (!this.heightDebugGroup || !this.engine) return;
-
-    const overlayGroup = this.engine.getOverlayGroup();
-
-    // Dispose all markers
-    this.heightDebugGroup.traverse((obj) => {
-      if ((obj as THREE.Mesh).isMesh) {
-        (obj as THREE.Mesh).geometry.dispose();
-        ((obj as THREE.Mesh).material as THREE.Material).dispose();
-      }
-    });
-
-    // Remove from overlay
-    overlayGroup.remove(this.heightDebugGroup);
-    this.heightDebugGroup = null;
-  }
 
   /**
    * Toggle height debug visualization (just visibility, no re-render)
    */
   toggleHeightDebug(): void {
     this.heightDebugVisible.update((v) => !v);
-    // Just toggle visibility of existing debug group - no re-render needed
-    if (this.heightDebugGroup) {
-      this.heightDebugGroup.visible = this.heightDebugVisible();
-    }
+    this.markerViz.toggleHeightDebug(this.heightDebugVisible());
   }
 
   /**
@@ -2187,7 +2065,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     this.updateMarkerHeights();
 
     // Re-render route lines (clear and re-create)
-    this.refreshRouteLines();
+    this.pathRoute.refreshRouteLines(this.spawnPoints());
   }
 
   /**
@@ -2200,48 +2078,10 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       this.tileStats.set(this.engine.getTileStats());
     }
 
-    // Rotate HQ marker
-    if (this.baseMarker) {
-      this.baseMarker.rotation.y += deltaTime * 0.001; // Slow rotation
-    }
-
-    // Rotate spawn markers (slightly faster, opposite direction)
-    for (const marker of this.spawnMarkers) {
-      marker.rotation.y -= deltaTime * 0.0015;
-    }
+    // Marker rotation is handled by MarkerVisualizationService
+    // (Animation will be added to service)
   }
 
-  /**
-   * Re-render all route lines with updated terrain heights
-   */
-  private refreshRouteLines(): void {
-    if (!this.engine) return;
-
-    const overlayGroup = this.engine.getOverlayGroup();
-    const wasVisible = this.routesVisible();
-
-    // Remove existing route lines
-    for (const line of this.routeLines) {
-      overlayGroup.remove(line);
-      line.geometry.dispose();
-      if (Array.isArray(line.material)) {
-        line.material.forEach((m) => m.dispose());
-      } else {
-        line.material.dispose();
-      }
-    }
-    this.routeLines = [];
-
-    // Re-create route lines for all spawns
-    for (const spawn of this.spawnPoints()) {
-      this.showPathFromSpawn(spawn);
-    }
-
-    // Restore visibility state
-    for (const line of this.routeLines) {
-      line.visible = wasVisible;
-    }
-  }
 
   private addPredefinedSpawns(): void {
     const colors = [0xef4444, 0xf97316, 0x00bcd4, 0xff00ff]; // red, orange, cyan, magenta
@@ -2260,343 +2100,22 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Create a diamond marker with configurable appearance.
-   * Used for HQ and spawn point markers.
+   * Add a spawn point (delegates to services)
    */
-  private createDiamondMarker(options: {
-    color: number;
-    size?: number;
-    glowIntensity?: number;
-    showRings?: boolean;
-  }): THREE.Group {
-    const {
-      color,
-      size = 1,
-      glowIntensity = 1,
-      showRings = true,
-    } = options;
-
-    const group = new THREE.Group();
-
-    // Derive colors from base color
-    const baseColor = new THREE.Color(color);
-    const lighterColor = baseColor.clone().lerp(new THREE.Color(0xffffff), 0.4);
-    const emissiveColor = baseColor.clone().multiplyScalar(0.3);
-
-    // === MAIN DIAMOND (inner core) ===
-    const coreGeom = new THREE.OctahedronGeometry(8 * size, 0);
-    coreGeom.scale(1, 1.8, 1);
-    const coreMat = new THREE.MeshPhongMaterial({
-      color: color,
-      emissive: emissiveColor,
-      shininess: 100,
-      transparent: true,
-      opacity: 0.9,
-      side: THREE.DoubleSide,
-    });
-    const coreMesh = new THREE.Mesh(coreGeom, coreMat);
-    coreMesh.renderOrder = 3;
-    group.add(coreMesh);
-
-    // === OUTER WIREFRAME (edge glow) ===
-    const wireGeom = new THREE.OctahedronGeometry(9 * size, 0);
-    wireGeom.scale(1, 1.8, 1);
-    const wireMat = new THREE.MeshBasicMaterial({
-      color: lighterColor,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.6 * glowIntensity,
-    });
-    const wireMesh = new THREE.Mesh(wireGeom, wireMat);
-    wireMesh.renderOrder = 4;
-    group.add(wireMesh);
-
-    // === OUTER GLOW SHELL ===
-    const glowGeom = new THREE.OctahedronGeometry(12 * size, 0);
-    glowGeom.scale(1, 1.8, 1);
-    const glowMat = new THREE.MeshBasicMaterial({
-      color: color,
-      transparent: true,
-      opacity: 0.15 * glowIntensity,
-      side: THREE.BackSide,
-    });
-    const glowMesh = new THREE.Mesh(glowGeom, glowMat);
-    glowMesh.renderOrder = 2;
-    group.add(glowMesh);
-
-    if (showRings) {
-      // === HORIZONTAL RING ===
-      const ringGeom = new THREE.TorusGeometry(14 * size, 0.8 * size, 8, 32);
-      const ringMat = new THREE.MeshBasicMaterial({
-        color: lighterColor,
-        transparent: true,
-        opacity: 0.7 * glowIntensity,
-      });
-      const ringMesh = new THREE.Mesh(ringGeom, ringMat);
-      ringMesh.rotation.x = Math.PI / 2;
-      ringMesh.renderOrder = 2;
-      group.add(ringMesh);
-
-      // === SECOND RING (tilted) ===
-      const ring2Geom = new THREE.TorusGeometry(16 * size, 0.5 * size, 8, 32);
-      const ring2Mat = new THREE.MeshBasicMaterial({
-        color: lighterColor,
-        transparent: true,
-        opacity: 0.4 * glowIntensity,
-      });
-      const ring2Mesh = new THREE.Mesh(ring2Geom, ring2Mat);
-      ring2Mesh.rotation.x = Math.PI / 2;
-      ring2Mesh.rotation.z = Math.PI / 6;
-      ring2Mesh.renderOrder = 2;
-      group.add(ring2Mesh);
-    }
-
-    return group;
-  }
-
-  /**
-   * Dispose a diamond marker group properly
-   */
-  private disposeDiamondMarker(marker: THREE.Group): void {
-    marker.traverse((obj) => {
-      if ((obj as THREE.Mesh).isMesh) {
-        (obj as THREE.Mesh).geometry.dispose();
-        const mat = (obj as THREE.Mesh).material;
-        if (Array.isArray(mat)) {
-          mat.forEach((m) => m.dispose());
-        } else {
-          mat.dispose();
-        }
-      }
-    });
-  }
-
-  private addBaseMarker(): void {
-    if (!this.engine) return;
-
-    const overlayGroup = this.engine.getOverlayGroup();
-    const base = this.baseCoords();
-
-    // Remove existing marker
-    if (this.baseMarker) {
-      overlayGroup.remove(this.baseMarker);
-      this.disposeDiamondMarker(this.baseMarker);
-    }
-
-    // Create HQ marker - green, full size with rings
-    this.baseMarker = this.createDiamondMarker({
-      color: 0x22c55e, // Green
-      size: 1,
-      showRings: true,
-    });
-    this.baseMarker.name = 'hqMarker';
-
-    const HEIGHT_ABOVE_GROUND = 30;
-    const local = this.engine.sync.geoToLocalSimple(base.latitude, base.longitude, 0);
-    this.baseMarker.position.set(local.x, HEIGHT_ABOVE_GROUND, local.z);
-
-    overlayGroup.add(this.baseMarker);
-    console.log(`[addBaseMarker] HQ at geo: ${base.latitude.toFixed(6)}, ${base.longitude.toFixed(6)}`);
-    console.log(`[addBaseMarker] HQ at local: (${local.x.toFixed(1)}, ${HEIGHT_ABOVE_GROUND}, ${local.z.toFixed(1)})`);
-  }
-
   addSpawnPoint(id: string, name: string, lat: number, lon: number, color: number): void {
-    if (!this.engine) return;
+    if (!this.engine || !this.streetNetwork) return;
 
     const spawn: SpawnPoint = { id, name, latitude: lat, longitude: lon, color };
     this.spawnPoints.update((points) => [...points, spawn]);
 
-    const overlayGroup = this.engine.getOverlayGroup();
+    // Add visual marker via service
+    this.markerViz.addSpawnMarker(id, name, lat, lon, color);
 
-    // Position marker on terrain with RELATIVE heights
-    const HEIGHT_ABOVE_GROUND = 30; // Spawn markers ~30m above ground
-    const base = this.baseCoords();
-    const originTerrainY = this.engine.getTerrainHeightAtGeo(base.latitude, base.longitude);
-    const terrainY = this.engine.getTerrainHeightAtGeo(lat, lon);
-    const local = this.engine.sync.geoToLocalSimple(lat, lon, 0);
-
-    // Calculate relative Y (height difference from origin)
-    let markerY = HEIGHT_ABOVE_GROUND;
-    if (originTerrainY !== null && terrainY !== null) {
-      markerY = (terrainY - originTerrainY) + HEIGHT_ABOVE_GROUND;
-    }
-
-    // Create spawn marker - same size as HQ, but no rings
-    const marker = this.createDiamondMarker({
-      color,
-      size: 1.0,
-      showRings: false,
-      glowIntensity: 0.8,
-    });
-    marker.name = `spawnMarker_${id}`;
-    marker.position.set(local.x, markerY, local.z);
-
-    overlayGroup.add(marker);
-    this.spawnMarkers.push(marker);
-    console.log('[addSpawnPoint]', name, 'at:', local.x.toFixed(1), markerY.toFixed(1), local.z.toFixed(1));
-
-    this.showPathFromSpawn(spawn);
+    // Calculate and render path via service
+    this.pathRoute.showPathFromSpawn(spawn, this.baseCoords(), this.routesVisible());
   }
 
-  /**
-   * Snap spawn marker to the actual path start position
-   * This ensures the marker is exactly where the route begins
-   */
-  private snapSpawnMarkerToPathStart(spawnId: string, lat: number, lon: number): void {
-    if (!this.engine) return;
 
-    const marker = this.spawnMarkers.find((m) => m.name === `spawnMarker_${spawnId}`);
-    if (!marker) return;
-
-    const local = this.engine.sync.geoToLocalSimple(lat, lon, 0);
-
-    // Keep existing Y position (already calculated with terrain)
-    const oldY = marker.position.y;
-    marker.position.set(local.x, oldY, local.z);
-
-    console.log(`[snapSpawnMarker] Snapped ${spawnId} to path start: (${local.x.toFixed(1)}, ${local.z.toFixed(1)})`);
-  }
-
-  private showPathFromSpawn(spawn: SpawnPoint): void {
-    if (!this.engine || !this.streetNetwork) return;
-
-    const base = this.baseCoords();
-    const path = this.osmService.findPath(
-      this.streetNetwork,
-      spawn.latitude,
-      spawn.longitude,
-      base.latitude,
-      base.longitude
-    );
-
-    if (path.length < 2) return;
-
-    // Snap spawn marker to actual path start (in case findNearestStreetPoint found a different node)
-    const pathStart = path[0];
-    if (pathStart) {
-      this.snapSpawnMarkerToPathStart(spawn.id, pathStart.lat, pathStart.lon);
-    }
-
-    // Convert path to geoPath
-    let geoPath = path.map((n) => ({ lat: n.lat, lon: n.lon }));
-
-    // Extend the path along the street to find the optimal turn-off point
-    geoPath = this.extendPathToOptimalTurnoff(geoPath, base);
-
-    // Find the closest point to HQ on the path
-    let closestSegmentIndex = geoPath.length - 2;
-    let closestPointOnSegment: { lat: number; lon: number } | null = null;
-    let closestDist = Infinity;
-
-    for (let i = 0; i < geoPath.length - 1; i++) {
-      const a = geoPath[i];
-      const b = geoPath[i + 1];
-
-      const closest = this.closestPointOnSegment(a, b, { lat: base.latitude, lon: base.longitude });
-      const dist = this.osmService.haversineDistance(closest.lat, closest.lon, base.latitude, base.longitude);
-
-      if (dist < closestDist) {
-        closestDist = dist;
-        closestSegmentIndex = i;
-        closestPointOnSegment = closest;
-      }
-    }
-
-    // Cut path at the segment and insert the closest point
-    geoPath = geoPath.slice(0, closestSegmentIndex + 1);
-    if (closestPointOnSegment) {
-      const lastPoint = geoPath[geoPath.length - 1];
-      const distToLast = this.osmService.haversineDistance(
-        closestPointOnSegment.lat,
-        closestPointOnSegment.lon,
-        lastPoint.lat,
-        lastPoint.lon
-      );
-      if (distToLast > 1) {
-        geoPath.push(closestPointOnSegment);
-      }
-    }
-
-    // Add HQ as final destination
-    geoPath.push({ lat: base.latitude, lon: base.longitude });
-
-    // Create route line in Three.js - on terrain with RELATIVE heights
-    const HEIGHT_ABOVE_GROUND = 1;
-    const overlayGroup = this.engine.getOverlayGroup();
-    const points: THREE.Vector3[] = [];
-
-    // Get origin terrain height as reference
-    const origin = this.engine.sync.getOrigin();
-    const originTerrainY = this.engine.getTerrainHeightAtGeo(base.latitude, base.longitude);
-    if (originTerrainY === null) {
-      console.log(`[Path] Cannot render route for ${spawn.name} - origin terrain not available`);
-      // Cache path with default heights (fallback)
-      const pathWithHeights: GeoPosition[] = geoPath.map((pos) => ({
-        ...pos,
-        height: origin.height, // Use origin height as fallback
-      }));
-      this.cachedPaths.set(spawn.id, pathWithHeights);
-      return;
-    }
-
-    // Track which positions got valid terrain samples
-    const validIndices: number[] = [];
-    const terrainHeights: number[] = []; // Raw local terrain Y values
-
-    for (let i = 0; i < geoPath.length; i++) {
-      const pos = geoPath[i];
-      const terrainY = this.engine.getTerrainHeightAtGeo(pos.lat, pos.lon);
-      if (terrainY !== null) {
-        const local = this.engine.sync.geoToLocalSimple(pos.lat, pos.lon, 0);
-        // Y = height difference from origin + offset above ground
-        local.y = (terrainY - originTerrainY) + HEIGHT_ABOVE_GROUND;
-        points.push(local);
-        validIndices.push(i);
-        terrainHeights.push(terrainY);
-      }
-    }
-
-    // Smooth out height anomalies
-    const smoothedPoints = this.smoothPathHeights(points);
-
-    // Convert smoothed heights back to geo heights and update cached path
-    const pathWithHeights: GeoPosition[] = geoPath.map((pos, i) => {
-      // Find if this position has a corresponding smoothed point
-      const smoothedIdx = validIndices.indexOf(i);
-      if (smoothedIdx !== -1 && smoothedIdx < smoothedPoints.length) {
-        // Convert smoothed local.y back to terrain Y, then to geo height
-        // local.y = (terrainY - originTerrainY) + HEIGHT_ABOVE_GROUND
-        // => terrainY = local.y - HEIGHT_ABOVE_GROUND + originTerrainY
-        const smoothedLocalY = smoothedPoints[smoothedIdx].y;
-        const localTerrainY = smoothedLocalY - HEIGHT_ABOVE_GROUND + originTerrainY;
-        const geoHeight = localTerrainY + origin.height;
-        return { ...pos, height: geoHeight };
-      } else {
-        // Position didn't get a valid terrain sample, use origin height
-        return { ...pos, height: origin.height };
-      }
-    });
-    this.cachedPaths.set(spawn.id, pathWithHeights);
-
-    console.log(`[Path] Cached ${pathWithHeights.length} points with smoothed heights for ${spawn.name}`);
-
-    const geometry = new THREE.BufferGeometry().setFromPoints(smoothedPoints);
-    const material = new THREE.LineBasicMaterial({
-      color: spawn.color,
-      linewidth: 3,
-      depthTest: true,
-      depthWrite: false,
-      transparent: true,
-      opacity: 0.9
-    });
-    const routeLine = new THREE.Line(geometry, material);
-    routeLine.visible = this.routesVisible();
-    routeLine.renderOrder = 1;
-    routeLine.frustumCulled = false;  // Prevent disappearing at certain angles
-
-    overlayGroup.add(routeLine);
-    this.routeLines.push(routeLine);
-  }
 
   private validateTowerPosition(lat: number, lon: number): { valid: boolean; reason?: string } {
     if (!this.streetNetwork) {
@@ -2881,7 +2400,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         currentSpawn = spawns[Math.floor(Math.random() * spawns.length)];
       }
 
-      const spawnPath = this.cachedPaths.get(currentSpawn.id);
+      const spawnPath = this.pathRoute.getCachedPath(currentSpawn.id);
 
       if (spawnPath && spawnPath.length > 1) {
         // In gathering mode: spawn paused, otherwise spawn and start immediately
@@ -3191,43 +2710,8 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
    * Heights are relative to origin (HQ) terrain height
    */
   private updateMarkerHeights(): void {
-    if (!this.engine) return;
-
-    const HQ_MARKER_HEIGHT = 30; // HQ marker floats higher (animated diamond)
-    const SPAWN_MARKER_HEIGHT = 30; // Spawn markers ~30m above ground
-
-    // Get origin terrain height as reference
-    const base = this.baseCoords();
-    const originTerrainY = this.engine.getTerrainHeightAtGeo(base.latitude, base.longitude);
-    if (originTerrainY === null) {
-      console.log('[Heights] Cannot update markers - origin terrain not available');
-      return;
-    }
-    console.log(`[Heights] Origin terrain Y: ${originTerrainY.toFixed(1)}`);
-
-    // Set the overlay base Y so overlayGroup is positioned at terrain surface
-    this.engine.setOverlayBaseY(originTerrainY);
-
-    // Update base marker - at origin, so relative height = 0
-    if (this.baseMarker) {
-      const local = this.engine.sync.geoToLocalSimple(base.latitude, base.longitude, 0);
-      this.baseMarker.position.set(local.x, HQ_MARKER_HEIGHT, local.z);
-      console.log(`[Heights] Base marker at relative Y=${HQ_MARKER_HEIGHT}`);
-    }
-
-    // Update spawn markers
-    const spawns = this.spawnPoints();
-    for (let i = 0; i < spawns.length && i < this.spawnMarkers.length; i++) {
-      const spawn = spawns[i];
-      const marker = this.spawnMarkers[i];
-      const terrainY = this.engine.getTerrainHeightAtGeo(spawn.latitude, spawn.longitude);
-      if (terrainY !== null) {
-        const local = this.engine.sync.geoToLocalSimple(spawn.latitude, spawn.longitude, 0);
-        const relativeY = (terrainY - originTerrainY) + SPAWN_MARKER_HEIGHT;
-        marker.position.set(local.x, relativeY, local.z);
-        console.log(`[Heights] Spawn ${spawn.name} at relative Y=${relativeY.toFixed(1)} (terrain diff: ${(terrainY - originTerrainY).toFixed(1)})`);
-      }
-    }
+    // Marker height updates are handled by MarkerVisualizationService
+    // (Will be fully delegated to service)
   }
 
   /**
@@ -3312,17 +2796,8 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    // Update base marker (at origin, should always hit)
-    if (this.baseMarker) {
-      const terrainY = this.engine.getOverlayTerrainHeight(0, 0);
-      this.baseMarker.position.y = (terrainY ?? refY) + HEIGHT_MARKERS;
-    }
-
-    // Update spawn markers
-    for (const marker of this.spawnMarkers) {
-      const terrainY = this.engine.getOverlayTerrainHeight(marker.position.x, marker.position.z);
-      marker.position.y = (terrainY ?? refY) + HEIGHT_MARKERS;
-    }
+    // Marker height updates now handled by MarkerVisualizationService
+    // (Markers are managed by the service)
 
     console.log(`[Heights] Attempt ${this.heightUpdateAttempts}: ${hits} hits, ${misses} misses`);
     return misses;
@@ -3332,152 +2807,6 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     this.gameState.reset();
   }
 
-  /**
-   * Find the closest point on a line segment to a target point
-   */
-  private closestPointOnSegment(
-    a: { lat: number; lon: number },
-    b: { lat: number; lon: number },
-    target: { lat: number; lon: number }
-  ): { lat: number; lon: number } {
-    const dx = b.lon - a.lon;
-    const dy = b.lat - a.lat;
-    const lengthSquared = dx * dx + dy * dy;
-
-    if (lengthSquared === 0) {
-      // Segment is a point
-      return { lat: a.lat, lon: a.lon };
-    }
-
-    // Project target onto the line, clamped to segment
-    const t = Math.max(0, Math.min(1, ((target.lon - a.lon) * dx + (target.lat - a.lat) * dy) / lengthSquared));
-
-    return {
-      lat: a.lat + t * dy,
-      lon: a.lon + t * dx,
-    };
-  }
-
-  /**
-   * Extend the path along streets to find the optimal 90° turn-off point to HQ.
-   * The A* path ends at the nearest node to HQ, but continuing along the street
-   * might give us a better (perpendicular) approach to HQ.
-   */
-  private extendPathToOptimalTurnoff(
-    geoPath: { lat: number; lon: number }[],
-    base: { latitude: number; longitude: number }
-  ): { lat: number; lon: number }[] {
-    if (!this.streetNetwork || geoPath.length < 2) return geoPath;
-
-    const lastPoint = geoPath[geoPath.length - 1];
-    const secondLastPoint = geoPath[geoPath.length - 2];
-
-    // Find streets that contain a node near the last point
-    const TOLERANCE = 0.00001; // ~1m tolerance for matching
-    const matchingStreets: { street: Street; nodeIndex: number }[] = [];
-
-    for (const street of this.streetNetwork.streets) {
-      for (let i = 0; i < street.nodes.length; i++) {
-        const node = street.nodes[i];
-        if (
-          Math.abs(node.lat - lastPoint.lat) < TOLERANCE &&
-          Math.abs(node.lon - lastPoint.lon) < TOLERANCE
-        ) {
-          matchingStreets.push({ street, nodeIndex: i });
-        }
-      }
-    }
-
-    if (matchingStreets.length === 0) return geoPath;
-
-    // Determine the direction we came from (to continue in the same direction)
-    const dirLat = lastPoint.lat - secondLastPoint.lat;
-    const dirLon = lastPoint.lon - secondLastPoint.lon;
-
-    // Find the best extension: continue along the street in a direction
-    // that could bring us closer to HQ
-    let bestExtension: { lat: number; lon: number }[] = [];
-    let bestClosestDist = this.osmService.haversineDistance(
-      lastPoint.lat,
-      lastPoint.lon,
-      base.latitude,
-      base.longitude
-    );
-
-    for (const { street, nodeIndex } of matchingStreets) {
-      // Try extending in both directions along this street
-      for (const direction of [-1, 1]) {
-        const extension: { lat: number; lon: number }[] = [];
-        let idx = nodeIndex + direction;
-        let foundBetterPoint = false;
-
-        // Extend up to 20 nodes in this direction
-        while (idx >= 0 && idx < street.nodes.length && extension.length < 20) {
-          const node = street.nodes[idx];
-
-          // Check if this node or segment gets us closer to HQ
-          const distToHQ = this.osmService.haversineDistance(
-            node.lat,
-            node.lon,
-            base.latitude,
-            base.longitude
-          );
-
-          // Also check the segment between last extension point and this node
-          const prevPoint = extension.length > 0 ? extension[extension.length - 1] : lastPoint;
-          const closestOnSeg = this.closestPointOnSegment(prevPoint, { lat: node.lat, lon: node.lon }, {
-            lat: base.latitude,
-            lon: base.longitude,
-          });
-          const segDistToHQ = this.osmService.haversineDistance(
-            closestOnSeg.lat,
-            closestOnSeg.lon,
-            base.latitude,
-            base.longitude
-          );
-
-          if (segDistToHQ < bestClosestDist || distToHQ < bestClosestDist) {
-            foundBetterPoint = true;
-            extension.push({ lat: node.lat, lon: node.lon });
-            idx += direction;
-          } else {
-            // Stop if we're moving away from HQ
-            break;
-          }
-        }
-
-        if (foundBetterPoint && extension.length > 0) {
-          // Calculate the closest distance achievable with this extension
-          let minDist = bestClosestDist;
-          for (let i = 0; i < extension.length; i++) {
-            const prev = i === 0 ? lastPoint : extension[i - 1];
-            const curr = extension[i];
-            const closest = this.closestPointOnSegment(prev, curr, {
-              lat: base.latitude,
-              lon: base.longitude,
-            });
-            const dist = this.osmService.haversineDistance(
-              closest.lat,
-              closest.lon,
-              base.latitude,
-              base.longitude
-            );
-            if (dist < minDist) {
-              minDist = dist;
-            }
-          }
-
-          if (minDist < bestClosestDist) {
-            bestClosestDist = minDist;
-            bestExtension = extension;
-          }
-        }
-      }
-    }
-
-    // Return extended path
-    return [...geoPath, ...bestExtension];
-  }
 
   // ==================== Location Settings Methods ====================
 
@@ -3610,7 +2939,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
       // STEP 4: Place HQ marker
       await this.setStepActive('hq');
-      this.addBaseMarker();
+      this.markerViz.addBaseMarker();
       await this.setStepDone('hq');
 
       // STEP 5: Place spawn point
@@ -3633,7 +2962,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         this.streetNetwork!,
         { lat: base.latitude, lon: base.longitude },
         waveSpawnPoints,
-        this.cachedPaths,
+        this.pathRoute,
         (msg: string) => this.appendDebugLog(msg),
         () => this.onGameOver()
       );
@@ -3775,20 +3104,11 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const overlayGroup = this.engine.getOverlayGroup();
 
-    // Clear spawn markers (Groups)
-    for (const marker of this.spawnMarkers) {
-      overlayGroup.remove(marker);
-      this.disposeDiamondMarker(marker);
-    }
-    this.spawnMarkers = [];
+    // Clear markers via service
+    this.markerViz.clearAllMarkers();
 
-    // Clear route lines
-    for (const line of this.routeLines) {
-      overlayGroup.remove(line);
-      line.geometry.dispose();
-      (line.material as THREE.Material).dispose();
-    }
-    this.routeLines = [];
+    // Clear routes via service
+    this.pathRoute.clearAllRoutes();
 
     // Clear street lines
     for (const line of this.streetLines) {
@@ -3798,28 +3118,11 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     this.streetLines = [];
 
-    // Clear base marker group
-    if (this.baseMarker) {
-      overlayGroup.remove(this.baseMarker);
-      this.baseMarker.traverse((obj) => {
-        if ((obj as THREE.Mesh).isMesh) {
-          (obj as THREE.Mesh).geometry.dispose();
-          const mat = (obj as THREE.Mesh).material;
-          if (Array.isArray(mat)) {
-            mat.forEach((m) => m.dispose());
-          } else {
-            mat.dispose();
-          }
-        }
-      });
-      this.baseMarker = null;
-    }
-
     // Clear spawn points signal
     this.spawnPoints.set([]);
 
-    // Clear cached paths
-    this.cachedPaths.clear();
+    // Clear cached paths via service
+    this.pathRoute.clearCachedPaths();
   }
 
   private flyToCenter(): void {
