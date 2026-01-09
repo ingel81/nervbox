@@ -1,5 +1,10 @@
 # Offene TODOs
 
+[ ] Mobs laufen z.t. unterirdisch an bestimmten Stellen (Vermutung: unterbechnung der Route)
+[ ] Kein Feuer AM HQ bei Damage
+[ ] bei anderen gegner stimmen die vorschaumodelle nicht (z.b. Panzer)
+
+
 Bug:
  [x] gegner laufen am HQ angekommen die letzte etappe in der luft bis sie exakt am HQ Marker sind. liegt der in der Luft? Die sollten am boden bleiben und eher in das Gebäude  reinlaufen
 
