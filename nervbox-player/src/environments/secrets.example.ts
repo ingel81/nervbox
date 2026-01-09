@@ -1,6 +1,6 @@
-// Kopiere diese Datei nach secrets.ts und trage deinen Cesium Ion Token ein.
-// Hole dir einen kostenlosen Token unter: https://cesium.com/ion/tokens
+// API Keys werden jetzt vom Backend geladen (/api/config)
+// Diese Datei ist nur noch für Dokumentationszwecke vorhanden.
 
 export const secrets = {
-  cesiumAccessToken: 'YOUR_CESIUM_ION_ACCESS_TOKEN',
+  // Keine lokalen Secrets mehr nötig - alles kommt vom Backend
 };

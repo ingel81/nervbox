@@ -1,7 +1,7 @@
 # Offene TODOs
 
 Bug:
- [ ] gegner laufen am HQ angekommen die letzte etappe in der luft bis sie exakt am HQ Marker sind. liegt der in der Luft? Die sollten am boden bleiben und eher in das Gebäude  reinlaufen
+ [x] gegner laufen am HQ angekommen die letzte etappe in der luft bis sie exakt am HQ Marker sind. liegt der in der Luft? Die sollten am boden bleiben und eher in das Gebäude  reinlaufen
 
 Performance:
  [ ] spielt man das in einer größeren Stadt mit vielen 3d Gebäuden und straßen, kommt es beim zoomen oder panen und auch beim laden kurz zu aussetzern.
@@ -12,8 +12,8 @@ Performance:
 Allgemein:
 
 Gegner:
- [ ] Spawn verhalten: wird der spawn irgendwie verzögert? es dauert bei 1000 gegner bis die wellte los geht "Gegner sammeln sich..."
-    [ ] die laufen dann alle im Pulk los und sollten etwas verzögert werden. konfigurierbar am besten
+ [x] Spawn verhalten: wird der spawn irgendwie verzögert? es dauert bei 1000 gegner bis die wellte los geht "Gegner sammeln sich..."
+    [x] die laufen dann alle im Pulk los und sollten etwas verzögert werden. konfigurierbar am besten
 
 Projektile:
  [ ] Sollen nur ihr Ziel erreichen können wenn wirklich eine Sichtverbindung zum Gegner besteht (Line-of-Sight)

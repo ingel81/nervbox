@@ -13,7 +13,7 @@ import {
   UpdateOnChangePlugin,
   UnloadTilesPlugin,
   GLTFExtensionsPlugin,
-  CesiumIonAuthPlugin,
+  GoogleCloudAuthPlugin,
   ReorientationPlugin,
 } from '3d-tiles-renderer/plugins';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
@@ -108,17 +108,17 @@ export class ThreeTilesEngine {
   private animationFrameId: number | null = null;
   private isRunning = false;
 
-  // Cesium Ion credentials
-  private cesiumIonToken: string;
+  // Google Maps API Key
+  private googleMapsApiKey: string;
 
   constructor(
     canvas: HTMLCanvasElement,
-    cesiumIonToken: string,
+    googleMapsApiKey: string,
     originLat: number,
     originLon: number,
     originHeight: number = 0
   ) {
-    this.cesiumIonToken = cesiumIonToken;
+    this.googleMapsApiKey = googleMapsApiKey;
 
     // Initialize coordinate sync
     this.sync = new EllipsoidSync(originLat, originLon, originHeight);
@@ -183,12 +183,10 @@ export class ThreeTilesEngine {
     // Create TilesRenderer
     this.tilesRenderer = new TilesRenderer();
 
-    // Register plugins
+    // Register plugins - Google Maps 3D Tiles direct access
     this.tilesRenderer.registerPlugin(
-      new CesiumIonAuthPlugin({
-        apiToken: this.cesiumIonToken,
-        assetId: '2275207', // Google Photorealistic 3D Tiles
-        autoRefreshToken: true,
+      new GoogleCloudAuthPlugin({
+        apiToken: this.googleMapsApiKey,
       })
     );
     this.tilesRenderer.registerPlugin(new TileCompressionPlugin());

@@ -389,7 +389,7 @@ export class ThreeTowerRenderer {
       // Recalculate LoS when tower is selected
       this.updateHexGridLoS(data);
     }
-    if (data.tipMarker) data.tipMarker.visible = true;
+    if (data.tipMarker) data.tipMarker.visible = this.debugMode;
   }
 
   /**
@@ -425,8 +425,8 @@ export class ThreeTowerRenderer {
     let updatedCount = 0;
     for (const data of this.towers.values()) {
       if (data.tipMarker) {
-        // In debug mode, always show. Otherwise, only show if selected.
-        data.tipMarker.visible = enabled || data.isSelected;
+        // Only show in debug mode (Tower-Schusshoehe option)
+        data.tipMarker.visible = enabled;
         updatedCount++;
       }
     }
