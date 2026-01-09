@@ -135,6 +135,9 @@ export interface SpawnPoint {
           <div class="td-stat fps">
             <span>{{ fps() }} FPS</span>
           </div>
+          <div class="td-stat tiles">
+            <span>{{ tileStats().visible }}/{{ tileStats().total }} Tiles</span>
+          </div>
         </div>
         @if (isDialog) {
           <button class="td-close-btn" (click)="close()" matTooltip="Schliessen">
@@ -1690,6 +1693,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly centerCoords = signal(DEFAULT_CENTER_COORDS);
   readonly buildMode = signal(false);
   readonly fps = signal(0);
+  readonly tileStats = signal({ parsing: 0, downloading: 0, total: 0, visible: 0 });
 
   // Editable location settings (for debug panel)
   readonly editableHqLocation = signal<LocationConfig | null>(null);
@@ -2433,9 +2437,10 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
    * Called each frame for animations
    */
   private onEngineUpdate(deltaTime: number): void {
-    // Update FPS display
+    // Update FPS and tile stats display
     if (this.engine) {
       this.fps.set(this.engine.getFPS());
+      this.tileStats.set(this.engine.getTileStats());
     }
 
     // Rotate HQ marker

@@ -139,20 +139,27 @@ export class ThreeTilesEngine {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setClearColor(0x151c1f);
 
-    // Create scene
+    // Distance limits - keep in sync!
+    const VIEW_DISTANCE = 8000; // Max tile loading distance
+    const FOG_START = VIEW_DISTANCE * 0.25; // 2000m - fog begins
+    const FOG_END = VIEW_DISTANCE * 0.75; // 6000m - fully in fog
+
+    // Create scene with distance fog
     this.scene = new THREE.Scene();
+    const fogColor = 0x1a1f25; // Slightly lighter than background for depth
+    this.scene.fog = new THREE.Fog(fogColor, FOG_START, FOG_END);
 
     // Create overlay group for markers, streets, routes
     // Will be added to SCENE (not tilesGroup) and synced each frame
     this.overlayGroup = new THREE.Group();
     this.scene.add(this.overlayGroup);
 
-    // Create camera
+    // Create camera - far plane limits tile loading distance
     this.camera = new THREE.PerspectiveCamera(
       60,
       canvas.width / canvas.height,
       1,
-      160000000
+      VIEW_DISTANCE // GlobeControls may override, enforced in render()
     );
 
     // Setup lighting and sky
@@ -875,6 +882,13 @@ export class ThreeTilesEngine {
       this.controls.update();
     }
 
+    // Force camera far plane to limit tile loading (GlobeControls may override it)
+    const VIEW_DISTANCE = 8000;
+    if (this.camera.far > VIEW_DISTANCE) {
+      this.camera.far = VIEW_DISTANCE;
+      this.camera.updateProjectionMatrix();
+    }
+
     // Update tiles
     this.camera.updateMatrixWorld();
     this.tilesRenderer.setResolutionFromRenderer(this.camera, this.renderer);
@@ -1152,6 +1166,48 @@ export class ThreeTilesEngine {
    */
   getCamera(): THREE.PerspectiveCamera {
     return this.camera;
+  }
+
+  // Cached tile stats (updated every 500ms to avoid performance overhead)
+  private cachedTileStats = { parsing: 0, downloading: 0, total: 0, visible: 0 };
+  private lastTileStatsUpdate = 0;
+
+  /**
+   * Get tile loading statistics by counting meshes in the tiles group
+   * Cached and updated every 500ms for performance
+   */
+  getTileStats(): { parsing: number; downloading: number; total: number; visible: number } {
+    const now = performance.now();
+    if (now - this.lastTileStatsUpdate < 500) {
+      return this.cachedTileStats;
+    }
+
+    if (!this.tilesRenderer) {
+      return this.cachedTileStats;
+    }
+
+    // Count visible meshes in the tiles group
+    let visibleMeshes = 0;
+    let totalMeshes = 0;
+
+    this.tilesRenderer.group.traverse((obj) => {
+      if (obj instanceof THREE.Mesh) {
+        totalMeshes++;
+        if (obj.visible) {
+          visibleMeshes++;
+        }
+      }
+    });
+
+    this.cachedTileStats = {
+      parsing: 0,
+      downloading: 0,
+      total: totalMeshes,
+      visible: visibleMeshes,
+    };
+    this.lastTileStatsUpdate = now;
+
+    return this.cachedTileStats;
   }
 
   /**
