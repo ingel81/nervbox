@@ -1667,7 +1667,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     { id: 'hq', label: 'Platziere Hauptquartier', status: 'pending' },
     { id: 'spawn', label: 'Platziere Spawn-Punkt', status: 'pending' },
     { id: 'route', label: 'Berechne Route', status: 'pending' },
-    { id: 'terrain', label: 'Berechne Terrain-Höhen', status: 'pending' },
+    { id: 'terrain', label: 'Synchronisiere mit Terrain', status: 'pending' },
   ]);
   readonly streetsVisible = signal(false);
   readonly routesVisible = signal(false);
@@ -1832,7 +1832,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       { id: 'hq', label: 'Platziere Hauptquartier', status: 'pending' },
       { id: 'spawn', label: 'Platziere Spawn-Punkt', status: 'pending' },
       { id: 'route', label: 'Berechne Route', status: 'pending' },
-      { id: 'terrain', label: 'Berechne Terrain-Höhen', status: 'pending' },
+      { id: 'terrain', label: 'Synchronisiere mit Terrain', status: 'pending' },
     ]);
   }
 
@@ -3337,7 +3337,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     this.overlayHeightsUpdated = false;
     this.heightsLoading.set(true);
     this.heightProgress.set(0);
-    this.loadingStatus.set('Berechne Terrain-Höhen...');
+    this.loadingStatus.set('Synchronisiere mit Terrain...');
 
     return new Promise((resolve) => {
       this.heightStableResolve = resolve;
