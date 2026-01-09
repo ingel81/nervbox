@@ -1,5 +1,18 @@
 export type TowerTypeId = 'archer' | 'cannon' | 'magic' | 'sniper';
 export type ProjectileTypeId = 'arrow' | 'cannonball' | 'fireball' | 'ice-shard';
+export type UpgradeId = 'speed' | 'damage' | 'range';
+
+export interface TowerUpgrade {
+  id: UpgradeId;
+  name: string;
+  description: string;
+  cost: number;
+  maxLevel: number;
+  effect: {
+    stat: 'fireRate' | 'damage' | 'range';
+    multiplier: number; // e.g., 2.0 = double
+  };
+}
 
 export interface TowerTypeConfig {
   id: TowerTypeId;
@@ -16,6 +29,7 @@ export interface TowerTypeConfig {
 
   cost: number;
   sellValue: number; // Credits returned when selling
+  upgrades: TowerUpgrade[]; // Available upgrades for this tower type
 }
 
 // NOTE: Currently only tower_archer.glb exists. Using it for all tower types until more models are created.
@@ -35,6 +49,19 @@ export const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
     projectileType: 'arrow',
     cost: 50,
     sellValue: 30,
+    upgrades: [
+      {
+        id: 'speed',
+        name: 'Schnellfeuer',
+        description: 'Verdoppelt die Feuerrate',
+        cost: 50,
+        maxLevel: 1,
+        effect: {
+          stat: 'fireRate',
+          multiplier: 2.0,
+        },
+      },
+    ],
   },
   cannon: {
     id: 'cannon',
@@ -49,6 +76,7 @@ export const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
     projectileType: 'cannonball',
     cost: 200,
     sellValue: 120,
+    upgrades: [],
   },
   magic: {
     id: 'magic',
@@ -63,6 +91,7 @@ export const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
     projectileType: 'fireball',
     cost: 150,
     sellValue: 90,
+    upgrades: [],
   },
   sniper: {
     id: 'sniper',
@@ -77,6 +106,7 @@ export const TOWER_TYPES: Record<TowerTypeId, TowerTypeConfig> = {
     projectileType: 'arrow',
     cost: 300,
     sellValue: 180,
+    upgrades: [],
   },
 };
 

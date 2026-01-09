@@ -6,7 +6,7 @@ import {
   RenderComponent,
 } from '../game-components';
 import { GeoPosition } from '../models/game.types';
-import { TowerTypeId, getTowerType, TowerTypeConfig } from '../configs/tower-types.config';
+import { TowerTypeId, getTowerType, TowerTypeConfig, UpgradeId, TowerUpgrade } from '../configs/tower-types.config';
 import { Enemy } from './enemy.entity';
 
 /**
@@ -18,6 +18,9 @@ export class Tower extends GameObject {
   private _transform!: TransformComponent;
   private _combat!: CombatComponent;
   private _render!: RenderComponent;
+
+  /** Track upgrade levels for each upgrade type */
+  private upgradeLevels: Map<UpgradeId, number> = new Map();
 
   selected = false;
 
@@ -92,6 +95,74 @@ export class Tower extends GameObject {
    */
   deselect(): void {
     this.selected = false;
+  }
+
+  /**
+   * Get available upgrades that haven't reached max level
+   */
+  getAvailableUpgrades(): TowerUpgrade[] {
+    return this.typeConfig.upgrades.filter(upgrade => {
+      const currentLevel = this.upgradeLevels.get(upgrade.id) ?? 0;
+      return currentLevel < upgrade.maxLevel;
+    });
+  }
+
+  /**
+   * Get the current level of a specific upgrade
+   */
+  getUpgradeLevel(upgradeId: UpgradeId): number {
+    return this.upgradeLevels.get(upgradeId) ?? 0;
+  }
+
+  /**
+   * Check if an upgrade can be applied (not at max level)
+   */
+  canUpgrade(upgradeId: UpgradeId): boolean {
+    const upgrade = this.typeConfig.upgrades.find(u => u.id === upgradeId);
+    if (!upgrade) return false;
+    const currentLevel = this.upgradeLevels.get(upgradeId) ?? 0;
+    return currentLevel < upgrade.maxLevel;
+  }
+
+  /**
+   * Apply an upgrade to this tower
+   * @returns true if upgrade was applied successfully
+   */
+  applyUpgrade(upgradeId: UpgradeId): boolean {
+    const upgrade = this.typeConfig.upgrades.find(u => u.id === upgradeId);
+    if (!upgrade) return false;
+
+    const currentLevel = this.upgradeLevels.get(upgradeId) ?? 0;
+    if (currentLevel >= upgrade.maxLevel) return false;
+
+    // Apply the effect
+    switch (upgrade.effect.stat) {
+      case 'fireRate':
+        this._combat.fireRate *= upgrade.effect.multiplier;
+        break;
+      case 'damage':
+        this._combat.damage *= upgrade.effect.multiplier;
+        break;
+      case 'range':
+        this._combat.range *= upgrade.effect.multiplier;
+        break;
+    }
+
+    // Increment the level
+    this.upgradeLevels.set(upgradeId, currentLevel + 1);
+    return true;
+  }
+
+  /**
+   * Get total credits invested in upgrades
+   */
+  getTotalUpgradeCost(): number {
+    let total = 0;
+    for (const upgrade of this.typeConfig.upgrades) {
+      const level = this.upgradeLevels.get(upgrade.id) ?? 0;
+      total += upgrade.cost * level;
+    }
+    return total;
   }
 
   /**
