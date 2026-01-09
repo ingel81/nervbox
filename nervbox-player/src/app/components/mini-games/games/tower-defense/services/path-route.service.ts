@@ -109,6 +109,13 @@ export class PathAndRouteService {
   }
 
   /**
+   * Clear all cached paths (alias for clearCache)
+   */
+  clearCachedPaths(): void {
+    this.clearCache();
+  }
+
+  /**
    * Get detail string for route loading status
    * @returns Route detail string or undefined
    */
@@ -327,6 +334,13 @@ export class PathAndRouteService {
     }
 
     this.routeLines = [];
+  }
+
+  /**
+   * Clear all routes (alias for clearRouteLines)
+   */
+  clearAllRoutes(): void {
+    this.clearRouteLines();
   }
 
   /**
