@@ -190,7 +190,7 @@ export class GameStateManager {
             color: '#FFD700', // Gold
             duration: 1200,
             floatSpeed: 1.5,
-            scale: 0.8,
+            scale: 2.5,
           }
         );
       }
@@ -386,6 +386,16 @@ export class GameStateManager {
     this.towerManager.remove(tower);
     this.credits.update((c) => c + refund);
     return refund;
+  }
+
+  /**
+   * Spend credits (for upgrades etc.)
+   * @returns true if credits were spent, false if not enough
+   */
+  spendCredits(amount: number): boolean {
+    if (this.credits() < amount) return false;
+    this.credits.update((c) => c - amount);
+    return true;
   }
 
   /**

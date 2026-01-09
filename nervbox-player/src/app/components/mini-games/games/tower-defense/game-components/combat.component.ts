@@ -13,9 +13,9 @@ export interface CombatConfig {
  * CombatComponent handles damage dealing and targeting
  */
 export class CombatComponent extends Component {
-  readonly damage: number;
-  readonly range: number;
-  readonly fireRate: number;
+  damage: number;
+  range: number;
+  fireRate: number;
 
   /** Number of kills this unit has made */
   kills = 0;

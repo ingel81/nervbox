@@ -40,7 +40,8 @@ import * as THREE from 'three';
 // Theme
 import { TD_CSS_VARS } from './styles/td-theme';
 // Tower config
-import { TOWER_TYPES, getAllTowerTypes, TowerTypeConfig, TowerTypeId } from './configs/tower-types.config';
+import { TOWER_TYPES, getAllTowerTypes, TowerTypeConfig, TowerTypeId, UpgradeId } from './configs/tower-types.config';
+import { Tower } from './entities/tower.entity';
 
 // Default locations - can be overridden via debug settings
 const DEFAULT_CENTER_COORDS = {
@@ -343,26 +344,43 @@ export interface SpawnPoint {
                 <div class="td-tower-stats">
                   <div class="td-stat-row">
                     <span class="td-stat-label">Schaden</span>
-                    <span class="td-stat-value td-damage">{{ tower.typeConfig.damage }}</span>
+                    <span class="td-stat-value td-damage">{{ tower.combat.damage }}</span>
                   </div>
                   <div class="td-stat-row">
                     <span class="td-stat-label">Reichweite</span>
-                    <span class="td-stat-value">{{ tower.typeConfig.range }}m</span>
+                    <span class="td-stat-value">{{ tower.combat.range }}m</span>
                   </div>
                   <div class="td-stat-row">
                     <span class="td-stat-label">Feuerrate</span>
-                    <span class="td-stat-value">{{ tower.typeConfig.fireRate }}/s</span>
+                    <span class="td-stat-value">{{ tower.combat.fireRate }}/s</span>
                   </div>
                   <div class="td-stat-row">
                     <span class="td-stat-label">Kills</span>
                     <span class="td-stat-value td-kills">{{ tower.combat.kills }}</span>
                   </div>
                 </div>
+
+                <!-- Upgrades Section -->
+                @if (tower.getAvailableUpgrades().length > 0) {
+                  <div class="td-upgrades-section">
+                    <div class="td-upgrades-title">UPGRADES</div>
+                    @for (upgrade of tower.getAvailableUpgrades(); track upgrade.id) {
+                      <button
+                        class="td-upgrade-btn"
+                        [class.td-upgrade-affordable]="gameState.credits() >= upgrade.cost"
+                        [disabled]="gameState.credits() < upgrade.cost"
+                        (click)="upgradeTower(tower, upgrade.id)"
+                        [matTooltip]="upgrade.description"
+                      >
+                        <mat-icon>bolt</mat-icon>
+                        <span class="td-upgrade-name">{{ upgrade.name }}</span>
+                        <span class="td-upgrade-cost">{{ upgrade.cost }}</span>
+                      </button>
+                    }
+                  </div>
+                }
+
                 <div class="td-tower-actions">
-                  <button class="td-action-btn td-btn-upgrade" disabled matTooltip="Bald verfuegbar">
-                    <mat-icon>arrow_upward</mat-icon>
-                    <span>Upgrade</span>
-                  </button>
                   <button class="td-action-btn td-btn-sell" (click)="sellSelectedTower()">
                     <mat-icon>sell</mat-icon>
                     <span>Verkaufen</span>
@@ -1190,6 +1208,83 @@ export interface SpawnPoint {
 
     .td-refund {
       background: var(--td-green);
+    }
+
+    /* === Upgrade Section === */
+    .td-upgrades-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin: 8px 0;
+      padding-top: 8px;
+      border-top: 1px solid var(--td-frame-dark);
+    }
+
+    .td-upgrades-title {
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--td-text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .td-upgrade-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: var(--td-panel-secondary);
+      border: 1px solid var(--td-frame-mid);
+      border-top-color: var(--td-frame-light);
+      border-bottom-color: var(--td-frame-dark);
+      color: var(--td-text-secondary);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .td-upgrade-btn mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+      color: var(--td-gold);
+    }
+
+    .td-upgrade-btn:hover:not(:disabled) {
+      background: rgba(255, 193, 7, 0.15);
+      border-color: var(--td-gold-dark);
+    }
+
+    .td-upgrade-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .td-upgrade-btn.td-upgrade-affordable {
+      border-color: var(--td-gold-dark);
+    }
+
+    .td-upgrade-name {
+      flex: 1;
+      text-align: left;
+    }
+
+    .td-upgrade-cost {
+      padding: 2px 6px;
+      background: var(--td-gold);
+      color: var(--td-bg-dark);
+      font-size: 10px;
+      font-weight: 600;
+      border-radius: 2px;
+    }
+
+    .td-upgrade-cost::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      margin-right: 2px;
+      background: url('/assets/games/tower-defense/images/gold.svg') center/contain no-repeat;
+      vertical-align: middle;
     }
 
     /* === Camera Buttons === */
@@ -2676,6 +2771,34 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     if (tower) {
       const refund = this.gameState.sellTower(tower);
       console.log(`[TD] Tower sold for ${refund} credits`);
+    }
+  }
+
+  /**
+   * Upgrade a tower with the specified upgrade
+   */
+  upgradeTower(tower: Tower, upgradeId: UpgradeId): void {
+    const upgrade = tower.typeConfig.upgrades.find(u => u.id === upgradeId);
+    if (!upgrade) return;
+
+    // Check if we can afford it
+    if (this.gameState.credits() < upgrade.cost) {
+      console.log(`[TD] Cannot afford upgrade: ${upgrade.cost} credits needed`);
+      return;
+    }
+
+    // Check if upgrade can be applied
+    if (!tower.canUpgrade(upgradeId)) {
+      console.log(`[TD] Upgrade already at max level`);
+      return;
+    }
+
+    // Deduct credits and apply upgrade
+    this.gameState.spendCredits(upgrade.cost);
+    const success = tower.applyUpgrade(upgradeId);
+
+    if (success) {
+      console.log(`[TD] Applied ${upgrade.name} upgrade to tower. New fireRate: ${tower.combat.fireRate}/s`);
     }
   }
 
