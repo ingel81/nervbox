@@ -168,11 +168,37 @@ export class OsmStreetService {
         bounds: network.bounds,
       };
 
-      localStorage.setItem(key, JSON.stringify(data));
-      console.log(`[OSM] Cached street network (${(JSON.stringify(data).length / 1024).toFixed(1)} KB)`);
+      const jsonData = JSON.stringify(data);
+
+      // Try to save, and if quota exceeded, clear old caches first
+      try {
+        localStorage.setItem(key, jsonData);
+      } catch (quotaError) {
+        // Clear all street caches and try again
+        this.clearOldCaches();
+        localStorage.setItem(key, jsonData);
+      }
+
+      console.log(`[OSM] Cached street network (${(jsonData.length / 1024).toFixed(1)} KB)`);
     } catch (e) {
-      console.warn('[OSM] Failed to save to cache:', e);
+      // Silent fail - caching is optional
+      console.log('[OSM] Cache skipped (quota exceeded)');
     }
+  }
+
+  /**
+   * Clear all street network caches from localStorage
+   */
+  private clearOldCaches(): void {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(this.CACHE_PREFIX)) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+    console.log(`[OSM] Cleared ${keysToRemove.length} old cache entries`);
   }
 
   private parseOverpassResponse(
