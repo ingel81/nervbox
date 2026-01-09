@@ -518,11 +518,26 @@ export class ThreeTilesEngine {
     // Clear height cache
     this.clearHeightCache();
 
-    // Reset first tiles loaded flag so callback fires again for new location
-    this.firstTilesLoaded = false;
-    this.lastOriginHeight = null;
+    // Cancel any pending debounce timer from previous location
+    if (this.tilesLoadDebounceTimer) {
+      clearTimeout(this.tilesLoadDebounceTimer);
+      this.tilesLoadDebounceTimer = null;
+    }
 
-    console.log('[ThreeTilesEngine] Origin updated to:', lat, lon, '(tiles loading reset)');
+    // Reset ALL tiles-related flags so everything recalculates for new location
+    this.firstTilesLoaded = false;
+    this.tilesWereLoaded = false;
+    this.lastOriginHeight = null;
+    this.tilesLoadedForRaycast = false;
+    this.raycastDebugCount = 0;
+    this.overlayBaseY = 0; // Reset overlay offset - will be set when new terrain loads
+
+    // CRITICAL: Reset tiles position tracking - otherwise overlay delta calculation
+    // will use old location's initialTilesPos and position overlays incorrectly
+    this.tilesPosInitialized = false;
+    this.initialTilesPos.set(0, 0, 0);
+
+    console.log('[ThreeTilesEngine] Origin updated to:', lat, lon, '(all tiles state reset)');
   }
 
   /**
