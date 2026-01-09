@@ -40,10 +40,11 @@ namespace NervboxDeamon.Models.Settings
     public PlaybackMode PlaybackMode { get; set; } = PlaybackMode.Local;
 
     /// <summary>
-    /// Cesium Ion Access Token for 3D map features
-    /// Get one at: https://cesium.com/ion/tokens
+    /// Google Maps API Key for 3D Photorealistic Tiles
+    /// Get one at: https://console.cloud.google.com/apis/credentials
+    /// Requires Map Tiles API to be enabled
     /// </summary>
-    public string CesiumAccessToken { get; set; } = "";
+    public string GoogleMapsApiKey { get; set; } = "";
 
     public SSHSettings SSH { get; set; }
     public CameraSettings Camera1 { get; set; }

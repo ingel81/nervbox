@@ -160,10 +160,10 @@ export interface SpawnPoint {
               <h3>Fehler</h3>
               <p>{{ error() }}</p>
               <div class="td-token-instructions">
-                <p>1. Erstelle einen Account bei <a href="https://cesium.com/ion/" target="_blank">cesium.com/ion</a></p>
-                <p>2. Kopiere deinen Access Token</p>
-                <p>3. Trage ihn in <code>appsettings.json</code> ein:</p>
-                <pre>"CesiumAccessToken": "dein-token"</pre>
+                <p>1. Erstelle ein Projekt in der <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></p>
+                <p>2. Aktiviere die <strong>Map Tiles API</strong></p>
+                <p>3. Erstelle einen API Key und trage ihn in <code>appsettings.json</code> ein:</p>
+                <pre>"GoogleMapsApiKey": "dein-api-key"</pre>
               </div>
               <button class="td-btn td-btn-gold" (click)="close()">Schliessen</button>
             </div>
@@ -1662,10 +1662,10 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   private async initEngine(): Promise<void> {
     try {
-      // Get token from ConfigService (loaded from backend /api/config)
-      const token = this.configService.cesiumAccessToken();
-      if (!token || token === 'YOUR_CESIUM_ION_ACCESS_TOKEN') {
-        this.error.set('Bitte konfiguriere deinen Cesium Ion Access Token in appsettings.json.');
+      // Get Google Maps API Key from ConfigService (loaded from backend /api/config)
+      const apiKey = this.configService.googleMapsApiKey();
+      if (!apiKey) {
+        this.error.set('Bitte konfiguriere deinen Google Maps API Key in appsettings.json.');
         this.loading.set(false);
         return;
       }
@@ -1681,10 +1681,10 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       // Get origin coordinates
       const base = this.baseCoords();
 
-      // Create Three.js engine with 3DTilesRendererJS
+      // Create Three.js engine with Google Maps 3D Tiles
       this.engine = new ThreeTilesEngine(
         canvas,
-        token,
+        apiKey,
         base.latitude,
         base.longitude,
         0
