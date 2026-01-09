@@ -23,6 +23,7 @@ export const TD_THEME = {
   goldDark: '#9E7E32', // Gedrückt / Inaktiv
   teal: '#6FB7A5', // Magische Akzente
   green: '#9ED6A0', // Buffs, Positiv
+  greenDark: '#6AAB6C', // Gedrückt / Button-Schatten
 
   // === Status- & Feedbackfarben ===
   healthRed: '#B14436',
@@ -66,6 +67,7 @@ export const TD_CSS_VARS = `
   --td-gold-dark: ${TD_THEME.goldDark};
   --td-teal: ${TD_THEME.teal};
   --td-green: ${TD_THEME.green};
+  --td-green-dark: ${TD_THEME.greenDark};
 
   --td-health-red: ${TD_THEME.healthRed};
   --td-health-bg: ${TD_THEME.healthBg};

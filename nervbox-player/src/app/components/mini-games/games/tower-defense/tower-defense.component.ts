@@ -150,7 +150,16 @@ export interface SpawnPoint {
           @if (loading()) {
             <div class="td-loading-overlay">
               <mat-spinner diameter="48"></mat-spinner>
-              <p>{{ loadingMessage() }}</p>
+              <div class="td-loading-items">
+                <div class="td-loading-item" [class.done]="!tilesLoading()">
+                  <mat-icon>{{ tilesLoading() ? 'hourglass_empty' : 'check_circle' }}</mat-icon>
+                  <span>3D-Tiles</span>
+                </div>
+                <div class="td-loading-item" [class.done]="!osmLoading()">
+                  <mat-icon>{{ osmLoading() ? 'hourglass_empty' : 'check_circle' }}</mat-icon>
+                  <span>Strassennetz</span>
+                </div>
+              </div>
             </div>
           }
 
@@ -169,7 +178,7 @@ export interface SpawnPoint {
             </div>
           }
 
-          <canvas #gameCanvas class="td-canvas" [class.hidden]="loading() || error()"></canvas>
+          <canvas #gameCanvas class="td-canvas" [class.hidden]="error()"></canvas>
 
           <!-- Controls Hint -->
           @if (!loading() && !error()) {
@@ -619,7 +628,7 @@ export interface SpawnPoint {
     .td-canvas-area {
       flex: 1;
       position: relative;
-      background: #000;
+      background: var(--td-panel-shadow);
       overflow: visible; /* Allow quick-actions to extend beyond bounds */
     }
 
@@ -1336,7 +1345,27 @@ export interface SpawnPoint {
     }
 
     /* === Overlays === */
-    .td-loading-overlay,
+    .td-loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      background: color-mix(in srgb, var(--td-bg-dark) 90%, transparent);
+      backdrop-filter: blur(2px);
+      z-index: 10;
+      pointer-events: all; /* Block clicks to canvas below */
+    }
+
+    .td-loading-overlay mat-spinner ::ng-deep circle {
+      stroke: var(--td-gold) !important;
+    }
+
     .td-error-overlay {
       position: absolute;
       top: 0;
@@ -1352,9 +1381,33 @@ export interface SpawnPoint {
       z-index: 10;
     }
 
-    .td-loading-overlay p {
+    .td-loading-items {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .td-loading-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       color: var(--td-text-secondary);
       font-size: 13px;
+    }
+
+    .td-loading-item mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    .td-loading-item.done {
+      color: var(--td-gold);
+    }
+
+    .td-loading-item.done mat-icon {
+      color: var(--td-green);
     }
 
     .td-error-overlay {
@@ -1426,7 +1479,7 @@ export interface SpawnPoint {
     .td-btn-gold { background: var(--td-gold); border-bottom-color: var(--td-gold-dark); }
     .td-btn-green {
       background: var(--td-green);
-      border-bottom-color: #6aab6c;
+      border-bottom-color: var(--td-green-dark);
     }
 
     /* Gathering Overlay */
@@ -1555,7 +1608,8 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   private heightDebugGroup: THREE.Group | null = null;
 
   readonly loading = signal(true);
-  readonly loadingMessage = signal('Lade 3D-Karte...');
+  readonly tilesLoading = signal(true); // True until first tiles are loaded
+  readonly osmLoading = signal(true); // True until OSM streets are loaded
   readonly error = signal<string | null>(null);
   readonly streetsVisible = signal(false);
   readonly routesVisible = signal(false);
@@ -1589,22 +1643,39 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly isGameOver = computed(() => this.gameState.phase() === 'gameover');
   readonly currentEnemyConfig = computed(() => getEnemyType(this.enemyType()));
 
-  // Location name for header display
+  // Location name for header display - smart extraction from address
   readonly currentLocationName = computed(() => {
     const hq = this.editableHqLocation();
-    if (hq?.name) {
-      // Extract first part (usually street or place name)
-      const parts = hq.name.split(',');
-      // Try to find a city-like part
-      for (let i = 1; i < Math.min(parts.length, 4); i++) {
-        const part = parts[i]?.trim();
-        if (part && !part.match(/^\d/) && part.length > 2) {
-          return part;
-        }
+    if (!hq) return 'Erlenbach';
+
+    // Try to build smart name from structured address
+    if (hq.address) {
+      const addr = hq.address;
+      const parts: string[] = [];
+
+      // Street + house number
+      if (addr.road) {
+        parts.push(addr.house_number ? `${addr.road} ${addr.house_number}` : addr.road);
       }
-      return parts[0]?.trim() || 'Erlenbach';
+
+      // City (prefer city > town > village > municipality)
+      const city = addr.city || addr.town || addr.village || addr.municipality;
+      if (city) {
+        parts.push(city);
+      }
+
+      if (parts.length > 0) {
+        return parts.join(', ');
+      }
     }
-    return 'Erlenbach';
+
+    // Fall back to displayName
+    if (hq.name) {
+      return hq.name;
+    }
+
+    // Last resort: coordinates
+    return `${hq.lat.toFixed(4)}, ${hq.lon.toFixed(4)}`;
   });
   readonly gatheringPhase = signal(false);
   private waveAborted = false; // Flag to stop spawning when kill-all is pressed
@@ -1699,6 +1770,13 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         this.onTilesLoaded();
       });
 
+      // Register callback for first tiles loaded
+      this.engine.setOnFirstTilesLoadedCallback(() => {
+        this.tilesLoading.set(false);
+        console.log('[TD] First tiles loaded');
+        this.checkAllLoaded();
+      });
+
       // Register callback for per-frame animations (HQ marker rotation)
       this.engine.setOnUpdateCallback((deltaTime) => {
         this.onEngineUpdate(deltaTime);
@@ -1713,9 +1791,13 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       this.setupClickHandler();
       this.createBuildPreview();
 
-      this.loadingMessage.set('Lade Strassennetz von OpenStreetMap...');
+      // Start render loop immediately (tiles load progressively in background)
+      this.engine.startRenderLoop();
+
+      // Load OSM streets in parallel (tiles load asynchronously via render loop)
       await this.loadStreets();
 
+      // Add markers after streets are loaded
       this.addBaseMarker();
       this.addPredefinedSpawns();
 
@@ -1727,7 +1809,6 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         longitude: sp.longitude,
       }));
 
-      // Initialize game state with new engine
       this.gameState.initialize(
         this.engine,
         this.streetNetwork!,
@@ -1738,10 +1819,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         () => this.onGameOver()
       );
 
-      // Start render loop
-      this.engine.startRenderLoop();
-
-      // Schedule overlay height updates once tiles are loaded
+      // Schedule overlay height updates
       this.scheduleOverlayHeightUpdate();
 
       // Capture initial camera position after tiles stabilize (2 seconds)
@@ -1757,11 +1835,25 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       }, 2000);
 
-      this.loading.set(false);
+      // OSM loading done
+      this.osmLoading.set(false);
+      console.log('[TD] OSM streets loaded');
+      this.checkAllLoaded();
+
     } catch (err) {
-      console.error('Engine initialization error:', err);
+      console.error('[TD] Engine init error:', err);
       this.error.set(err instanceof Error ? err.message : 'Fehler beim Laden der 3D-Karte');
       this.loading.set(false);
+    }
+  }
+
+  /**
+   * Check if all loading is complete (tiles + OSM)
+   */
+  private checkAllLoaded(): void {
+    if (!this.tilesLoading() && !this.osmLoading()) {
+      this.loading.set(false);
+      console.log('[TD] Game fully initialized - all resources loaded');
     }
   }
 
@@ -3102,6 +3194,10 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   private scheduleOverlayHeightUpdate(): void {
     const MAX_ATTEMPTS = 20; // Max 20 attempts (10 seconds total)
 
+    // Reset counters for fresh location
+    this.heightUpdateAttempts = 0;
+    this.overlayHeightsUpdated = false;
+
     this.heightUpdateIntervalId = setInterval(() => {
       if (!this.engine) {
         this.stopHeightUpdates();
@@ -3478,54 +3574,93 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Apply new location - simplified: just HQ + single spawn
+   * Apply new location - full reset like initial load
+   * Shows loading overlay and waits for tiles + streets to load
    * CRITICAL: Follow correct reset sequence to avoid ghost entities
    */
   async onApplyNewLocation(data: { hq: LocationConfig; spawn: LocationConfig }): Promise<void> {
+    if (!this.engine) {
+      console.error('[Location] No engine available');
+      return;
+    }
+
+    // STEP 1: Show loading overlay (same as initial load)
+    this.loading.set(true);
+    this.tilesLoading.set(true);
+    this.osmLoading.set(true);
     this.isApplyingLocation.set(true);
-    this.appendDebugLog(`Lade: ${data.hq.name?.split(',')[0]}...`);
+    console.log(`[Location] Starting location change to: ${data.hq.name?.split(',')[0]}...`);
 
     try {
-      // STEP 1: Reset game state FIRST (before coordinate change!)
-      // This clears towers, enemies, projectiles from the scene
+      // STEP 2: Stop any running height update intervals
+      this.stopHeightUpdates();
+
+      // STEP 3: Reset game state FIRST (clears towers, enemies, projectiles)
       this.gameState.reset();
       this.appendDebugLog('Spielstand zurückgesetzt');
 
-      // STEP 2: Clear map entities (markers, routes, streets)
+      // STEP 4: Clear map entities (markers, routes, streets)
       this.clearMapEntities();
 
-      // STEP 3: Clear cached paths
+      // STEP 5: Clear cached paths
       this.cachedPaths.clear();
 
-      // STEP 4: Update engine origin (before coordinate update!)
-      console.log(`[Location] Input HQ coords: ${data.hq.lat.toFixed(6)}, ${data.hq.lon.toFixed(6)} (${data.hq.name})`);
-      if (this.engine) {
-        this.engine.setOrigin(data.hq.lat, data.hq.lon);
-        this.engine.clearDebugHelpers();
-      }
+      // STEP 6: Clear spawn points
+      this.spawnPoints.set([]);
 
-      // STEP 5: Update coordinates
+      // STEP 7: Update engine origin (this resets firstTilesLoaded flag)
+      console.log(`[Location] Setting new origin: ${data.hq.lat.toFixed(6)}, ${data.hq.lon.toFixed(6)}`);
+      this.engine.setOrigin(data.hq.lat, data.hq.lon);
+      this.engine.clearDebugHelpers();
+
+      // STEP 8: Update coordinates
       this.baseCoords.set({ latitude: data.hq.lat, longitude: data.hq.lon });
       this.centerCoords.set({ latitude: data.hq.lat, longitude: data.hq.lon, height: 400 });
-      console.log(`[Location] baseCoords set to: ${data.hq.lat.toFixed(6)}, ${data.hq.lon.toFixed(6)}`);
 
-      // Update editable state
+      // STEP 9: Update editable state
       this.editableHqLocation.set(data.hq);
       const spawnConfig: SpawnLocationConfig = { id: 'spawn-1', ...data.spawn };
       this.editableSpawnLocations.set([spawnConfig]);
 
-      // STEP 6: Load new streets (clears old cache if needed)
-      this.streetNetwork = await this.osmService.loadStreets(data.hq.lat, data.hq.lon, 2000);
-      this.streetCount.set(this.streetNetwork.streets.length);
+      // STEP 10: Set up tiles loaded callback (fires when first tiles at new location are ready)
+      const tilesLoadedPromise = new Promise<void>((resolve) => {
+        this.engine!.setOnFirstTilesLoadedCallback(() => {
+          this.tilesLoading.set(false);
+          console.log('[Location] First tiles loaded at new location');
+          resolve();
+        });
+      });
 
-      // STEP 7: Render new streets
+      // STEP 11: Load streets in parallel with tiles
+      const streetsPromise = this.osmService.loadStreets(data.hq.lat, data.hq.lon, 2000);
+
+      // STEP 12: Wait for streets to load
+      this.streetNetwork = await streetsPromise;
+      this.streetCount.set(this.streetNetwork.streets.length);
+      this.osmLoading.set(false);
+      console.log(`[Location] Streets loaded: ${this.streetCount()}`);
+
+      // STEP 13: Wait for tiles to load (with timeout fallback)
+      await Promise.race([
+        tilesLoadedPromise,
+        new Promise<void>((resolve) => setTimeout(() => {
+          console.log('[Location] Tiles loading timeout - continuing anyway');
+          this.tilesLoading.set(false);
+          resolve();
+        }, 10000)) // 10 second timeout
+      ]);
+
+      // STEP 14: Render streets (now that terrain is available)
       this.renderStreets();
 
-      // STEP 8: Add new markers
+      // STEP 15: Add markers
       this.addBaseMarker();
       this.addSpawnPoint('spawn-1', data.spawn.name?.split(',')[0] || 'Spawn', data.spawn.lat, data.spawn.lon, 0xef4444);
 
-      // STEP 9: Reinitialize game state with new location
+      // STEP 16: Schedule overlay height updates (like in initEngine)
+      this.scheduleOverlayHeightUpdate();
+
+      // STEP 17: Reinitialize game state with new location
       const base = this.baseCoords();
       const waveSpawnPoints: WaveSpawnPoint[] = this.spawnPoints().map((sp) => ({
         id: sp.id,
@@ -3534,29 +3669,47 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         longitude: sp.longitude,
       }));
 
-      if (this.engine) {
-        this.gameState.initialize(
-          this.engine,
-          this.streetNetwork!,
-          { lat: base.latitude, lon: base.longitude },
-          waveSpawnPoints,
-          this.cachedPaths,
-          (msg: string) => this.appendDebugLog(msg),
-          () => this.onGameOver()
-        );
-      }
+      this.gameState.initialize(
+        this.engine,
+        this.streetNetwork!,
+        { lat: base.latitude, lon: base.longitude },
+        waveSpawnPoints,
+        this.cachedPaths,
+        (msg: string) => this.appendDebugLog(msg),
+        () => this.onGameOver()
+      );
 
-      // STEP 10: Save to localStorage
+      // STEP 18: Save to localStorage
       this.saveLocationsToStorage();
 
-      // STEP 11: Fly to new location
+      // STEP 19: Fly to new location
       this.flyToCenter();
 
+      // STEP 20: Capture new initial camera position (after tiles stabilize)
+      setTimeout(() => {
+        if (this.engine) {
+          const cam = this.engine.getCamera();
+          this.initialCameraPosition = {
+            x: cam.position.x,
+            y: cam.position.y,
+            z: cam.position.z,
+          };
+          console.log('[Location] New camera position captured:', this.initialCameraPosition);
+        }
+      }, 2000);
+
       this.appendDebugLog(`Geladen: ${this.streetCount()} Strassen`);
+      console.log('[Location] Location change complete');
+
     } catch (err) {
-      console.error('Failed to apply location:', err);
+      console.error('[Location] Failed to apply location:', err);
       this.appendDebugLog(`Fehler: ${err instanceof Error ? err.message : 'Unbekannt'}`);
+      this.error.set(err instanceof Error ? err.message : 'Fehler beim Standortwechsel');
     } finally {
+      // STEP 21: Hide loading overlay
+      this.loading.set(false);
+      this.tilesLoading.set(false);
+      this.osmLoading.set(false);
       this.isApplyingLocation.set(false);
     }
   }
@@ -3627,6 +3780,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
           lat: result.hq.lat,
           lon: result.hq.lon,
           name: result.hq.displayName,
+          address: result.hq.address,
         },
         spawn: {
           lat: spawnLat,

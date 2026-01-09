@@ -68,6 +68,7 @@ import { TD_CSS_VARS, TD_THEME } from '../styles/td-theme';
 | `--td-gold-dark` | `#9E7E32` | Gedrueckt, Inaktiv |
 | `--td-teal` | `#6FB7A5` | Magische Akzente |
 | `--td-green` | `#9ED6A0` | Buffs, Positiv |
+| `--td-green-dark` | `#6AAB6C` | Gedrueckt, Button-Schatten |
 
 ### Statusfarben
 

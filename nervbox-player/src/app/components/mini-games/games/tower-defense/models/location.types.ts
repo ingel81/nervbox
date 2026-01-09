@@ -1,3 +1,5 @@
+import { NominatimAddress } from '../services/geocoding.service';
+
 /**
  * Location System Types for Tower Defense
  */
@@ -17,7 +19,8 @@ export interface LocationCoords {
 export interface LocationConfig {
   lat: number;
   lon: number;
-  name?: string;
+  name?: string; // Full displayName from OSM
+  address?: NominatimAddress; // Structured address for smart display
 }
 
 /**
@@ -26,6 +29,7 @@ export interface LocationConfig {
 export interface LocationInfo extends LocationCoords {
   name: string; // Display name (city/place)
   displayName: string; // Full Nominatim display name
+  address?: NominatimAddress; // Structured address for smart display
 }
 
 /**

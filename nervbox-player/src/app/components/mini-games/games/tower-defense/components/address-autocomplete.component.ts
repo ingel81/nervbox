@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { GeocodingService, GeocodingResult } from '../services/geocoding.service';
+import { GeocodingService, GeocodingResult, NominatimAddress } from '../services/geocoding.service';
 
 type SearchState = 'idle' | 'too-short' | 'searching' | 'results' | 'no-results' | 'error' | 'selected';
 
@@ -307,10 +307,10 @@ export class AddressAutocompleteComponent {
 
   // Inputs
   placeholder = input<string>('Adresse suchen...');
-  currentValue = input<{ lat: number; lon: number; name?: string } | null>(null);
+  currentValue = input<{ lat: number; lon: number; name?: string; address?: NominatimAddress } | null>(null);
 
   // Outputs
-  locationSelected = output<{ lat: number; lon: number; name: string }>();
+  locationSelected = output<{ lat: number; lon: number; name: string; address?: NominatimAddress }>();
   locationCleared = output<void>();
 
   searchText = '';
@@ -333,8 +333,8 @@ export class AddressAutocompleteComponent {
     // Update input text when value changes externally
     effect(() => {
       const value = this.currentValue();
-      if (value?.name && !this.hasFocus()) {
-        this.searchText = this.formatName(value.name);
+      if (value && !this.hasFocus()) {
+        this.searchText = this.formatValueName(value);
       } else if (!value && !this.hasFocus()) {
         this.searchText = '';
       }
@@ -368,14 +368,14 @@ export class AddressAutocompleteComponent {
       this.showDropdown.set(false);
       // Restore text if we have a value
       const value = this.currentValue();
-      if (value?.name) {
-        this.searchText = this.formatName(value.name);
+      if (value) {
+        this.searchText = this.formatValueName(value);
       }
     }, 200);
   }
 
   selectResult(result: GeocodingResult): void {
-    this.searchText = this.formatName(result.displayName);
+    this.searchText = this.formatSmartName(result);
     this.showDropdown.set(false);
     this.geocoding.clearResults();
 
@@ -383,7 +383,49 @@ export class AddressAutocompleteComponent {
       lat: result.lat,
       lon: result.lon,
       name: result.displayName,
+      address: result.address,
     });
+  }
+
+  /**
+   * Build smart name from structured address (same logic as header display)
+   * Priority: Street + HouseNumber, City > displayName > coordinates
+   */
+  formatSmartName(result: GeocodingResult): string {
+    return this.formatValueName({
+      lat: result.lat,
+      lon: result.lon,
+      name: result.displayName,
+      address: result.address,
+    });
+  }
+
+  /**
+   * Format a location value for display (used for input text)
+   */
+  formatValueName(value: { lat: number; lon: number; name?: string; address?: NominatimAddress }): string {
+    if (value.address) {
+      const addr = value.address;
+      const parts: string[] = [];
+
+      // Street + house number
+      if (addr.road) {
+        parts.push(addr.house_number ? `${addr.road} ${addr.house_number}` : addr.road);
+      }
+
+      // City (prefer city > town > village > municipality)
+      const city = addr.city || addr.town || addr.village || addr.municipality;
+      if (city) {
+        parts.push(city);
+      }
+
+      if (parts.length > 0) {
+        return parts.join(', ');
+      }
+    }
+
+    // Fall back to displayName or coordinates
+    return value.name || `${value.lat.toFixed(4)}, ${value.lon.toFixed(4)}`;
   }
 
   clearValue(event: MouseEvent): void {
@@ -403,9 +445,9 @@ export class AddressAutocompleteComponent {
   }
 
   formatDetail(displayName: string): string {
-    // Return remaining parts (city, region, etc.)
+    // Return all remaining parts (city, region, country, etc.)
     const parts = displayName.split(',');
     if (parts.length <= 1) return '';
-    return parts.slice(1, 3).map(p => p.trim()).join(', ');
+    return parts.slice(1).map(p => p.trim()).join(', ');
   }
 }
