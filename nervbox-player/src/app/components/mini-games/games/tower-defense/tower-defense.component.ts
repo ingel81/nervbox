@@ -181,35 +181,40 @@ export interface SpawnPoint {
                 <button class="td-layer-btn"
                         [class.active]="streetsVisible()"
                         (click)="toggleStreets()"
-                        matTooltip="Strassen anzeigen">
+                        matTooltip="Strassen anzeigen"
+                        matTooltipPosition="left">
                   <mat-icon>route</mat-icon>
                 </button>
                 <button class="td-layer-btn"
                         [class.active]="routesVisible()"
                         (click)="toggleRoutes()"
-                        matTooltip="Routen anzeigen">
+                        matTooltip="Routen anzeigen"
+                        matTooltipPosition="left">
                   <mat-icon>timeline</mat-icon>
                 </button>
                 <button class="td-layer-btn"
                         [class.active]="towerDebugVisible()"
                         (click)="toggleTowerDebug()"
-                        matTooltip="Tower-Schusshoehe anzeigen">
+                        matTooltip="Tower-Schusshoehe anzeigen"
+                        matTooltipPosition="left">
                   <mat-icon>gps_fixed</mat-icon>
                 </button>
                 <button class="td-layer-btn"
                         [class.active]="heightDebugVisible()"
                         (click)="toggleHeightDebug()"
-                        matTooltip="Terrain-Hoehen debuggen">
+                        matTooltip="Terrain-Hoehen debuggen"
+                        matTooltipPosition="left">
                   <mat-icon>terrain</mat-icon>
                 </button>
               </div>
               <button class="td-quick-btn td-layer-toggle-btn"
                       [class.active]="layerMenuExpanded()"
                       (click)="toggleLayerMenu()"
-                      matTooltip="Ebenen">
+                      matTooltip="Ebenen"
+                      matTooltipPosition="left">
                 <mat-icon>{{ layerMenuExpanded() ? 'layers_clear' : 'layers' }}</mat-icon>
               </button>
-              <button class="td-quick-btn" (click)="resetCamera()" matTooltip="Kamera zuruecksetzen">
+              <button class="td-quick-btn" (click)="resetCamera()" matTooltip="Kamera zuruecksetzen" matTooltipPosition="left">
                 <mat-icon>my_location</mat-icon>
               </button>
               <!-- Dev Menu (expands right and up) -->
@@ -218,19 +223,22 @@ export interface SpawnPoint {
                   <button class="td-dev-btn"
                           [class.active]="debugMode()"
                           (click)="toggleDebug()"
-                          matTooltip="Wave-Debug-Panel">
+                          matTooltip="Wave-Debug-Panel"
+                          matTooltipPosition="left">
                     <mat-icon>timeline</mat-icon>
                   </button>
                   <button class="td-dev-btn"
                           (click)="resetToDefaultLocation()"
-                          matTooltip="Default-Ort laden">
+                          matTooltip="Default-Ort laden"
+                          matTooltipPosition="left">
                     <mat-icon>home</mat-icon>
                   </button>
                 </div>
                 <button class="td-quick-btn td-dev-toggle-btn"
                         [class.active]="devMenuExpanded()"
                         (click)="toggleDevMenu()"
-                        matTooltip="Entwickler-Optionen">
+                        matTooltip="Entwickler-Optionen"
+                        matTooltipPosition="left">
                   <mat-icon>{{ devMenuExpanded() ? 'code_off' : 'code' }}</mat-icon>
                 </button>
               </div>
@@ -586,7 +594,7 @@ export interface SpawnPoint {
     .td-main {
       flex: 1;
       display: flex;
-      overflow: hidden;
+      overflow: visible; /* Allow canvas-area children to extend beyond bounds */
     }
 
     /* === Canvas Area === */
@@ -594,6 +602,7 @@ export interface SpawnPoint {
       flex: 1;
       position: relative;
       background: #000;
+      overflow: visible; /* Allow quick-actions to extend beyond bounds */
     }
 
     .td-canvas {
@@ -629,6 +638,10 @@ export interface SpawnPoint {
       z-index: 5;
     }
 
+    .td-quick-actions > * {
+      flex-shrink: 0;
+    }
+
     .td-layer-toggles {
       display: flex;
       flex-direction: column;
@@ -640,7 +653,7 @@ export interface SpawnPoint {
     }
 
     .td-layer-toggles.expanded {
-      max-height: 120px;
+      max-height: 160px; /* 4 buttons × 32px + 3 gaps × 4px + margin */
       opacity: 1;
     }
 
@@ -650,6 +663,9 @@ export interface SpawnPoint {
       justify-content: center;
       width: 32px;
       height: 32px;
+      min-width: 32px;
+      min-height: 32px;
+      box-sizing: border-box;
       background: var(--td-panel-main);
       border: 1px solid var(--td-frame-mid);
       border-top-color: var(--td-frame-light);
@@ -681,6 +697,9 @@ export interface SpawnPoint {
       justify-content: center;
       width: 32px;
       height: 32px;
+      min-width: 32px;
+      min-height: 32px;
+      box-sizing: border-box;
       background: var(--td-panel-main);
       border: 1px solid var(--td-frame-mid);
       border-top-color: var(--td-frame-light);
@@ -721,7 +740,7 @@ export interface SpawnPoint {
     .td-dev-menu {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 4px;
       max-width: 0;
       overflow: hidden;
       opacity: 0;
@@ -740,6 +759,9 @@ export interface SpawnPoint {
       justify-content: center;
       width: 32px;
       height: 32px;
+      min-width: 32px;
+      min-height: 32px;
+      box-sizing: border-box;
       background: var(--td-panel-main);
       border: 1px solid var(--td-frame-mid);
       border-top-color: var(--td-frame-light);
@@ -1776,10 +1798,12 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       opacity: 0.5,
       side: THREE.DoubleSide,
       depthWrite: false,
+      depthTest: false, // Always visible, even when terrain is in front
     });
     this.buildPreviewMesh = new THREE.Mesh(geometry, material);
     this.buildPreviewMesh.rotation.x = -Math.PI / 2; // Horizontal
     this.buildPreviewMesh.visible = false;
+    this.buildPreviewMesh.renderOrder = 100; // Render on top
 
     this.engine.getScene().add(this.buildPreviewMesh);
   }
