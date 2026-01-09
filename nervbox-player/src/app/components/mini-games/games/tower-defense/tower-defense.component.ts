@@ -28,6 +28,16 @@ import { DebugPanelComponent } from './components/debug-panel.component';
 import { LocationDialogComponent } from './components/location-dialog/location-dialog.component';
 import { LocationDialogData, LocationDialogResult, LocationConfig, SpawnLocationConfig } from './models/location.types';
 import { GeocodingService } from './services/geocoding.service';
+// Refactoring services
+import { GameUIStateService } from './services/game-ui-state.service';
+import { CameraControlService } from './services/camera-control.service';
+import { MarkerVisualizationService, SpawnPoint } from './services/marker-visualization.service';
+import { PathAndRouteService } from './services/path-route.service';
+import { InputHandlerService } from './services/input-handler.service';
+import { TowerPlacementService } from './services/tower-placement.service';
+import { LocationManagementService } from './services/location-management.service';
+import { HeightUpdateService } from './services/height-update.service';
+import { EngineInitializationService } from './services/engine-initialization.service';
 // New OO Game Engine imports
 import { GameStateManager } from './managers/game-state.manager';
 import { EnemyManager } from './managers/enemy.manager';
@@ -71,14 +81,6 @@ const DEFAULT_SPAWN_POINTS = [
 ];
 
 const LOCATION_STORAGE_KEY = 'td_custom_locations_v1';
-
-export interface SpawnPoint {
-  id: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-  color: number; // Three.js hex color
-}
 
 @Component({
   selector: 'app-tower-defense',
@@ -1636,69 +1638,64 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly entityPool = inject(EntityPoolService);
   private readonly modelPreview = inject(ModelPreviewService);
 
+  // Refactoring services
+  private readonly uiState = inject(GameUIStateService);
+  private readonly cameraControl = inject(CameraControlService);
+  private readonly markerViz = inject(MarkerVisualizationService);
+  private readonly pathRoute = inject(PathAndRouteService);
+  private readonly inputHandler = inject(InputHandlerService);
+  private readonly towerPlacement = inject(TowerPlacementService);
+  private readonly locationMgmt = inject(LocationManagementService);
+  private readonly heightUpdate = inject(HeightUpdateService);
+  private readonly engineInit = inject(EngineInitializationService);
+
   // Expose Math and tower config for template
   readonly Math = Math;
   readonly archerTowerConfig = TOWER_TYPES.archer;
   readonly towerTypes = getAllTowerTypes();
 
-  // Selected tower type for building
-  readonly selectedTowerType = signal<TowerTypeId>('archer');
-
   private engine: ThreeTilesEngine | null = null;
   private streetNetwork: StreetNetwork | null = null;
 
-  // Three.js objects for markers and routes
+  // Three.js objects for streets (markers and routes now in services)
   private streetLines: THREE.Line[] = [];
-  private routeLines: THREE.Line[] = [];
-  private spawnMarkers: THREE.Group[] = [];
-  private baseMarker: THREE.Group | null = null;
-  private heightDebugGroup: THREE.Group | null = null;
 
-  readonly loading = signal(true);
-  readonly tilesLoading = signal(true); // True until first tiles are loaded
-  readonly osmLoading = signal(true); // True until OSM streets are loaded
-  readonly heightsLoading = signal(true); // True until overlay heights are stable
-  readonly heightProgress = signal(0); // Height update attempts (0-4 typically)
-  readonly error = signal<string | null>(null);
-  readonly loadingStatus = signal('Initialisiere...'); // Current status text
-
-  // Loading steps for detailed progress display
-  readonly loadingSteps = signal<{ id: string; label: string; status: 'pending' | 'active' | 'done'; detail?: string }[]>([
-    { id: 'init', label: 'Initialisiere Engine', status: 'pending' },
-    { id: 'streets', label: 'Lade Straßennetz', status: 'pending' },
-    { id: 'hq', label: 'Platziere Hauptquartier', status: 'pending' },
-    { id: 'spawn', label: 'Platziere Spawn-Punkt', status: 'pending' },
-    { id: 'route', label: 'Berechne Route', status: 'pending' },
-    { id: 'finalize', label: 'Finalisiere 3D-Ansicht', status: 'pending' },
-  ]);
-  readonly streetsVisible = signal(false);
-  readonly routesVisible = signal(false);
-  readonly towerDebugVisible = signal(false);
-  readonly debugMode = signal(false);
-  readonly heightDebugVisible = signal(false);
-  readonly layerMenuExpanded = signal(false);
-  readonly devMenuExpanded = signal(false);
-  readonly enemySpeed = signal(5); // Meter pro Sekunde
+  // Proxy signals from services for template compatibility
+  readonly loading = this.engineInit.loading;
+  readonly tilesLoading = this.engineInit.tilesLoading;
+  readonly osmLoading = this.engineInit.osmLoading;
+  readonly heightsLoading = this.heightUpdate.heightsLoading;
+  readonly heightProgress = this.heightUpdate.heightProgress;
+  readonly error = this.engineInit.error;
+  readonly loadingStatus = this.engineInit.loadingStatus;
+  readonly loadingSteps = this.engineInit.loadingSteps;
+  readonly streetsVisible = this.uiState.streetsVisible;
+  readonly routesVisible = this.uiState.routesVisible;
+  readonly towerDebugVisible = this.uiState.towerDebugVisible;
+  readonly debugMode = this.uiState.debugMode;
+  readonly heightDebugVisible = this.uiState.heightDebugVisible;
+  readonly layerMenuExpanded = this.uiState.layerMenuExpanded;
+  readonly devMenuExpanded = this.uiState.devMenuExpanded;
+  readonly fps = this.uiState.fps;
+  readonly tileStats = this.uiState.tileStats;
+  readonly debugLog = this.uiState.debugLog;
+  readonly buildMode = this.towerPlacement.buildMode;
+  readonly selectedTowerType = this.towerPlacement.selectedTowerType;
+  readonly editableHqLocation = this.locationMgmt.editableHqLocation;
+  readonly editableSpawnLocations = this.locationMgmt.editableSpawnLocations;
+  readonly isApplyingLocation = this.locationMgmt.isApplyingLocation;
+  // Component-local signals (not moved to services)
+  readonly enemySpeed = signal(5);
   readonly streetCount = signal(0);
-  // Debug: Spawn-Einstellungen
   readonly enemyCount = signal(2);
   readonly enemyType = signal<EnemyTypeId>('zombie');
-  readonly enemyTypes = getAllEnemyTypes(); // Für Debug-Panel Dropdown
-  readonly spawnMode = signal<'each' | 'random'>('each'); // each = verteilt, random = zufällig
-  readonly spawnDelay = signal(300); // ms zwischen Spawns
-  readonly useGathering = signal(false); // Alle sammeln und dann loslaufen
-  readonly debugLog = signal('');
+  readonly enemyTypes = getAllEnemyTypes();
+  readonly spawnMode = signal<'each' | 'random'>('each');
+  readonly spawnDelay = signal(300);
+  readonly useGathering = signal(false);
   readonly spawnPoints = signal<SpawnPoint[]>([]);
   readonly baseCoords = signal(DEFAULT_BASE_COORDS);
   readonly centerCoords = signal(DEFAULT_CENTER_COORDS);
-  readonly buildMode = signal(false);
-  readonly fps = signal(0);
-  readonly tileStats = signal({ parsing: 0, downloading: 0, total: 0, visible: 0 });
-
-  // Editable location settings (for debug panel)
-  readonly editableHqLocation = signal<LocationConfig | null>(null);
-  readonly editableSpawnLocations = signal<SpawnLocationConfig[]>([]);
-  readonly isApplyingLocation = signal(false);
 
   readonly waveActive = computed(() => this.gameState.phase() === 'wave');
   readonly isGameOver = computed(() => this.gameState.phase() === 'gameover');
@@ -1739,31 +1736,14 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     return `${hq.lat.toFixed(4)}, ${hq.lon.toFixed(4)}`;
   });
   readonly gatheringPhase = signal(false);
-  private waveAborted = false; // Flag to stop spawning when kill-all is pressed
+  private waveAborted = false;
   readonly gatheringCountdown = signal(0);
 
   private animationFrameId: number | null = null;
-  private cachedPaths = new Map<string, GeoPosition[]>();
-  private buildPreviewMesh: THREE.Mesh | null = null;
-  private lastPreviewValidation: boolean | null = null;
-
-  // Track mouse position to distinguish clicks from pans
-  private mouseDownPos: { x: number; y: number } | null = null;
-  private readonly PAN_THRESHOLD_PX = 10; // Pixels - movement beyond this is a pan
-  private previewThrottleId: number | null = null;
-  private previewDebugCount = 0;
-
-  private readonly MIN_DISTANCE_TO_STREET = 10;
-  private readonly MAX_DISTANCE_TO_STREET = 50;
-  private readonly MIN_DISTANCE_TO_BASE = 30;
-  private readonly MIN_DISTANCE_TO_SPAWN = 30;
-  private readonly TOWER_RANGE = 60;
-
-  // Stored initial camera position (captured after tiles load)
-  private initialCameraPosition: { x: number; y: number; z: number } | null = null;
 
   ngOnInit(): void {
-    this.initializeEditableLocations();
+    // Initialize location management
+    this.locationMgmt.initializeEditableLocations();
   }
 
   ngAfterViewInit(): void {
@@ -1790,381 +1770,111 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Helper to allow Angular to render between synchronous operations
-   * Uses requestAnimationFrame for smooth visual updates
-   */
-  private tick(): Promise<void> {
-    return new Promise((resolve) => requestAnimationFrame(() => resolve()));
-  }
-
-  /**
-   * Set a loading step to 'active' status and update loadingStatus text
-   */
-  private async setStepActive(stepId: string): Promise<void> {
-    this.loadingSteps.update((steps) =>
-      steps.map((s) => ({
-        ...s,
-        status: s.id === stepId ? 'active' : s.status === 'active' ? 'pending' : s.status,
-      }))
-    );
-    const step = this.loadingSteps().find((s) => s.id === stepId);
-    if (step) {
-      this.loadingStatus.set(step.label + '...');
-    }
-    await this.tick();
-  }
-
-  /**
-   * Set a loading step to 'done' status with optional detail
-   */
-  private async setStepDone(stepId: string, detail?: string): Promise<void> {
-    this.loadingSteps.update((steps) =>
-      steps.map((s) => (s.id === stepId ? { ...s, status: 'done' as const, detail } : s))
-    );
-    await this.tick();
-  }
-
-  /**
-   * Reset all loading steps to 'pending' for a fresh start
-   */
-  private resetLoadingSteps(): void {
-    this.loadingSteps.set([
-      { id: 'init', label: 'Initialisiere Engine', status: 'pending' },
-      { id: 'streets', label: 'Lade Straßennetz', status: 'pending' },
-      { id: 'hq', label: 'Platziere Hauptquartier', status: 'pending' },
-      { id: 'spawn', label: 'Platziere Spawn-Punkt', status: 'pending' },
-      { id: 'route', label: 'Berechne Route', status: 'pending' },
-      { id: 'finalize', label: 'Finalisiere 3D-Ansicht', status: 'pending' },
-    ]);
-  }
-
-  /**
-   * Get route detail string for loading display
-   * Shows number of waypoints and total distance
-   */
-  private getRouteDetail(): string | undefined {
-    if (this.cachedPaths.size === 0) return undefined;
-
-    let totalPoints = 0;
-    let totalDistance = 0;
-
-    for (const path of this.cachedPaths.values()) {
-      totalPoints += path.length;
-
-      // Calculate path distance
-      for (let i = 1; i < path.length; i++) {
-        totalDistance += this.osmService.haversineDistance(
-          path[i - 1].lat,
-          path[i - 1].lon,
-          path[i].lat,
-          path[i].lon
-        );
-      }
-    }
-
-    // Format distance
-    const distStr = totalDistance >= 1000
-      ? `${(totalDistance / 1000).toFixed(1)}km`
-      : `${Math.round(totalDistance)}m`;
-
-    return `${totalPoints} Punkte, ${distStr}`;
-  }
-
-  /**
-   * Initialize Three.js rendering engine with 3DTilesRendererJS
+   * Initialize Three.js rendering engine - delegates to EngineInitializationService
    */
   private async initEngine(): Promise<void> {
     try {
-      // Reset loading steps for fresh start
-      this.resetLoadingSteps();
-
-      // Get Google Maps API Key from ConfigService (loaded from backend /api/config)
+      // Get Google Maps API Key
       const apiKey = this.configService.googleMapsApiKey();
       if (!apiKey) {
-        this.error.set('Bitte konfiguriere deinen Google Maps API Key in appsettings.json.');
-        this.loading.set(false);
+        this.engineInit.setError('Bitte konfiguriere deinen Google Maps API Key in appsettings.json.');
+        this.engineInit.setLoading(false);
         return;
       }
 
+      // Configure engine initialization service
       const canvas = this.gameCanvas.nativeElement;
-      const container = canvas.parentElement!;
-      const rect = container.getBoundingClientRect();
-
-      // Set canvas size
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-
-      // Get origin coordinates
       const base = this.baseCoords();
+      this.engineInit.configure(canvas, apiKey, { lat: base.latitude, lon: base.longitude });
 
-      // Step 1: Initialize Engine
-      await this.setStepActive('init');
-      this.engine = new ThreeTilesEngine(
-        canvas,
-        apiKey,
-        base.latitude,
-        base.longitude,
-        0
-      );
-      await this.setStepDone('init');
-
-      // Initialize 3D Tiles (runs in background)
-      await this.engine.initialize();
-      this.engine.resize(rect.width, rect.height);
-
-      // Register callback for automatic terrain height refresh when tiles load
-      this.engine.setOnTilesLoadCallback(() => {
-        this.onTilesLoaded();
+      // Initialize engine via service
+      await this.engineInit.initEngine({
+        onLoadStreets: () => this.loadStreets(),
+        onAddBaseMarker: () => this.addBaseMarker(),
+        onAddPredefinedSpawns: () => this.addPredefinedSpawns(),
+        onInitializeGameState: () => this.initializeGameState(),
+        onScheduleHeightUpdate: () => this.scheduleOverlayHeightUpdate(),
+        onSetupClickHandler: () => this.setupClickHandler(),
+        onCreateBuildPreview: () => this.createBuildPreview(),
+        onSaveInitialCameraPosition: () => this.saveInitialCameraPosition(),
+        onCheckAllLoaded: () => this.checkAllLoaded(),
       });
 
-      // Register callback for first tiles loaded
-      this.engine.setOnFirstTilesLoadedCallback(() => {
-        this.tilesLoading.set(false);
-        console.log('[TD] First tiles loaded');
-        this.checkAllLoaded();
-      });
+      // Get engine reference
+      this.engine = this.engineInit.getEngine();
 
-      // Register callback for per-frame animations (HQ marker rotation)
-      this.engine.setOnUpdateCallback((deltaTime) => {
-        this.onEngineUpdate(deltaTime);
-      });
-
-      // Preload 3D models in background
-      this.engine.preloadModels().then(() => {
-        console.log('[TD] All Three.js models preloaded');
-      });
-
-      // Setup click handler and build preview
-      this.setupClickHandler();
-      this.createBuildPreview();
-
-      // Start render loop immediately (tiles load progressively in background)
-      this.engine.startRenderLoop();
-
-      // Step 2: Load OSM streets
-      await this.setStepActive('streets');
-      await this.loadStreets();
-      const streetCnt = this.streetCount();
-      await this.setStepDone('streets', streetCnt > 0 ? `${streetCnt} Straßen` : undefined);
-
-      // Step 3: Place HQ marker
-      await this.setStepActive('hq');
-      this.addBaseMarker();
-      await this.setStepDone('hq');
-
-      // Step 4: Place spawn points
-      await this.setStepActive('spawn');
-      this.addPredefinedSpawns();
-      const spawnCnt = this.spawnPoints().length;
-      await this.setStepDone('spawn', spawnCnt > 0 ? `${spawnCnt} Punkt${spawnCnt > 1 ? 'e' : ''}` : undefined);
-
-      // Step 5: Calculate routes
-      await this.setStepActive('route');
-      const waveSpawnPoints: WaveSpawnPoint[] = this.spawnPoints().map((sp) => ({
-        id: sp.id,
-        name: sp.name,
-        latitude: sp.latitude,
-        longitude: sp.longitude,
-      }));
-
-      this.gameState.initialize(
-        this.engine,
-        this.streetNetwork!,
-        { lat: base.latitude, lon: base.longitude },
-        waveSpawnPoints,
-        this.cachedPaths,
-        (msg: string) => this.appendDebugLog(msg),
-        () => this.onGameOver()
-      );
-
-      // Get route details for display
-      const routeDetail = this.getRouteDetail();
-      await this.setStepDone('route', routeDetail);
-
-      // Step 6: Finalize 3D view (waits for tiles + height sync)
-      await this.setStepActive('finalize');
-      this.scheduleOverlayHeightUpdate();
-
-      // Capture initial camera position after tiles stabilize (2 seconds)
-      setTimeout(() => {
-        if (this.engine) {
-          const cam = this.engine.getCamera();
-          this.initialCameraPosition = {
-            x: cam.position.x,
-            y: cam.position.y,
-            z: cam.position.z,
-          };
-          console.log('[Camera] Initial position captured:', this.initialCameraPosition);
-        }
-      }, 2000);
-
-      // OSM loading done
-      this.osmLoading.set(false);
-      console.log('[TD] OSM streets loaded');
-      this.checkAllLoaded();
+      // Register callbacks
+      if (this.engine) {
+        this.engine.setOnTilesLoadCallback(() => this.onTilesLoaded());
+        this.engine.setOnUpdateCallback((deltaTime) => this.onEngineUpdate(deltaTime));
+      }
 
     } catch (err) {
       console.error('[TD] Engine init error:', err);
-      this.error.set(err instanceof Error ? err.message : 'Fehler beim Laden der 3D-Karte');
-      this.loading.set(false);
+      this.engineInit.setError(err instanceof Error ? err.message : 'Fehler beim Laden der 3D-Karte');
+      this.engineInit.setLoading(false);
     }
   }
 
   /**
-   * Check if all loading is complete (tiles + OSM + heights)
+   * Check if all loading is complete - delegates to EngineInitializationService
    */
   private checkAllLoaded(): void {
-    const tiles = this.tilesLoading();
-    const osm = this.osmLoading();
-    const heights = this.heightsLoading();
-
-    console.log(`[Loading] Check: tiles=${tiles}, osm=${osm}, heights=${heights}`);
-
-    if (!tiles && !osm && !heights) {
-      this.loading.set(false);
-      console.log('[Loading] ✓ All resources loaded - hiding overlay');
-    }
+    this.engineInit.checkAllLoaded(this.heightUpdate.heightsLoading);
   }
 
+  /**
+   * Setup click handler - delegates to InputHandlerService
+   */
   private setupClickHandler(): void {
     if (!this.engine) return;
 
-    const canvas = this.gameCanvas.nativeElement;
-
-    // Track pointerdown position - use document with capture to intercept before GlobeControls
-    document.addEventListener('pointerdown', (event: PointerEvent) => {
-      if (event.target === canvas || canvas.contains(event.target as Node)) {
-        this.mouseDownPos = { x: event.clientX, y: event.clientY };
-      }
-    }, { capture: true });
-
-    // Click handler
-    canvas.addEventListener('click', (event: MouseEvent) => {
-      if (!this.engine) return;
-
-      // Check if mouse moved significantly (was a pan, not a click)
-      if (this.mouseDownPos) {
-        const dx = event.clientX - this.mouseDownPos.x;
-        const dy = event.clientY - this.mouseDownPos.y;
-        const pixelDist = Math.sqrt(dx * dx + dy * dy);
-        this.mouseDownPos = null;
-
-        if (pixelDist > this.PAN_THRESHOLD_PX) {
-          return; // Was a pan, ignore
-        }
-      }
-
-      // First: Check tower selection via direct mesh raycast
-      if (!this.buildMode()) {
-        const clickedTowerId = this.engine.raycastTowers(event.clientX, event.clientY);
-
-        if (clickedTowerId) {
-          if (this.gameState.selectedTowerId() === clickedTowerId) {
-            this.gameState.deselectAll();
-          } else {
-            this.gameState.selectTower(clickedTowerId);
-          }
-          return; // Tower handled, done
-        } else {
-          this.gameState.deselectAll();
-        }
-      }
-
-      // Raycast to get world position (needed for build mode)
-      const hitPoint = this.engine.raycastTerrain(event.clientX, event.clientY);
-
-      if (!hitPoint) {
-        return; // No terrain hit, but tower selection already handled above
-      }
-
-      // Convert to geo coordinates
-      const geo = this.engine.sync.localToGeo(hitPoint);
-
-      // If in build mode, try to place tower
-      if (this.buildMode()) {
-        const validation = this.validateTowerPosition(geo.lat, geo.lon);
-
-        if (validation.valid) {
-          // Use geo.height (derived from hitPoint.y via localToGeo) for correct round-trip
-          this.placeTowerAt(geo.lat, geo.lon, geo.height);
-          this.toggleBuildMode();
-        } else {
-          console.log('Invalid tower position:', validation.reason);
-        }
-      }
-    });
-
-    // Mouse move handler for build preview
-    canvas.addEventListener('mousemove', (event: MouseEvent) => {
-      if (!this.buildMode() || !this.buildPreviewMesh || !this.engine) return;
-
-      const hitPoint = this.engine.raycastTerrain(event.clientX, event.clientY);
-
-      if (!hitPoint) {
-        this.buildPreviewMesh.visible = false;
-        return;
-      }
-
-      // Update preview position
-      this.buildPreviewMesh.position.copy(hitPoint);
-      this.buildPreviewMesh.position.y += 1; // Slightly above ground
-      this.buildPreviewMesh.visible = true;
-
-      // Validate position
-      const geo = this.engine.sync.localToGeo(hitPoint);
-
-      // Debug logging (every 60 frames)
-      if (this.previewDebugCount++ % 60 === 0) {
-        const origin = this.baseCoords();
-        console.log('[BuildPreview] Hit:', hitPoint.x.toFixed(1), hitPoint.y.toFixed(1), hitPoint.z.toFixed(1));
-        console.log('[BuildPreview] Geo:', geo.lat.toFixed(6), geo.lon.toFixed(6));
-        console.log('[BuildPreview] Origin:', origin.latitude.toFixed(6), origin.longitude.toFixed(6));
-      }
-
-      this.updatePreviewValidation(geo.lat, geo.lon);
-    });
+    this.inputHandler.initialize(
+      this.gameCanvas.nativeElement,
+      this.engine,
+      this.gameState,
+      this.towerPlacement.buildMode,
+      (lat: number, lon: number, height: number) => this.onTerrainClick(lat, lon, height),
+      (lat: number, lon: number) => this.onMouseMove(lat, lon)
+    );
   }
 
-  private updatePreviewValidation(lat: number, lon: number): void {
-    // Throttle validation - only every 30ms
-    if (this.previewThrottleId === null) {
-      this.previewThrottleId = window.setTimeout(() => {
-        this.previewThrottleId = null;
-        if (!this.buildPreviewMesh) return;
-
-        const validation = this.validateTowerPosition(lat, lon);
-        if (this.lastPreviewValidation !== validation.valid) {
-          this.lastPreviewValidation = validation.valid;
-          // Update material color
-          const material = this.buildPreviewMesh.material as THREE.MeshBasicMaterial;
-          material.color.setHex(validation.valid ? 0x22c55e : 0xef4444);
-        }
-      }, 30);
+  /**
+   * Handle terrain click in build mode
+   */
+  private onTerrainClick(lat: number, lon: number, height: number): void {
+    if (this.towerPlacement.placeTower(lat, lon, height)) {
+      this.towerPlacement.toggleBuildMode();
     }
   }
 
-  private createBuildPreview(): void {
+  /**
+   * Handle mouse move in build mode (for build preview)
+   */
+  private onMouseMove(lat: number, lon: number): void {
     if (!this.engine) return;
 
-    // Create a simple circle mesh for preview
-    const geometry = new THREE.CircleGeometry(8, 32);
-    const material = new THREE.MeshBasicMaterial({
-      color: 0x22c55e,
-      transparent: true,
-      opacity: 0.5,
-      side: THREE.DoubleSide,
-      depthWrite: false,
-      depthTest: false, // Always visible, even when terrain is in front
-    });
-    this.buildPreviewMesh = new THREE.Mesh(geometry, material);
-    this.buildPreviewMesh.rotation.x = -Math.PI / 2; // Horizontal
-    this.buildPreviewMesh.visible = false;
-    this.buildPreviewMesh.renderOrder = 100; // Render on top
-
-    this.engine.getScene().add(this.buildPreviewMesh);
+    // Get hit point for preview positioning
+    const hitPoint = this.engine.raycastTerrain(0, 0); // TODO: pass mouse coords
+    if (hitPoint) {
+      this.towerPlacement.updatePreviewPosition(hitPoint);
+      this.towerPlacement.updatePreviewValidation(lat, lon);
+    }
   }
 
-  private async loadStreets(): Promise<void> {
+  /**
+   * Create build preview - delegates to TowerPlacementService
+   */
+  private createBuildPreview(): void {
+    // Build preview is created in TowerPlacementService.initialize()
+    // Nothing to do here
+  }
+
+  /**
+   * Load OSM street network
+   * @returns Street count
+   */
+  private async loadStreets(): Promise<number> {
     try {
       const center = this.centerCoords();
       console.log(`[Streets] Loading for center: ${center.latitude.toFixed(6)}, ${center.longitude.toFixed(6)}`);
@@ -2180,9 +1890,56 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
       this.streetCount.set(this.streetNetwork.streets.length);
       this.renderStreets();
+
+      return this.streetNetwork.streets.length;
     } catch (err) {
       console.error('Failed to load streets:', err);
+      return 0;
     }
+  }
+
+  /**
+   * Initialize game state with routes
+   * @returns Route detail string
+   */
+  private initializeGameState(): string | undefined {
+    if (!this.engine || !this.streetNetwork) return undefined;
+
+    const base = this.baseCoords();
+    const waveSpawnPoints: WaveSpawnPoint[] = this.spawnPoints().map((sp) => ({
+      id: sp.id,
+      name: sp.name,
+      latitude: sp.latitude,
+      longitude: sp.longitude,
+    }));
+
+    this.gameState.initialize(
+      this.engine,
+      this.streetNetwork,
+      { lat: base.latitude, lon: base.longitude },
+      waveSpawnPoints,
+      this.pathRoute.getCachedPath.bind(this.pathRoute) as any, // Use pathRoute's cache
+      (msg: string) => this.uiState.appendDebugLog(msg),
+      () => this.onGameOver()
+    );
+
+    return this.pathRoute.getRouteDetail();
+  }
+
+  /**
+   * Schedule overlay height updates
+   */
+  private async scheduleOverlayHeightUpdate(): Promise<void> {
+    if (!this.engine) return;
+
+    await this.heightUpdate.scheduleOverlayHeightUpdate();
+  }
+
+  /**
+   * Save initial camera position for reset
+   */
+  private saveInitialCameraPosition(): void {
+    this.cameraControl.saveInitialPosition();
   }
 
   private renderStreets(): void {
@@ -2941,26 +2698,18 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  /**
+   * Toggle build mode - delegates to TowerPlacementService
+   */
   toggleBuildMode(): void {
-    this.buildMode.update((v) => !v);
-    if (this.buildMode()) {
-      this.gameState.deselectAll();
-    } else {
-      // Hide build preview when exiting build mode
-      if (this.buildPreviewMesh) {
-        this.buildPreviewMesh.visible = false;
-      }
-      this.lastPreviewValidation = null;
-    }
+    this.towerPlacement.toggleBuildMode();
   }
 
   /**
-   * Select a tower type and activate build mode
+   * Select a tower type and activate build mode - delegates to TowerPlacementService
    */
   selectTowerType(typeId: TowerTypeId): void {
-    this.selectedTowerType.set(typeId);
-    this.buildMode.set(true);
-    this.gameState.deselectAll();
+    this.towerPlacement.selectTowerType(typeId);
   }
 
   /**
@@ -3169,46 +2918,39 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     this.animationFrameId = requestAnimationFrame(animate);
   }
 
+  /**
+   * Reset camera - delegates to CameraControlService
+   */
   resetCamera(): void {
-    if (!this.engine) return;
-
-    // Use stored initial camera position if available
-    if (this.initialCameraPosition) {
-      const pos = this.initialCameraPosition;
-      // Look at terrain level (Y - 400 since camera is 400m above ground)
-      const lookAtY = pos.y - 400;
-      this.engine.setLocalCameraPosition(pos.x, pos.y, pos.z, 0, lookAtY, 0);
-    } else {
-      // Fallback: calculate from terrain (less accurate before tiles fully load)
-      const base = this.baseCoords();
-      const terrainY = this.engine.getTerrainHeightAtGeo(base.latitude, base.longitude) ?? 0;
-      const heightAboveGround = 400;
-      const cameraY = terrainY + heightAboveGround;
-      this.engine.setLocalCameraPosition(0, cameraY, -heightAboveGround, 0, terrainY, 0);
-    }
+    this.cameraControl.resetCamera();
   }
 
+  /**
+   * Toggle streets visibility - delegates to GameUIStateService
+   */
   toggleStreets(): void {
-    this.streetsVisible.update((v) => !v);
-    const visible = this.streetsVisible();
+    this.uiState.toggleStreets();
+    const visible = this.uiState.streetsVisible();
 
     for (const line of this.streetLines) {
       line.visible = visible;
     }
   }
 
+  /**
+   * Toggle routes visibility - delegates to GameUIStateService + PathAndRouteService
+   */
   toggleRoutes(): void {
-    this.routesVisible.update((v) => !v);
-    const visible = this.routesVisible();
-
-    for (const line of this.routeLines) {
-      line.visible = visible;
-    }
+    this.uiState.toggleRoutes();
+    this.pathRoute.setRouteLinesVisible(this.uiState.routesVisible());
   }
 
+  /**
+   * Toggle tower debug visibility - delegates to GameUIStateService
+   */
   toggleTowerDebug(): void {
-    this.towerDebugVisible.update((v) => !v);
-    const visible = this.towerDebugVisible();
+    this.uiState.toggleTowerDebug();
+    const visible = this.uiState.towerDebugVisible();
 
     console.log('[TowerDefense] toggleTowerDebug:', visible, 'engine:', !!this.engine);
 
@@ -3217,16 +2959,25 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  /**
+   * Toggle debug panel - delegates to GameUIStateService
+   */
   toggleDebug(): void {
-    this.debugMode.update((v: boolean) => !v);
+    this.uiState.toggleDebug();
   }
 
+  /**
+   * Toggle layer menu - delegates to GameUIStateService
+   */
   toggleLayerMenu(): void {
-    this.layerMenuExpanded.update((v) => !v);
+    this.uiState.toggleLayerMenu();
   }
 
+  /**
+   * Toggle dev menu - delegates to GameUIStateService
+   */
   toggleDevMenu(): void {
-    this.devMenuExpanded.update((v) => !v);
+    this.uiState.toggleDevMenu();
   }
 
   resetToDefaultLocation(): void {
