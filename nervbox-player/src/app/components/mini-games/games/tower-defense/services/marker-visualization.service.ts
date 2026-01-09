@@ -407,6 +407,69 @@ export class MarkerVisualizationService {
   }
 
   // ========================================
+  // ANIMATION & UPDATES
+  // ========================================
+
+  /**
+   * Animate markers (rotation, pulsing, etc.)
+   * @param deltaTime Time since last frame in seconds
+   */
+  animateMarkers(deltaTime: number): void {
+    // Rotate base marker
+    if (this.baseMarker) {
+      this.baseMarker.rotation.y += deltaTime * 0.5; // Slow rotation
+    }
+
+    // Pulse spawn markers (optional)
+    for (const marker of this.spawnMarkers) {
+      marker.rotation.y += deltaTime * 0.3;
+    }
+  }
+
+  /**
+   * Update heights of all markers based on terrain
+   * @param spawnPoints Spawn points to update
+   */
+  updateMarkerHeights(spawnPoints: SpawnPoint[]): void {
+    if (!this.engine || !this.baseCoords) return;
+
+    const HQ_MARKER_HEIGHT = 30;
+    const SPAWN_MARKER_HEIGHT = 30;
+
+    // Get origin terrain height
+    const originTerrainY = this.engine.getTerrainHeightAtGeo(this.baseCoords.latitude, this.baseCoords.longitude);
+    if (originTerrainY === null) return;
+
+    // Update base marker - at origin, so relative height = 0
+    if (this.baseMarker) {
+      const local = this.engine.sync.geoToLocalSimple(this.baseCoords.latitude, this.baseCoords.longitude, 0);
+      this.baseMarker.position.set(local.x, HQ_MARKER_HEIGHT, local.z);
+    }
+
+    // Update spawn markers - relative to origin
+    for (let i = 0; i < spawnPoints.length && i < this.spawnMarkers.length; i++) {
+      const spawn = spawnPoints[i];
+      const marker = this.spawnMarkers[i];
+
+      const terrainY = this.engine.getTerrainHeightAtGeo(spawn.latitude, spawn.longitude);
+      if (terrainY !== null) {
+        const local = this.engine.sync.geoToLocalSimple(spawn.latitude, spawn.longitude, 0);
+        const relativeY = terrainY - originTerrainY + SPAWN_MARKER_HEIGHT;
+        marker.position.set(local.x, relativeY, local.z);
+      }
+    }
+  }
+
+  /**
+   * Clear all markers (spawn, base, debug)
+   */
+  clearAllMarkers(): void {
+    this.clearSpawnMarkers();
+    this.removeBaseMarker();
+    this.clearHeightDebugMarkers();
+  }
+
+  // ========================================
   // CLEANUP
   // ========================================
 
@@ -414,9 +477,7 @@ export class MarkerVisualizationService {
    * Dispose all markers and cleanup
    */
   dispose(): void {
-    this.clearSpawnMarkers();
-    this.removeBaseMarker();
-    this.clearHeightDebugMarkers();
+    this.clearAllMarkers();
     this.engine = null;
     this.baseCoords = null;
     this.heightDebugVisible = null;
