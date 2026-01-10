@@ -39,13 +39,6 @@ namespace NervboxDeamon.Models.Settings
     /// </summary>
     public PlaybackMode PlaybackMode { get; set; } = PlaybackMode.Local;
 
-    /// <summary>
-    /// Google Maps API Key for 3D Photorealistic Tiles
-    /// Get one at: https://console.cloud.google.com/apis/credentials
-    /// Requires Map Tiles API to be enabled
-    /// </summary>
-    public string GoogleMapsApiKey { get; set; } = "";
-
     public SSHSettings SSH { get; set; }
     public CameraSettings Camera1 { get; set; }
   }

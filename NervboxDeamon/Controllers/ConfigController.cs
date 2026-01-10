@@ -30,9 +30,6 @@ namespace NervboxDeamon.Controllers
         // PlaybackMode: "Local" = server plays sound, "Browser" = client streams
         PlaybackMode = _appSettings.PlaybackMode.ToString(),
 
-        // Google Maps API Key for 3D Photorealistic Tiles
-        GoogleMapsApiKey = _appSettings.GoogleMapsApiKey ?? "",
-
         // Version info (can be extended)
         Version = "2.0.0"
       });

@@ -5,7 +5,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ArkanoidGameComponent } from './games/arkanoid/arkanoid-game.component';
 import { HotdogGameComponent } from './games/hotdog-katapult/hotdog-game.component';
-import { TowerDefenseComponent } from './games/tower-defense/tower-defense.component';
 import { PlinkoGameComponent } from './games/plinko/plinko-game.component';
 import { SlotMachineGameComponent } from './games/slot-machine/slot-machine-game.component';
 import { KaybergGameComponent } from './games/kayberg/kayberg-game.component';
@@ -121,20 +120,6 @@ import { AuthService } from '../../core/services/auth.service';
             </div>
           </button>
 
-          <!-- Tower Defense (Admin only) -->
-          @if (isAdmin()) {
-            <button class="game-card tower-defense" (click)="startTowerDefense()">
-              <div class="game-glow"></div>
-              <div class="game-badge new">BETA</div>
-              <mat-icon class="game-icon tower">cell_tower</mat-icon>
-              <span class="game-name">TOWER DEFENSE</span>
-              <span class="game-desc">Verteidige Erlenbach!</span>
-              <div class="game-reward">
-                <img src="icons/nervbox-coin.svg" alt="" class="mini-coin">
-                <span>N$ pro Welle</span>
-              </div>
-            </button>
-          }
         </div>
 
         <!-- Coming Soon Section -->
@@ -312,11 +297,6 @@ import { AuthService } from '../../core/services/auth.service';
       border-color: rgba(249, 115, 22, 0.5);
     }
 
-    .game-card.tower-defense {
-      background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(147, 51, 234, 0.1) 100%);
-      border-color: rgba(34, 197, 94, 0.5);
-    }
-
     .game-card.plinko {
       background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(251, 191, 36, 0.1) 100%);
       border-color: rgba(239, 68, 68, 0.5);
@@ -354,11 +334,6 @@ import { AuthService } from '../../core/services/auth.service';
     .game-card.hotdog:hover {
       border-color: #f97316;
       box-shadow: 0 15px 40px rgba(249, 115, 22, 0.4), 0 0 50px rgba(249, 115, 22, 0.2);
-    }
-
-    .game-card.tower-defense:hover {
-      border-color: #22c55e;
-      box-shadow: 0 15px 40px rgba(34, 197, 94, 0.4), 0 0 50px rgba(34, 197, 94, 0.2);
     }
 
     .game-card.plinko:hover {
@@ -441,11 +416,6 @@ import { AuthService } from '../../core/services/auth.service';
       color: #9333ea;
       filter: drop-shadow(0 0 15px rgba(147, 51, 234, 0.5));
       animation: icon-float 3s ease-in-out infinite;
-    }
-
-    .game-icon.tower {
-      color: #22c55e;
-      filter: drop-shadow(0 0 15px rgba(34, 197, 94, 0.5));
     }
 
     .game-icon.plinko-icon {
@@ -670,18 +640,6 @@ export class GameSelectionDialogComponent {
   startHotdog(): void {
     this.dialogRef.close();
     this.dialog.open(HotdogGameComponent, {
-      width: 'auto',
-      maxWidth: '95vw',
-      height: 'auto',
-      maxHeight: '95vh',
-      panelClass: ['dark-dialog', 'game-dialog'],
-      disableClose: true,
-    });
-  }
-
-  startTowerDefense(): void {
-    this.dialogRef.close();
-    this.dialog.open(TowerDefenseComponent, {
       width: 'auto',
       maxWidth: '95vw',
       height: 'auto',
