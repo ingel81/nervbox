@@ -202,7 +202,7 @@ export class MarkerVisualizationService {
 
     // Create new marker
     this.baseMarker = this.createDiamondMarker({
-      color: 0x3b82f6, // Blue
+      color: 0x22c55e, // Green (matches original HQ marker)
       size: 1.0,
       showRings: true,
       glowIntensity: 1.2,
@@ -211,13 +211,13 @@ export class MarkerVisualizationService {
 
     // Position at base coords
     const HEIGHT_ABOVE_GROUND = 30;
-    const local = this.engine.sync.geoToLocalSimple(this.baseCoords.latitude, this.baseCoords.longitude, 0);
+    const local = this.engine.sync.geoToLocalSimple(this.baseCoords.lat, this.baseCoords.lon, 0);
     this.baseMarker.position.set(local.x, HEIGHT_ABOVE_GROUND, local.z);
 
     overlayGroup.add(this.baseMarker);
 
     console.log(
-      `[addBaseMarker] HQ at geo: ${this.baseCoords.latitude.toFixed(6)}, ${this.baseCoords.longitude.toFixed(6)}`
+      `[addBaseMarker] HQ at geo: ${this.baseCoords.lat.toFixed(6)}, ${this.baseCoords.lon.toFixed(6)}`
     );
     console.log(`[addBaseMarker] HQ at local: (${local.x.toFixed(1)}, ${HEIGHT_ABOVE_GROUND}, ${local.z.toFixed(1)})`);
   }
@@ -254,7 +254,7 @@ export class MarkerVisualizationService {
 
     // Position marker on terrain with RELATIVE heights
     const HEIGHT_ABOVE_GROUND = 30; // Spawn markers ~30m above ground
-    const originTerrainY = this.engine.getTerrainHeightAtGeo(this.baseCoords.latitude, this.baseCoords.longitude);
+    const originTerrainY = this.engine.getTerrainHeightAtGeo(this.baseCoords.lat, this.baseCoords.lon);
     const terrainY = this.engine.getTerrainHeightAtGeo(lat, lon);
     const local = this.engine.sync.geoToLocalSimple(lat, lon, 0);
 
@@ -412,17 +412,17 @@ export class MarkerVisualizationService {
 
   /**
    * Animate markers (rotation, pulsing, etc.)
-   * @param deltaTime Time since last frame in seconds
+   * @param deltaTime Time since last frame in milliseconds
    */
   animateMarkers(deltaTime: number): void {
-    // Rotate base marker
+    // Rotate base marker (deltaTime is in milliseconds)
     if (this.baseMarker) {
-      this.baseMarker.rotation.y += deltaTime * 0.5; // Slow rotation
+      this.baseMarker.rotation.y += deltaTime * 0.001; // Slow rotation
     }
 
-    // Pulse spawn markers (optional)
+    // Rotate spawn markers in opposite direction
     for (const marker of this.spawnMarkers) {
-      marker.rotation.y += deltaTime * 0.3;
+      marker.rotation.y -= deltaTime * 0.0015;
     }
   }
 
@@ -437,12 +437,12 @@ export class MarkerVisualizationService {
     const SPAWN_MARKER_HEIGHT = 30;
 
     // Get origin terrain height
-    const originTerrainY = this.engine.getTerrainHeightAtGeo(this.baseCoords.latitude, this.baseCoords.longitude);
+    const originTerrainY = this.engine.getTerrainHeightAtGeo(this.baseCoords.lat, this.baseCoords.lon);
     if (originTerrainY === null) return;
 
     // Update base marker - at origin, so relative height = 0
     if (this.baseMarker) {
-      const local = this.engine.sync.geoToLocalSimple(this.baseCoords.latitude, this.baseCoords.longitude, 0);
+      const local = this.engine.sync.geoToLocalSimple(this.baseCoords.lat, this.baseCoords.lon, 0);
       this.baseMarker.position.set(local.x, HQ_MARKER_HEIGHT, local.z);
     }
 

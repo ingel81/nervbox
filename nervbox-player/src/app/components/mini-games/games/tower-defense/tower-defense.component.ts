@@ -1742,8 +1742,23 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   private animationFrameId: number | null = null;
 
   ngOnInit(): void {
-    // Initialize location management
+    // Initialize location management (loads from localStorage if available)
     this.locationMgmt.initializeEditableLocations();
+
+    // Sync baseCoords and centerCoords with loaded location from localStorage
+    const hq = this.locationMgmt.getCurrentHqLocation();
+    if (hq) {
+      console.log('[TD] Applying saved location to baseCoords:', hq.name, hq.lat, hq.lon);
+      this.baseCoords.set({
+        latitude: hq.lat,
+        longitude: hq.lon,
+      });
+      this.centerCoords.set({
+        latitude: hq.lat,
+        longitude: hq.lon,
+        height: 400,
+      });
+    }
   }
 
   ngAfterViewInit(): void {
@@ -1790,6 +1805,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       // Initialize engine via service
       await this.engineInit.initEngine({
         onLoadStreets: () => this.loadStreets(),
+        onInitializeServices: () => this.initializeVisualizationServices(),
         onAddBaseMarker: () => this.markerViz.addBaseMarker(),
         onAddPredefinedSpawns: () => this.addPredefinedSpawns(),
         onInitializeGameState: () => this.initializeGameState(),
@@ -1824,18 +1840,50 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
+   * Initialize visualization services (markerViz, pathRoute)
+   * Must be called after engine and streets are loaded, before markers/spawns are added
+   */
+  private initializeVisualizationServices(): void {
+    const engine = this.engineInit.getEngine();
+    if (!engine || !this.streetNetwork) {
+      console.warn('[TD] Cannot initialize visualization services - engine or streetNetwork not available');
+      return;
+    }
+
+    const base = this.baseCoords();
+    const baseCoords = { lat: base.latitude, lon: base.longitude };
+
+    // Initialize marker visualization service
+    this.markerViz.initialize(engine, baseCoords, this.heightDebugVisible);
+
+    // Initialize path and route service
+    this.pathRoute.initialize(
+      engine,
+      this.streetNetwork,
+      baseCoords,
+      this.uiState.routesVisible,
+      this.osmService,
+      this.markerViz.getSpawnMarkers()
+    );
+
+    console.log('[TD] Visualization services initialized');
+  }
+
+  /**
    * Setup click handler - delegates to InputHandlerService
    */
   private setupClickHandler(): void {
-    if (!this.engine) return;
+    // Use engine from service if component's engine reference not yet set
+    const engine = this.engine || this.engineInit.getEngine();
+    if (!engine) return;
 
     this.inputHandler.initialize(
       this.gameCanvas.nativeElement,
-      this.engine,
+      engine,
       this.gameState,
       this.towerPlacement.buildMode,
       (lat: number, lon: number, height: number) => this.onTerrainClick(lat, lon, height),
-      (lat: number, lon: number) => this.onMouseMove(lat, lon)
+      (lat: number, lon: number, hitPoint: THREE.Vector3) => this.onMouseMove(lat, lon, hitPoint)
     );
   }
 
@@ -1851,23 +1899,51 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   /**
    * Handle mouse move in build mode (for build preview)
    */
-  private onMouseMove(lat: number, lon: number): void {
-    if (!this.engine) return;
-
-    // Get hit point for preview positioning
-    const hitPoint = this.engine.raycastTerrain(0, 0); // TODO: pass mouse coords
-    if (hitPoint) {
-      this.towerPlacement.updatePreviewPosition(hitPoint);
-      this.towerPlacement.updatePreviewValidation(lat, lon);
-    }
+  private onMouseMove(lat: number, lon: number, _hitPoint: THREE.Vector3): void {
+    this.towerPlacement.updatePreviewPosition(lat, lon);
+    this.towerPlacement.updatePreviewValidation(lat, lon);
   }
 
   /**
-   * Create build preview - delegates to TowerPlacementService
+   * Create build preview callback (called early in initialization)
+   * Actual initialization happens in initializeTowerPlacement() after all dependencies are ready
    */
   private createBuildPreview(): void {
-    // Build preview is created in TowerPlacementService.initialize()
-    // Nothing to do here
+    // No-op: TowerPlacementService is initialized in initializeTowerPlacement()
+    // which is called after game state and spawn points are set up
+  }
+
+  /**
+   * Initialize TowerPlacementService with all required dependencies
+   * Must be called after engine, streets, spawns, and game state are ready
+   */
+  private initializeTowerPlacement(): void {
+    // Use engine from service if component's engine reference not yet set
+    const engine = this.engine || this.engineInit.getEngine();
+    if (!engine || !this.streetNetwork) {
+      console.warn('[TD] Cannot initialize TowerPlacement - engine or streetNetwork not available');
+      return;
+    }
+
+    const base = this.baseCoords();
+    const spawnPointsForPlacement = this.spawnPoints().map(sp => ({
+      id: sp.id,
+      name: sp.name,
+      latitude: sp.latitude,
+      longitude: sp.longitude,
+      color: sp.color,
+    }));
+
+    this.towerPlacement.initialize(
+      engine,
+      this.streetNetwork,
+      this.osmService,
+      { latitude: base.latitude, longitude: base.longitude },
+      spawnPointsForPlacement,
+      this.gameState
+    );
+
+    console.log('[TD] TowerPlacement service initialized');
   }
 
   /**
@@ -1903,7 +1979,9 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
    * @returns Route detail string
    */
   private initializeGameState(): string | undefined {
-    if (!this.engine || !this.streetNetwork) return undefined;
+    // Use engine from service if component's engine reference not yet set
+    const engine = this.engine || this.engineInit.getEngine();
+    if (!engine || !this.streetNetwork) return undefined;
 
     const base = this.baseCoords();
     const waveSpawnPoints: WaveSpawnPoint[] = this.spawnPoints().map((sp) => ({
@@ -1914,7 +1992,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     }));
 
     this.gameState.initialize(
-      this.engine,
+      engine,
       this.streetNetwork,
       { lat: base.latitude, lon: base.longitude },
       waveSpawnPoints,
@@ -1923,6 +2001,9 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       () => this.onGameOver()
     );
 
+    // Initialize tower placement service (now that all dependencies are ready)
+    this.initializeTowerPlacement();
+
     return this.pathRoute.getRouteDetail();
   }
 
@@ -1930,7 +2011,38 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
    * Schedule overlay height updates
    */
   private async scheduleOverlayHeightUpdate(): Promise<void> {
-    if (!this.engine) return;
+    console.log('[TD] scheduleOverlayHeightUpdate called');
+
+    // Get engine from service (this.engine may not be set yet during init)
+    const engine = this.engineInit.getEngine();
+    if (!engine) {
+      console.warn('[TD] scheduleOverlayHeightUpdate - no engine from service!');
+      return;
+    }
+
+    const base = this.baseCoords();
+
+    // Initialize height update service with callbacks
+    this.heightUpdate.initialize(
+      engine,
+      { lat: base.latitude, lon: base.longitude },
+      this.engineInit.loadingStatus,
+      () => {
+        // Update marker heights
+        const spawnPointsForMarkers = this.spawnPoints().map(sp => ({
+          id: sp.id,
+          name: sp.name,
+          latitude: sp.latitude,
+          longitude: sp.longitude,
+          color: sp.color,
+        }));
+        this.markerViz.updateMarkerHeights(spawnPointsForMarkers);
+      },
+      () => this.renderStreets(),
+      (detail: string) => this.engineInit.setStepDone('finalize', detail),
+      (detail: string) => this.engineInit.updateStepDetail('finalize', detail),
+      () => this.checkAllLoaded()
+    );
 
     await this.heightUpdate.scheduleOverlayHeightUpdate();
   }
@@ -1943,9 +2055,11 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private renderStreets(): void {
-    if (!this.engine || !this.streetNetwork) return;
+    // Get engine from service (this.engine may not be set yet during init)
+    const engine = this.engine || this.engineInit.getEngine();
+    if (!engine || !this.streetNetwork) return;
 
-    const overlayGroup = this.engine.getOverlayGroup();
+    const overlayGroup = engine.getOverlayGroup();
 
     // Remove existing street lines
     for (const line of this.streetLines) {
@@ -1973,7 +2087,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Get terrain height at HQ (origin) as reference
     const base = this.baseCoords();
-    const originTerrainY = this.engine.getTerrainHeightAtGeo(base.latitude, base.longitude);
+    const originTerrainY = engine.getTerrainHeightAtGeo(base.latitude, base.longitude);
     if (originTerrainY === null) {
       console.log('[Streets] Cannot render - origin terrain height not available');
       return;
@@ -1981,7 +2095,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     console.log(`[Streets] Origin terrain Y: ${originTerrainY.toFixed(1)}`);
 
     // Set overlay base Y so overlayGroup is positioned at terrain surface
-    this.engine.setOverlayBaseY(originTerrainY);
+    engine.setOverlayBaseY(originTerrainY);
 
     let hits = 0, misses = 0;
     // Always create debug markers (hidden by default) so toggleHeightDebug doesn't need to re-render
@@ -1995,12 +2109,12 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
       for (const node of street.nodes) {
         // Get terrain height at this position using local raycast
-        const terrainY = this.engine.getTerrainHeightAtGeo(node.lat, node.lon);
+        const terrainY = engine.getTerrainHeightAtGeo(node.lat, node.lon);
 
         if (terrainY !== null) {
           hits++;
           // Use geoToLocalSimple for X/Z
-          const local = this.engine.sync.geoToLocalSimple(node.lat, node.lon, 0);
+          const local = engine.sync.geoToLocalSimple(node.lat, node.lon, 0);
           // Y = height difference from origin + offset above ground
           local.y = (terrainY - originTerrainY) + HEIGHT_ABOVE_GROUND;
           points.push(local);
@@ -2014,7 +2128,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
           misses++;
           // Add red debug marker for misses (only every Nth point)
           if (debugMarkerCount % debugMarkerInterval === 0) {
-            const localMiss = this.engine.sync.geoToLocalSimple(node.lat, node.lon, 5);
+            const localMiss = engine.sync.geoToLocalSimple(node.lat, node.lon, 5);
             this.markerViz.addHeightDebugMarker(localMiss, null, false);
           }
           debugMarkerCount++;
@@ -2061,8 +2175,15 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     // Re-render streets with new terrain data
     this.renderStreets();
 
-    // Update marker heights
-    this.updateMarkerHeights();
+    // Update marker heights via service
+    const spawnPointsForMarkers = this.spawnPoints().map(sp => ({
+      id: sp.id,
+      name: sp.name,
+      latitude: sp.latitude,
+      longitude: sp.longitude,
+      color: sp.color,
+    }));
+    this.markerViz.updateMarkerHeights(spawnPointsForMarkers);
 
     // Re-render route lines (clear and re-create)
     this.pathRoute.refreshRouteLines(this.spawnPoints());
@@ -2078,32 +2199,38 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       this.tileStats.set(this.engine.getTileStats());
     }
 
-    // Marker rotation is handled by MarkerVisualizationService
-    // (Animation will be added to service)
+    // Animate markers (HQ rotation, spawn pulse)
+    this.markerViz.animateMarkers(deltaTime);
   }
 
 
-  private addPredefinedSpawns(): void {
+  private addPredefinedSpawns(): number {
     const colors = [0xef4444, 0xf97316, 0x00bcd4, 0xff00ff]; // red, orange, cyan, magenta
 
     // Use editable spawn locations if available, otherwise defaults
     const spawns = this.editableSpawnLocations();
+    let count = 0;
     if (spawns.length > 0 && spawns.every(s => s.lat !== 0 && s.lon !== 0)) {
       spawns.forEach((spawn, index) => {
         this.addSpawnPoint(spawn.id, spawn.name || `Spawn ${index + 1}`, spawn.lat, spawn.lon, colors[index % colors.length]);
+        count++;
       });
     } else {
       DEFAULT_SPAWN_POINTS.forEach((spawn, index) => {
         this.addSpawnPoint(spawn.id, spawn.name, spawn.latitude, spawn.longitude, colors[index % colors.length]);
+        count++;
       });
     }
+    return count;
   }
 
   /**
    * Add a spawn point (delegates to services)
    */
   addSpawnPoint(id: string, name: string, lat: number, lon: number, color: number): void {
-    if (!this.engine || !this.streetNetwork) return;
+    // Use engine from service if component's engine reference not yet set
+    const engine = this.engine || this.engineInit.getEngine();
+    if (!engine || !this.streetNetwork) return;
 
     const spawn: SpawnPoint = { id, name, latitude: lat, longitude: lon, color };
     this.spawnPoints.update((points) => [...points, spawn]);
@@ -2111,75 +2238,11 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     // Add visual marker via service
     this.markerViz.addSpawnMarker(id, name, lat, lon, color);
 
+    // Update spawn markers reference in pathRoute service
+    this.pathRoute.updateSpawnMarkers(this.markerViz.getSpawnMarkers());
+
     // Calculate and render path via service
-    this.pathRoute.showPathFromSpawn(spawn, this.baseCoords(), this.routesVisible());
-  }
-
-
-
-  private validateTowerPosition(lat: number, lon: number): { valid: boolean; reason?: string } {
-    if (!this.streetNetwork) {
-      console.log('[Validate] No street network loaded!');
-      return { valid: false, reason: 'Strassennetz nicht geladen' };
-    }
-
-    if (this.streetNetwork.streets.length === 0) {
-      console.log('[Validate] Street network is empty!');
-      return { valid: false, reason: 'Keine Strassen geladen' };
-    }
-
-    // Check if click is within street network bounds
-    const bounds = this.streetNetwork.bounds;
-    const inBounds = lat >= bounds.minLat && lat <= bounds.maxLat &&
-                     lon >= bounds.minLon && lon <= bounds.maxLon;
-    if (!inBounds) {
-      console.log('[Validate] Click OUTSIDE street network bounds!');
-      console.log(`  Click: ${lat.toFixed(6)}, ${lon.toFixed(6)}`);
-      console.log(`  Bounds: ${bounds.minLat.toFixed(6)}-${bounds.maxLat.toFixed(6)}, ${bounds.minLon.toFixed(6)}-${bounds.maxLon.toFixed(6)}`);
-      return { valid: false, reason: 'Ausserhalb Spielbereich' };
-    }
-
-    const base = this.baseCoords();
-    const distToBase = this.osmService.haversineDistance(lat, lon, base.latitude, base.longitude);
-    if (distToBase < this.MIN_DISTANCE_TO_BASE) {
-      return { valid: false, reason: `Zu nah an Basis (${distToBase.toFixed(0)}m)` };
-    }
-
-    for (const spawn of this.spawnPoints()) {
-      const distToSpawn = this.osmService.haversineDistance(lat, lon, spawn.latitude, spawn.longitude);
-      if (distToSpawn < this.MIN_DISTANCE_TO_SPAWN) {
-        return { valid: false, reason: `Zu nah am Spawn (${distToSpawn.toFixed(0)}m)` };
-      }
-    }
-
-    for (const tower of this.gameState.towers()) {
-      const distToTower = this.osmService.haversineDistance(lat, lon, tower.position.lat, tower.position.lon);
-      if (distToTower < 20) {
-        return { valid: false, reason: `Zu nah an Tower (${distToTower.toFixed(0)}m)` };
-      }
-    }
-
-    const nearest = this.osmService.findNearestStreetPoint(this.streetNetwork, lat, lon);
-    if (!nearest) {
-      console.log('[Validate] No street found - network bounds:', this.streetNetwork.bounds);
-      console.log('[Validate] Click position:', lat, lon);
-      return { valid: false, reason: 'Keine Strasse gefunden' };
-    }
-
-    // Log occasionally (not every frame)
-    if (Math.random() < 0.1) {
-      console.log(`[Validate] Street dist: ${nearest.distance.toFixed(1)}m (max: ${this.MAX_DISTANCE_TO_STREET}m)`);
-    }
-
-    if (nearest.distance > this.MAX_DISTANCE_TO_STREET) {
-      return { valid: false, reason: `Zu weit (${nearest.distance.toFixed(0)}m > ${this.MAX_DISTANCE_TO_STREET}m)` };
-    }
-
-    if (nearest.distance < this.MIN_DISTANCE_TO_STREET) {
-      return { valid: false, reason: 'Nicht auf Strasse bauen' };
-    }
-
-    return { valid: true };
+    this.pathRoute.showPathFromSpawn(spawn);
   }
 
   /**
@@ -2621,188 +2684,6 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private overlayHeightsUpdated = false;
-  private heightUpdateIntervalId: ReturnType<typeof setInterval> | null = null;
-  private heightStableResolve: (() => void) | null = null; // Promise resolver for height stabilization
-
-  private heightUpdateAttempts = 0;
-  private lastMissCount = Infinity;
-
-  /**
-   * Schedule periodic re-rendering of streets once tiles are loaded.
-   * Uses correct ECEF raycast for terrain heights.
-   * After location change, tiles need time to fully load at correct LOD.
-   * Returns a Promise that resolves when heights are stable.
-   */
-  private scheduleOverlayHeightUpdate(): Promise<void> {
-    const MAX_ATTEMPTS = 20; // Max 20 attempts (10 seconds total)
-    const MIN_ATTEMPTS = 4; // Minimum 4 attempts (2 seconds) to ensure tiles are loaded
-
-    // Reset counters for fresh location
-    this.heightUpdateAttempts = 0;
-    this.overlayHeightsUpdated = false;
-    this.heightsLoading.set(true);
-    this.heightProgress.set(0);
-    this.loadingStatus.set('Synchronisiere mit Terrain...');
-
-    return new Promise((resolve) => {
-      this.heightStableResolve = resolve;
-
-      this.heightUpdateIntervalId = setInterval(() => {
-        if (!this.engine) {
-          this.stopHeightUpdates();
-          return;
-        }
-
-        this.heightUpdateAttempts++;
-        this.heightProgress.set(this.heightUpdateAttempts);
-
-        // Clear height cache before each attempt to get fresh values
-        // This ensures we don't use stale heights from previous location
-        this.engine.clearHeightCache();
-
-        // Re-render streets with current terrain data
-        const previousLineCount = this.streetLines.length;
-        this.renderStreets();
-        const newLineCount = this.streetLines.length;
-
-        // Also update marker positions each attempt
-        this.updateMarkerHeights();
-
-        // Only stop after minimum attempts AND streets are stable
-        if (this.heightUpdateAttempts >= MIN_ATTEMPTS && newLineCount > 0 && newLineCount >= previousLineCount) {
-          console.log(`[Heights] Streets stable after ${this.heightUpdateAttempts} attempts: ${newLineCount} lines`);
-          this.stopHeightUpdates();
-        } else if (this.heightUpdateAttempts >= MAX_ATTEMPTS) {
-          console.log(`[Heights] Max attempts reached, ${newLineCount} lines rendered`);
-          this.stopHeightUpdates();
-        } else {
-          console.log(`[Heights] Attempt ${this.heightUpdateAttempts}/${MAX_ATTEMPTS}: ${newLineCount} lines`);
-        }
-      }, 500);
-    });
-  }
-
-  private stopHeightUpdates(): void {
-    if (this.heightUpdateIntervalId) {
-      clearInterval(this.heightUpdateIntervalId);
-      this.heightUpdateIntervalId = null;
-      console.log('[Heights] Overlays stable - height updates complete');
-    }
-    this.overlayHeightsUpdated = true;
-    this.heightsLoading.set(false);
-
-    // Mark finalize step as done
-    this.setStepDone('finalize', `${this.heightUpdateAttempts} Sync-Zyklen`);
-
-    // Check if all loading is complete (will hide overlay if tiles & OSM also done)
-    this.checkAllLoaded();
-
-    // Resolve the promise to signal completion
-    if (this.heightStableResolve) {
-      this.heightStableResolve();
-      this.heightStableResolve = null;
-    }
-  }
-
-  /**
-   * Update marker heights after tiles are loaded
-   * Heights are relative to origin (HQ) terrain height
-   */
-  private updateMarkerHeights(): void {
-    // Marker height updates are handled by MarkerVisualizationService
-    // (Will be fully delegated to service)
-  }
-
-  /**
-   * Update all overlay heights using terrain raycasting
-   * @returns Number of vertices that couldn't be resolved (misses)
-   */
-  private updateAllOverlayHeights(): number {
-    if (!this.engine || !this.streetNetwork) return 0;
-
-    const HEIGHT_STREETS = 2;
-    const HEIGHT_ROUTES = 3;
-    const HEIGHT_MARKERS = 4;
-
-    // Get reference terrain height at origin (where camera points)
-    const refY = this.engine.getOverlayTerrainHeight(0, 0) ?? 240;
-
-    let hits = 0, misses = 0;
-
-    // Update street lines
-    for (const line of this.streetLines) {
-      const positions = line.geometry.getAttribute('position');
-      if (!positions) continue;
-
-      const array = positions.array as Float32Array;
-      let needsUpdate = false;
-
-      for (let i = 0; i < positions.count; i++) {
-        const x = array[i * 3];
-        const currentY = array[i * 3 + 1];
-        const z = array[i * 3 + 2];
-
-        // Only try raycast if vertex is at reference height (not yet resolved)
-        const isAtRefHeight = Math.abs(currentY - (refY + HEIGHT_STREETS)) < 1;
-        if (isAtRefHeight || this.heightUpdateAttempts <= 1) {
-          const terrainY = this.engine.getOverlayTerrainHeight(x, z);
-          if (terrainY !== null) {
-            array[i * 3 + 1] = terrainY + HEIGHT_STREETS;
-            hits++;
-            needsUpdate = true;
-          } else {
-            array[i * 3 + 1] = refY + HEIGHT_STREETS;
-            misses++;
-          }
-        } else {
-          hits++; // Already resolved
-        }
-      }
-      if (needsUpdate) {
-        positions.needsUpdate = true;
-        line.geometry.computeBoundingSphere();
-      }
-    }
-
-    // Update route lines
-    for (const line of this.routeLines) {
-      const positions = line.geometry.getAttribute('position');
-      if (!positions) continue;
-
-      const array = positions.array as Float32Array;
-      let needsUpdate = false;
-
-      for (let i = 0; i < positions.count; i++) {
-        const x = array[i * 3];
-        const currentY = array[i * 3 + 1];
-        const z = array[i * 3 + 2];
-
-        const isAtRefHeight = Math.abs(currentY - (refY + HEIGHT_ROUTES)) < 1;
-        if (isAtRefHeight || this.heightUpdateAttempts <= 1) {
-          const terrainY = this.engine.getOverlayTerrainHeight(x, z);
-          if (terrainY !== null) {
-            array[i * 3 + 1] = terrainY + HEIGHT_ROUTES;
-            needsUpdate = true;
-          } else {
-            array[i * 3 + 1] = refY + HEIGHT_ROUTES;
-            misses++;
-          }
-        }
-      }
-      if (needsUpdate) {
-        positions.needsUpdate = true;
-        line.geometry.computeBoundingSphere();
-      }
-    }
-
-    // Marker height updates now handled by MarkerVisualizationService
-    // (Markers are managed by the service)
-
-    console.log(`[Heights] Attempt ${this.heightUpdateAttempts}: ${hits} hits, ${misses} misses`);
-    return misses;
-  }
-
   restartGame(): void {
     this.gameState.reset();
   }
@@ -2873,17 +2754,17 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
     this.heightsLoading.set(true);
     this.isApplyingLocation.set(true);
     this.heightProgress.set(0);
-    this.resetLoadingSteps();
+    this.engineInit.resetLoadingSteps();
     console.log(`[Location] Starting location change to: ${data.hq.name?.split(',')[0]}...`);
 
     try {
       // STEP 2: Initialize (stop height updates, reset game)
-      await this.setStepActive('init');
-      this.stopHeightUpdates();
+      await this.engineInit.setStepActive('init');
+      this.heightUpdate.stopHeightUpdates();
       this.gameState.reset();
       this.appendDebugLog('Spielstand zurückgesetzt');
       this.clearMapEntities();
-      this.cachedPaths.clear();
+      this.pathRoute.clearCache();
       this.spawnPoints.set([]);
 
       // Update engine origin
@@ -2899,7 +2780,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       this.editableHqLocation.set(data.hq);
       const spawnConfig: SpawnLocationConfig = { id: 'spawn-1', ...data.spawn };
       this.editableSpawnLocations.set([spawnConfig]);
-      await this.setStepDone('init');
+      await this.engineInit.setStepDone('init');
 
       // Set up tiles loaded callback (runs in background)
       const tilesLoadedPromise = new Promise<void>((resolve) => {
@@ -2912,7 +2793,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       });
 
       // STEP 3: Load streets in parallel with tiles
-      await this.setStepActive('streets');
+      await this.engineInit.setStepActive('streets');
       const streetsPromise = this.osmService.loadStreets(data.hq.lat, data.hq.lon, 2000);
 
       // Wait for streets to load
@@ -2920,7 +2801,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       this.streetCount.set(this.streetNetwork.streets.length);
       this.osmLoading.set(false);
       const streetCnt = this.streetCount();
-      await this.setStepDone('streets', streetCnt > 0 ? `${streetCnt} Straßen` : undefined);
+      await this.engineInit.setStepDone('streets', streetCnt > 0 ? `${streetCnt} Straßen` : undefined);
       console.log(`[Location] Streets loaded: ${streetCnt}`);
       this.checkAllLoaded();
 
@@ -2938,17 +2819,27 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
       this.renderStreets();
 
       // STEP 4: Place HQ marker
-      await this.setStepActive('hq');
+      await this.engineInit.setStepActive('hq');
+      // Reinitialize visualization services with new coordinates
+      this.markerViz.initialize(this.engine, { lat: data.hq.lat, lon: data.hq.lon }, this.heightDebugVisible);
+      this.pathRoute.initialize(
+        this.engine,
+        this.streetNetwork!,
+        { lat: data.hq.lat, lon: data.hq.lon },
+        this.uiState.routesVisible,
+        this.osmService,
+        this.markerViz.getSpawnMarkers()
+      );
       this.markerViz.addBaseMarker();
-      await this.setStepDone('hq');
+      await this.engineInit.setStepDone('hq');
 
       // STEP 5: Place spawn point
-      await this.setStepActive('spawn');
+      await this.engineInit.setStepActive('spawn');
       this.addSpawnPoint('spawn-1', data.spawn.name?.split(',')[0] || 'Spawn', data.spawn.lat, data.spawn.lon, 0xef4444);
-      await this.setStepDone('spawn', '1 Punkt');
+      await this.engineInit.setStepDone('spawn', '1 Punkt');
 
       // STEP 6: Calculate route
-      await this.setStepActive('route');
+      await this.engineInit.setStepActive('route');
       const base = this.baseCoords();
       const waveSpawnPoints: WaveSpawnPoint[] = this.spawnPoints().map((sp) => ({
         id: sp.id,
@@ -2962,17 +2853,20 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
         this.streetNetwork!,
         { lat: base.latitude, lon: base.longitude },
         waveSpawnPoints,
-        this.pathRoute,
+        this.pathRoute.getCachedPaths(),
         (msg: string) => this.appendDebugLog(msg),
         () => this.onGameOver()
       );
 
+      // Re-initialize TowerPlacementService with new location data
+      this.initializeTowerPlacement();
+
       // Get route details for display
-      const routeDetail = this.getRouteDetail();
-      await this.setStepDone('route', routeDetail);
+      const routeDetail = this.pathRoute.getRouteDetail();
+      await this.engineInit.setStepDone('route', routeDetail);
 
       // STEP 7: Finalize 3D view (waits for tiles + height sync)
-      await this.setStepActive('finalize');
+      await this.engineInit.setStepActive('finalize');
       this.scheduleOverlayHeightUpdate();
 
       // STEP 18: Save to localStorage
@@ -2983,15 +2877,7 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
       // STEP 20: Capture new initial camera position (after tiles stabilize)
       setTimeout(() => {
-        if (this.engine) {
-          const cam = this.engine.getCamera();
-          this.initialCameraPosition = {
-            x: cam.position.x,
-            y: cam.position.y,
-            z: cam.position.z,
-          };
-          console.log('[Location] New camera position captured:', this.initialCameraPosition);
-        }
+        this.cameraControl.saveInitialPosition();
       }, 2000);
 
       this.appendDebugLog(`Geladen: ${this.streetCount()} Strassen`);
@@ -3049,6 +2935,10 @@ export class TowerDefenseComponent implements OnInit, AfterViewInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(async (result: LocationDialogResult | null) => {
       if (!result?.confirmed) return;
+
+      // Show loading overlay IMMEDIATELY before any async operations
+      this.loading.set(true);
+      this.engineInit.resetLoadingSteps();
 
       let spawnLat = result.spawn.lat;
       let spawnLon = result.spawn.lon;

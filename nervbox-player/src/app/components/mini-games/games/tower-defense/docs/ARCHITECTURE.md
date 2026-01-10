@@ -1,6 +1,6 @@
 # Tower Defense - Architektur
 
-**Stand:** 2026-01-08
+**Stand:** 2026-01-10
 
 ## Übersicht
 
@@ -49,6 +49,53 @@ private createDiamondMarker(options: {
 this.baseMarker = this.createDiamondMarker({ color: 0x22c55e, size: 1, showRings: true });
 const spawnMarker = this.createDiamondMarker({ color: 0xef4444, size: 0.5, showRings: false });
 ```
+
+---
+
+## Services (2026-01 Refactoring)
+
+Die Komponente wurde durch Extraktion von **9 spezialisierten Services** modularisiert.
+Die Komponente selbst ist von 4098 auf ~3150 Zeilen reduziert worden.
+
+### Service-Übersicht
+
+| Service | Zeilen | Verantwortung |
+|---------|--------|---------------|
+| **GameUIStateService** | 180 | UI State Signals, Layer Toggles, Debug Log |
+| **CameraControlService** | 160 | Kamera Position, Reset, Fly-To Animationen |
+| **MarkerVisualizationService** | 490 | 3D Marker (HQ, Spawn, Debug), Animation |
+| **PathAndRouteService** | 580 | Pfad-Caching, Route-Visualisierung, Height Smoothing |
+| **InputHandlerService** | 200 | Click/Pan Detection, Terrain Raycasting |
+| **TowerPlacementService** | 400 | Build Mode, Placement Validation, Preview Mesh |
+| **LocationManagementService** | 250 | Location CRUD, LocalStorage Persistence |
+| **HeightUpdateService** | 300 | Terrain Height Sync, Stabilization Loop |
+| **EngineInitializationService** | 350 | 6-Step Loading Sequence, Progress Tracking |
+
+### Service-Architektur
+
+```
+tower-defense.component.ts (Orchestrierung)
+    │
+    ├── GameUIStateService ──────── UI State & Toggles
+    ├── EngineInitializationService ─ Loading Sequence
+    │       └── verwendet alle anderen Services
+    ├── CameraControlService ────── Kamera-Steuerung
+    ├── InputHandlerService ─────── Click/Pan Events
+    ├── MarkerVisualizationService ─ 3D Marker
+    ├── PathAndRouteService ─────── Pfade & Routen
+    ├── TowerPlacementService ───── Build Mode
+    ├── HeightUpdateService ─────── Terrain Sync
+    └── LocationManagementService ─ Location Management
+```
+
+### Existierende Services (vor Refactoring)
+
+| Service | Beschreibung |
+|---------|--------------|
+| **OsmStreetService** | OpenStreetMap Straßen-Loading, A* Pathfinding |
+| **GeocodingService** | Nominatim Geocoding & Reverse-Geocoding |
+| **ModelPreviewService** | 3D Model Previews für Sidebar |
+| **EntityPoolService** | Object Pooling (Placeholder) |
 
 ---
 
@@ -515,8 +562,23 @@ function gameLoop(currentTime: number) {
 
 ```
 tower-defense/
-├── tower-defense.component.ts    # Haupt-Component
-
+├── tower-defense.component.ts    # Haupt-Component (~3150 Zeilen)
+│
+├── services/                     # 13 Services
+│   ├── game-ui-state.service.ts        # UI State & Toggles
+│   ├── camera-control.service.ts       # Kamera-Steuerung
+│   ├── marker-visualization.service.ts # 3D Marker
+│   ├── path-route.service.ts           # Pfade & Routen
+│   ├── input-handler.service.ts        # Click/Pan Events
+│   ├── tower-placement.service.ts      # Build Mode
+│   ├── location-management.service.ts  # Location CRUD
+│   ├── height-update.service.ts        # Terrain Sync
+│   ├── engine-initialization.service.ts# Loading Sequence
+│   ├── osm-street.service.ts           # OSM Straßen-Loading
+│   ├── geocoding.service.ts            # Nominatim Geocoding
+│   ├── model-preview.service.ts        # 3D Previews
+│   └── entity-pool.service.ts          # Object Pooling
+│
 ├── three-engine/
 │   ├── three-tiles-engine.ts     # Haupt-Engine
 │   ├── ellipsoid-sync.ts         # Koordinaten
@@ -527,24 +589,7 @@ tower-defense/
 │       ├── three-tower.renderer.ts
 │       ├── three-projectile.renderer.ts
 │       └── three-effects.renderer.ts
-
-├── core/
-│   ├── game-object.ts
-│   └── component.ts
-
-├── game-components/
-│   ├── transform.component.ts
-│   ├── health.component.ts
-│   ├── movement.component.ts
-│   ├── combat.component.ts
-│   ├── render.component.ts
-│   └── audio.component.ts
-
-├── entities/
-│   ├── enemy.entity.ts
-│   ├── tower.entity.ts
-│   └── projectile.entity.ts
-
+│
 ├── managers/
 │   ├── entity-manager.ts         # Base class
 │   ├── game-state.manager.ts
@@ -552,25 +597,48 @@ tower-defense/
 │   ├── tower.manager.ts
 │   ├── projectile.manager.ts
 │   ├── wave.manager.ts
-│   └── audio.manager.ts
-
+│   └── spatial-audio.manager.ts
+│
+├── entities/
+│   ├── enemy.entity.ts
+│   ├── tower.entity.ts
+│   └── projectile.entity.ts
+│
+├── game-components/
+│   ├── transform.component.ts
+│   ├── health.component.ts
+│   ├── movement.component.ts
+│   ├── combat.component.ts
+│   ├── render.component.ts
+│   └── audio.component.ts
+│
+├── core/
+│   ├── game-object.ts
+│   └── component.ts
+│
 ├── configs/
 │   ├── tower-types.config.ts
 │   └── projectile-types.config.ts
-
+│
 ├── models/
 │   ├── enemy-types.ts
-│   └── game.types.ts
-
-├── services/
-│   ├── osm-street.service.ts
-│   └── entity-pool.service.ts    # Placeholder
-
+│   ├── game.types.ts
+│   └── location.types.ts
+│
 ├── components/
-│   └── debug-panel.component.ts
-
+│   ├── location-dialog/          # Location-Auswahl Dialog
+│   └── ...
+│
 └── docs/
-    └── ARCHITECTURE.md
+    ├── INDEX.md                  # Dokumentations-Index
+    ├── ARCHITECTURE.md           # Dieses Dokument
+    ├── DESIGN_SYSTEM.md          # UI/UX Guidelines
+    ├── TODO.md                   # Offene Aufgaben
+    ├── DONE.md                   # Abgeschlossene Features
+    ├── LOCATION_SYSTEM.md        # Location-Feature Doku
+    ├── PROJECTILES.md            # Projektil-System Doku
+    ├── SPATIAL_AUDIO.md          # 3D Audio Doku
+    └── MODEL_PREVIEW.md          # Model Preview Doku
 ```
 
 ---

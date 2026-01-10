@@ -1,4 +1,5 @@
 import { Injectable, WritableSignal } from '@angular/core';
+import * as THREE from 'three';
 import { ThreeTilesEngine } from '../three-engine';
 import { GameStateManager } from '../managers/game-state.manager';
 
@@ -40,7 +41,7 @@ export class InputHandlerService {
   private onClickCallback: ((lat: number, lon: number, height: number) => void) | null = null;
 
   /** Mouse move callback for build preview updates */
-  private onMouseMoveCallback: ((lat: number, lon: number) => void) | null = null;
+  private onMouseMoveCallback: ((lat: number, lon: number, hitPoint: THREE.Vector3) => void) | null = null;
 
   // ========================================
   // INITIALIZATION
@@ -53,7 +54,7 @@ export class InputHandlerService {
    * @param gameState GameStateManager instance
    * @param buildModeSignal Build mode state signal
    * @param onClickCallback Callback for terrain clicks in build mode
-   * @param onMouseMoveCallback Callback for mouse move in build mode
+   * @param onMouseMoveCallback Callback for mouse move in build mode (receives hitPoint for preview positioning)
    */
   initialize(
     canvas: HTMLCanvasElement,
@@ -61,7 +62,7 @@ export class InputHandlerService {
     gameState: GameStateManager,
     buildModeSignal: WritableSignal<boolean>,
     onClickCallback: (lat: number, lon: number, height: number) => void,
-    onMouseMoveCallback: (lat: number, lon: number) => void
+    onMouseMoveCallback: (lat: number, lon: number, hitPoint: THREE.Vector3) => void
   ): void {
     this.canvas = canvas;
     this.engine = engine;
@@ -175,8 +176,8 @@ export class InputHandlerService {
     // Convert to geo coordinates
     const geo = this.engine.sync.localToGeo(hitPoint);
 
-    // Notify callback
-    this.onMouseMoveCallback(geo.lat, geo.lon);
+    // Notify callback with hitPoint for preview positioning
+    this.onMouseMoveCallback(geo.lat, geo.lon, hitPoint);
   }
 
   // ========================================
