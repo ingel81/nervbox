@@ -116,6 +116,14 @@ export class PathAndRouteService {
   }
 
   /**
+   * Get all cached paths as a Map
+   * @returns Map of spawn ID to path
+   */
+  getCachedPaths(): Map<string, GeoPosition[]> {
+    return this.cachedPaths;
+  }
+
+  /**
    * Get detail string for route loading status
    * @returns Route detail string or undefined
    */
@@ -178,8 +186,8 @@ export class PathAndRouteService {
       this.streetNetwork,
       spawn.latitude,
       spawn.longitude,
-      this.baseCoords.latitude,
-      this.baseCoords.longitude
+      this.baseCoords.lat,
+      this.baseCoords.lon
     );
 
     if (path.length < 2) return;
@@ -206,14 +214,14 @@ export class PathAndRouteService {
       const b = geoPath[i + 1];
 
       const closest = this.closestPointOnSegment(a, b, {
-        lat: this.baseCoords.latitude,
-        lon: this.baseCoords.longitude,
+        lat: this.baseCoords.lat,
+        lon: this.baseCoords.lon,
       });
       const dist = this.osmService.haversineDistance(
         closest.lat,
         closest.lon,
-        this.baseCoords.latitude,
-        this.baseCoords.longitude
+        this.baseCoords.lat,
+        this.baseCoords.lon
       );
 
       if (dist < closestDist) {
@@ -239,7 +247,7 @@ export class PathAndRouteService {
     }
 
     // Add HQ as final destination
-    geoPath.push({ lat: this.baseCoords.latitude, lon: this.baseCoords.longitude });
+    geoPath.push({ lat: this.baseCoords.lat, lon: this.baseCoords.lon });
 
     // Create route line in Three.js - on terrain with RELATIVE heights
     const HEIGHT_ABOVE_GROUND = 1;
@@ -248,7 +256,7 @@ export class PathAndRouteService {
 
     // Get origin terrain height as reference
     const origin = this.engine.sync.getOrigin();
-    const originTerrainY = this.engine.getTerrainHeightAtGeo(this.baseCoords.latitude, this.baseCoords.longitude);
+    const originTerrainY = this.engine.getTerrainHeightAtGeo(this.baseCoords.lat, this.baseCoords.lon);
 
     if (originTerrainY === null) {
       console.log(`[Path] Cannot render route for ${spawn.name} - origin terrain not available`);
@@ -455,17 +463,16 @@ export class PathAndRouteService {
   /**
    * Extend path along streets to find optimal 90° turn-off point to HQ
    * @param geoPath Current path
-   * @param base Base coordinates
+   * @param base Base coordinates (GeoPosition with lat/lon)
    * @returns Extended path
    */
   private extendPathToOptimalTurnoff(
     geoPath: { lat: number; lon: number }[],
-    base: { latitude: number; longitude: number }
+    base: GeoPosition
   ): { lat: number; lon: number }[] {
     if (!this.streetNetwork || !this.osmService || geoPath.length < 2) return geoPath;
 
     const lastPoint = geoPath[geoPath.length - 1];
-    const secondLastPoint = geoPath[geoPath.length - 2];
 
     // Find streets that contain a node near the last point
     const TOLERANCE = 0.00001; // ~1m tolerance
@@ -487,8 +494,8 @@ export class PathAndRouteService {
     let bestClosestDist = this.osmService.haversineDistance(
       lastPoint.lat,
       lastPoint.lon,
-      base.latitude,
-      base.longitude
+      base.lat,
+      base.lon
     );
 
     for (const { street, nodeIndex } of matchingStreets) {
@@ -502,19 +509,19 @@ export class PathAndRouteService {
         while (idx >= 0 && idx < street.nodes.length && extension.length < 20) {
           const node = street.nodes[idx];
 
-          const distToHQ = this.osmService.haversineDistance(node.lat, node.lon, base.latitude, base.longitude);
+          const distToHQ = this.osmService.haversineDistance(node.lat, node.lon, base.lat, base.lon);
 
           const prevPoint = extension.length > 0 ? extension[extension.length - 1] : lastPoint;
           const closestOnSeg = this.closestPointOnSegment(
             prevPoint,
             { lat: node.lat, lon: node.lon },
-            { lat: base.latitude, lon: base.longitude }
+            { lat: base.lat, lon: base.lon }
           );
           const segDistToHQ = this.osmService.haversineDistance(
             closestOnSeg.lat,
             closestOnSeg.lon,
-            base.latitude,
-            base.longitude
+            base.lat,
+            base.lon
           );
 
           if (segDistToHQ < bestClosestDist || distToHQ < bestClosestDist) {
@@ -532,10 +539,10 @@ export class PathAndRouteService {
             const prev = i === 0 ? lastPoint : extension[i - 1];
             const curr = extension[i];
             const closest = this.closestPointOnSegment(prev, curr, {
-              lat: base.latitude,
-              lon: base.longitude,
+              lat: base.lat,
+              lon: base.lon,
             });
-            const dist = this.osmService.haversineDistance(closest.lat, closest.lon, base.latitude, base.longitude);
+            const dist = this.osmService.haversineDistance(closest.lat, closest.lon, base.lat, base.lon);
             if (dist < minDist) {
               minDist = dist;
             }

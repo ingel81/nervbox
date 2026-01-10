@@ -77,7 +77,7 @@ export class CameraControlService {
         return;
       }
 
-      const terrainY = this.engine.getTerrainHeightAtGeo(this.baseCoords.latitude, this.baseCoords.longitude) ?? 0;
+      const terrainY = this.engine.getTerrainHeightAtGeo(this.baseCoords.lat, this.baseCoords.lon) ?? 0;
       const heightAboveGround = 400;
       const cameraY = terrainY + heightAboveGround;
       this.engine.setLocalCameraPosition(0, cameraY, -heightAboveGround, 0, terrainY, 0);

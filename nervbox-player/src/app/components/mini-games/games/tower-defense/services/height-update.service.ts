@@ -68,6 +68,9 @@ export class HeightUpdateService {
   /** Callback to finalize step */
   private onFinalizeCallback: ((detail: string) => void) | null = null;
 
+  /** Callback to update step detail (for live progress display) */
+  private onUpdateDetailCallback: ((detail: string) => void) | null = null;
+
   /** Callback to check all loaded */
   private onCheckAllLoadedCallback: (() => void) | null = null;
 
@@ -86,6 +89,7 @@ export class HeightUpdateService {
    * @param onUpdateMarkers Callback to update marker heights
    * @param onRenderStreets Callback to render streets
    * @param onFinalize Callback to finalize step
+   * @param onUpdateDetail Callback to update step detail (for live progress)
    * @param onCheckAllLoaded Callback to check all loaded
    */
   initialize(
@@ -95,6 +99,7 @@ export class HeightUpdateService {
     onUpdateMarkers: () => void,
     onRenderStreets: () => void,
     onFinalize: (detail: string) => void,
+    onUpdateDetail: (detail: string) => void,
     onCheckAllLoaded: () => void
   ): void {
     this.engine = engine;
@@ -103,6 +108,7 @@ export class HeightUpdateService {
     this.onUpdateMarkersCallback = onUpdateMarkers;
     this.onRenderStreetsCallback = onRenderStreets;
     this.onFinalizeCallback = onFinalize;
+    this.onUpdateDetailCallback = onUpdateDetail;
     this.onCheckAllLoadedCallback = onCheckAllLoaded;
   }
 
@@ -116,6 +122,8 @@ export class HeightUpdateService {
    * @returns Promise that resolves when heights are stable
    */
   scheduleOverlayHeightUpdate(): Promise<void> {
+    console.log('[Heights] scheduleOverlayHeightUpdate called');
+
     // Reset counters for fresh location
     this.heightUpdateAttempts = 0;
     this.overlayHeightsUpdated = false;
@@ -126,6 +134,8 @@ export class HeightUpdateService {
     if (this.loadingStatusSignal) {
       this.loadingStatusSignal.set('Synchronisiere mit Terrain...');
     }
+
+    console.log('[Heights] Starting interval...');
 
     return new Promise((resolve) => {
       this.heightStableResolve = resolve;
@@ -147,6 +157,11 @@ export class HeightUpdateService {
 
     this.heightUpdateAttempts++;
     this.heightProgress.set(this.heightUpdateAttempts);
+
+    // Update step detail for live progress display
+    if (this.onUpdateDetailCallback) {
+      this.onUpdateDetailCallback(`${this.heightUpdateAttempts} Sync-Zyklen`);
+    }
 
     // Clear height cache before each attempt to get fresh values
     // This ensures we don't use stale heights from previous location
@@ -197,15 +212,22 @@ export class HeightUpdateService {
     }
     this.overlayHeightsUpdated = true;
     this.heightsLoading.set(false);
+    console.log('[Heights] heightsLoading set to false');
 
     // Mark finalize step as done
     if (this.onFinalizeCallback) {
+      console.log('[Heights] Calling onFinalizeCallback');
       this.onFinalizeCallback(`${this.heightUpdateAttempts} Sync-Zyklen`);
+    } else {
+      console.warn('[Heights] onFinalizeCallback is null!');
     }
 
     // Check if all loading is complete
     if (this.onCheckAllLoadedCallback) {
+      console.log('[Heights] Calling onCheckAllLoadedCallback');
       this.onCheckAllLoadedCallback();
+    } else {
+      console.warn('[Heights] onCheckAllLoadedCallback is null!');
     }
 
     // Resolve the promise to signal completion
@@ -298,6 +320,7 @@ export class HeightUpdateService {
     this.onUpdateMarkersCallback = null;
     this.onRenderStreetsCallback = null;
     this.onFinalizeCallback = null;
+    this.onUpdateDetailCallback = null;
     this.onCheckAllLoadedCallback = null;
     this.heightStableResolve = null;
   }

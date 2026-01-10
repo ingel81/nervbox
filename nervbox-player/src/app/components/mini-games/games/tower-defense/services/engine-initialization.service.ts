@@ -134,6 +134,16 @@ export class EngineInitializationService {
   }
 
   /**
+   * Update the detail text for a step without changing its status
+   * Useful for showing live progress during an 'active' step
+   * @param stepId Step identifier
+   * @param detail Detail text to display
+   */
+  updateStepDetail(stepId: string, detail: string): void {
+    this.loadingSteps.update((steps) => steps.map((s) => (s.id === stepId ? { ...s, detail } : s)));
+  }
+
+  /**
    * Reset all loading steps to 'pending' for a fresh start
    */
   resetLoadingSteps(): void {
@@ -165,6 +175,7 @@ export class EngineInitializationService {
    */
   async initEngine(callbacks: {
     onLoadStreets: () => Promise<number>;
+    onInitializeServices: () => void;
     onAddBaseMarker: () => void;
     onAddPredefinedSpawns: () => number;
     onInitializeGameState: () => string | undefined;
@@ -229,6 +240,10 @@ export class EngineInitializationService {
       const streetCnt = await callbacks.onLoadStreets();
       await this.setStepDone('streets', streetCnt > 0 ? `${streetCnt} Straßen` : undefined);
 
+      // Initialize services that depend on engine and street network
+      // Must be called before adding markers/spawns
+      callbacks.onInitializeServices();
+
       // Step 3: Place HQ marker
       await this.setStepActive('hq');
       callbacks.onAddBaseMarker();
@@ -244,6 +259,10 @@ export class EngineInitializationService {
       const routeDetail = callbacks.onInitializeGameState();
       await this.setStepDone('route', routeDetail);
 
+      // OSM loading done (streets + routes calculated)
+      this.osmLoading.set(false);
+      console.log('[EngineInit] OSM streets loaded');
+
       // Step 6: Finalize 3D view (waits for tiles + height sync)
       await this.setStepActive('finalize');
       await callbacks.onScheduleHeightUpdate();
@@ -253,9 +272,7 @@ export class EngineInitializationService {
         callbacks.onSaveInitialCameraPosition();
       }, 2000);
 
-      // OSM loading done
-      this.osmLoading.set(false);
-      console.log('[EngineInit] OSM streets loaded');
+      // Final check (heights should trigger hiding overlay)
       callbacks.onCheckAllLoaded();
     } catch (err) {
       console.error('[EngineInit] Engine init error:', err);

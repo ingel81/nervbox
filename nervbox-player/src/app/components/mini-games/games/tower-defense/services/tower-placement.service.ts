@@ -173,6 +173,14 @@ export class TowerPlacementService {
   private createBuildPreview(): void {
     if (!this.engine) return;
 
+    // Clean up existing preview mesh if re-initializing
+    if (this.buildPreviewMesh) {
+      this.engine.getOverlayGroup().remove(this.buildPreviewMesh);
+      this.buildPreviewMesh.geometry.dispose();
+      (this.buildPreviewMesh.material as THREE.Material).dispose();
+      this.buildPreviewMesh = null;
+    }
+
     // Create a simple circle mesh for preview
     const geometry = new THREE.CircleGeometry(8, 32);
     const material = new THREE.MeshBasicMaterial({
@@ -188,18 +196,32 @@ export class TowerPlacementService {
     this.buildPreviewMesh.visible = false;
     this.buildPreviewMesh.renderOrder = 100; // Render on top
 
-    this.engine.getScene().add(this.buildPreviewMesh);
+    // Add to overlay group (synced with tiles movement), not scene root
+    this.engine.getOverlayGroup().add(this.buildPreviewMesh);
   }
 
   /**
    * Update build preview position and visibility
-   * @param hitPoint World position from raycast
+   * @param lat Latitude of preview position
+   * @param lon Longitude of preview position
    */
-  updatePreviewPosition(hitPoint: THREE.Vector3): void {
-    if (!this.buildPreviewMesh) return;
+  updatePreviewPosition(lat: number, lon: number): void {
+    if (!this.buildPreviewMesh || !this.engine) return;
 
-    this.buildPreviewMesh.position.copy(hitPoint);
-    this.buildPreviewMesh.position.y += 1; // Slightly above ground
+    // Convert geo to local coordinates (like other overlay objects)
+    const local = this.engine.sync.geoToLocalSimple(lat, lon, 0);
+
+    // Get terrain height at this position
+    const terrainY = this.engine.getTerrainHeightAtGeo(lat, lon);
+    const baseTerrainY = this.baseCoords
+      ? this.engine.getTerrainHeightAtGeo(this.baseCoords.latitude, this.baseCoords.longitude)
+      : 0;
+
+    // Y = height difference from origin + small offset above ground
+    const HEIGHT_ABOVE_GROUND = 1;
+    local.y = (terrainY ?? 0) - (baseTerrainY ?? 0) + HEIGHT_ABOVE_GROUND;
+
+    this.buildPreviewMesh.position.copy(local);
     this.buildPreviewMesh.visible = true;
   }
 
@@ -372,7 +394,7 @@ export class TowerPlacementService {
    */
   dispose(): void {
     if (this.buildPreviewMesh && this.engine) {
-      this.engine.getScene().remove(this.buildPreviewMesh);
+      this.engine.getOverlayGroup().remove(this.buildPreviewMesh);
       this.buildPreviewMesh.geometry.dispose();
       (this.buildPreviewMesh.material as THREE.Material).dispose();
       this.buildPreviewMesh = null;
