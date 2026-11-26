@@ -84,7 +84,7 @@ src/app/
 ```
 
 ### Backend API
-- Base URL: `/api` (production), `http://localhost:8080/api` (development)
+- Base URL: `/api` (relativ, dev + prod). Dev: Backend auf 4710 proxied den Player, `ng serve` (4711) nutzt `proxy.conf.json` → 4710
 - Authentication: JWT Bearer tokens (14 days validity)
 - Real-time: SignalR hubs at `/ws/chatHub`, `/ws/soundHub`
 

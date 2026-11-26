@@ -68,7 +68,7 @@ SignalR Hubs:
 
 ```powershell
 # Entwicklung (Windows, PowerShell 7 - kein WSL/Git Bash nötig)
-.\start-dev.ps1 start            # Alles starten (Backend:8080, Player:4200, Mixer:4201), Strg+C stoppt
+.\start-dev.ps1 start            # Alles starten (Backend:4710, Player:4711, Mixer:4712), Strg+C stoppt
 .\start-dev.ps1 start -NoLogs    # Im Hintergrund
 .\start-dev.ps1 stop             # Stoppen (nur eigene Prozesse)
 .\start-dev.ps1 status           # Status prüfen

@@ -29,7 +29,8 @@ $ErrorActionPreference = 'Stop'
 # ============================================
 # Konfiguration
 # ============================================
-$Ports = [ordered]@{ Backend = 8080; Player = 4200; Mixer = 4201 }
+# Eigener Port-Block fuer Nervbox-Dev (kollidiert nicht mit 3000/4200/5000/8080 usw.)
+$Ports = [ordered]@{ Backend = 4710; Player = 4711; Mixer = 4712 }
 
 $ScriptDir  = $PSScriptRoot
 $BackendDir = Join-Path $ScriptDir 'NervboxDeamon'
@@ -143,11 +144,13 @@ function Start-Dev {
     Write-Host "Starte Backend (Port $($Ports.Backend))..." -ForegroundColor Green
     $env:ASPNETCORE_ENVIRONMENT = 'Development'
     $env:Kestrel__Endpoints__Http__Url = "http://0.0.0.0:$($Ports.Backend)"
+    $env:DevProxy__PlayerUrl = "http://localhost:$($Ports.Player)"
+    $env:DevProxy__MixerUrl = "http://localhost:$($Ports.Mixer)"
     try {
         $backend = Start-Logged $ReleaseDir 'dotnet NervboxDeamon.dll' $Logs.Backend
     }
     finally {
-        Remove-Item Env:ASPNETCORE_ENVIRONMENT, Env:Kestrel__Endpoints__Http__Url -ErrorAction SilentlyContinue
+        Remove-Item Env:ASPNETCORE_ENVIRONMENT, Env:Kestrel__Endpoints__Http__Url, Env:DevProxy__PlayerUrl, Env:DevProxy__MixerUrl -ErrorAction SilentlyContinue
     }
 
     @{ Backend = $backend.Id; Player = $player.Id; Mixer = $mixer.Id } | ConvertTo-Json | Set-Content $PidFile

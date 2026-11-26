@@ -1,18 +1,18 @@
 {
   "/api": {
-    "target": "http://localhost:8080",
+    "target": "http://localhost:4710",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug"
   },
   "/ws": {
-    "target": "http://localhost:8080",
+    "target": "http://localhost:4710",
     "secure": false,
     "changeOrigin": true,
     "ws": true
   },
   "/mixer": {
-    "target": "http://localhost:8080",
+    "target": "http://localhost:4710",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug"

@@ -103,9 +103,13 @@ LOCAL_SOUNDS_PATH="../sounds"
 
 | Dienst | Port | Aufruf |
 |--------|------|--------|
-| Backend (Einstieg) | 8080 | http://localhost:8080/ und /mixer/ |
-| Player (`ng serve`) | 4200 | wird vom Backend nach `/` geproxied |
-| Mixer (`ng serve`) | 4201 | wird vom Backend nach `/mixer` geproxied |
+| Backend (Einstieg) | 4710 | http://localhost:4710/ und /mixer/ |
+| Player (`ng serve`) | 4711 | wird vom Backend nach `/` geproxied |
+| Mixer (`ng serve`) | 4712 | wird vom Backend nach `/mixer` geproxied |
+
+Eigener Port-Block 4710–4712, damit es keine Kollision mit üblichen Dev-Ports (3000, 4200, 5000, 5173, 8080 …) gibt.
+Ports zentral in `start-dev.ps1` (`$Ports`); Defaults für `dotnet run` in `appsettings.Development.json` (`Kestrel`, `DevProxy`).
+Auf dem Pi bleibt Kestrel auf 8080 (nftables 80 → 8080).
 
 - **Sound-Wiedergabe im Browser**: `appsettings.Development.json` setzt `"PlaybackMode": "Browser"` (Pi nutzt `Local` = mpg123).
 - Backend wird als Debug nach `Release/` gebaut, nutzt lokale DB `Release/nervbox.db` und Sounds aus `../sounds`.

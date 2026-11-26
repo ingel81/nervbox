@@ -190,8 +190,8 @@ namespace NervboxDeamon
       });
 
       // ========== FRONTEND ROUTING ==========
-      // /       -> Player App (dev: 4200, prod: wwwroot)
-      // /mixer  -> Mixer App (dev: 4201, prod: wwwroot/mixer)
+      // /       -> Player App (dev: DevProxy:PlayerUrl, prod: wwwroot)
+      // /mixer  -> Mixer App (dev: DevProxy:MixerUrl, prod: wwwroot/mixer)
 
       if (env.EnvironmentName == "Development")
       {
@@ -208,15 +208,17 @@ namespace NervboxDeamon
         });
 
         var forwarder = app.ApplicationServices.GetRequiredService<IHttpForwarder>();
+        var playerUrl = Configuration["DevProxy:PlayerUrl"] ?? "http://localhost:4711";
+        var mixerUrl = Configuration["DevProxy:MixerUrl"] ?? "http://localhost:4712";
 
-        // Mixer: Proxy to localhost:4201 (keep /mixer prefix - dev server uses --serve-path /mixer)
+        // Mixer: Proxy to mixer dev server (keep /mixer prefix - dev server uses --serve-path /mixer)
         app.UseWhen(
             context => context.Request.Path.Value != null && context.Request.Path.Value.StartsWith("/mixer"),
             appInner =>
             {
               appInner.Run(async (context) =>
               {
-                var error = await forwarder.SendAsync(context, "http://localhost:4201", httpClient);
+                var error = await forwarder.SendAsync(context, mixerUrl, httpClient);
                 if (error != ForwarderError.None && error != ForwarderError.UpgradeResponseCanceled)
                 {
                   var errorFeature = context.GetForwarderErrorFeature();
@@ -225,7 +227,7 @@ namespace NervboxDeamon
               });
             });
 
-        // Player: Proxy everything else to localhost:4200 (catch-all)
+        // Player: Proxy everything else to player dev server (catch-all)
         app.UseWhen(
             context => context.Request.Path.Value != null &&
                        !context.Request.Path.Value.StartsWith("/api") &&
@@ -235,7 +237,7 @@ namespace NervboxDeamon
             {
               appInner.Run(async (context) =>
               {
-                var error = await forwarder.SendAsync(context, "http://localhost:4200", httpClient);
+                var error = await forwarder.SendAsync(context, playerUrl, httpClient);
                 if (error != ForwarderError.None && error != ForwarderError.UpgradeResponseCanceled)
                 {
                   var errorFeature = context.GetForwarderErrorFeature();
@@ -244,7 +246,7 @@ namespace NervboxDeamon
               });
             });
 
-        _logger?.LogInformation("Dev mode: / -> localhost:4200 (Player), /mixer -> localhost:4201 (Mixer)");
+        _logger?.LogInformation("Dev mode: / -> {PlayerUrl} (Player), /mixer -> {MixerUrl} (Mixer)", playerUrl, mixerUrl);
       }
       else
       {
