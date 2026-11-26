@@ -358,3 +358,6 @@ deploy.conf
 # Local stats/analytics data
 stats/
 wrapped-*/
+
+# Lokale Claude-Notizen (Memory-Spiegel)
+CLAUDE.local.md

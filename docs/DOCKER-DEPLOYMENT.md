@@ -201,7 +201,7 @@ docker logs nervbox-tunnel
 | **Sound-Wiedergabe** | Lokal via mpg123 | Im Browser (Streaming) |
 | **SSL** | Let's Encrypt direkt | Cloudflare terminiert |
 | **Port-Forwarding** | 80/443 offen | Keine Ports offen |
-| **Update** | `./deploy.sh` | `docker pull && docker-compose up -d` |
+| **Update** | `.\deploy.ps1` | `docker pull && docker-compose up -d` |
 
 ## Updates
 

@@ -1,6 +1,6 @@
 # nervbox - Projektstatus
 
-**Stand:** 2026-01-05
+**Stand:** 2026-11-26
 
 ---
 
@@ -39,8 +39,8 @@
 - Environment-Konfiguration (Public vs LAN Mode)
 
 ### Phase 4: Build & Deployment
-- `deploy.sh` - Deployment auf Pi
-- `start-dev.sh` - Lokaler Dev-Server
+- `deploy.sh` - Deployment auf Pi (seit 2026-11-26 ersetzt durch `deploy.ps1`)
+- `start-dev.sh` - Lokaler Dev-Server (seit 2026-11-26 ersetzt durch `start-dev.ps1`)
 - HTTPS mit Let's Encrypt (nervbox.sgeht.net)
 - nftables Port-Redirect (80→8080, 443→8443)
 - Altes Angular 8 Frontend entfernt
@@ -111,7 +111,7 @@ Internet → Cloudflare (SSL, DDoS) → Cloudflare Tunnel → Unraid Docker → 
 | Sound-Wiedergabe | Lokal via mpg123 | Im Browser (Streaming) |
 | SSL | Let's Encrypt direkt | Cloudflare terminiert |
 | Port-Forwarding | 80/443 offen | Keine Ports offen (Tunnel) |
-| Update | `./deploy.sh` | `docker pull && docker-compose up -d` |
+| Update | `.\deploy.ps1` | `docker pull && docker-compose up -d` |
 
 #### Offene Schritte
 - [ ] GitHub Secrets einrichten (DOCKERHUB_USERNAME, DOCKERHUB_TOKEN)
@@ -120,6 +120,21 @@ Internet → Cloudflare (SSL, DDoS) → Cloudflare Tunnel → Unraid Docker → 
 - [ ] DB + Sounds vom Pi auf Unraid kopieren
 - [ ] Docker-Container auf Unraid starten
 - [ ] DNS umstellen (nervbox.sgeht.net → Cloudflare Tunnel)
+
+---
+
+### Phase 8: Umzug auf Windows-Entwicklung (2026-11-26)
+- Entwicklung von Arch-Linux auf Windows umgezogen (`D:Source
+ervbox`)
+- `deploy.ps1` / `start-dev.ps1` (+ `.bat`-Wrapper) ersetzen die Bash-Skripte – nur Windows-Bordmittel (ssh, scp, tar)
+- Deploy per SSH-Key statt Passwort, tar.gz-Übertragung, keine Löschungen auf dem Pi
+- Lokal: `PlaybackMode=Browser` in `appsettings.Development.json`
+- `start-dev.ps1` prüft freie Ports und beendet nur eigene Prozesse
+- Erstes Deploy getestet: DB + 703 Sounds unverändert (Prüfsummen), Backup `/opt/backup-20261126`
+
+#### Offen
+- [x] TLS-Zertifikat erneuert (2026-11-26), automatische Erneuerung via certbot dns-cloudflare
+- [ ] `SSH.NET` 2023.0.0 updaten (NU1903, 2 High-Severity-Advisories)
 
 ---
 
@@ -144,8 +159,8 @@ Internet → Cloudflare (SSL, DDoS) → Cloudflare Tunnel → Unraid Docker → 
 │   ├── NervboxDeamon/            # .NET 8 Backend
 │   ├── nervbox-player/           # Angular 21 Player UI
 │   ├── docs/                     # Diese Dokumentation
-│   ├── deploy.sh                 # Deployment Script
-│   └── start-dev.sh              # Dev Server Script
+│   ├── deploy.ps1                # Deployment Script (Windows)
+│   └── start-dev.ps1             # Dev Server Script (Windows)
 └── nervbox-mixer/                # Separates Repo (Audio-Editor)
 ```
 
@@ -163,12 +178,12 @@ Internet → Cloudflare (SSL, DDoS) → Cloudflare Tunnel → Unraid Docker → 
 
 ```bash
 # Entwicklung
-./start-dev.sh start    # Backend + Player + Mixer starten
-./start-dev.sh stop     # Alles stoppen
+./start-dev.ps1 start   # Backend + Player + Mixer starten
+./start-dev.ps1 stop    # Alles stoppen
 
 # Deployment
-./deploy.sh             # Normal
-./deploy.sh --force-db  # DB überschreiben
+./deploy.ps1            # Normal
+./deploy.ps1 -ForceDb   # DB überschreiben
 ```
 
 ---

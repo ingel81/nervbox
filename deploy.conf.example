@@ -4,7 +4,10 @@
 # Raspberry Pi Verbindung
 PI_HOST="192.168.0.188"
 PI_USER="user"
-PI_PASS="PASSWORT_HIER"
+# SSH-Key fuer Deployment (Public Key muss in ~/.ssh/authorized_keys auf dem Pi stehen)
+PI_SSH_KEY="$HOME/.ssh/claude_agent"
+# Passwort nur fuer manuellen Login, wird von deploy.ps1 nicht genutzt
+# PI_PASS="PASSWORT_HIER"
 
 # Pfade auf dem Pi
 PI_APP_PATH="/opt/nervbox"

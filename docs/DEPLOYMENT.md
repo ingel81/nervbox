@@ -9,21 +9,26 @@ parent-folder/
 └── sounds/           ← Sound-Dateien (nicht im Repo)
 ```
 
+## Plattform
+
+Entwicklung und Deployment laufen **direkt unter Windows** (PowerShell 7) – kein WSL, kein Git Bash.
+Benötigt: .NET SDK (8+), Node.js/npm, Windows OpenSSH (`ssh.exe`, `scp.exe`) und `tar.exe` (beides in Windows enthalten).
+
 ## Dateien
 
 ```
-deploy.conf         # Konfiguration (IP, User, Passwort) - gitignored
+deploy.conf         # Konfiguration (IP, User, SSH-Key) - gitignored
 deploy.conf.example # Vorlage
-deploy.sh           # Deployment-Script
-start-dev.sh        # Lokaler Dev-Server
+deploy.ps1          # Deployment-Script  (deploy.bat = Wrapper für Doppelklick/cmd)
+start-dev.ps1       # Lokaler Dev-Server (start-dev.bat = Wrapper)
 pi-setup/
-  setup-pi.sh       # Einmaliges Pi-Setup
+  setup-pi.sh       # Einmaliges Pi-Setup (läuft auf dem Pi)
   nervbox.service   # Systemd Service
 ```
 
 ## Erstmaliges Pi-Setup
 
-```bash
+```powershell
 scp -r pi-setup user@<PI_IP>:/tmp/
 ssh user@<PI_IP> "chmod +x /tmp/pi-setup/setup-pi.sh && sudo /tmp/pi-setup/setup-pi.sh"
 ```
@@ -34,13 +39,45 @@ Das Setup-Script:
 - Installiert systemd Service
 - Richtet nftables Port-Redirect ein (80 → 8080, 443 → 8443)
 
+Danach SSH-Key hinterlegen (einmalig, fragt nach dem Pi-Passwort):
+
+```powershell
+type $env:USERPROFILE.sshclaude_agent.pub | ssh user@<PI_IP> "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+```
+
+Der User auf dem Pi braucht `sudo` ohne Passwort (für `systemctl stop/start nervbox`).
+
 ## Deployment
 
-```bash
-./deploy.sh                # Normal (DB + Sounds nur beim 1. Mal)
-./deploy.sh --force-db     # DB überschreiben (mit Bestätigung)
-./deploy.sh --force-sounds # Sounds überschreiben (mit Bestätigung)
+```powershell
+.deploy.ps1                    # Normal (DB, Sounds, Instrumente nur beim 1. Mal)
+.deploy.ps1 -ForceDb           # DB überschreiben (mit Bestätigung "ja")
+.deploy.ps1 -ForceSounds       # Sounds überschreiben (mit Bestätigung "ja")
+.deploy.ps1 -ForceInstruments  # Mixer-Instrumente überschreiben
+.deploy.ps1 -SkipBuild         # Nur übertragen (vorhandenes Release/)
 ```
+
+Ablauf: Clean Build Backend (`linux-arm64`, self-contained) → Mixer (`build:lan`) → Player → Service stoppen →
+Übertragung als tar.gz per `scp` → `chmod +x` → Service starten → Status prüfen.
+
+**Datenschutz-Regeln (wichtig):**
+- `/opt/nervbox-data` (DB, Sounds, Avatare) wird **nie** angefasst – außer beim allerersten Deploy oder explizit mit `-ForceDb`/`-ForceSounds`.
+- Die Übertragung überschreibt Dateien, **löscht aber nichts** auf dem Pi. Verwaiste Dateien aus alten Builds bleiben liegen.
+- Vor riskanten Änderungen Backup ziehen (siehe unten).
+
+### Backup der Live-Daten
+
+```bash
+# Auf dem Pi (Service kurz stoppen für konsistente DB):
+B=/opt/backup-$(date +%Y%m%d)
+sudo mkdir -p $B && sudo chown user:user $B
+sudo systemctl stop nervbox
+sqlite3 /opt/nervbox-data/nervbox.db "PRAGMA integrity_check;"
+cp -a /opt/nervbox-data $B/nervbox-data && cp -a /opt/nervbox $B/nervbox-app
+sudo systemctl start nervbox
+```
+
+Rollback der App: `sudo systemctl stop nervbox && cp -a $B/nervbox-app/. /opt/nervbox/ && sudo systemctl start nervbox`
 
 ## Konfiguration
 
@@ -48,8 +85,33 @@ Das Setup-Script:
 ```bash
 PI_HOST="192.168.0.188"
 PI_USER="user"
-PI_PASS="<DEIN_PASSWORT>"
+PI_SSH_KEY="$HOME/.ssh/claude_agent"   # $HOME = %USERPROFILE%
+PI_APP_PATH="/opt/nervbox"
+PI_DATA_PATH="/opt/nervbox-data"
+LOCAL_SOUNDS_PATH="../sounds"
 ```
+
+## Lokale Entwicklung
+
+```powershell
+.start-dev.ps1 start           # Backend + Player + Mixer starten, Live-Logs, Strg+C beendet alles
+.start-dev.ps1 start -NoLogs   # Im Hintergrund laufen lassen
+.start-dev.ps1 status
+.start-dev.ps1 logs
+.start-dev.ps1 stop
+```
+
+| Dienst | Port | Aufruf |
+|--------|------|--------|
+| Backend (Einstieg) | 8080 | http://localhost:8080/ und /mixer/ |
+| Player (`ng serve`) | 4200 | wird vom Backend nach `/` geproxied |
+| Mixer (`ng serve`) | 4201 | wird vom Backend nach `/mixer` geproxied |
+
+- **Sound-Wiedergabe im Browser**: `appsettings.Development.json` setzt `"PlaybackMode": "Browser"` (Pi nutzt `Local` = mpg123).
+- Backend wird als Debug nach `Release/` gebaut, nutzt lokale DB `Release/nervbox.db` und Sounds aus `../sounds`.
+- `start` bricht ab, wenn ein Dev-Port belegt ist. `stop` beendet nur eigene Prozesse (Kommandozeile enthält „nervbox“).
+- Logs: `%TEMP%
+ervbox-dev{backend,player,mixer}.log`
 
 ## Architektur
 

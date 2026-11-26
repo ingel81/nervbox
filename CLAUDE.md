@@ -21,8 +21,8 @@ parent/
 │   ├── Release/                # Build Output
 │   ├── pi-setup/               # Pi Deployment Setup
 │   ├── docs/                   # Dokumentation
-│   ├── deploy.sh               # Deployment Script
-│   └── start-dev.sh            # Dev Server
+│   ├── deploy.ps1 / .bat       # Deployment auf den Pi (Windows)
+│   └── start-dev.ps1 / .bat    # Lokaler Dev-Server (Windows)
 │
 ├── nervbox-mixer/              ← SEPARATES REPO (github.com/ingel81/nervbox-mixer)
 └── sounds/                     ← Nicht versioniert (~235MB, 658 MP3s)
@@ -52,7 +52,7 @@ parent/
 ```
 GET  /api/sound                    # Alle Sounds
 GET  /api/sound/{hash}/play        # Sound abspielen (Pi lokal)
-GET  /api/sound/{hash}/stream      # Sound streamen (Browser)
+GET  /api/sound/{hash}/file        # Sound-Datei streamen (Browser)
 GET  /api/sound/statistics/*       # Top Sounds/Users
 POST /api/users/auth/login         # Login → JWT
 POST /api/users/auth/register      # Register (1x pro IP)
@@ -66,23 +66,24 @@ SignalR Hubs:
 
 ## Befehle
 
-```bash
-# Entwicklung
-./start-dev.sh start              # Alles starten (Backend:8080, Player:4200, Mixer:4201)
-./start-dev.sh stop               # Stoppen
-./start-dev.sh status             # Status prüfen
+```powershell
+# Entwicklung (Windows, PowerShell 7 - kein WSL/Git Bash nötig)
+.\start-dev.ps1 start            # Alles starten (Backend:8080, Player:4200, Mixer:4201), Strg+C stoppt
+.\start-dev.ps1 start -NoLogs    # Im Hintergrund
+.\start-dev.ps1 stop             # Stoppen (nur eigene Prozesse)
+.\start-dev.ps1 status           # Status prüfen
 
-# Deployment
-./deploy.sh                       # Normal (DB+Sounds nur beim 1. Mal)
-./deploy.sh --force-db            # DB überschreiben
-./deploy.sh --force-sounds        # Sounds überschreiben
+# Deployment auf den Pi (192.168.0.188)
+.\deploy.ps1                     # Normal (DB+Sounds nur beim 1. Mal)
+.\deploy.ps1 -ForceDb            # DB überschreiben (Bestätigung)
+.\deploy.ps1 -ForceSounds        # Sounds überschreiben (Bestätigung)
+.\deploy.ps1 -SkipBuild          # Nur übertragen
 
 # Backend einzeln
-cd NervboxDeamon && dotnet run
-
-# Player einzeln
-cd nervbox-player && npm start
+cd NervboxDeamon; dotnet run
 ```
+
+Lokal spielt der Sound im **Browser** (`PlaybackMode: Browser` in `appsettings.Development.json`), auf dem Pi lokal via mpg123.
 
 ## Deployment (Raspberry Pi)
 
@@ -113,7 +114,8 @@ http://PI_IP/api/       # API
 
 ## Wichtig
 
-- **DB + Sounds** werden nur beim ersten Deployment übertragen
+- **DB + Sounds dürfen niemals verloren gehen.** Sie werden nur beim ersten Deployment übertragen; Deploy löscht nichts auf dem Pi. Vor riskanten Schritten Backup (siehe docs/DEPLOYMENT.md)
+- Lokale, nicht versionierte Notizen: `CLAUDE.local.md`
 - **Mixer** muss als Sibling-Repo ausgecheckt sein (`../nervbox-mixer`)
 - **Player** läuft auf `/`, **Mixer** auf `/mixer/`
 - **Environment**: `environment.prod.ts` nutzt relative URLs (`/api`)
