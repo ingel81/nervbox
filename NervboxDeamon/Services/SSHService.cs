@@ -103,7 +103,8 @@ namespace NervboxDeamon.Services
         var response = cmd.Execute();
 
         error = cmd.Error;
-        existStatus = cmd.ExitStatus;
+        // SSH.NET 2024+: ExitStatus is null if the command ended without one (e.g. killed by signal)
+        existStatus = cmd.ExitStatus ?? -1;
         return response;
       }
     }
