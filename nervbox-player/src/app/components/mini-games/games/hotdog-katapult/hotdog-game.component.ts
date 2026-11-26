@@ -7,6 +7,7 @@ import {
   signal,
   ViewChild,
   HostListener,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -30,12 +31,12 @@ const SPRITES = {
   hotdog: { w: 303, h: 194 },
   slingshot: { w: 251, h: 251 },
   faces: [
-    { w: 147, h: 172 },  // Face 0: blonde
-    { w: 159, h: 168 },  // Face 1: rote Haare
-    { w: 160, h: 190 },  // Face 2: Kappe
-    { w: 158, h: 180 },  // Face 3: Brille
-    { w: 170, h: 183 },  // Face 4: brünette
-    { w: 171, h: 201 },  // Face 5: rote Kappe
+    { w: 147, h: 172 }, // Face 0: blonde
+    { w: 159, h: 168 }, // Face 1: rote Haare
+    { w: 160, h: 190 }, // Face 2: Kappe
+    { w: 158, h: 180 }, // Face 3: Brille
+    { w: 170, h: 183 }, // Face 4: brünette
+    { w: 171, h: 201 }, // Face 5: rote Kappe
   ],
 };
 
@@ -84,7 +85,7 @@ const SPRITES = {
         <!-- Ready Overlay -->
         @if (gameState() === 'ready') {
           <div class="overlay start-overlay" (click)="startGame()">
-            <img src="/games/hotdog/logo.png" class="logo-sprite" alt="Hotdog Katapult">
+            <img src="/games/hotdog/logo.png" class="logo-sprite" alt="Hotdog Katapult" />
             <p class="subtitle"></p>
             <button mat-raised-button color="primary" class="start-btn">
               <mat-icon>play_arrow</mat-icon>
@@ -136,6 +137,7 @@ const SPRITES = {
       </div>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .hotdog-container {
       display: flex;
@@ -285,8 +287,13 @@ const SPRITES = {
     }
 
     @keyframes pulse-btn {
-      0%, 100% { box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4); }
-      50% { box-shadow: 0 4px 30px rgba(249, 115, 22, 0.7); }
+      0%,
+      100% {
+        box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4);
+      }
+      50% {
+        box-shadow: 0 4px 30px rgba(249, 115, 22, 0.7);
+      }
     }
 
     .start-overlay {
@@ -305,8 +312,13 @@ const SPRITES = {
     }
 
     @keyframes pulse-loading {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
     }
 
     .controls-hint {
@@ -339,8 +351,15 @@ const SPRITES = {
     }
 
     @keyframes reward-pulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.1); opacity: 0.9; }
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.1);
+        opacity: 0.9;
+      }
     }
 
     .overlay-actions {
@@ -513,8 +532,8 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
 
     // Set up sound URL
     this.launchSoundUrl = this.api.getFullUrl(`/sound/${this.LAUNCH_SOUND_HASH}/file`);
-    this.hitSoundUrls = this.HIT_SOUND_HASHES.map(hash =>
-      this.api.getFullUrl(`/sound/${hash}/file`)
+    this.hitSoundUrls = this.HIT_SOUND_HASHES.map((hash) =>
+      this.api.getFullUrl(`/sound/${hash}/file`),
     );
 
     // Draw initial state with background
@@ -604,7 +623,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
       { x: 880, emoji: '🌲', size: 42 },
       { x: 1020, emoji: '🌳', size: 38 },
     ];
-    treeData.forEach(tree => {
+    treeData.forEach((tree) => {
       k.add([
         k.text(tree.emoji, { size: tree.size }),
         k.pos(tree.x, this.canvasHeight - 95 - tree.size / 2),
@@ -615,7 +634,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
 
     // Bushes (static)
     const bushPositions = [180, 380, 580, 780, 950];
-    bushPositions.forEach(xPos => {
+    bushPositions.forEach((xPos) => {
       k.add([
         k.text('🌳', { size: 28 }),
         k.pos(xPos, this.canvasHeight - 85),
@@ -701,13 +720,16 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
     };
 
     // Spawn a cloud every 3-6 seconds
-    const cloudInterval = setInterval(() => {
-      if (!this.k || this.destroyed) {
-        clearInterval(cloudInterval);
-        return;
-      }
-      spawnCloud();
-    }, 3000 + Math.random() * 3000);
+    const cloudInterval = setInterval(
+      () => {
+        if (!this.k || this.destroyed) {
+          clearInterval(cloudInterval);
+          return;
+        }
+        spawnCloud();
+      },
+      3000 + Math.random() * 3000,
+    );
 
     // Initial clouds
     for (let i = 0; i < 3; i++) {
@@ -746,13 +768,16 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
     };
 
     // Spawn a bird every 5-10 seconds
-    const birdInterval = setInterval(() => {
-      if (!this.k || this.destroyed) {
-        clearInterval(birdInterval);
-        return;
-      }
-      spawnBird();
-    }, 5000 + Math.random() * 5000);
+    const birdInterval = setInterval(
+      () => {
+        if (!this.k || this.destroyed) {
+          clearInterval(birdInterval);
+          return;
+        }
+        spawnBird();
+      },
+      5000 + Math.random() * 5000,
+    );
 
     // Spawn butterflies in the grass area
     const spawnButterfly = () => {
@@ -791,13 +816,16 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
     };
 
     // Spawn butterfly every 4-8 seconds
-    const butterflyInterval = setInterval(() => {
-      if (!this.k || this.destroyed) {
-        clearInterval(butterflyInterval);
-        return;
-      }
-      spawnButterfly();
-    }, 4000 + Math.random() * 4000);
+    const butterflyInterval = setInterval(
+      () => {
+        if (!this.k || this.destroyed) {
+          clearInterval(butterflyInterval);
+          return;
+        }
+        spawnButterfly();
+      },
+      4000 + Math.random() * 4000,
+    );
 
     // Initial butterfly
     setTimeout(() => spawnButterfly(), 1000);
@@ -845,7 +873,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
       const x = 500 + Math.random() * 550;
       const y = 50 + Math.random() * 400;
       // Kleinere Ziele = schwieriger
-      const baseScale = 0.35 - (this.round() * 0.02); // Wird kleiner pro Runde
+      const baseScale = 0.35 - this.round() * 0.02; // Wird kleiner pro Runde
       const scale = Math.max(0.25, baseScale + Math.random() * 0.2);
       const points = 1; // 1 Treffer = 1 Punkt = 1 N$ am Ende
 
@@ -877,7 +905,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
 
       // Bewegende Ziele ab Runde 2
       if (this.round() >= 2) {
-        const speed = 30 + (this.round() * 15);
+        const speed = 30 + this.round() * 15;
         const direction = Math.random() > 0.5 ? 1 : -1;
         const moveRange = 80 + Math.random() * 60;
         const startY = y;
@@ -932,7 +960,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
 
     // Check if clicking near the hotdog
     const dist = Math.sqrt(
-      Math.pow(x - this.slingshot.anchor.x, 2) + Math.pow(y - this.slingshot.anchor.y, 2)
+      Math.pow(x - this.slingshot.anchor.x, 2) + Math.pow(y - this.slingshot.anchor.y, 2),
     );
 
     if (dist < 80) {
@@ -960,7 +988,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
       const scale = maxPull / dist;
       this.slingshot.pullPos = this.k.vec2(
         this.slingshot.anchor.x + dx * scale,
-        this.slingshot.anchor.y + dy * scale
+        this.slingshot.anchor.y + dy * scale,
       );
     } else {
       this.slingshot.pullPos = this.k.vec2(x, y);
@@ -990,7 +1018,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
     const y = (touch.clientY - rect.top) * (this.canvasHeight / rect.height);
 
     const dist = Math.sqrt(
-      Math.pow(x - this.slingshot.anchor.x, 2) + Math.pow(y - this.slingshot.anchor.y, 2)
+      Math.pow(x - this.slingshot.anchor.x, 2) + Math.pow(y - this.slingshot.anchor.y, 2),
     );
 
     if (dist < 100) {
@@ -1019,7 +1047,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
       const scale = maxPull / dist;
       this.slingshot.pullPos = this.k.vec2(
         this.slingshot.anchor.x + dx * scale,
-        this.slingshot.anchor.y + dy * scale
+        this.slingshot.anchor.y + dy * scale,
       );
     } else {
       this.slingshot.pullPos = this.k.vec2(x, y);
@@ -1062,10 +1090,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
 
     // Left band
     k.add([
-      k.rect(
-        Math.sqrt(Math.pow(x - leftX, 2) + Math.pow(y - bandY, 2)),
-        5
-      ),
+      k.rect(Math.sqrt(Math.pow(x - leftX, 2) + Math.pow(y - bandY, 2)), 5),
       k.pos(leftX, bandY),
       k.rotate(Math.atan2(y - bandY, x - leftX) * (180 / Math.PI)),
       k.color(139, 90, 43),
@@ -1076,10 +1101,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
 
     // Right band
     k.add([
-      k.rect(
-        Math.sqrt(Math.pow(x - rightX, 2) + Math.pow(y - bandY, 2)),
-        5
-      ),
+      k.rect(Math.sqrt(Math.pow(x - rightX, 2) + Math.pow(y - bandY, 2)), 5),
       k.pos(rightX, bandY),
       k.rotate(Math.atan2(y - bandY, x - rightX) * (180 / Math.PI)),
       k.color(139, 90, 43),
@@ -1200,7 +1222,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
           target.hit = true;
           hitThisFrame = true; // Hotdog kann nur EINE Person treffen
           this.roundTargetsHit++;
-          this.score.update(s => s + target.points);
+          this.score.update((s) => s + target.points);
 
           // Flash-Effekt am Treffer (gelber Stern-Burst)
           const flash = k.add([
@@ -1313,10 +1335,10 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
   }
 
   private onHotdogLanded(): void {
-    this.hotdogs.update(h => h - 1);
+    this.hotdogs.update((h) => h - 1);
 
     // Alle Ziele getroffen?
-    const allTargetsHit = this.targets.every(t => t.hit);
+    const allTargetsHit = this.targets.every((t) => t.hit);
 
     if (allTargetsHit) {
       // Perfekt! Nächste Runde
@@ -1332,7 +1354,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
   }
 
   nextRound(): void {
-    this.round.update(r => r + 1);
+    this.round.update((r) => r + 1);
     // hotdogs wird in setupRound gesetzt (= numTargets)
     this.gameState.set('aiming');
     this.setupRound();
@@ -1378,7 +1400,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
   }
 
   private playHitSound(): Promise<void> {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       // Zufällig: nur Sound 1, nur Sound 2, oder beide
       const choice = Math.floor(Math.random() * 3); // 0, 1, oder 2
 
@@ -1389,9 +1411,10 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
         soundsToPlay = [this.hitSoundUrls[1]];
       } else {
         // Beide Sounds in zufälliger Reihenfolge (immer unterschiedlich: Sound1+Sound2)
-        soundsToPlay = Math.random() < 0.5
-          ? [this.hitSoundUrls[0], this.hitSoundUrls[1]]
-          : [this.hitSoundUrls[1], this.hitSoundUrls[0]];
+        soundsToPlay =
+          Math.random() < 0.5
+            ? [this.hitSoundUrls[0], this.hitSoundUrls[1]]
+            : [this.hitSoundUrls[1], this.hitSoundUrls[0]];
       }
 
       // Sounds sequentiell abspielen

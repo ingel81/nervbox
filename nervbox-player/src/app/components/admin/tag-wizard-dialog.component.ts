@@ -1,10 +1,14 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  computed,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import {
-  MatDialogModule,
-  MatDialogRef,
-} from '@angular/material/dialog';
+import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -74,10 +78,7 @@ import { SoundService } from '../../core/services/sound.service';
             <span>{{ currentIndex() + 1 }} von {{ filteredSounds().length }}</span>
             <span class="progress-percent">{{ progressPercent() }}%</span>
           </div>
-          <mat-progress-bar
-            mode="determinate"
-            [value]="progressPercent()"
-          ></mat-progress-bar>
+          <mat-progress-bar mode="determinate" [value]="progressPercent()"></mat-progress-bar>
         </div>
 
         <!-- Current Sound Info -->
@@ -235,6 +236,7 @@ import { SoundService } from '../../core/services/sound.service';
       }
     </mat-dialog-actions>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     h2[mat-dialog-title] {
       display: flex;
@@ -310,7 +312,11 @@ import { SoundService } from '../../core/services/sound.service';
     }
 
     .sound-info {
-      background: linear-gradient(135deg, rgba(147, 51, 234, 0.1) 0%, rgba(236, 72, 153, 0.05) 100%);
+      background: linear-gradient(
+        135deg,
+        rgba(147, 51, 234, 0.1) 0%,
+        rgba(236, 72, 153, 0.05) 100%
+      );
       border: 1px solid rgba(147, 51, 234, 0.3);
       border-radius: 12px;
       padding: 16px;
@@ -643,16 +649,14 @@ export class TagWizardDialogComponent implements OnInit {
     return Math.round(((this.currentIndex() + 1) / total) * 100);
   });
 
-  readonly isLastSound = computed(() =>
-    this.currentIndex() >= this.filteredSounds().length - 1
-  );
+  readonly isLastSound = computed(() => this.currentIndex() >= this.filteredSounds().length - 1);
 
   readonly availableTagsFiltered = computed(() => {
     const current = this.currentTags();
     const search = this.tagSearchQuery().toLowerCase().trim();
-    let tags = this.availableTags().filter(t => !current.includes(t.name));
+    let tags = this.availableTags().filter((t) => !current.includes(t.name));
     if (search) {
-      tags = tags.filter(t => t.name.toLowerCase().includes(search));
+      tags = tags.filter((t) => t.name.toLowerCase().includes(search));
     }
     // Sort alphabetically
     return tags.sort((a, b) => a.name.localeCompare(b.name));
@@ -690,7 +694,7 @@ export class TagWizardDialogComponent implements OnInit {
     let sounds = [...this.allSounds()];
 
     if (this.showOnlyUntagged()) {
-      sounds = sounds.filter(s => !s.tags || s.tags.length === 0);
+      sounds = sounds.filter((s) => !s.tags || s.tags.length === 0);
     }
 
     // Sort alphabetically
@@ -734,9 +738,9 @@ export class TagWizardDialogComponent implements OnInit {
   }
 
   toggleTag(tagName: string): void {
-    this.currentTags.update(tags => {
+    this.currentTags.update((tags) => {
       if (tags.includes(tagName)) {
-        return tags.filter(t => t !== tagName);
+        return tags.filter((t) => t !== tagName);
       } else {
         return [...tags, tagName];
       }
@@ -748,7 +752,7 @@ export class TagWizardDialogComponent implements OnInit {
   }
 
   getTagColor(tagName: string): string {
-    const tag = this.availableTags().find(t => t.name === tagName);
+    const tag = this.availableTags().find((t) => t.name === tagName);
     return tag?.color || '#9333ea';
   }
 
@@ -757,19 +761,19 @@ export class TagWizardDialogComponent implements OnInit {
     if (!name) return;
 
     // Check if already exists
-    const exists = this.availableTags().some(t => t.name === name);
+    const exists = this.availableTags().some((t) => t.name === name);
 
     if (exists) {
       // Just add to current sound
       if (!this.currentTags().includes(name)) {
-        this.currentTags.update(tags => [...tags, name]);
+        this.currentTags.update((tags) => [...tags, name]);
       }
     } else {
       // Create new tag via API
       try {
         const newTag = await firstValueFrom(this.soundService.createTag(name));
-        this.availableTags.update(tags => [...tags, newTag]);
-        this.currentTags.update(tags => [...tags, name]);
+        this.availableTags.update((tags) => [...tags, newTag]);
+        this.currentTags.update((tags) => [...tags, name]);
       } catch (error) {
         console.error('Failed to create tag:', error);
       }
@@ -785,7 +789,7 @@ export class TagWizardDialogComponent implements OnInit {
       // Close dialog when done
       this.dialogRef.close(true);
     } else {
-      this.currentIndex.update(i => i + 1);
+      this.currentIndex.update((i) => i + 1);
       this.loadCurrentSoundTags();
       this.playCurrentSound();
     }
@@ -795,7 +799,7 @@ export class TagWizardDialogComponent implements OnInit {
     await this.saveCurrentTags();
 
     if (this.currentIndex() > 0) {
-      this.currentIndex.update(i => i - 1);
+      this.currentIndex.update((i) => i - 1);
       this.loadCurrentSoundTags();
       this.playCurrentSound();
     }
@@ -803,7 +807,7 @@ export class TagWizardDialogComponent implements OnInit {
 
   skip(): void {
     if (!this.isLastSound()) {
-      this.currentIndex.update(i => i + 1);
+      this.currentIndex.update((i) => i + 1);
       this.loadCurrentSoundTags();
       this.playCurrentSound();
     }
@@ -819,22 +823,18 @@ export class TagWizardDialogComponent implements OnInit {
 
     const tagsChanged =
       originalTags.length !== currentTags.length ||
-      !originalTags.every(t => currentTags.includes(t));
+      !originalTags.every((t) => currentTags.includes(t));
 
     if (!tagsChanged) return;
 
     this.saving.set(true);
 
     try {
-      await firstValueFrom(
-        this.soundService.updateSound(sound.hash, { tags: currentTags })
-      );
+      await firstValueFrom(this.soundService.updateSound(sound.hash, { tags: currentTags }));
 
       // Update local state - both allSounds and filteredSounds
       const updateFn = (sounds: Sound[]) =>
-        sounds.map(s =>
-          s.hash === sound.hash ? { ...s, tags: [...currentTags] } : s
-        );
+        sounds.map((s) => (s.hash === sound.hash ? { ...s, tags: [...currentTags] } : s));
 
       this.allSounds.update(updateFn);
       this.filteredSounds.update(updateFn);

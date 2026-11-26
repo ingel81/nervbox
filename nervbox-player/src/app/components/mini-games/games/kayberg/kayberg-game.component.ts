@@ -8,6 +8,7 @@ import {
   signal,
   computed,
   HostListener,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -22,6 +23,7 @@ import { CreditService } from '../../../../core/services/credit.service';
   standalone: true,
   imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule],
   templateUrl: './kayberg-game.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./kayberg-game.component.scss'],
 })
 export class KaybergGameComponent implements AfterViewInit, OnDestroy {
@@ -39,9 +41,7 @@ export class KaybergGameComponent implements AfterViewInit, OnDestroy {
   readonly preyRequired = signal(5);
 
   readonly livesArray = computed(() => Array(this.lives()).fill(0));
-  readonly waveProgress = computed(
-    () => `${this.preyCaught()}/${this.preyRequired()}`
-  );
+  readonly waveProgress = computed(() => `${this.preyCaught()}/${this.preyRequired()}`);
 
   readonly canvasWidth = 900;
   readonly canvasHeight = 600;
@@ -63,10 +63,7 @@ export class KaybergGameComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    if (
-      (event.key === ' ' || event.key === 'Enter') &&
-      this.gameState() === 'ready'
-    ) {
+    if ((event.key === ' ' || event.key === 'Enter') && this.gameState() === 'ready') {
       event.preventDefault();
       this.startGame();
       return;
@@ -102,16 +99,14 @@ export class KaybergGameComponent implements AfterViewInit, OnDestroy {
         this.stopGameLoop();
         this.gameState.set('won');
         // Claim reward
-        this.creditService
-          .claimMinigameReward('KaybergHunter', this.level())
-          .subscribe({
-            next: (response) => {
-              this.levelReward.set(response.reward);
-            },
-            error: () => {
-              this.levelReward.set(0);
-            },
-          });
+        this.creditService.claimMinigameReward('KaybergHunter', this.level()).subscribe({
+          next: (response) => {
+            this.levelReward.set(response.reward);
+          },
+          error: () => {
+            this.levelReward.set(0);
+          },
+        });
       },
       onGameOver: () => {
         this.stopGameLoop();

@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -36,7 +36,9 @@ export interface DeleteSoundDialogData {
     <mat-dialog-content>
       <div class="warning-box">
         <p>Diese Aktion kann nicht rückgängig gemacht werden!</p>
-        <p>Der Sound <strong>"{{ data.sound.name }}"</strong> wird unwiderruflich gelöscht.</p>
+        <p>
+          Der Sound <strong>"{{ data.sound.name }}"</strong> wird unwiderruflich gelöscht.
+        </p>
       </div>
 
       <div class="confirm-section">
@@ -73,6 +75,7 @@ export interface DeleteSoundDialogData {
       </button>
     </mat-dialog-actions>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     h2[mat-dialog-title] {
       display: flex;
@@ -165,7 +168,7 @@ export class DeleteSoundDialogComponent {
         this.deleting.set(false);
         this.dialogRef.close(true);
       },
-      error: err => {
+      error: (err) => {
         this.deleting.set(false);
         this.error.set(err.error?.Error || err.message || 'Fehler beim Löschen');
       },

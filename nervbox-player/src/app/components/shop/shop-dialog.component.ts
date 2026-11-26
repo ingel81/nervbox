@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -38,7 +38,11 @@ interface ShopItem {
         <div class="header-glow"></div>
         <div class="header-particles">
           @for (i of particles; track i) {
-            <div class="particle" [style.--delay]="i * 0.5 + 's'" [style.--x]="(i * 17) % 100 + '%'"></div>
+            <div
+              class="particle"
+              [style.--delay]="i * 0.5 + 's'"
+              [style.--x]="((i * 17) % 100) + '%'"
+            ></div>
           }
         </div>
         <div class="header-content">
@@ -56,13 +60,13 @@ interface ShopItem {
       <!-- BALANCE BAR -->
       <div class="balance-bar">
         <div class="balance-item shekel">
-          <img src="icons/nervbox-coin.svg" alt="" class="balance-icon">
+          <img src="icons/nervbox-coin.svg" alt="" class="balance-icon" />
           <span class="balance-value">{{ creditService.creditsFormatted() }}</span>
           <span class="balance-label">N$</span>
         </div>
         <div class="balance-divider"></div>
         <div class="balance-item wood">
-          <img src="icons/nervbox-log.svg" alt="" class="balance-icon wood-icon">
+          <img src="icons/nervbox-log.svg" alt="" class="balance-icon wood-icon" />
           <span class="balance-value">{{ inventoryService.wood() }}</span>
           <span class="balance-label">Holz</span>
         </div>
@@ -78,7 +82,7 @@ interface ShopItem {
             placeholder="Items durchsuchen..."
             [value]="searchQuery()"
             (input)="onSearch($event)"
-          >
+          />
           @if (searchQuery()) {
             <button class="clear-search" (click)="clearSearch()">
               <mat-icon>close</mat-icon>
@@ -89,7 +93,9 @@ interface ShopItem {
         <div class="items-section">
           <div class="section-header">
             <mat-icon>storefront</mat-icon>
-            <h2>{{ searchQuery() ? 'SUCHERGEBNISSE' : 'ALLE ITEMS' }} ({{ filteredItems().length }})</h2>
+            <h2>
+              {{ searchQuery() ? 'SUCHERGEBNISSE' : 'ALLE ITEMS' }} ({{ filteredItems().length }})
+            </h2>
             <mat-icon>storefront</mat-icon>
           </div>
 
@@ -102,7 +108,11 @@ interface ShopItem {
 
           <div class="items-grid">
             @for (item of filteredItems(); track item.id) {
-              <div class="shop-item" [class]="'status-' + item.status" [attr.data-category]="item.category">
+              <div
+                class="shop-item"
+                [class]="'status-' + item.status"
+                [attr.data-category]="item.category"
+              >
                 <div class="item-badge" [class]="item.status">
                   {{ getStatusLabel(item.status) }}
                 </div>
@@ -112,7 +122,7 @@ interface ShopItem {
                 <span class="item-desc">{{ item.description }}</span>
 
                 <div class="item-price">
-                  <img src="icons/nervbox-coin.svg" alt="" class="mini-coin">
+                  <img src="icons/nervbox-coin.svg" alt="" class="mini-coin" />
                   <span>{{ formatPrice(item.price) }}</span>
                 </div>
 
@@ -146,6 +156,7 @@ interface ShopItem {
       </div>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     :host {
       display: flex;
@@ -166,7 +177,12 @@ interface ShopItem {
     .shop-header {
       position: relative;
       padding: 30px 24px 20px;
-      background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(249, 115, 22, 0.1) 50%, rgba(147, 51, 234, 0.1) 100%);
+      background: linear-gradient(
+        135deg,
+        rgba(251, 191, 36, 0.15) 0%,
+        rgba(249, 115, 22, 0.1) 50%,
+        rgba(147, 51, 234, 0.1) 100%
+      );
       border-bottom: 2px solid rgba(251, 191, 36, 0.4);
       overflow: hidden;
     }
@@ -182,8 +198,12 @@ interface ShopItem {
     }
 
     @keyframes header-rotate {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .header-particles {
@@ -207,9 +227,17 @@ interface ShopItem {
     }
 
     @keyframes particle-rise {
-      0% { transform: translateY(0) scale(0); opacity: 0; }
-      10% { opacity: 1; }
-      100% { transform: translateY(-200px) scale(0); opacity: 0; }
+      0% {
+        transform: translateY(0) scale(0);
+        opacity: 0;
+      }
+      10% {
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(-200px) scale(0);
+        opacity: 0;
+      }
     }
 
     .header-content {
@@ -230,12 +258,23 @@ interface ShopItem {
       animation: sparkle-pulse 1.5s ease-in-out infinite;
     }
 
-    .sparkle.left { animation-delay: 0s; }
-    .sparkle.right { animation-delay: 0.75s; }
+    .sparkle.left {
+      animation-delay: 0s;
+    }
+    .sparkle.right {
+      animation-delay: 0.75s;
+    }
 
     @keyframes sparkle-pulse {
-      0%, 100% { opacity: 0.5; transform: scale(0.8); }
-      50% { opacity: 1; transform: scale(1.2); }
+      0%,
+      100% {
+        opacity: 0.5;
+        transform: scale(0.8);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.2);
+      }
     }
 
     .shop-title {
@@ -254,8 +293,13 @@ interface ShopItem {
     }
 
     @keyframes gold-shimmer {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
+      0%,
+      100% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
     }
 
     .close-btn {
@@ -290,7 +334,11 @@ interface ShopItem {
     }
 
     .balance-item.shekel {
-      background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(249, 115, 22, 0.1) 100%);
+      background: linear-gradient(
+        135deg,
+        rgba(251, 191, 36, 0.15) 0%,
+        rgba(249, 115, 22, 0.1) 100%
+      );
       border: 1px solid rgba(251, 191, 36, 0.4);
     }
 
@@ -527,8 +575,13 @@ interface ShopItem {
     }
 
     @keyframes badge-pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
+      0%,
+      100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
     }
 
     .item-badge {
@@ -719,52 +772,308 @@ export class ShopDialogComponent {
   // All shop items
   readonly shopItems: ShopItem[] = [
     // Premium & Power
-    { id: 'premium', name: 'Nervbox Premium', emoji: '👑', price: 100000, status: 'coming_soon', description: 'Goldener Rahmen, kein Cooldown', category: 'premium' },
-    { id: 'soundstop', name: 'Sound Stop Button', emoji: '🔇', price: 500000, status: 'sold_out', description: 'Alle Sounds stoppen', category: 'premium' },
-    { id: 'goldname', name: 'Goldener Username', emoji: '✨', price: 250000, status: 'coming_soon', description: 'Name in Gold im Chat', category: 'premium' },
-    { id: 'casino_vip', name: 'Casino VIP Pass', emoji: '🎰', price: 1000000, status: 'coming_soon', description: 'Höhere Gewinnchancen', category: 'premium' },
-    { id: 'booster', name: 'Shekel Booster', emoji: '⚡', price: 50000, status: 'coming_soon', description: '+50% stündlich für 24h', category: 'premium' },
-    { id: 'exclusive_sounds', name: 'Exclusive Sounds', emoji: '🎵', price: 200000, status: 'coming_soon', description: 'Versteckte Premium-Sounds', category: 'premium' },
-    { id: 'speed_boost', name: 'Sound Speed Boost', emoji: '⏩', price: 45000, status: 'coming_soon', description: 'Sounds 1.5x schneller', category: 'premium' },
-    { id: 'mystery_box', name: 'Mystery Box', emoji: '📦', price: 10000, status: 'coming_soon', description: 'Zufällig, evtl. leer', category: 'premium' },
+    {
+      id: 'premium',
+      name: 'Nervbox Premium',
+      emoji: '👑',
+      price: 100000,
+      status: 'coming_soon',
+      description: 'Goldener Rahmen, kein Cooldown',
+      category: 'premium',
+    },
+    {
+      id: 'soundstop',
+      name: 'Sound Stop Button',
+      emoji: '🔇',
+      price: 500000,
+      status: 'sold_out',
+      description: 'Alle Sounds stoppen',
+      category: 'premium',
+    },
+    {
+      id: 'goldname',
+      name: 'Goldener Username',
+      emoji: '✨',
+      price: 250000,
+      status: 'coming_soon',
+      description: 'Name in Gold im Chat',
+      category: 'premium',
+    },
+    {
+      id: 'casino_vip',
+      name: 'Casino VIP Pass',
+      emoji: '🎰',
+      price: 1000000,
+      status: 'coming_soon',
+      description: 'Höhere Gewinnchancen',
+      category: 'premium',
+    },
+    {
+      id: 'booster',
+      name: 'Shekel Booster',
+      emoji: '⚡',
+      price: 50000,
+      status: 'coming_soon',
+      description: '+50% stündlich für 24h',
+      category: 'premium',
+    },
+    {
+      id: 'exclusive_sounds',
+      name: 'Exclusive Sounds',
+      emoji: '🎵',
+      price: 200000,
+      status: 'coming_soon',
+      description: 'Versteckte Premium-Sounds',
+      category: 'premium',
+    },
+    {
+      id: 'speed_boost',
+      name: 'Sound Speed Boost',
+      emoji: '⏩',
+      price: 45000,
+      status: 'coming_soon',
+      description: 'Sounds 1.5x schneller',
+      category: 'premium',
+    },
+    {
+      id: 'mystery_box',
+      name: 'Mystery Box',
+      emoji: '📦',
+      price: 10000,
+      status: 'coming_soon',
+      description: 'Zufällig, evtl. leer',
+      category: 'premium',
+    },
 
     // Cosmetics
-    { id: 'rainbow', name: 'Regenbogen-Name', emoji: '🌈', price: 180000, status: 'coming_soon', description: 'RGB-Animation im Chat', category: 'cosmetic' },
-    { id: 'flames', name: 'Flammen-Avatar', emoji: '🔥', price: 90000, status: 'coming_soon', description: 'Avatar brennt permanent', category: 'cosmetic' },
-    { id: 'crown', name: 'Kronen-Emoji', emoji: '👑', price: 60000, status: 'coming_soon', description: 'Krone neben Name', category: 'cosmetic' },
-    { id: 'diamond', name: 'Diamant-Rand', emoji: '💎', price: 300000, status: 'coming_soon', description: 'Sparkling Diamond Border', category: 'cosmetic' },
-    { id: 'hotdog_aura', name: 'Hotdog-Aura', emoji: '🌭', price: 40000, status: 'coming_soon', description: 'Fliegende Hotdogs', category: 'cosmetic' },
+    {
+      id: 'rainbow',
+      name: 'Regenbogen-Name',
+      emoji: '🌈',
+      price: 180000,
+      status: 'coming_soon',
+      description: 'RGB-Animation im Chat',
+      category: 'cosmetic',
+    },
+    {
+      id: 'flames',
+      name: 'Flammen-Avatar',
+      emoji: '🔥',
+      price: 90000,
+      status: 'coming_soon',
+      description: 'Avatar brennt permanent',
+      category: 'cosmetic',
+    },
+    {
+      id: 'crown',
+      name: 'Kronen-Emoji',
+      emoji: '👑',
+      price: 60000,
+      status: 'coming_soon',
+      description: 'Krone neben Name',
+      category: 'cosmetic',
+    },
+    {
+      id: 'diamond',
+      name: 'Diamant-Rand',
+      emoji: '💎',
+      price: 300000,
+      status: 'coming_soon',
+      description: 'Sparkling Diamond Border',
+      category: 'cosmetic',
+    },
+    {
+      id: 'hotdog_aura',
+      name: 'Hotdog-Aura',
+      emoji: '🌭',
+      price: 40000,
+      status: 'coming_soon',
+      description: 'Fliegende Hotdogs',
+      category: 'cosmetic',
+    },
 
     // Fun & Troll
-    { id: 'gold_wood', name: 'Goldene Holz-Edition', emoji: '🪵✨', price: 100000, status: 'coming_soon', description: 'Holz aber GOLDEN', category: 'fun' },
-    { id: 'paddi', name: "Paddi's Segen", emoji: '😈', price: 666000, status: 'sold_out', description: 'Mystische Aura', category: 'fun' },
-    { id: 'admin_day', name: 'Admin für 1 Tag', emoji: '🛡️', price: 10000000, status: 'never', description: 'Nur zur Show', category: 'fun' },
-    { id: 'infinite', name: 'Infinite Shekel', emoji: '∞', price: 999000000, status: 'sold_out', description: 'Perma-Ausverkauft', category: 'fun' },
+    {
+      id: 'gold_wood',
+      name: 'Goldene Holz-Edition',
+      emoji: '🪵✨',
+      price: 100000,
+      status: 'coming_soon',
+      description: 'Holz aber GOLDEN',
+      category: 'fun',
+    },
+    {
+      id: 'paddi',
+      name: "Paddi's Segen",
+      emoji: '😈',
+      price: 666000,
+      status: 'sold_out',
+      description: 'Mystische Aura',
+      category: 'fun',
+    },
+    {
+      id: 'admin_day',
+      name: 'Admin für 1 Tag',
+      emoji: '🛡️',
+      price: 10000000,
+      status: 'never',
+      description: 'Nur zur Show',
+      category: 'fun',
+    },
+    {
+      id: 'infinite',
+      name: 'Infinite Shekel',
+      emoji: '∞',
+      price: 999000000,
+      status: 'sold_out',
+      description: 'Perma-Ausverkauft',
+      category: 'fun',
+    },
 
     // Meta & Absurd
-    { id: 'nft', name: 'NFT (Not For Trade)', emoji: '🖼️', price: 1, status: 'coming_soon', description: 'Macht nichts', category: 'meta' },
-    { id: 'wood_wood', name: 'Holz-Holz', emoji: '🪵🪵', price: 50000, status: 'coming_soon', description: 'Holz das Holz ist', category: 'meta' },
-    { id: 'stone', name: 'Der Stein', emoji: '🪨', price: 420000, status: 'sold_out', description: 'Ein Stein. Prestige.', category: 'meta' },
-    { id: 'secret', name: 'Geheimes Item', emoji: '❓', price: -1, status: 'coming_soon', description: 'Preis unbekannt', category: 'meta' },
+    {
+      id: 'nft',
+      name: 'NFT (Not For Trade)',
+      emoji: '🖼️',
+      price: 1,
+      status: 'coming_soon',
+      description: 'Macht nichts',
+      category: 'meta',
+    },
+    {
+      id: 'wood_wood',
+      name: 'Holz-Holz',
+      emoji: '🪵🪵',
+      price: 50000,
+      status: 'coming_soon',
+      description: 'Holz das Holz ist',
+      category: 'meta',
+    },
+    {
+      id: 'stone',
+      name: 'Der Stein',
+      emoji: '🪨',
+      price: 420000,
+      status: 'sold_out',
+      description: 'Ein Stein. Prestige.',
+      category: 'meta',
+    },
+    {
+      id: 'secret',
+      name: 'Geheimes Item',
+      emoji: '❓',
+      price: -1,
+      status: 'coming_soon',
+      description: 'Preis unbekannt',
+      category: 'meta',
+    },
 
     // Community
-    { id: 'vip_lounge', name: 'VIP-Lounge Zugang', emoji: '🏰', price: 500000, status: 'coming_soon', description: 'Exklusiver Chat-Channel', category: 'social' },
-    { id: 'mega_upvote', name: 'Mega-Upvote', emoji: '⬆️⬆️', price: 25000, status: 'coming_soon', description: 'Upvote zählt 10x', category: 'social' },
+    {
+      id: 'vip_lounge',
+      name: 'VIP-Lounge Zugang',
+      emoji: '🏰',
+      price: 500000,
+      status: 'coming_soon',
+      description: 'Exklusiver Chat-Channel',
+      category: 'social',
+    },
+    {
+      id: 'mega_upvote',
+      name: 'Mega-Upvote',
+      emoji: '⬆️⬆️',
+      price: 25000,
+      status: 'coming_soon',
+      description: 'Upvote zählt 10x',
+      category: 'social',
+    },
 
     // Zeitbasiert
-    { id: 'timemachine', name: 'Zeitmaschine', emoji: '⏰', price: 999000, status: 'coming_soon', description: 'Sound zur Uhrzeit', category: 'time' },
-    { id: 'happy_hour', name: 'Happy Hour Boost', emoji: '🍻', price: 30000, status: 'coming_soon', description: '+100% 18-20 Uhr', category: 'time' },
+    {
+      id: 'timemachine',
+      name: 'Zeitmaschine',
+      emoji: '⏰',
+      price: 999000,
+      status: 'coming_soon',
+      description: 'Sound zur Uhrzeit',
+      category: 'time',
+    },
+    {
+      id: 'happy_hour',
+      name: 'Happy Hour Boost',
+      emoji: '🍻',
+      price: 30000,
+      status: 'coming_soon',
+      description: '+100% 18-20 Uhr',
+      category: 'time',
+    },
 
     // Prestige
-    { id: 'founder', name: "Founder's Badge", emoji: '🏅', price: 1000000, status: 'sold_out', description: 'OG NERVBOXER', category: 'prestige' },
-    { id: 'hall_of_fame', name: 'Hall of Fame', emoji: '🏆', price: 5000000, status: 'sold_out', description: 'Permanent in HoF', category: 'prestige' },
-    { id: 'own_sound', name: 'Eigener Sound-Slot', emoji: '🎤', price: 10000000, status: 'sold_out', description: 'EINEN Sound hochladen', category: 'prestige' },
+    {
+      id: 'founder',
+      name: "Founder's Badge",
+      emoji: '🏅',
+      price: 1000000,
+      status: 'sold_out',
+      description: 'OG NERVBOXER',
+      category: 'prestige',
+    },
+    {
+      id: 'hall_of_fame',
+      name: 'Hall of Fame',
+      emoji: '🏆',
+      price: 5000000,
+      status: 'sold_out',
+      description: 'Permanent in HoF',
+      category: 'prestige',
+    },
+    {
+      id: 'own_sound',
+      name: 'Eigener Sound-Slot',
+      emoji: '🎤',
+      price: 10000000,
+      status: 'sold_out',
+      description: 'EINEN Sound hochladen',
+      category: 'prestige',
+    },
 
     // Seasonal
-    { id: 'xmas', name: 'Weihnachts-Skin', emoji: '🎄', price: 50000, status: 'coming_soon', description: 'Festliche Dekoration', category: 'seasonal' },
-    { id: 'cabd2025', name: 'CABD 2025 Badge', emoji: '🎉', price: 25000, status: 'coming_soon', description: 'Exklusives Event-Badge', category: 'seasonal' },
-    { id: 'silvester', name: 'Silvester-Rakete', emoji: '🎆', price: 30000, status: 'coming_soon', description: 'Partikel-Effekt', category: 'seasonal' },
-    { id: 'birthday', name: 'Geburtstags-Hut', emoji: '🎂', price: 15000, status: 'coming_soon', description: 'Lustiger Hut', category: 'seasonal' },
+    {
+      id: 'xmas',
+      name: 'Weihnachts-Skin',
+      emoji: '🎄',
+      price: 50000,
+      status: 'coming_soon',
+      description: 'Festliche Dekoration',
+      category: 'seasonal',
+    },
+    {
+      id: 'cabd2025',
+      name: 'CABD 2025 Badge',
+      emoji: '🎉',
+      price: 25000,
+      status: 'coming_soon',
+      description: 'Exklusives Event-Badge',
+      category: 'seasonal',
+    },
+    {
+      id: 'silvester',
+      name: 'Silvester-Rakete',
+      emoji: '🎆',
+      price: 30000,
+      status: 'coming_soon',
+      description: 'Partikel-Effekt',
+      category: 'seasonal',
+    },
+    {
+      id: 'birthday',
+      name: 'Geburtstags-Hut',
+      emoji: '🎂',
+      price: 15000,
+      status: 'coming_soon',
+      description: 'Lustiger Hut',
+      category: 'seasonal',
+    },
   ];
 
   // Combined list with wood first
@@ -775,11 +1084,12 @@ export class ShopDialogComponent {
     const query = this.searchQuery().toLowerCase().trim();
     if (!query) return this.allItems;
 
-    return this.allItems.filter(item =>
-      item.name.toLowerCase().includes(query) ||
-      item.description.toLowerCase().includes(query) ||
-      item.category.toLowerCase().includes(query) ||
-      item.emoji.includes(query)
+    return this.allItems.filter(
+      (item) =>
+        item.name.toLowerCase().includes(query) ||
+        item.description.toLowerCase().includes(query) ||
+        item.category.toLowerCase().includes(query) ||
+        item.emoji.includes(query),
     );
   });
 
@@ -839,20 +1149,29 @@ export class ShopDialogComponent {
 
   getStatusLabel(status: string): string {
     switch (status) {
-      case 'available': return 'KAUFBAR';
-      case 'coming_soon': return 'BALD';
-      case 'sold_out': return 'AUSVERKAUFT';
-      case 'never': return 'NIEMALS';
-      default: return '';
+      case 'available':
+        return 'KAUFBAR';
+      case 'coming_soon':
+        return 'BALD';
+      case 'sold_out':
+        return 'AUSVERKAUFT';
+      case 'never':
+        return 'NIEMALS';
+      default:
+        return '';
     }
   }
 
   getButtonLabel(status: string): string {
     switch (status) {
-      case 'coming_soon': return 'VORBESTELLEN';
-      case 'sold_out': return 'AUSVERKAUFT';
-      case 'never': return 'TRÄUM WEITER';
-      default: return 'N/A';
+      case 'coming_soon':
+        return 'VORBESTELLEN';
+      case 'sold_out':
+        return 'AUSVERKAUFT';
+      case 'never':
+        return 'TRÄUM WEITER';
+      default:
+        return 'N/A';
     }
   }
 

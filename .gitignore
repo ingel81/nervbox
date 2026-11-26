@@ -342,7 +342,8 @@ ASALocalRun/
 .localhistory/
 
 # BeatPulse healthcheck temp database
-healthchecksdbNervboxDeamon/nervbox.db
+healthchecksdb
+NervboxDeamon/nervbox.db
 
 # Local settings with secrets (API keys, etc.)
 **/appsettings.Local.json
@@ -361,3 +362,8 @@ wrapped-*/
 
 # Lokale Claude-Notizen (Memory-Spiegel)
 CLAUDE.local.md
+
+# Lokale Datenbanken (nie committen - enthalten Nutzerdaten)
+*.db
+*.db-shm
+*.db-wal

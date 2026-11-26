@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -104,6 +104,7 @@ import { AvatarService } from '../../core/services/avatar.service';
       </mat-dialog-actions>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .avatar-dialog {
       min-width: 400px;
@@ -234,11 +235,11 @@ import { AvatarService } from '../../core/services/avatar.service';
       gap: 6px;
     }
 
-    mat-dialog-actions button[color="primary"] {
+    mat-dialog-actions button[color='primary'] {
       background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
     }
 
-    mat-dialog-actions button[color="primary"]:disabled {
+    mat-dialog-actions button[color='primary']:disabled {
       opacity: 0.5;
     }
 

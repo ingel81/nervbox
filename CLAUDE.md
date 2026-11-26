@@ -9,12 +9,12 @@
 ```
 parent/
 ├── nervbox/                    ← DIESES REPO
-│   ├── NervboxDeamon/          # .NET 8 Backend
+│   ├── NervboxDeamon/          # .NET 11 Backend
 │   │   ├── Controllers/        # API Controller
 │   │   ├── Services/           # Business Logic
 │   │   ├── Hubs/               # SignalR Hubs
 │   │   └── Models/             # EF Core Entities
-│   ├── nervbox-player/         # Angular 21 Player
+│   ├── nervbox-player/         # Angular 22 Player
 │   │   └── src/app/
 │   │       ├── components/     # UI Components
 │   │       └── core/services/  # API, Auth, SignalR
@@ -41,9 +41,9 @@ parent/
 
 | Teil | Stack |
 |------|-------|
-| Backend | .NET 8, ASP.NET Core, EF Core, SQLite, SignalR |
-| Player | Angular 21, Standalone, Signals, Material |
-| Mixer | Angular 20, Standalone (separates Repo) |
+| Backend | .NET 11, ASP.NET Core, EF Core 11, SQLite, SignalR |
+| Player | Angular 22, Standalone, Signals, Material |
+| Mixer | Angular 22, Standalone (separates Repo) |
 | Pi Audio | mpg123 |
 | Auth | JWT (14 Tage) |
 

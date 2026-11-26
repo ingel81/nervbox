@@ -211,6 +211,23 @@ namespace NervboxDeamon
         var playerUrl = Configuration["DevProxy:PlayerUrl"] ?? "http://localhost:4711";
         var mixerUrl = Configuration["DevProxy:MixerUrl"] ?? "http://localhost:4712";
 
+        // Mixer instruments live outside the mixer workspace (../instruments), which the Angular
+        // application builder cannot include as assets. Serve them directly in dev.
+        // On the Pi, deploy copies them to wwwroot/mixer/assets/instruments.
+        var instrumentsPath = Path.GetFullPath(Path.Combine(env.ContentRootPath, Configuration["DevProxy:InstrumentsPath"] ?? "../../instruments"));
+        if (Directory.Exists(instrumentsPath))
+        {
+          app.UseStaticFiles(new StaticFileOptions
+          {
+            FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(instrumentsPath),
+            RequestPath = "/mixer/assets/instruments",
+          });
+        }
+        else
+        {
+          _logger?.LogWarning("Dev mode: instruments folder not found: {Path}", instrumentsPath);
+        }
+
         // Mixer: Proxy to mixer dev server (keep /mixer prefix - dev server uses --serve-path /mixer)
         app.UseWhen(
             context => context.Request.Path.Value != null && context.Request.Path.Value.StartsWith("/mixer"),

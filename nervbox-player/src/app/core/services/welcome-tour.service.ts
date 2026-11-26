@@ -1,6 +1,5 @@
 import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import Shepherd from 'shepherd.js';
-import { offset } from '@floating-ui/dom';
 import { AuthService } from './auth.service';
 import { AchievementService } from './achievement.service';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
@@ -646,8 +645,8 @@ export class WelcomeTourService {
         canClickTarget: false,
         modalOverlayOpeningPadding: 8,
         modalOverlayOpeningRadius: 8,
-        floatingUIOptions: {
-          middleware: [offset(16)],
+        positionOptions: {
+          offset: 16,
         },
       },
     });

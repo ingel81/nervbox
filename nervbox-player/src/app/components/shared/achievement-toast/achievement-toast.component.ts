@@ -1,4 +1,4 @@
-import { Component, inject, effect } from '@angular/core';
+import { Component, inject, effect, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { trigger, state, style, transition, animate } from '@angular/animations';
@@ -10,14 +10,20 @@ import { AchievementService } from '../../../core/services/achievement.service';
   imports: [CommonModule, MatIconModule],
   animations: [
     trigger('slideIn', [
-      state('void', style({
-        transform: 'translateY(-100%)',
-        opacity: 0,
-      })),
-      state('*', style({
-        transform: 'translateY(0)',
-        opacity: 1,
-      })),
+      state(
+        'void',
+        style({
+          transform: 'translateY(-100%)',
+          opacity: 0,
+        }),
+      ),
+      state(
+        '*',
+        style({
+          transform: 'translateY(0)',
+          opacity: 1,
+        }),
+      ),
       transition('void => *', animate('300ms ease-out')),
       transition('* => void', animate('200ms ease-in')),
     ]),
@@ -35,13 +41,14 @@ import { AchievementService } from '../../../core/services/achievement.service';
         </div>
         @if (earned.achievement.rewardCredits > 0) {
           <div class="toast-reward">
-            <img src="icons/nervbox-coin.svg" alt="" class="reward-coin">
+            <img src="icons/nervbox-coin.svg" alt="" class="reward-coin" />
             <span>+{{ earned.achievement.rewardCredits }}</span>
           </div>
         }
       </div>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .achievement-toast {
       position: fixed;
@@ -53,9 +60,15 @@ import { AchievementService } from '../../../core/services/achievement.service';
       align-items: center;
       gap: 16px;
       padding: 16px 20px;
-      background: linear-gradient(135deg, rgba(147, 51, 234, 0.95) 0%, rgba(236, 72, 153, 0.95) 100%);
+      background: linear-gradient(
+        135deg,
+        rgba(147, 51, 234, 0.95) 0%,
+        rgba(236, 72, 153, 0.95) 100%
+      );
       border-radius: 12px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+      box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
       cursor: pointer;
       backdrop-filter: blur(8px);
       max-width: calc(100vw - 32px);

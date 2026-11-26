@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -73,9 +73,7 @@ import { AuthService } from '../../core/services/auth.service';
 
           <div class="register-link-container">
             <span>Noch kein Konto?</span>
-            <button type="button" class="register-link" (click)="onRegister()">
-              Registrieren
-            </button>
+            <button type="button" class="register-link" (click)="onRegister()">Registrieren</button>
           </div>
         </div>
       </mat-dialog-content>
@@ -99,6 +97,7 @@ import { AuthService } from '../../core/services/auth.service';
       </mat-dialog-actions>
     </form>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .login-dialog {
       min-width: 320px;
@@ -238,11 +237,11 @@ export class LoginDialogComponent {
     this.error.set(null);
 
     this.authService.login({ username: this.username, password: this.password }).subscribe({
-      next: user => {
+      next: (user) => {
         this.loading.set(false);
         this.dialogRef.close(user);
       },
-      error: err => {
+      error: (err) => {
         this.loading.set(false);
         this.error.set(err.error?.message || 'Login fehlgeschlagen');
       },

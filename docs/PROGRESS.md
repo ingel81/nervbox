@@ -8,9 +8,9 @@
 
 **nervbox** ist ein Soundboard-System für Raspberry Pi mit Web-Interface. Es besteht aus:
 
-- **Backend** (.NET 8, SQLite, SignalR) - Sound-Wiedergabe auf Pi, API, Auth
+- **Backend** (.NET 11, SQLite, SignalR) - Sound-Wiedergabe auf Pi, API, Auth
 - **Player** (Angular 21) - Web-UI zum Sounds abspielen, Chat, Stats
-- **Mixer** (Angular 20) - Audio-Editor zum Erstellen von Remixes
+- **Mixer** (Angular 22) - Audio-Editor zum Erstellen von Remixes
 
 ---
 
@@ -133,6 +133,7 @@ ervbox`)
 - Erstes Deploy getestet: DB + 703 Sounds unverändert (Prüfsummen), Backup `/opt/backup-20261126`
 
 #### Offen
+- [x] Alles aktualisiert (2026-11-26): .NET 8 → 11, EF Core 11, Angular 21/20 → 22 (Player + Mixer), Mixer auf esbuild-Builder, Pi-OS full-upgrade, SSH.NET 2026
 - [x] TLS-Zertifikat erneuert (2026-11-26), automatische Erneuerung via certbot dns-cloudflare
 - [ ] `SSH.NET` 2023.0.0 updaten (NU1903, 2 High-Severity-Advisories)
 
@@ -156,7 +157,7 @@ ervbox`)
 ```
 /home/joerg/projects/nervbox/
 ├── nervbox/                      # Haupt-Repository
-│   ├── NervboxDeamon/            # .NET 8 Backend
+│   ├── NervboxDeamon/            # .NET 11 Backend
 │   ├── nervbox-player/           # Angular 21 Player UI
 │   ├── docs/                     # Diese Dokumentation
 │   ├── deploy.ps1                # Deployment Script (Windows)

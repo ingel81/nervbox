@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -45,7 +45,12 @@ import { TopSound, TopUser } from '../../core/models';
               <div class="stats-list">
                 @for (sound of topSounds(); track sound.hash; let i = $index) {
                   <div class="stats-item" [class.top-three]="i < 3">
-                    <span class="rank" [class.gold]="i === 0" [class.silver]="i === 1" [class.bronze]="i === 2">
+                    <span
+                      class="rank"
+                      [class.gold]="i === 0"
+                      [class.silver]="i === 1"
+                      [class.bronze]="i === 2"
+                    >
                       {{ i + 1 }}
                     </span>
                     <span class="name">{{ sound.name }}</span>
@@ -73,7 +78,12 @@ import { TopSound, TopUser } from '../../core/models';
               <div class="stats-list">
                 @for (user of topUsers(); track user.playedById; let i = $index) {
                   <div class="stats-item" [class.top-three]="i < 3">
-                    <span class="rank" [class.gold]="i === 0" [class.silver]="i === 1" [class.bronze]="i === 2">
+                    <span
+                      class="rank"
+                      [class.gold]="i === 0"
+                      [class.silver]="i === 1"
+                      [class.bronze]="i === 2"
+                    >
                       {{ i + 1 }}
                     </span>
                     <span class="name">{{ user.name }}</span>
@@ -101,7 +111,12 @@ import { TopSound, TopUser } from '../../core/models';
               <div class="stats-list">
                 @for (sound of topFavorites(); track sound.hash; let i = $index) {
                   <div class="stats-item" [class.top-three]="i < 3">
-                    <span class="rank" [class.gold]="i === 0" [class.silver]="i === 1" [class.bronze]="i === 2">
+                    <span
+                      class="rank"
+                      [class.gold]="i === 0"
+                      [class.silver]="i === 1"
+                      [class.bronze]="i === 2"
+                    >
                       {{ i + 1 }}
                     </span>
                     <span class="name">{{ sound.name }}</span>
@@ -119,6 +134,7 @@ import { TopSound, TopUser } from '../../core/models';
       </mat-dialog-actions>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .stats-dialog {
       min-width: 550px;
@@ -171,7 +187,8 @@ import { TopSound, TopUser } from '../../core/models';
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .loading, .empty {
+    .loading,
+    .empty {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -295,7 +312,7 @@ export class StatsDialogComponent implements OnInit {
 
   private loadStats(): void {
     this.soundService.getTopSounds().subscribe({
-      next: sounds => {
+      next: (sounds) => {
         this.topSounds.set(sounds);
         this.loadingSounds.set(false);
       },
@@ -305,7 +322,7 @@ export class StatsDialogComponent implements OnInit {
     });
 
     this.soundService.getTopUsers().subscribe({
-      next: users => {
+      next: (users) => {
         this.topUsers.set(users);
         this.loadingUsers.set(false);
       },
@@ -315,7 +332,7 @@ export class StatsDialogComponent implements OnInit {
     });
 
     this.soundService.getTopFavorites().subscribe({
-      next: favorites => {
+      next: (favorites) => {
         this.topFavorites.set(favorites);
         this.loadingFavorites.set(false);
       },

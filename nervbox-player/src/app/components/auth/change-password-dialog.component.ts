@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -37,12 +37,7 @@ import { ApiService } from '../../core/services/api.service';
             required
             autocomplete="current-password"
           />
-          <button
-            mat-icon-button
-            matSuffix
-            type="button"
-            (click)="hideOld.set(!hideOld())"
-          >
+          <button mat-icon-button matSuffix type="button" (click)="hideOld.set(!hideOld())">
             <mat-icon>{{ hideOld() ? 'visibility_off' : 'visibility' }}</mat-icon>
           </button>
         </mat-form-field>
@@ -57,12 +52,7 @@ import { ApiService } from '../../core/services/api.service';
             required
             autocomplete="new-password"
           />
-          <button
-            mat-icon-button
-            matSuffix
-            type="button"
-            (click)="hideNew.set(!hideNew())"
-          >
+          <button mat-icon-button matSuffix type="button" (click)="hideNew.set(!hideNew())">
             <mat-icon>{{ hideNew() ? 'visibility_off' : 'visibility' }}</mat-icon>
           </button>
         </mat-form-field>
@@ -77,12 +67,7 @@ import { ApiService } from '../../core/services/api.service';
             required
             autocomplete="new-password"
           />
-          <button
-            mat-icon-button
-            matSuffix
-            type="button"
-            (click)="hideConfirm.set(!hideConfirm())"
-          >
+          <button mat-icon-button matSuffix type="button" (click)="hideConfirm.set(!hideConfirm())">
             <mat-icon>{{ hideConfirm() ? 'visibility_off' : 'visibility' }}</mat-icon>
           </button>
         </mat-form-field>
@@ -93,9 +78,7 @@ import { ApiService } from '../../core/services/api.service';
       </mat-dialog-content>
 
       <mat-dialog-actions>
-        <button mat-button type="button" mat-dialog-close [disabled]="loading()">
-          Abbrechen
-        </button>
+        <button mat-button type="button" mat-dialog-close [disabled]="loading()">Abbrechen</button>
         <button
           mat-flat-button
           type="submit"
@@ -111,6 +94,7 @@ import { ApiService } from '../../core/services/api.service';
       </mat-dialog-actions>
     </form>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     mat-dialog-content {
       display: flex;
@@ -203,7 +187,7 @@ export class ChangePasswordDialogComponent {
         newPassword2: this.newPassword2,
       })
       .subscribe({
-        next: response => {
+        next: (response) => {
           this.loading.set(false);
           if (response.success) {
             this.dialogRef.close(true);
@@ -211,7 +195,7 @@ export class ChangePasswordDialogComponent {
             this.error.set(response.error || 'Fehler beim Ändern des Kennworts');
           }
         },
-        error: err => {
+        error: (err) => {
           this.loading.set(false);
           this.error.set(err.error?.message || 'Fehler beim Ändern des Kennworts');
         },

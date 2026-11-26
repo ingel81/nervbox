@@ -1,4 +1,4 @@
-import { Component, inject, output, input, computed } from '@angular/core';
+import { Component, inject, output, input, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -22,7 +22,16 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
 import { ShekelPopoverComponent } from '../shared/shekel-popover/shekel-popover.component';
 import { ShopDialogComponent } from '../shop/shop-dialog.component';
 
-export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'duration-desc' | 'duration-asc' | 'votes-desc' | 'votes-asc' | 'random';
+export type SortOption =
+  | 'name-asc'
+  | 'name-desc'
+  | 'plays-desc'
+  | 'newest'
+  | 'duration-desc'
+  | 'duration-asc'
+  | 'votes-desc'
+  | 'votes-asc'
+  | 'random';
 
 @Component({
   selector: 'app-toolbar',
@@ -114,14 +123,14 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
           matTooltip="Shekel Funktionen"
           (click)="openShekelPopover()"
         >
-          <img src="icons/nervbox-coin.svg" alt="Shekel" class="coin-icon">
+          <img src="icons/nervbox-coin.svg" alt="Shekel" class="coin-icon" />
           <span class="credit-amount">{{ creditService.creditsFormatted() }}</span>
           <span class="credit-currency">N$</span>
         </div>
 
         <!-- LOGS - Clickable to open shop -->
         <div class="logs-display clickable" matTooltip="Holz kaufen" (click)="openShop()">
-          <img src="icons/nervbox-log.svg" alt="" class="log-icon">
+          <img src="icons/nervbox-log.svg" alt="" class="log-icon" />
           <span class="log-amount">{{ inventoryService.wood() }}</span>
         </div>
 
@@ -164,11 +173,19 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
           class="mixer-main-btn"
           [class.has-selection]="selectionMode() && selectionCount() > 0"
           data-tour="mixer"
-          [matTooltip]="selectionMode() && selectionCount() > 0 ? 'Auswahl im Mixer öffnen' : 'Mixer öffnen'"
-          (click)="selectionMode() && selectionCount() > 0 ? openSelectionInMixer.emit() : openMixer()"
+          [matTooltip]="
+            selectionMode() && selectionCount() > 0 ? 'Auswahl im Mixer öffnen' : 'Mixer öffnen'
+          "
+          (click)="
+            selectionMode() && selectionCount() > 0 ? openSelectionInMixer.emit() : openMixer()
+          "
         >
-          <mat-icon>{{ selectionMode() && selectionCount() > 0 ? 'arrow_forward' : 'queue_music' }}</mat-icon>
-          <span class="mixer-label">{{ selectionMode() && selectionCount() > 0 ? 'AB IN DEN MIXER' : 'MIXER' }}</span>
+          <mat-icon>{{
+            selectionMode() && selectionCount() > 0 ? 'arrow_forward' : 'queue_music'
+          }}</mat-icon>
+          <span class="mixer-label">{{
+            selectionMode() && selectionCount() > 0 ? 'AB IN DEN MIXER' : 'MIXER'
+          }}</span>
         </button>
       </div>
 
@@ -229,7 +246,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
               <span>Tag-Wizard</span>
             </button>
             <button mat-menu-item (click)="adminMenuAction.emit('credits')">
-              <img src="icons/nervbox-coin.svg" alt="" class="menu-coin-icon">
+              <img src="icons/nervbox-coin.svg" alt="" class="menu-coin-icon" />
               <span>Shekel-Einstellungen</span>
             </button>
             <mat-divider></mat-divider>
@@ -243,11 +260,16 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
         <!-- PROFILE SECTION -->
         <div class="toolbar-divider"></div>
         @if (auth.isLoggedIn()) {
-          <button mat-icon-button [matMenuTriggerFor]="userMenu" class="user-btn" data-tour="profile">
+          <button
+            mat-icon-button
+            [matMenuTriggerFor]="userMenu"
+            class="user-btn"
+            data-tour="profile"
+          >
             <app-user-avatar
               [imageUrl]="avatarService.currentUserAvatarUrl()"
               [initials]="userInitials()"
-              [name]="auth.currentUser()?.username"
+              [name]="$safeNavigationMigration(auth.currentUser()?.username)"
               size="medium"
             />
           </button>
@@ -256,7 +278,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
               <app-user-avatar
                 [imageUrl]="avatarService.currentUserAvatarUrl()"
                 [initials]="userInitials()"
-                [name]="auth.currentUser()?.username"
+                [name]="$safeNavigationMigration(auth.currentUser()?.username)"
                 size="medium"
               />
               <span>{{ auth.currentUser()?.username }}</span>
@@ -302,6 +324,7 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       </div>
     </mat-toolbar>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .toolbar {
       position: fixed;
@@ -479,7 +502,9 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       font-size: 20px;
       width: 20px;
       height: 20px;
-      transition: color 0.2s ease, transform 0.2s ease;
+      transition:
+        color 0.2s ease,
+        transform 0.2s ease;
     }
 
     .favorites-filter-btn:hover mat-icon {
@@ -566,7 +591,8 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
     }
 
     @keyframes creditGlow {
-      0%, 100% {
+      0%,
+      100% {
         box-shadow: 0 0 8px rgba(234, 179, 8, 0.3);
       }
       50% {
@@ -575,7 +601,8 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
     }
 
     @keyframes lowCreditPulse {
-      0%, 100% {
+      0%,
+      100% {
         box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
         transform: scale(1);
       }
@@ -767,7 +794,9 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       padding: 8px 16px;
       cursor: pointer;
       transition: transform 0.2s ease;
-      animation: mixerGlow 2.5s ease-in-out infinite, mixerGradient 3s linear infinite;
+      animation:
+        mixerGlow 2.5s ease-in-out infinite,
+        mixerGradient 3s linear infinite;
       box-shadow:
         0 0 15px rgba(147, 51, 234, 0.6),
         0 0 30px rgba(236, 72, 153, 0.4);
@@ -775,7 +804,9 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
 
     .mixer-main-btn:hover {
       transform: scale(1.08);
-      animation: mixerGlow 1.5s ease-in-out infinite, mixerGradient 1.5s linear infinite;
+      animation:
+        mixerGlow 1.5s ease-in-out infinite,
+        mixerGradient 1.5s linear infinite;
       box-shadow:
         0 0 25px rgba(147, 51, 234, 0.8),
         0 0 50px rgba(236, 72, 153, 0.6);
@@ -799,7 +830,8 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
     }
 
     @keyframes mixerGlow {
-      0%, 100% {
+      0%,
+      100% {
         box-shadow:
           0 0 15px rgba(147, 51, 234, 0.6),
           0 0 30px rgba(236, 72, 153, 0.4);
@@ -835,7 +867,8 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
     }
 
     @keyframes mixerGlowGreen {
-      0%, 100% {
+      0%,
+      100% {
         box-shadow:
           0 0 20px rgba(34, 197, 94, 0.7),
           0 0 40px rgba(22, 163, 74, 0.5);
@@ -848,7 +881,9 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
     }
 
     .mixer-main-btn.has-selection {
-      animation: mixerGlowGreen 2s ease-in-out infinite, mixerGradient 3s linear infinite;
+      animation:
+        mixerGlowGreen 2s ease-in-out infinite,
+        mixerGradient 3s linear infinite;
     }
 
     .admin-btn {
@@ -865,7 +900,8 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       color: #f97316 !important;
     }
 
-    .action-btn, .user-btn {
+    .action-btn,
+    .user-btn {
       width: 40px !important;
       height: 40px !important;
       background: rgba(147, 51, 234, 0.1) !important;
@@ -877,17 +913,20 @@ export type SortOption = 'name-asc' | 'name-desc' | 'plays-desc' | 'newest' | 'd
       justify-content: center !important;
     }
 
-    .action-btn:hover, .user-btn:hover {
+    .action-btn:hover,
+    .user-btn:hover {
       background: rgba(147, 51, 234, 0.2) !important;
       border-color: rgba(147, 51, 234, 0.5) !important;
       transform: scale(1.05);
     }
 
-    .action-btn mat-icon, .user-btn mat-icon {
+    .action-btn mat-icon,
+    .user-btn mat-icon {
       color: rgba(255, 255, 255, 0.8);
     }
 
-    .action-btn:hover mat-icon, .user-btn:hover mat-icon {
+    .action-btn:hover mat-icon,
+    .user-btn:hover mat-icon {
       color: #ec4899;
     }
 

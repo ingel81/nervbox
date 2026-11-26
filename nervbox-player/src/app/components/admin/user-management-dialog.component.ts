@@ -1,4 +1,11 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  computed,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MatDialog } from '@angular/material/dialog';
@@ -91,7 +98,9 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
                         <span class="name">{{ user.firstName }} {{ user.lastName }}</span>
                         <span class="separator">|</span>
                       }
-                      <span class="ip" matTooltip="IP-Adresse">{{ user.ipAddress || 'Keine IP' }}</span>
+                      <span class="ip" matTooltip="IP-Adresse">{{
+                        user.ipAddress || 'Keine IP'
+                      }}</span>
                       <span class="separator">|</span>
                       <span class="credits" matTooltip="Credits">{{ user.credits }} N$</span>
                     </div>
@@ -186,6 +195,7 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
       <button mat-button mat-dialog-close>Schließen</button>
     </mat-dialog-actions>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     h2[mat-dialog-title] {
       display: flex;
@@ -449,16 +459,16 @@ export class UserManagementDialogComponent implements OnInit {
     if (!query) return this.users();
 
     return this.users().filter(
-      user =>
+      (user) =>
         user.username.toLowerCase().includes(query) ||
         (user.firstName?.toLowerCase() || '').includes(query) ||
         (user.lastName?.toLowerCase() || '').includes(query) ||
-        (user.ipAddress?.toLowerCase() || '').includes(query)
+        (user.ipAddress?.toLowerCase() || '').includes(query),
     );
   });
 
   readonly inactiveUserCount = computed(() => {
-    return this.users().filter(u => !u.isActive).length;
+    return this.users().filter((u) => !u.isActive).length;
   });
 
   ngOnInit(): void {
@@ -468,7 +478,7 @@ export class UserManagementDialogComponent implements OnInit {
   private loadUsers(): void {
     this.loading.set(true);
     this.userService.loadUsers().subscribe({
-      next: users => {
+      next: (users) => {
         this.users.set(users);
         this.loading.set(false);
       },
@@ -494,7 +504,7 @@ export class UserManagementDialogComponent implements OnInit {
       panelClass: 'dark-dialog',
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.loadUsers();
         this.snackBar.open(`User "${result.username}" wurde erstellt`, 'OK', { duration: 2000 });
@@ -509,7 +519,7 @@ export class UserManagementDialogComponent implements OnInit {
       data: { user },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.loadUsers();
         this.snackBar.open(`User "${user.username}" wurde aktualisiert`, 'OK', { duration: 2000 });
@@ -524,9 +534,11 @@ export class UserManagementDialogComponent implements OnInit {
       data: { user },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.snackBar.open(`Passwort für "${user.username}" wurde zurückgesetzt`, 'OK', { duration: 2000 });
+        this.snackBar.open(`Passwort für "${user.username}" wurde zurückgesetzt`, 'OK', {
+          duration: 2000,
+        });
       }
     });
   }
@@ -535,12 +547,14 @@ export class UserManagementDialogComponent implements OnInit {
     this.actionInProgress.set(user.id);
     this.userService.toggleUserActive(user.id).subscribe({
       next: () => {
-        this.users.update(users => users.map(u => (u.id === user.id ? { ...u, isActive: !u.isActive } : u)));
+        this.users.update((users) =>
+          users.map((u) => (u.id === user.id ? { ...u, isActive: !u.isActive } : u)),
+        );
         this.actionInProgress.set(null);
         this.snackBar.open(
           `User "${user.username}" wurde ${user.isActive ? 'deaktiviert' : 'aktiviert'}`,
           'OK',
-          { duration: 2000 }
+          { duration: 2000 },
         );
       },
       error: () => {
@@ -557,9 +571,9 @@ export class UserManagementDialogComponent implements OnInit {
       data: { user },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.users.update(users => users.filter(u => u.id !== user.id));
+        this.users.update((users) => users.filter((u) => u.id !== user.id));
         this.snackBar.open(`User "${user.username}" wurde gelöscht`, 'OK', { duration: 2000 });
       }
     });
@@ -568,8 +582,10 @@ export class UserManagementDialogComponent implements OnInit {
   onGrantCredits(user: UserAdmin, amount: number): void {
     this.actionInProgress.set(user.id);
     this.creditService.grantCredits({ userId: user.id, amount, reason: 'Admin-Bonus' }).subscribe({
-      next: response => {
-        this.users.update(users => users.map(u => (u.id === user.id ? { ...u, credits: response.newBalance } : u)));
+      next: (response) => {
+        this.users.update((users) =>
+          users.map((u) => (u.id === user.id ? { ...u, credits: response.newBalance } : u)),
+        );
         this.actionInProgress.set(null);
         this.snackBar.open(`+${amount} Credits für "${user.username}"`, 'OK', { duration: 2000 });
       },

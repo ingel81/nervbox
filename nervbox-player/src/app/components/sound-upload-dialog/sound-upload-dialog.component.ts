@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -73,7 +73,11 @@ interface FileUploadItem {
       @if (files().length > 0) {
         <div class="files-list">
           @for (item of files(); track item.file.name; let i = $index) {
-            <div class="file-item" [class.success]="item.status === 'success'" [class.error]="item.status === 'error'">
+            <div
+              class="file-item"
+              [class.success]="item.status === 'success'"
+              [class.error]="item.status === 'error'"
+            >
               <!-- Header Row -->
               <div class="file-header">
                 <mat-icon class="file-icon">{{ getStatusIcon(item.status) }}</mat-icon>
@@ -118,7 +122,8 @@ interface FileUploadItem {
                         class="tag-chip"
                         [style.background]="getTagBackground(tagName)"
                         [style.border-color]="getTagBorderColor(tagName)"
-                      ><span class="hash">#</span>{{ tagName }}</span>
+                        ><span class="hash">#</span>{{ tagName }}</span
+                      >
                     }
                   </div>
                 }
@@ -176,6 +181,7 @@ interface FileUploadItem {
       }
     </mat-dialog-actions>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     :host {
       display: block;
@@ -438,8 +444,12 @@ interface FileUploadItem {
     }
 
     @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
     }
   `,
 })
@@ -454,16 +464,14 @@ export class SoundUploadDialogComponent {
 
   readonly availableTags = computed(() => this.soundService.tags());
 
-  readonly pendingCount = computed(() =>
-    this.files().filter(f => f.status === 'pending').length
-  );
+  readonly pendingCount = computed(() => this.files().filter((f) => f.status === 'pending').length);
 
-  readonly canUpload = computed(() =>
-    this.files().some(f => f.status === 'pending')
-  );
+  readonly canUpload = computed(() => this.files().some((f) => f.status === 'pending'));
 
-  readonly allDone = computed(() =>
-    this.files().length > 0 && this.files().every(f => f.status === 'success' || f.status === 'error')
+  readonly allDone = computed(
+    () =>
+      this.files().length > 0 &&
+      this.files().every((f) => f.status === 'success' || f.status === 'error'),
   );
 
   constructor() {
@@ -492,7 +500,7 @@ export class SoundUploadDialogComponent {
       }
 
       // Check for duplicates
-      if (this.files().some(f => f.file.name === file.name)) {
+      if (this.files().some((f) => f.file.name === file.name)) {
         this.snackBar.open(`${file.name} ist bereits in der Liste`, 'OK', {
           duration: 3000,
         });
@@ -508,18 +516,18 @@ export class SoundUploadDialogComponent {
       });
     }
 
-    this.files.update(files => [...files, ...newFiles]);
+    this.files.update((files) => [...files, ...newFiles]);
 
     // Reset input for re-selection
     input.value = '';
   }
 
   removeFile(index: number): void {
-    this.files.update(files => files.filter((_, i) => i !== index));
+    this.files.update((files) => files.filter((_, i) => i !== index));
   }
 
   onTagsChange(fileIndex: number, tags: string[]): void {
-    this.files.update(files => {
+    this.files.update((files) => {
       const updated = [...files];
       updated[fileIndex] = { ...updated[fileIndex], selectedTags: tags };
       return updated;
@@ -527,7 +535,7 @@ export class SoundUploadDialogComponent {
   }
 
   async uploadAll(): Promise<void> {
-    const pendingFiles = this.files().filter(f => f.status === 'pending');
+    const pendingFiles = this.files().filter((f) => f.status === 'pending');
     if (pendingFiles.length === 0) return;
 
     this.isUploading.set(true);
@@ -589,7 +597,7 @@ export class SoundUploadDialogComponent {
       this.snackBar.open(
         `${successCount} Sound${successCount > 1 ? 's' : ''} erfolgreich hochgeladen!`,
         'OK',
-        { duration: 4000 }
+        { duration: 4000 },
       );
 
       // Reload sounds in the main app
@@ -597,16 +605,19 @@ export class SoundUploadDialogComponent {
     }
 
     if (errorCount > 0 && successCount === 0) {
-      this.snackBar.open(
-        `${errorCount} Upload${errorCount > 1 ? 's' : ''} fehlgeschlagen`,
-        'OK',
-        { duration: 4000, panelClass: 'error-snackbar' }
-      );
+      this.snackBar.open(`${errorCount} Upload${errorCount > 1 ? 's' : ''} fehlgeschlagen`, 'OK', {
+        duration: 4000,
+        panelClass: 'error-snackbar',
+      });
     }
   }
 
-  private updateFileStatus(index: number, status: FileUploadItem['status'], progress: number): void {
-    this.files.update(files => {
+  private updateFileStatus(
+    index: number,
+    status: FileUploadItem['status'],
+    progress: number,
+  ): void {
+    this.files.update((files) => {
       const updated = [...files];
       updated[index] = { ...updated[index], status, progress };
       return updated;
@@ -614,7 +625,7 @@ export class SoundUploadDialogComponent {
   }
 
   private updateFileProgress(index: number, progress: number): void {
-    this.files.update(files => {
+    this.files.update((files) => {
       const updated = [...files];
       updated[index] = { ...updated[index], progress };
       return updated;
@@ -622,7 +633,7 @@ export class SoundUploadDialogComponent {
   }
 
   private updateFileResult(index: number, result: UploadResponse): void {
-    this.files.update(files => {
+    this.files.update((files) => {
       const updated = [...files];
       updated[index] = { ...updated[index], result };
       return updated;
@@ -630,7 +641,7 @@ export class SoundUploadDialogComponent {
   }
 
   private updateFileError(index: number, error: string): void {
-    this.files.update(files => {
+    this.files.update((files) => {
       const updated = [...files];
       updated[index] = { ...updated[index], status: 'error', error };
       return updated;
@@ -639,10 +650,14 @@ export class SoundUploadDialogComponent {
 
   getStatusIcon(status: FileUploadItem['status']): string {
     switch (status) {
-      case 'pending': return 'audio_file';
-      case 'uploading': return 'sync';
-      case 'success': return 'check_circle';
-      case 'error': return 'error';
+      case 'pending':
+        return 'audio_file';
+      case 'uploading':
+        return 'sync';
+      case 'success':
+        return 'check_circle';
+      case 'error':
+        return 'error';
     }
   }
 

@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -61,7 +61,12 @@ interface UserProfile {
         </div>
       } @else if (profile()) {
         <div class="profile-header">
-          <app-user-avatar [userId]="data.userId" size="large" [clickable]="false" class="profile-avatar" />
+          <app-user-avatar
+            [userId]="data.userId"
+            size="large"
+            [clickable]="false"
+            class="profile-avatar"
+          />
           <div class="profile-info">
             <h2 class="username">{{ profile()!.username }}</h2>
             @if (profile()!.firstName || profile()!.lastName) {
@@ -85,7 +90,7 @@ interface UserProfile {
           </div>
           <div class="stat credits-stat">
             <span class="stat-value credits-value">
-              <img src="icons/nervbox-coin.svg" alt="" class="profile-coin">
+              <img src="icons/nervbox-coin.svg" alt="" class="profile-coin" />
               {{ formatCredits(profile()!.credits) }}
             </span>
             <span class="stat-label">Shekel</span>
@@ -104,7 +109,9 @@ interface UserProfile {
                   <mat-icon class="sound-icon">audiotrack</mat-icon>
                   <span class="sound-name">{{ sound.name }}</span>
                   <span class="sound-duration monospace">{{ sound.durationMs | duration }}</span>
-                  <span class="sound-plays monospace" matTooltip="Abgespielt">{{ sound.playCount }}x</span>
+                  <span class="sound-plays monospace" matTooltip="Abgespielt"
+                    >{{ sound.playCount }}x</span
+                  >
                 </div>
               }
             </div>
@@ -122,6 +129,7 @@ interface UserProfile {
       }
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .profile-dialog {
       min-width: 500px;
@@ -151,7 +159,11 @@ interface UserProfile {
       align-items: flex-start;
       gap: 16px;
       padding: 24px;
-      background: linear-gradient(135deg, rgba(147, 51, 234, 0.15) 0%, rgba(236, 72, 153, 0.1) 100%);
+      background: linear-gradient(
+        135deg,
+        rgba(147, 51, 234, 0.15) 0%,
+        rgba(236, 72, 153, 0.1) 100%
+      );
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       position: relative;
     }
@@ -354,7 +366,7 @@ export class UserProfileDialogComponent implements OnInit {
     this.error.set(false);
 
     this.api.get<UserProfile>(`/users/${this.data.userId}/profile`).subscribe({
-      next: profile => {
+      next: (profile) => {
         this.profile.set(profile);
         this.loading.set(false);
       },

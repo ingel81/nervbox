@@ -8,6 +8,7 @@ import {
   signal,
   computed,
   HostListener,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -125,6 +126,7 @@ import { CreditService } from '../../../../core/services/credit.service';
       </div>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .weinfest-container {
       display: flex;
@@ -538,7 +540,7 @@ export class WeinfestShooterGameComponent implements AfterViewInit, OnDestroy {
       this.engine = new WeinfestShooterEngine(ctx, this.canvasWidth, this.canvasHeight);
 
       // Set up callbacks
-      this.engine.onBalanceChange = bal => this.balance.set(bal);
+      this.engine.onBalanceChange = (bal) => this.balance.set(bal);
       this.engine.onStatsChange = (h, m) => {
         this.hits.set(h);
         this.misses.set(m);

@@ -1,4 +1,14 @@
-import { Component, Input, computed, signal, inject, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import {
+  Component,
+  Input,
+  computed,
+  signal,
+  inject,
+  OnInit,
+  OnChanges,
+  SimpleChanges,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -77,6 +87,7 @@ import {
       }
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .achievements-container {
       display: flex;
@@ -322,8 +333,8 @@ export class AchievementDisplayComponent implements OnInit, OnChanges {
     ];
 
     return categoryOrder
-      .filter(cat => grouped.has(cat))
-      .map(cat => ({
+      .filter((cat) => grouped.has(cat))
+      .map((cat) => ({
         category: cat,
         categoryName: CATEGORY_DISPLAY_NAMES[cat as AchievementCategory] || cat,
         categoryIcon: CATEGORY_ICONS[cat as AchievementCategory] || 'emoji_events',
@@ -348,7 +359,7 @@ export class AchievementDisplayComponent implements OnInit, OnChanges {
     this.error.set(false);
 
     this.achievementService.getUserAchievements(this.userId).subscribe({
-      next: data => {
+      next: (data) => {
         this.achievementsData.set(data);
         this.loading.set(false);
       },

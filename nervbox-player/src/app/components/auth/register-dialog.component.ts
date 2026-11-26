@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -49,22 +49,12 @@ import { AuthService } from '../../core/services/auth.service';
           <div class="name-row">
             <mat-form-field appearance="outline">
               <mat-label>Vorname</mat-label>
-              <input
-                matInput
-                [(ngModel)]="firstname"
-                name="firstname"
-                autocomplete="given-name"
-              />
+              <input matInput [(ngModel)]="firstname" name="firstname" autocomplete="given-name" />
             </mat-form-field>
 
             <mat-form-field appearance="outline">
               <mat-label>Nachname</mat-label>
-              <input
-                matInput
-                [(ngModel)]="lastname"
-                name="lastname"
-                autocomplete="family-name"
-              />
+              <input matInput [(ngModel)]="lastname" name="lastname" autocomplete="family-name" />
             </mat-form-field>
           </div>
 
@@ -142,6 +132,7 @@ import { AuthService } from '../../core/services/auth.service';
       </mat-dialog-actions>
     </form>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .register-dialog {
       min-width: 380px;
@@ -309,11 +300,11 @@ export class RegisterDialogComponent {
         terms: this.terms,
       })
       .subscribe({
-        next: user => {
+        next: (user) => {
           this.loading.set(false);
           this.dialogRef.close(user);
         },
-        error: err => {
+        error: (err) => {
           this.loading.set(false);
           this.error.set(err.error?.message || 'Registrierung fehlgeschlagen');
         },

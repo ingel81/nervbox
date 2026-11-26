@@ -4,15 +4,15 @@
 # Build Context: Parent directory containing both nervbox/ and nervbox-mixer/
 #
 # Stage 1: Build .NET Backend
-# Stage 2: Build nervbox-player (Angular 21)
-# Stage 3: Build nervbox-mixer (Angular 20)
+# Stage 2: Build nervbox-player (Angular 22)
+# Stage 3: Build nervbox-mixer (Angular 22)
 # Stage 4: Runtime Image
 # =============================================================================
 
 # -----------------------------------------------------------------------------
 # Stage 1: .NET Backend Build
 # -----------------------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS backend-build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS backend-build
 WORKDIR /src
 
 # Copy project file and restore dependencies (path relative to parent context)
@@ -25,9 +25,9 @@ WORKDIR /src/NervboxDeamon
 RUN dotnet publish -c Release -o /app/publish --no-restore
 
 # -----------------------------------------------------------------------------
-# Stage 2: nervbox-player Build (Angular 21)
+# Stage 2: nervbox-player Build (Angular 22)
 # -----------------------------------------------------------------------------
-FROM node:22-alpine AS player-build
+FROM node:24-alpine AS player-build
 WORKDIR /app
 
 # Copy package files and install dependencies
@@ -40,9 +40,9 @@ RUN cp src/environments/secrets.example.ts src/environments/secrets.ts
 RUN npm run build -- --configuration production
 
 # -----------------------------------------------------------------------------
-# Stage 3: nervbox-mixer Build (Angular 20)
+# Stage 3: nervbox-mixer Build (Angular 22)
 # -----------------------------------------------------------------------------
-FROM node:22-alpine AS mixer-build
+FROM node:24-alpine AS mixer-build
 WORKDIR /app
 
 # Copy package files and install dependencies
@@ -56,7 +56,7 @@ RUN npm run build -- --configuration lan
 # -----------------------------------------------------------------------------
 # Stage 4: Runtime Image
 # -----------------------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0-alpine AS runtime
 
 # Install required packages
 RUN apk add --no-cache \
@@ -76,8 +76,8 @@ COPY --from=backend-build /app/publish .
 # Copy player to wwwroot
 COPY --from=player-build /app/dist/nervbox-player/browser ./wwwroot/
 
-# Copy mixer to wwwroot/mixer (Angular 20 outputs to dist/nervbox-mixer without /browser)
-COPY --from=mixer-build /app/dist/nervbox-mixer ./wwwroot/mixer/
+# Copy mixer to wwwroot/mixer (application builder outputs to dist/nervbox-mixer/browser)
+COPY --from=mixer-build /app/dist/nervbox-mixer/browser ./wwwroot/mixer/
 
 # Create data directories (all under /data for easy volume mounting)
 RUN mkdir -p /data/sounds /data/avatars /data/logs

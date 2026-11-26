@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -39,8 +39,8 @@ export interface DeleteUserDialogData {
         <div class="warning-text">
           <strong>Achtung!</strong>
           <p>
-            Der User <strong>"{{ data.user.username }}"</strong> wird unwiderruflich gelöscht.
-            Alle zugehörigen Daten (Favoriten, Statistiken, etc.) gehen verloren.
+            Der User <strong>"{{ data.user.username }}"</strong> wird unwiderruflich gelöscht. Alle
+            zugehörigen Daten (Favoriten, Statistiken, etc.) gehen verloren.
           </p>
         </div>
       </div>
@@ -49,11 +49,7 @@ export interface DeleteUserDialogData {
         <p>Zur Bestätigung bitte den Usernamen eingeben:</p>
         <mat-form-field appearance="outline">
           <mat-label>Username</mat-label>
-          <input
-            matInput
-            [(ngModel)]="confirmUsername"
-            [placeholder]="data.user.username"
-          />
+          <input matInput [(ngModel)]="confirmUsername" [placeholder]="data.user.username" />
         </mat-form-field>
       </div>
 
@@ -81,6 +77,7 @@ export interface DeleteUserDialogData {
       </button>
     </mat-dialog-actions>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     h2[mat-dialog-title] {
       display: flex;
@@ -192,7 +189,7 @@ export class DeleteUserDialogComponent {
         this.deleting.set(false);
         this.dialogRef.close(true);
       },
-      error: err => {
+      error: (err) => {
         this.deleting.set(false);
         this.error.set(err.error?.message || 'Fehler beim Löschen des Users');
       },

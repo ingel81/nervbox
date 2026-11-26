@@ -7,6 +7,7 @@ import {
   inject,
   signal,
   computed,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -16,7 +17,12 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { SandwichmasterEngine } from './sandwichmaster-engine';
-import { GameState, Ingredient, IngredientCategory, SelectedIngredient } from './sandwichmaster.types';
+import {
+  GameState,
+  Ingredient,
+  IngredientCategory,
+  SelectedIngredient,
+} from './sandwichmaster.types';
 import {
   NORMAL_INGREDIENTS,
   SAUCE_INGREDIENTS,
@@ -258,6 +264,7 @@ import { ApiService } from '../../../../core/services/api.service';
       }
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .sandwichmaster-container {
       display: flex;
@@ -366,8 +373,13 @@ import { ApiService } from '../../../../core/services/api.service';
     }
 
     @keyframes epic-pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.7;
+      }
     }
 
     .ingredients-grid {
@@ -413,7 +425,11 @@ import { ApiService } from '../../../../core/services/api.service';
     }
 
     .ingredient-card.epic {
-      background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(147, 51, 234, 0.15) 100%);
+      background: linear-gradient(
+        135deg,
+        rgba(239, 68, 68, 0.15) 0%,
+        rgba(147, 51, 234, 0.15) 100%
+      );
       border-color: rgba(239, 68, 68, 0.5);
     }
 
@@ -462,8 +478,12 @@ import { ApiService } from '../../../../core/services/api.service';
     }
 
     @keyframes epic-rotate {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .multiplier-badge {
@@ -652,8 +672,13 @@ import { ApiService } from '../../../../core/services/api.service';
     }
 
     @keyframes multiplier-glow {
-      0%, 100% { text-shadow: 0 0 5px rgba(239, 68, 68, 0.5); }
-      50% { text-shadow: 0 0 15px rgba(239, 68, 68, 0.8); }
+      0%,
+      100% {
+        text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+      }
+      50% {
+        text-shadow: 0 0 15px rgba(239, 68, 68, 0.8);
+      }
     }
 
     .total-row {
@@ -747,8 +772,14 @@ import { ApiService } from '../../../../core/services/api.service';
     }
 
     @keyframes overlay-pop {
-      from { transform: scale(0.9); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
+      from {
+        transform: scale(0.9);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
     }
 
     .celebration-emoji {
@@ -757,8 +788,13 @@ import { ApiService } from '../../../../core/services/api.service';
     }
 
     @keyframes celebration-bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
     }
 
     .overlay-content h2 {
@@ -911,13 +947,13 @@ export class SandwichmasterGameComponent implements AfterViewInit, OnDestroy {
 
   // Computed
   readonly totalCost = computed(() =>
-    this.selectedIngredients().reduce((sum, item) => sum + item.ingredient.cost, 0)
+    this.selectedIngredients().reduce((sum, item) => sum + item.ingredient.cost, 0),
   );
 
   readonly multiplier = computed(() =>
     this.selectedIngredients()
-      .filter(item => item.ingredient.category === 'epic')
-      .reduce((mult, item) => mult * item.ingredient.multiplier, 1)
+      .filter((item) => item.ingredient.category === 'epic')
+      .reduce((mult, item) => mult * item.ingredient.multiplier, 1),
   );
 
   readonly finalScore = computed(() => Math.floor(this.totalCost() * this.multiplier()));
@@ -976,17 +1012,17 @@ export class SandwichmasterGameComponent implements AfterViewInit, OnDestroy {
     this.creditService
       .spendCredits(ingredient.cost, `Sandwichmaster: ${ingredient.name}`)
       .subscribe({
-        next: response => {
+        next: (response) => {
           if (response.success) {
             // Add ingredient to sandwich
-            this.selectedIngredients.update(list => [
+            this.selectedIngredients.update((list) => [
               ...list,
               { ingredient, addedAt: Date.now() },
             ]);
 
             // Mark epic as used
             if (ingredient.category === 'epic') {
-              this.usedEpicIngredients.update(set => new Set([...set, ingredient.id]));
+              this.usedEpicIngredients.update((set) => new Set([...set, ingredient.id]));
               this.playSound('epic');
             } else {
               this.playSound('plop');
@@ -996,7 +1032,7 @@ export class SandwichmasterGameComponent implements AfterViewInit, OnDestroy {
             this.engine.addIngredient(ingredient);
           }
         },
-        error: err => {
+        error: (err) => {
           console.error('Failed to spend credits:', err);
         },
       });
@@ -1006,11 +1042,11 @@ export class SandwichmasterGameComponent implements AfterViewInit, OnDestroy {
     // Note: Credits are NOT refunded - this is intentional per game design
     // Just remove from visual sandwich
 
-    this.selectedIngredients.update(list => list.filter(i => i.addedAt !== item.addedAt));
+    this.selectedIngredients.update((list) => list.filter((i) => i.addedAt !== item.addedAt));
 
     // If epic, allow re-use
     if (item.ingredient.category === 'epic') {
-      this.usedEpicIngredients.update(set => {
+      this.usedEpicIngredients.update((set) => {
         const newSet = new Set(set);
         newSet.delete(item.ingredient.id);
         return newSet;

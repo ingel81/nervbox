@@ -1,11 +1,7 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import {
-  MatDialogModule,
-  MatDialogRef,
-  MAT_DIALOG_DATA,
-} from '@angular/material/dialog';
+import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -120,12 +116,7 @@ export interface SoundEditDialogData {
 
     <mat-dialog-actions align="end">
       <button mat-button mat-dialog-close>Abbrechen</button>
-      <button
-        mat-raised-button
-        color="primary"
-        (click)="save()"
-        [disabled]="saving()"
-      >
+      <button mat-raised-button color="primary" (click)="save()" [disabled]="saving()">
         @if (saving()) {
           <mat-spinner diameter="20"></mat-spinner>
         } @else {
@@ -134,6 +125,7 @@ export interface SoundEditDialogData {
       </button>
     </mat-dialog-actions>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     h2[mat-dialog-title] {
       display: flex;
@@ -345,10 +337,10 @@ export class SoundEditDialogComponent implements OnInit {
 
   updateFilteredTags(): void {
     const currentTags = this.tags();
-    const available = this.data.availableTags.filter(t => !currentTags.includes(t));
+    const available = this.data.availableTags.filter((t) => !currentTags.includes(t));
     const query = this.newTag.toLowerCase().trim();
     if (query) {
-      this.filteredTags.set(available.filter(t => t.toLowerCase().includes(query)));
+      this.filteredTags.set(available.filter((t) => t.toLowerCase().includes(query)));
     } else {
       this.filteredTags.set(available);
     }
@@ -378,21 +370,21 @@ export class SoundEditDialogComponent implements OnInit {
   addTag(): void {
     const tag = this.newTag.trim().toLowerCase();
     if (tag && !this.tags().includes(tag)) {
-      this.tags.update(tags => [...tags, tag]);
+      this.tags.update((tags) => [...tags, tag]);
       this.newTag = '';
       this.updateFilteredTags();
     }
   }
 
   removeTag(tag: string): void {
-    this.tags.update(tags => tags.filter(t => t !== tag));
+    this.tags.update((tags) => tags.filter((t) => t !== tag));
     this.updateFilteredTags();
   }
 
   onTagSelected(event: { option: { value: string } }): void {
     const tag = event.option.value;
     if (!this.tags().includes(tag)) {
-      this.tags.update(tags => [...tags, tag]);
+      this.tags.update((tags) => [...tags, tag]);
     }
     this.newTag = '';
     this.updateFilteredTags();
@@ -408,11 +400,11 @@ export class SoundEditDialogComponent implements OnInit {
     };
 
     this.soundService.updateSound(this.data.sound.hash, updates).subscribe({
-      next: updatedSound => {
+      next: (updatedSound) => {
         this.saving.set(false);
         this.dialogRef.close(updatedSound);
       },
-      error: err => {
+      error: (err) => {
         this.saving.set(false);
         console.error('Failed to update sound:', err);
       },

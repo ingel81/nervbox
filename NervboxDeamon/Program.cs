@@ -48,7 +48,11 @@ namespace NervboxDeamon
           })
           .UseSerilog((ctx, services, cfg) =>
           {
-            cfg.ReadFrom.Configuration(ctx.Configuration)
+            // Explicit assemblies: without them Serilog scans the app folder for Serilog*.dll and
+            // crashes on stale DLLs left over from older builds (deploy never deletes on the Pi).
+            var serilogOptions = new Serilog.Settings.Configuration.ConfigurationReaderOptions(
+                typeof(ConsoleLoggerConfigurationExtensions).Assembly);
+            cfg.ReadFrom.Configuration(ctx.Configuration, serilogOptions)
                .Enrich.FromLogContext()
                .Enrich.WithProperty("Application", "NervboxDeamon")
                .WriteTo.Console(

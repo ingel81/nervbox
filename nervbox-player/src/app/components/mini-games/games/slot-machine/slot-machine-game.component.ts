@@ -8,6 +8,7 @@ import {
   computed,
   inject,
   AfterViewInit,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
@@ -38,14 +39,9 @@ interface Particle {
 @Component({
   selector: 'app-slot-machine-game',
   standalone: true,
-  imports: [
-    CommonModule,
-    MatDialogModule,
-    MatButtonModule,
-    MatIconModule,
-    MatSliderModule,
-  ],
+  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule, MatSliderModule],
   templateUrl: './slot-machine-game.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./slot-machine-game.component.scss'],
 })
 export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -96,9 +92,8 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
   // Particles
   private particles: Particle[] = [];
 
-  readonly canSpin = computed(() =>
-    !this.isSpinning() &&
-    this.betAmount() <= this.creditService.credits()
+  readonly canSpin = computed(
+    () => !this.isSpinning() && this.betAmount() <= this.creditService.credits(),
   );
 
   ngOnInit(): void {
@@ -111,7 +106,7 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
     this.reels.set(initialSymbols);
 
     // Set initial reel positions to match symbols
-    this.reelPositions = initialSymbols.map(s => s * this.SYMBOL_HEIGHT);
+    this.reelPositions = initialSymbols.map((s) => s * this.SYMBOL_HEIGHT);
 
     // Initialize displayed balance
     this.displayedBalance.set(this.creditService.credits());
@@ -135,13 +130,13 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
 
   increaseBet(): void {
     if (this.betAmount() < this.maxBet) {
-      this.betAmount.update(v => Math.min(v + this.betStep, this.maxBet));
+      this.betAmount.update((v) => Math.min(v + this.betStep, this.maxBet));
     }
   }
 
   decreaseBet(): void {
     if (this.betAmount() > this.minBet) {
-      this.betAmount.update(v => Math.max(v - this.betStep, this.minBet));
+      this.betAmount.update((v) => Math.max(v - this.betStep, this.minBet));
     }
   }
 
@@ -181,7 +176,8 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
           const cycleSize = numSymbols * this.SYMBOL_HEIGHT;
           const currentCycle = Math.floor(currentPos / cycleSize);
           // Ziel: 2-3 volle Umdrehungen von jetzt + zum Zielsymbol
-          this.reelFinalPositions[i] = (currentCycle + 3) * cycleSize + targetSymbol * this.SYMBOL_HEIGHT;
+          this.reelFinalPositions[i] =
+            (currentCycle + 3) * cycleSize + targetSymbol * this.SYMBOL_HEIGHT;
         }
 
         // Schedule stop animations (staggered)
@@ -215,7 +211,7 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
     this.reelPhase[reelIndex] = 'stopped';
 
     // Symbol-State aktualisieren
-    this.reels.update(reels => {
+    this.reels.update((reels) => {
       const newReels = [...reels];
       newReels[reelIndex] = this.reelTargetSymbols[reelIndex];
       return newReels;
@@ -305,8 +301,7 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
         if (phase === 'spinning') {
           // Freies Drehen mit konstanter Geschwindigkeit
           this.reelPositions[i] += this.reelVelocities[i];
-        }
-        else if (phase === 'stopping') {
+        } else if (phase === 'stopping') {
           const targetPos = this.reelFinalPositions[i];
           const currentPos = this.reelPositions[i];
           const distance = targetPos - currentPos;
@@ -350,7 +345,8 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
 
   private drawReels(): void {
     const ctx = this.ctx;
-    const W = 480, H = 240;
+    const W = 480,
+      H = 240;
 
     // Walzen-Layout: 3 Walzen mit klaren Trennungen
     const reelW = 110;
@@ -370,7 +366,12 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
     ctx.fill();
 
     // Metallischer Rahmen
-    const frameGrad = ctx.createLinearGradient(startX - 18, startY - 10, startX - 18, startY + reelH + 10);
+    const frameGrad = ctx.createLinearGradient(
+      startX - 18,
+      startY - 10,
+      startX - 18,
+      startY + reelH + 10,
+    );
     frameGrad.addColorStop(0, '#4a3060');
     frameGrad.addColorStop(0.5, '#2a1540');
     frameGrad.addColorStop(1, '#1a0a30');
@@ -513,7 +514,7 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   private updateParticles(): void {
-    this.particles = this.particles.filter(p => {
+    this.particles = this.particles.filter((p) => {
       p.x += p.vx;
       p.y += p.vy;
       p.vy += 0.2; // Gravity
@@ -523,7 +524,7 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   private drawParticles(): void {
-    this.particles.forEach(p => {
+    this.particles.forEach((p) => {
       const alpha = 1 - p.life / p.maxLife;
       this.ctx.fillStyle = p.color;
       this.ctx.globalAlpha = alpha;

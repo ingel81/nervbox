@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -13,16 +13,12 @@ import { ShopDialogComponent } from './shop-dialog.component';
   imports: [CommonModule, MatButtonModule, MatIconModule, MatTooltipModule],
   template: `
     @if (auth.currentUser()) {
-      <button
-        class="shop-fab"
-        matTooltip="Shop"
-        matTooltipPosition="right"
-        (click)="openShop()"
-      >
+      <button class="shop-fab" matTooltip="Shop" matTooltipPosition="right" (click)="openShop()">
         <mat-icon>storefront</mat-icon>
       </button>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .shop-fab {
       position: fixed;

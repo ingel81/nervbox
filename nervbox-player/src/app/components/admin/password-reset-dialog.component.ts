@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -78,12 +78,7 @@ export interface PasswordResetDialogData {
 
     <mat-dialog-actions align="end">
       <button mat-button mat-dialog-close [disabled]="saving()">Abbrechen</button>
-      <button
-        mat-raised-button
-        color="warn"
-        (click)="onSave()"
-        [disabled]="!isValid() || saving()"
-      >
+      <button mat-raised-button color="warn" (click)="onSave()" [disabled]="!isValid() || saving()">
         @if (saving()) {
           <mat-spinner diameter="20"></mat-spinner>
         } @else {
@@ -92,6 +87,7 @@ export interface PasswordResetDialogData {
       </button>
     </mat-dialog-actions>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     h2[mat-dialog-title] {
       display: flex;
@@ -197,7 +193,7 @@ export class PasswordResetDialogComponent {
         this.saving.set(false);
         this.dialogRef.close(true);
       },
-      error: err => {
+      error: (err) => {
         this.saving.set(false);
         this.error.set(err.error?.message || 'Fehler beim Zurücksetzen des Passworts');
       },

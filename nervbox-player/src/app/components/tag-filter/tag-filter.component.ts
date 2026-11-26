@@ -1,9 +1,23 @@
-import { Component, input, output, signal, computed, ElementRef, viewChild, OnInit, effect } from '@angular/core';
+import {
+  Component,
+  input,
+  output,
+  signal,
+  computed,
+  ElementRef,
+  viewChild,
+  OnInit,
+  effect,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
-import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import {
+  MatAutocompleteModule,
+  MatAutocompleteSelectedEvent,
+} from '@angular/material/autocomplete';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 
@@ -30,7 +44,10 @@ import { MatInputModule } from '@angular/material/input';
           (click)="toggleTag(tag)"
         >
           <mat-icon class="pin-icon">lock</mat-icon>
-          <span class="tag-dot" [style.background]="isSelected(tag) ? 'white' : getTagColor(tag)"></span>
+          <span
+            class="tag-dot"
+            [style.background]="isSelected(tag) ? 'white' : getTagColor(tag)"
+          ></span>
           <span class="hash">#</span>{{ tag }}
         </button>
       }
@@ -48,7 +65,10 @@ import { MatInputModule } from '@angular/material/input';
           [style.--tag-color]="getTagColor(tag)"
           (click)="toggleTag(tag)"
         >
-          <span class="tag-dot" [style.background]="isSelected(tag) ? 'white' : getTagColor(tag)"></span>
+          <span
+            class="tag-dot"
+            [style.background]="isSelected(tag) ? 'white' : getTagColor(tag)"
+          ></span>
           <span class="hash">#</span>{{ tag }}
           <mat-icon class="remove-icon" (click)="removeVisibleTag(tag, $event)">close</mat-icon>
         </button>
@@ -93,6 +113,7 @@ import { MatInputModule } from '@angular/material/input';
       </div>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .tag-filter {
       display: flex;
@@ -331,7 +352,7 @@ export class TagFilterComponent implements OnInit {
 
   // Visible non-pinned tags (shown in the filter bar)
   readonly visibleNonPinnedTags = computed(() =>
-    this._visibleTags().filter(t => !this.pinnedTags().includes(t))
+    this._visibleTags().filter((t) => !this.pinnedTags().includes(t)),
   );
 
   readonly filteredTags = computed(() => {
@@ -340,8 +361,8 @@ export class TagFilterComponent implements OnInit {
     const query = this.searchQuery.toLowerCase();
 
     return this.tags()
-      .filter(t => !pinned.includes(t) && !visible.includes(t))
-      .filter(t => !query || t.toLowerCase().includes(query))
+      .filter((t) => !pinned.includes(t) && !visible.includes(t))
+      .filter((t) => !query || t.toLowerCase().includes(query))
       .slice(0, 10);
   });
 
@@ -356,7 +377,7 @@ export class TagFilterComponent implements OnInit {
   toggleTag(tag: string): void {
     const current = this._selectedTags();
     if (current.includes(tag)) {
-      this._selectedTags.set(current.filter(t => t !== tag));
+      this._selectedTags.set(current.filter((t) => t !== tag));
     } else {
       this._selectedTags.set([...current, tag]);
     }
@@ -376,10 +397,10 @@ export class TagFilterComponent implements OnInit {
     const tag = event.option.value;
     // Add to visible tags and select it
     if (!this._visibleTags().includes(tag)) {
-      this._visibleTags.update(tags => [...tags, tag]);
+      this._visibleTags.update((tags) => [...tags, tag]);
     }
     if (!this._selectedTags().includes(tag)) {
-      this._selectedTags.update(tags => [...tags, tag]);
+      this._selectedTags.update((tags) => [...tags, tag]);
       this.selectedTagsChange.emit(this._selectedTags());
     }
     this.searchQuery = '';
@@ -389,9 +410,9 @@ export class TagFilterComponent implements OnInit {
   removeVisibleTag(tag: string, event: Event): void {
     event.stopPropagation();
     // Remove from both visible and selected
-    this._visibleTags.update(tags => tags.filter(t => t !== tag));
+    this._visibleTags.update((tags) => tags.filter((t) => t !== tag));
     if (this._selectedTags().includes(tag)) {
-      this._selectedTags.update(tags => tags.filter(t => t !== tag));
+      this._selectedTags.update((tags) => tags.filter((t) => t !== tag));
       this.selectedTagsChange.emit(this._selectedTags());
     }
   }

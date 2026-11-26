@@ -6,6 +6,7 @@ import {
   OnInit,
   ElementRef,
   ViewChild,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -43,13 +44,7 @@ interface GiphyResponse {
 @Component({
   selector: 'app-gif-picker',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatIconModule,
-    MatButtonModule,
-    MatProgressSpinnerModule,
-  ],
+  imports: [CommonModule, FormsModule, MatIconModule, MatButtonModule, MatProgressSpinnerModule],
   template: `
     <div class="gif-picker" (click)="$event.stopPropagation()">
       <div class="picker-header">
@@ -92,11 +87,7 @@ interface GiphyResponse {
         } @else {
           @for (gif of gifs(); track gif.id) {
             <div class="gif-item" (click)="selectGif(gif)">
-              <img
-                [src]="gif.images.fixed_height_small.url"
-                [alt]="gif.title"
-                loading="lazy"
-              />
+              <img [src]="gif.images.fixed_height_small.url" [alt]="gif.title" loading="lazy" />
             </div>
           }
           @if (loading()) {
@@ -108,10 +99,15 @@ interface GiphyResponse {
       </div>
 
       <div class="picker-footer">
-        <img src="https://giphy.com/static/img/giphy_logo_square_social.png" alt="Powered by GIPHY" class="giphy-logo" />
+        <img
+          src="https://giphy.com/static/img/giphy_logo_square_social.png"
+          alt="Powered by GIPHY"
+          class="giphy-logo"
+        />
       </div>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .gif-picker {
       position: absolute;
@@ -211,7 +207,9 @@ interface GiphyResponse {
       object-fit: contain;
     }
 
-    .loading, .empty, .error {
+    .loading,
+    .empty,
+    .error {
       width: 100%;
       display: flex;
       flex-direction: column;
@@ -234,7 +232,8 @@ interface GiphyResponse {
       color: #ef4444;
     }
 
-    .error mat-icon, .empty mat-icon {
+    .error mat-icon,
+    .empty mat-icon {
       font-size: 32px;
       width: 32px;
       height: 32px;
@@ -272,18 +271,16 @@ export class GifPickerComponent implements OnInit {
   private readonly searchSubject = new Subject<string>();
 
   ngOnInit(): void {
-    this.searchSubject
-      .pipe(debounceTime(300), distinctUntilChanged())
-      .subscribe(query => {
-        this.offset = 0;
-        this.hasMore = true;
-        this.gifs.set([]);
-        if (query.trim()) {
-          this.searchGifs(query);
-        } else {
-          this.loadTrending();
-        }
-      });
+    this.searchSubject.pipe(debounceTime(300), distinctUntilChanged()).subscribe((query) => {
+      this.offset = 0;
+      this.hasMore = true;
+      this.gifs.set([]);
+      if (query.trim()) {
+        this.searchGifs(query);
+      } else {
+        this.loadTrending();
+      }
+    });
 
     // Load trending on init
     this.loadTrending();
@@ -308,10 +305,12 @@ export class GifPickerComponent implements OnInit {
     this.error.set(null);
 
     this.api
-      .get<GiphyResponse>(`/giphy/search?q=${encodeURIComponent(query)}&limit=20&offset=${this.offset}`)
+      .get<GiphyResponse>(
+        `/giphy/search?q=${encodeURIComponent(query)}&limit=20&offset=${this.offset}`,
+      )
       .subscribe({
-        next: response => {
-          this.gifs.update(current => [...current, ...response.data]);
+        next: (response) => {
+          this.gifs.update((current) => [...current, ...response.data]);
           this.hasMore = response.data.length === 20;
           this.loading.set(false);
         },
@@ -329,8 +328,8 @@ export class GifPickerComponent implements OnInit {
     this.error.set(null);
 
     this.api.get<GiphyResponse>(`/giphy/trending?limit=20&offset=${this.offset}`).subscribe({
-      next: response => {
-        this.gifs.update(current => [...current, ...response.data]);
+      next: (response) => {
+        this.gifs.update((current) => [...current, ...response.data]);
         this.hasMore = response.data.length === 20;
         this.loading.set(false);
       },

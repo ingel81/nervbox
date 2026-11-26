@@ -1,4 +1,4 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MatDialogRef, MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -23,7 +23,7 @@ import { AuthService } from '../../core/services/auth.service';
         <mat-icon class="title-icon spinning">videogame_asset</mat-icon>
         <h2>MINI GAMES</h2>
         <div class="coin-display">
-          <img src="icons/nervbox-coin.svg" alt="" class="coin-icon bouncing">
+          <img src="icons/nervbox-coin.svg" alt="" class="coin-icon bouncing" />
           <span>Earn N$</span>
         </div>
       </div>
@@ -39,7 +39,7 @@ import { AuthService } from '../../core/services/auth.service';
             <span class="game-name">ARKANOID</span>
             <span class="game-desc">Zerstoere alle Bloecke!</span>
             <div class="game-reward">
-              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin">
+              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin" />
               <span>N$ pro Level</span>
             </div>
           </button>
@@ -52,7 +52,7 @@ import { AuthService } from '../../core/services/auth.service';
             <span class="game-name">HOTDOG KATAPULT</span>
             <span class="game-desc">Stopfe die Mäuler!</span>
             <div class="game-reward">
-              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin">
+              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin" />
               <span>1 N$/Treffer</span>
             </div>
           </button>
@@ -65,7 +65,7 @@ import { AuthService } from '../../core/services/auth.service';
             <span class="game-name">PLINKO</span>
             <span class="game-desc">Drop & Win!</span>
             <div class="game-reward">
-              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin">
+              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin" />
               <span>0.2x - 50x</span>
             </div>
           </button>
@@ -78,7 +78,7 @@ import { AuthService } from '../../core/services/auth.service';
             <span class="game-name">SLOT MACHINE</span>
             <span class="game-desc">Pull the lever!</span>
             <div class="game-reward">
-              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin">
+              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin" />
               <span>1x - 100x</span>
             </div>
           </button>
@@ -90,7 +90,7 @@ import { AuthService } from '../../core/services/auth.service';
             <span class="game-name">KAYBERG HUNTER</span>
             <span class="game-desc">Jage als Greifvogel!</span>
             <div class="game-reward">
-              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin">
+              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin" />
               <span>N$ pro Level</span>
             </div>
           </button>
@@ -102,7 +102,7 @@ import { AuthService } from '../../core/services/auth.service';
             <span class="game-name">WEINFEST SHOOTER</span>
             <span class="game-desc">Schiess die Flaschen ab!</span>
             <div class="game-reward">
-              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin">
+              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin" />
               <span>+3/-2 N$</span>
             </div>
           </button>
@@ -115,11 +115,10 @@ import { AuthService } from '../../core/services/auth.service';
             <span class="game-name">SANDWICHMASTER</span>
             <span class="game-desc">Baue das ultimative Sandwich!</span>
             <div class="game-reward">
-              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin">
+              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin" />
               <span>Punkte sammeln</span>
             </div>
           </button>
-
         </div>
 
         <!-- Coming Soon Section -->
@@ -155,6 +154,7 @@ import { AuthService } from '../../core/services/auth.service';
       </mat-dialog-actions>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .game-selection-dialog {
       overflow: hidden;
@@ -182,8 +182,12 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     @keyframes rotate-glow {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .title-icon {
@@ -200,8 +204,13 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     @keyframes wiggle {
-      0%, 100% { transform: rotate(-5deg); }
-      50% { transform: rotate(5deg); }
+      0%,
+      100% {
+        transform: rotate(-5deg);
+      }
+      50% {
+        transform: rotate(5deg);
+      }
     }
 
     .dialog-header h2 {
@@ -221,8 +230,13 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     @keyframes gradient-shift {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
+      0%,
+      100% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
     }
 
     .coin-display {
@@ -248,8 +262,13 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-4px); }
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-4px);
+      }
     }
 
     .coin-display span {
@@ -288,7 +307,11 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     .game-card.arkanoid {
-      background: linear-gradient(135deg, rgba(147, 51, 234, 0.15) 0%, rgba(236, 72, 153, 0.1) 100%);
+      background: linear-gradient(
+        135deg,
+        rgba(147, 51, 234, 0.15) 0%,
+        rgba(236, 72, 153, 0.1) 100%
+      );
       border-color: rgba(147, 51, 234, 0.5);
     }
 
@@ -328,37 +351,51 @@ import { AuthService } from '../../core/services/auth.service';
 
     .game-card.arkanoid:hover {
       border-color: #9333ea;
-      box-shadow: 0 15px 40px rgba(147, 51, 234, 0.4), 0 0 50px rgba(147, 51, 234, 0.2);
+      box-shadow:
+        0 15px 40px rgba(147, 51, 234, 0.4),
+        0 0 50px rgba(147, 51, 234, 0.2);
     }
 
     .game-card.hotdog:hover {
       border-color: #f97316;
-      box-shadow: 0 15px 40px rgba(249, 115, 22, 0.4), 0 0 50px rgba(249, 115, 22, 0.2);
+      box-shadow:
+        0 15px 40px rgba(249, 115, 22, 0.4),
+        0 0 50px rgba(249, 115, 22, 0.2);
     }
 
     .game-card.plinko:hover {
       border-color: #ef4444;
-      box-shadow: 0 15px 40px rgba(239, 68, 68, 0.4), 0 0 50px rgba(239, 68, 68, 0.2);
+      box-shadow:
+        0 15px 40px rgba(239, 68, 68, 0.4),
+        0 0 50px rgba(239, 68, 68, 0.2);
     }
 
     .game-card.slot-machine:hover {
       border-color: #ff00ff;
-      box-shadow: 0 15px 40px rgba(255, 0, 255, 0.4), 0 0 50px rgba(255, 0, 255, 0.2);
+      box-shadow:
+        0 15px 40px rgba(255, 0, 255, 0.4),
+        0 0 50px rgba(255, 0, 255, 0.2);
     }
 
     .game-card.kayberg:hover {
       border-color: #228b22;
-      box-shadow: 0 15px 40px rgba(34, 139, 34, 0.4), 0 0 50px rgba(34, 139, 34, 0.2);
+      box-shadow:
+        0 15px 40px rgba(34, 139, 34, 0.4),
+        0 0 50px rgba(34, 139, 34, 0.2);
     }
 
     .game-card.weinfest:hover {
       border-color: #8b4513;
-      box-shadow: 0 15px 40px rgba(139, 69, 19, 0.4), 0 0 50px rgba(128, 0, 128, 0.3);
+      box-shadow:
+        0 15px 40px rgba(139, 69, 19, 0.4),
+        0 0 50px rgba(128, 0, 128, 0.3);
     }
 
     .game-card.sandwichmaster:hover {
       border-color: #22c55e;
-      box-shadow: 0 15px 40px rgba(34, 197, 94, 0.4), 0 0 50px rgba(234, 179, 8, 0.3);
+      box-shadow:
+        0 15px 40px rgba(34, 197, 94, 0.4),
+        0 0 50px rgba(234, 179, 8, 0.3);
     }
 
     .game-glow {
@@ -372,8 +409,13 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     @keyframes shine {
-      0% { left: -100%; }
-      50%, 100% { left: 100%; }
+      0% {
+        left: -100%;
+      }
+      50%,
+      100% {
+        left: 100%;
+      }
     }
 
     .game-badge {
@@ -400,13 +442,23 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     @keyframes pulse-casino {
-      0%, 100% { box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4); }
-      50% { box-shadow: 0 2px 20px rgba(239, 68, 68, 0.8); }
+      0%,
+      100% {
+        box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4);
+      }
+      50% {
+        box-shadow: 0 2px 20px rgba(239, 68, 68, 0.8);
+      }
     }
 
     @keyframes pulse-new {
-      0%, 100% { box-shadow: 0 2px 10px rgba(249, 115, 22, 0.4); }
-      50% { box-shadow: 0 2px 20px rgba(249, 115, 22, 0.8); }
+      0%,
+      100% {
+        box-shadow: 0 2px 10px rgba(249, 115, 22, 0.4);
+      }
+      50% {
+        box-shadow: 0 2px 20px rgba(249, 115, 22, 0.8);
+      }
     }
 
     .game-icon {
@@ -426,7 +478,9 @@ import { AuthService } from '../../core/services/auth.service';
     .game-icon.slot-icon {
       color: #ff00ff;
       filter: drop-shadow(0 0 15px rgba(255, 0, 255, 0.5));
-      animation: icon-float 3s ease-in-out infinite, icon-pulse 2s ease-in-out infinite;
+      animation:
+        icon-float 3s ease-in-out infinite,
+        icon-pulse 2s ease-in-out infinite;
     }
 
     .game-icon.kayberg-icon {
@@ -436,8 +490,13 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     @keyframes icon-pulse {
-      0%, 100% { filter: drop-shadow(0 0 15px rgba(255, 0, 255, 0.5)); }
-      50% { filter: drop-shadow(0 0 25px rgba(255, 0, 255, 0.8)); }
+      0%,
+      100% {
+        filter: drop-shadow(0 0 15px rgba(255, 0, 255, 0.5));
+      }
+      50% {
+        filter: drop-shadow(0 0 25px rgba(255, 0, 255, 0.8));
+      }
     }
 
     .game-emoji {
@@ -455,8 +514,13 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     @keyframes icon-float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-5px); }
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-5px);
+      }
     }
 
     .game-name {
@@ -534,8 +598,13 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     @keyframes rocket {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-3px); }
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-3px);
+      }
     }
 
     .coming-soon-games {

@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -108,6 +108,7 @@ import { UserService } from '../../core/services/user.service';
       </button>
     </mat-dialog-actions>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     h2[mat-dialog-title] {
       display: flex;
@@ -197,11 +198,11 @@ export class UserCreateDialogComponent {
         role: this.role,
       })
       .subscribe({
-        next: user => {
+        next: (user) => {
           this.saving.set(false);
           this.dialogRef.close(user);
         },
-        error: err => {
+        error: (err) => {
           this.saving.set(false);
           this.error.set(err.error?.message || 'Fehler beim Erstellen des Users');
         },

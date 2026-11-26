@@ -9,6 +9,7 @@ import {
   ViewChild,
   AfterViewChecked,
   effect,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -63,7 +64,9 @@ type ChatTab = 'chat' | 'activity';
             <mat-icon>notifications</mat-icon>
             <span>Aktivität</span>
             @if (unreadActivityCount() > 0 && activeTab() !== 'activity') {
-              <span class="badge">{{ unreadActivityCount() > 99 ? '99+' : unreadActivityCount() }}</span>
+              <span class="badge">{{
+                unreadActivityCount() > 99 ? '99+' : unreadActivityCount()
+              }}</span>
             }
           </button>
         </div>
@@ -86,7 +89,11 @@ type ChatTab = 'chat' | 'activity';
           } @else {
             <div class="messages" #messagesContainer>
               @if (hasMoreChatMessages()) {
-                <button class="load-older-btn" (click)="loadOlderMessages()" [disabled]="loadingOlder()">
+                <button
+                  class="load-older-btn"
+                  (click)="loadOlderMessages()"
+                  [disabled]="loadingOlder()"
+                >
                   @if (loadingOlder()) {
                     <mat-spinner diameter="16"></mat-spinner>
                   } @else {
@@ -100,7 +107,11 @@ type ChatTab = 'chat' | 'activity';
                   @if (msg.userId !== auth.currentUser()?.id) {
                     <app-user-avatar [userId]="msg.userId" size="small" class="message-avatar" />
                   }
-                  <div class="message" [class.own]="msg.userId === auth.currentUser()?.id" [class.gif-message]="msg.messageType === 'gif'">
+                  <div
+                    class="message"
+                    [class.own]="msg.userId === auth.currentUser()?.id"
+                    [class.gif-message]="msg.messageType === 'gif'"
+                  >
                     @if (msg.userId !== auth.currentUser()?.id) {
                       <span class="username">{{ msg.username }}</span>
                     }
@@ -150,11 +161,7 @@ type ChatTab = 'chat' | 'activity';
                   [disabled]="sending()"
                   autocomplete="off"
                 />
-                <button
-                  mat-icon-button
-                  type="submit"
-                  [disabled]="!newMessage.trim() || sending()"
-                >
+                <button mat-icon-button type="submit" [disabled]="!newMessage.trim() || sending()">
                   <mat-icon>send</mat-icon>
                 </button>
               </form>
@@ -174,7 +181,11 @@ type ChatTab = 'chat' | 'activity';
           } @else {
             <div class="messages activity-feed" #activityContainer>
               @if (hasMoreActivityMessages()) {
-                <button class="load-older-btn" (click)="loadOlderMessages()" [disabled]="loadingOlder()">
+                <button
+                  class="load-older-btn"
+                  (click)="loadOlderMessages()"
+                  [disabled]="loadingOlder()"
+                >
                   @if (loadingOlder()) {
                     <mat-spinner diameter="16"></mat-spinner>
                   } @else {
@@ -203,6 +214,7 @@ type ChatTab = 'chat' | 'activity';
       </div>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .chat-sidebar {
       height: 100%;
@@ -302,7 +314,8 @@ type ChatTab = 'chat' | 'activity';
       position: relative;
     }
 
-    .loading, .empty {
+    .loading,
+    .empty {
       flex: 1;
       display: flex;
       align-items: center;
@@ -535,8 +548,14 @@ type ChatTab = 'chat' | 'activity';
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-4px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(-4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .login-hint mat-icon {
@@ -631,12 +650,12 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
 
   // Filtered messages - chat only (text + gif, not system notifications)
   readonly chatMessages = computed(() => {
-    return this.signalR.chatMessages().filter(msg => msg.messageType !== 'shekel-transaction');
+    return this.signalR.chatMessages().filter((msg) => msg.messageType !== 'shekel-transaction');
   });
 
   // Filtered messages - activity only (shekel-transaction from NERVBOX)
   readonly activityMessages = computed(() => {
-    return this.signalR.chatMessages().filter(msg => msg.messageType === 'shekel-transaction');
+    return this.signalR.chatMessages().filter((msg) => msg.messageType === 'shekel-transaction');
   });
 
   // Check if there are more chat messages to load
@@ -671,7 +690,7 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
       // Track unread counts when not on that tab
       if (chatMsgs.length > this.lastChatCount && this.lastChatCount > 0) {
         if (tab !== 'chat') {
-          this.unreadChatCount.update(c => c + (chatMsgs.length - this.lastChatCount));
+          this.unreadChatCount.update((c) => c + (chatMsgs.length - this.lastChatCount));
         } else {
           setTimeout(() => this.scrollToBottom(), 50);
         }
@@ -679,7 +698,9 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
 
       if (activityMsgs.length > this.lastActivityCount && this.lastActivityCount > 0) {
         if (tab !== 'activity') {
-          this.unreadActivityCount.update(c => c + (activityMsgs.length - this.lastActivityCount));
+          this.unreadActivityCount.update(
+            (c) => c + (activityMsgs.length - this.lastActivityCount),
+          );
         } else {
           setTimeout(() => this.scrollToBottom(), 50);
         }
@@ -716,7 +737,7 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
         hasMoreActivity: boolean;
       }>('/chat?limit=25')
       .subscribe({
-        next: response => {
+        next: (response) => {
           this.signalR.setInitialMessages(response.messages);
           this.hasMoreChat.set(response.hasMoreChat);
           this.hasMoreActivity.set(response.hasMoreActivity);
@@ -743,11 +764,12 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
     const type = tab === 'chat' ? 'chat' : 'activity';
 
     this.api
-      .get<{ messages: ChatMessage[]; hasMore: boolean }>(
-        `/chat?limit=25&beforeId=${oldestId}&type=${type}`
-      )
+      .get<{
+        messages: ChatMessage[];
+        hasMore: boolean;
+      }>(`/chat?limit=25&beforeId=${oldestId}&type=${type}`)
       .subscribe({
-        next: response => {
+        next: (response) => {
           this.skipNextScroll = true;
           this.signalR.prependMessages(response.messages);
           if (tab === 'chat') {
@@ -786,7 +808,7 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
   }
 
   toggleGifPicker(): void {
-    this.showGifPicker.update(v => !v);
+    this.showGifPicker.update((v) => !v);
   }
 
   async onGifSelected(gifUrl: string): Promise<void> {
@@ -803,9 +825,7 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
   }
 
   private scrollToBottom(): void {
-    const container = this.activeTab() === 'chat'
-      ? this.messagesContainer
-      : this.activityContainer;
+    const container = this.activeTab() === 'chat' ? this.messagesContainer : this.activityContainer;
     if (container) {
       const el = container.nativeElement;
       el.scrollTop = el.scrollHeight;

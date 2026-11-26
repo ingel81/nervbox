@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -30,8 +30,12 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
   ],
   template: `
     <div class="shekel-popover">
-      <div class="header" [class.transfer-mode]="activeTab() === 0" [class.casino-mode]="activeTab() === 1">
-        <img src="icons/nervbox-coin.svg" alt="Shekel" class="header-coin">
+      <div
+        class="header"
+        [class.transfer-mode]="activeTab() === 0"
+        [class.casino-mode]="activeTab() === 1"
+      >
+        <img src="icons/nervbox-coin.svg" alt="Shekel" class="header-coin" />
         <div class="header-text">
           <span class="title">{{ activeTab() === 0 ? 'Shekel senden' : 'Shekel Casino' }}</span>
           <span class="balance">{{ creditService.creditsFormatted() }} N$</span>
@@ -43,7 +47,11 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
 
       <mat-divider></mat-divider>
 
-      <mat-tab-group animationDuration="200ms" class="tabs" (selectedIndexChange)="activeTab.set($event)">
+      <mat-tab-group
+        animationDuration="200ms"
+        class="tabs"
+        (selectedIndexChange)="activeTab.set($event)"
+      >
         <!-- TRANSFER TAB (now first) -->
         <mat-tab>
           <ng-template mat-tab-label>
@@ -58,7 +66,11 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
             </div>
 
             @if (transferResult()) {
-              <div class="result-banner" [class.won]="transferResult()!.success" [class.lost]="!transferResult()!.success">
+              <div
+                class="result-banner"
+                [class.won]="transferResult()!.success"
+                [class.lost]="!transferResult()!.success"
+              >
                 <mat-icon>{{ transferResult()!.success ? 'check_circle' : 'error' }}</mat-icon>
                 <span>{{ transferResult()!.message }}</span>
               </div>
@@ -93,16 +105,45 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
               </mat-form-field>
 
               <div class="quick-amounts">
-                <button mat-stroked-button (click)="setTransferAmount(5)" [disabled]="creditService.credits() < 5">5</button>
-                <button mat-stroked-button (click)="setTransferAmount(10)" [disabled]="creditService.credits() < 10">10</button>
-                <button mat-stroked-button (click)="setTransferAmount(25)" [disabled]="creditService.credits() < 25">25</button>
-                <button mat-stroked-button (click)="setTransferAmount(50)" [disabled]="creditService.credits() < 50">50</button>
+                <button
+                  mat-stroked-button
+                  (click)="setTransferAmount(5)"
+                  [disabled]="creditService.credits() < 5"
+                >
+                  5
+                </button>
+                <button
+                  mat-stroked-button
+                  (click)="setTransferAmount(10)"
+                  [disabled]="creditService.credits() < 10"
+                >
+                  10
+                </button>
+                <button
+                  mat-stroked-button
+                  (click)="setTransferAmount(25)"
+                  [disabled]="creditService.credits() < 25"
+                >
+                  25
+                </button>
+                <button
+                  mat-stroked-button
+                  (click)="setTransferAmount(50)"
+                  [disabled]="creditService.credits() < 50"
+                >
+                  50
+                </button>
               </div>
 
               <button
                 mat-raised-button
                 class="transfer-btn"
-                [disabled]="isTransferring() || !selectedUserId || transferAmount <= 0 || transferAmount > creditService.credits()"
+                [disabled]="
+                  isTransferring() ||
+                  !selectedUserId ||
+                  transferAmount <= 0 ||
+                  transferAmount > creditService.credits()
+                "
                 (click)="transfer()"
               >
                 @if (isTransferring()) {
@@ -130,8 +171,14 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
             </div>
 
             @if (gambleResult()) {
-              <div class="result-banner" [class.won]="gambleResult()!.won" [class.lost]="!gambleResult()!.won">
-                <mat-icon>{{ gambleResult()!.won ? 'celebration' : 'sentiment_very_dissatisfied' }}</mat-icon>
+              <div
+                class="result-banner"
+                [class.won]="gambleResult()!.won"
+                [class.lost]="!gambleResult()!.won"
+              >
+                <mat-icon>{{
+                  gambleResult()!.won ? 'celebration' : 'sentiment_very_dissatisfied'
+                }}</mat-icon>
                 <span>{{ gambleResult()!.message }}</span>
               </div>
             }
@@ -150,17 +197,45 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
             </mat-form-field>
 
             <div class="quick-amounts">
-              <button mat-stroked-button (click)="setGambleAmount(10)" [disabled]="creditService.credits() < 10">10</button>
-              <button mat-stroked-button (click)="setGambleAmount(25)" [disabled]="creditService.credits() < 25">25</button>
-              <button mat-stroked-button (click)="setGambleAmount(50)" [disabled]="creditService.credits() < 50">50</button>
-              <button mat-stroked-button (click)="setGambleAmount(100)" [disabled]="creditService.credits() < 100">100</button>
-              <button mat-stroked-button (click)="setGambleAmount(creditService.credits())">ALL IN!</button>
+              <button
+                mat-stroked-button
+                (click)="setGambleAmount(10)"
+                [disabled]="creditService.credits() < 10"
+              >
+                10
+              </button>
+              <button
+                mat-stroked-button
+                (click)="setGambleAmount(25)"
+                [disabled]="creditService.credits() < 25"
+              >
+                25
+              </button>
+              <button
+                mat-stroked-button
+                (click)="setGambleAmount(50)"
+                [disabled]="creditService.credits() < 50"
+              >
+                50
+              </button>
+              <button
+                mat-stroked-button
+                (click)="setGambleAmount(100)"
+                [disabled]="creditService.credits() < 100"
+              >
+                100
+              </button>
+              <button mat-stroked-button (click)="setGambleAmount(creditService.credits())">
+                ALL IN!
+              </button>
             </div>
 
             <button
               mat-raised-button
               class="gamble-btn"
-              [disabled]="isGambling() || gambleAmount <= 0 || gambleAmount > creditService.credits()"
+              [disabled]="
+                isGambling() || gambleAmount <= 0 || gambleAmount > creditService.credits()
+              "
               (click)="gamble()"
             >
               @if (isGambling()) {
@@ -174,6 +249,7 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
       </mat-tab-group>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .shekel-popover {
       min-width: 570px;
@@ -219,8 +295,13 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
     }
 
     @keyframes coinSpin {
-      0%, 100% { transform: rotateY(0deg); }
-      50% { transform: rotateY(180deg); }
+      0%,
+      100% {
+        transform: rotateY(0deg);
+      }
+      50% {
+        transform: rotateY(180deg);
+      }
     }
 
     .header-text {
@@ -280,14 +361,16 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
       gap: 16px;
     }
 
-    .gambling-info, .transfer-info {
+    .gambling-info,
+    .transfer-info {
       text-align: center;
       padding: 12px;
       background: rgba(255, 255, 255, 0.05);
       border-radius: 12px;
     }
 
-    .gambling-info p, .transfer-info p {
+    .gambling-info p,
+    .transfer-info p {
       margin: 8px 0 0 0;
       color: rgba(255, 255, 255, 0.8);
       font-size: 14px;
@@ -299,7 +382,8 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
       font-size: 16px !important;
     }
 
-    .dice-icon, .send-icon {
+    .dice-icon,
+    .send-icon {
       font-size: 48px;
       width: 48px;
       height: 48px;
@@ -355,7 +439,8 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
       color: #ef4444;
     }
 
-    .amount-field, .user-select {
+    .amount-field,
+    .user-select {
       width: 100%;
     }
 
@@ -556,7 +641,11 @@ export class ShekelPopoverComponent implements OnInit {
   }
 
   transfer(): void {
-    if (!this.selectedUserId || this.transferAmount <= 0 || this.transferAmount > this.creditService.credits()) {
+    if (
+      !this.selectedUserId ||
+      this.transferAmount <= 0 ||
+      this.transferAmount > this.creditService.credits()
+    ) {
       return;
     }
 

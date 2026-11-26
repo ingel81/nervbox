@@ -1,4 +1,12 @@
-import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  computed,
+  OnInit,
+  effect,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterOutlet } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -11,8 +19,14 @@ import { LoginDialogComponent } from './components/auth/login-dialog.component';
 import { RegisterDialogComponent } from './components/auth/register-dialog.component';
 import { ChangePasswordDialogComponent } from './components/auth/change-password-dialog.component';
 import { StatsDialogComponent } from './components/stats/stats-dialog.component';
-import { SoundEditDialogComponent, SoundEditDialogData } from './components/admin/sound-edit-dialog.component';
-import { DeleteSoundDialogComponent, DeleteSoundDialogData } from './components/admin/delete-sound-dialog.component';
+import {
+  SoundEditDialogComponent,
+  SoundEditDialogData,
+} from './components/admin/sound-edit-dialog.component';
+import {
+  DeleteSoundDialogComponent,
+  DeleteSoundDialogData,
+} from './components/admin/delete-sound-dialog.component';
 import { TagManagerDialogComponent } from './components/admin/tag-manager-dialog.component';
 import { TagWizardDialogComponent } from './components/admin/tag-wizard-dialog.component';
 import { UserManagementDialogComponent } from './components/admin/user-management-dialog.component';
@@ -65,118 +79,117 @@ interface Activity {
     @if (isDevRoute()) {
       <router-outlet />
     } @else {
-    <div class="app-container">
-      <!-- Toolbar -->
-      <app-toolbar
-        [currentSort]="currentSort()"
-        [selectionMode]="selectionService.selectionMode()"
-        [selectionCount]="selectionService.selectionCount()"
-        [showFavoritesOnly]="showFavoritesOnly()"
-        (searchChange)="onSearchChange($event)"
-        (sortChange)="onSortChange($event)"
-        (favoritesFilterToggle)="toggleFavoritesFilter()"
-        (killAllClick)="onKillAll()"
-        (adminMenuAction)="onAdminMenuAction($event)"
-        (statsClick)="onStatsClick()"
-        (chatClick)="toggleChat()"
-        (loginClick)="onLoginClick()"
-        (changePasswordClick)="onChangePasswordClick()"
-        (changeAvatarClick)="onChangeAvatarClick()"
-        (uploadClick)="onUploadClick()"
-        (profileClick)="onProfileClick()"
-        (restartTourClick)="welcomeTour.restartTour()"
-        (selectionModeToggle)="selectionService.toggleSelectionMode()"
-        (openSelectionInMixer)="selectionService.openInMixer()"
-        (clearSelection)="selectionService.clearSelection()"
-      />
+      <div class="app-container">
+        <!-- Toolbar -->
+        <app-toolbar
+          [currentSort]="currentSort()"
+          [selectionMode]="selectionService.selectionMode()"
+          [selectionCount]="selectionService.selectionCount()"
+          [showFavoritesOnly]="showFavoritesOnly()"
+          (searchChange)="onSearchChange($event)"
+          (sortChange)="onSortChange($event)"
+          (favoritesFilterToggle)="toggleFavoritesFilter()"
+          (killAllClick)="onKillAll()"
+          (adminMenuAction)="onAdminMenuAction($event)"
+          (statsClick)="onStatsClick()"
+          (chatClick)="toggleChat()"
+          (loginClick)="onLoginClick()"
+          (changePasswordClick)="onChangePasswordClick()"
+          (changeAvatarClick)="onChangeAvatarClick()"
+          (uploadClick)="onUploadClick()"
+          (profileClick)="onProfileClick()"
+          (restartTourClick)="welcomeTour.restartTour()"
+          (selectionModeToggle)="selectionService.toggleSelectionMode()"
+          (openSelectionInMixer)="selectionService.openInMixer()"
+          (clearSelection)="selectionService.clearSelection()"
+        />
 
-      <!-- Main Layout -->
-      <div class="main-layout">
-        <!-- Main Content -->
-        <main class="main-content">
-          <!-- Tag Filter -->
-          @if (soundService.sounds().length > 0) {
-            <app-tag-filter
-              [tags]="allTags()"
-              [tagColors]="soundService.tagColorMap()"
-              [pinnedTags]="soundService.pinnedTagNames()"
-              (selectedTagsChange)="onTagsChange($event)"
-            />
+        <!-- Main Layout -->
+        <div class="main-layout">
+          <!-- Main Content -->
+          <main class="main-content">
+            <!-- Tag Filter -->
+            @if (soundService.sounds().length > 0) {
+              <app-tag-filter
+                [tags]="allTags()"
+                [tagColors]="soundService.tagColorMap()"
+                [pinnedTags]="soundService.pinnedTagNames()"
+                (selectedTagsChange)="onTagsChange($event)"
+              />
+            }
+
+            <!-- Sound Grid -->
+            @if (soundService.loading()) {
+              <div class="loading-container">
+                <mat-spinner diameter="48"></mat-spinner>
+                <p>Sounds werden geladen...</p>
+              </div>
+            } @else if (soundService.error()) {
+              <div class="error-container">
+                <span class="error-icon">!</span>
+                <p>{{ soundService.error() }}</p>
+                <button class="retry-btn" (click)="loadSounds()">Erneut versuchen</button>
+              </div>
+            } @else {
+              <app-sound-grid
+                [sounds]="sortedSounds()"
+                [searchQuery]="searchQuery()"
+                [selectedTags]="selectedTags()"
+                [tagColors]="soundService.tagColorMap()"
+                [selectionMode]="selectionService.selectionMode()"
+                [selectedHashes]="selectionService.selectedSounds()"
+                (playSound)="onPlaySound($event)"
+                (editSound)="onEditSound($event)"
+                (toggleSound)="onToggleSound($event)"
+                (deleteSound)="onDeleteSound($event)"
+                (selectionToggle)="selectionService.toggleSelection($event.hash)"
+              />
+            }
+          </main>
+
+          <!-- Resizable Divider -->
+          @if (showChat()) {
+            <div
+              class="resize-divider"
+              (mousedown)="startResize($event)"
+              (touchstart)="startResizeTouch($event)"
+            >
+              <div class="divider-handle"></div>
+            </div>
           }
 
-          <!-- Sound Grid -->
-          @if (soundService.loading()) {
-            <div class="loading-container">
-              <mat-spinner diameter="48"></mat-spinner>
-              <p>Sounds werden geladen...</p>
-            </div>
-          } @else if (soundService.error()) {
-            <div class="error-container">
-              <span class="error-icon">!</span>
-              <p>{{ soundService.error() }}</p>
-              <button class="retry-btn" (click)="loadSounds()">
-                Erneut versuchen
-              </button>
-            </div>
-          } @else {
-            <app-sound-grid
-              [sounds]="sortedSounds()"
-              [searchQuery]="searchQuery()"
-              [selectedTags]="selectedTags()"
-              [tagColors]="soundService.tagColorMap()"
-              [selectionMode]="selectionService.selectionMode()"
-              [selectedHashes]="selectionService.selectedSounds()"
-              (playSound)="onPlaySound($event)"
-              (editSound)="onEditSound($event)"
-              (toggleSound)="onToggleSound($event)"
-              (deleteSound)="onDeleteSound($event)"
-              (selectionToggle)="selectionService.toggleSelection($event.hash)"
-            />
-          }
-        </main>
-
-        <!-- Resizable Divider -->
-        @if (showChat()) {
-          <div
-            class="resize-divider"
-            (mousedown)="startResize($event)"
-            (touchstart)="startResizeTouch($event)"
-          >
-            <div class="divider-handle"></div>
-          </div>
-        }
-
-        <!-- Chat Sidebar (Desktop) -->
-        @if (showChat()) {
-          <app-chat-sidebar [style.width.px]="chatWidth()" />
-        }
-      </div>
-
-      <!-- Mini-Games FAB (Admin only) -->
-      <app-earn-coins-fab />
-
-      <!-- Shop FAB -->
-      <app-shop-fab />
-
-      <!-- Achievement Toast -->
-      <app-achievement-toast />
-
-      <!-- Activity Bar -->
-      @if (recentActivity().length > 0) {
-        <div class="activity-bar">
-          @for (activity of recentActivity(); track activity.id) {
-            <div class="activity-item" [class.fading]="activity.fading">
-              <span class="activity-icon">▶</span>
-              <span class="activity-user">{{ activity.user }}</span>
-              <span class="activity-text">spielt</span>
-              <span class="activity-sound">{{ activity.sound }}</span>
-            </div>
+          <!-- Chat Sidebar (Desktop) -->
+          @if (showChat()) {
+            <app-chat-sidebar [style.width.px]="chatWidth()" />
           }
         </div>
-      }
-    </div>
+
+        <!-- Mini-Games FAB (Admin only) -->
+        <app-earn-coins-fab />
+
+        <!-- Shop FAB -->
+        <app-shop-fab />
+
+        <!-- Achievement Toast -->
+        <app-achievement-toast />
+
+        <!-- Activity Bar -->
+        @if (recentActivity().length > 0) {
+          <div class="activity-bar">
+            @for (activity of recentActivity(); track activity.id) {
+              <div class="activity-item" [class.fading]="activity.fading">
+                <span class="activity-icon">▶</span>
+                <span class="activity-user">{{ activity.user }}</span>
+                <span class="activity-text">spielt</span>
+                <span class="activity-sound">{{ activity.sound }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .app-container {
       display: flex;
@@ -297,8 +310,13 @@ interface Activity {
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
     }
 
     .activity-user {
@@ -443,7 +461,7 @@ export class App implements OnInit {
     // Apply favorites filter if active
     if (this.showFavoritesOnly()) {
       const favorites = this.favoritesService.favorites();
-      sounds = sounds.filter(s => favorites.has(s.hash));
+      sounds = sounds.filter((s) => favorites.has(s.hash));
     }
 
     switch (sort) {
@@ -454,7 +472,9 @@ export class App implements OnInit {
       case 'plays-desc':
         return sounds.sort((a, b) => (b.playCount || 0) - (a.playCount || 0));
       case 'newest':
-        return sounds.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        return sounds.sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
       case 'duration-desc':
         return sounds.sort((a, b) => b.durationMs - a.durationMs);
       case 'duration-asc':
@@ -541,7 +561,7 @@ export class App implements OnInit {
     }
 
     this.soundService.playSound(sound.hash).subscribe({
-      error: err => {
+      error: (err) => {
         if (err.status === 401) {
           this.authService.logout();
           this.openLoginDialog(() => this.onPlaySound(sound));
@@ -565,18 +585,18 @@ export class App implements OnInit {
     };
 
     // Add to beginning of list, keep max 5
-    this.recentActivity.update(list => [activity, ...list].slice(0, 5));
+    this.recentActivity.update((list) => [activity, ...list].slice(0, 5));
 
     // Start fading after 4 seconds
     setTimeout(() => {
-      this.recentActivity.update(list =>
-        list.map(a => (a.id === id ? { ...a, fading: true } : a))
+      this.recentActivity.update((list) =>
+        list.map((a) => (a.id === id ? { ...a, fading: true } : a)),
       );
     }, 4000);
 
     // Remove after 6 seconds
     setTimeout(() => {
-      this.recentActivity.update(list => list.filter(a => a.id !== id));
+      this.recentActivity.update((list) => list.filter((a) => a.id !== id));
     }, 6000);
   }
 
@@ -621,7 +641,7 @@ export class App implements OnInit {
           maxHeight: '90vh',
           panelClass: 'dark-dialog',
         });
-        dialogRef.afterClosed().subscribe(result => {
+        dialogRef.afterClosed().subscribe((result) => {
           if (result) {
             this.loadSounds();
             this.snackBar.open('Tags wurden aktualisiert', 'OK', { duration: 2000 });
@@ -639,11 +659,11 @@ export class App implements OnInit {
   }
 
   toggleChat(): void {
-    this.showChat.update(v => !v);
+    this.showChat.update((v) => !v);
   }
 
   toggleFavoritesFilter(): void {
-    this.showFavoritesOnly.update(v => !v);
+    this.showFavoritesOnly.update((v) => !v);
   }
 
   onLoginClick(): void {
@@ -661,7 +681,7 @@ export class App implements OnInit {
       panelClass: 'dark-dialog',
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result === 'register') {
         this.openRegisterDialog(onSuccess);
       } else if (result) {
@@ -679,7 +699,7 @@ export class App implements OnInit {
       panelClass: 'dark-dialog',
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.snackBar.open(`Willkommen, ${result.username}! Dein Account wurde erstellt.`, 'OK', {
           duration: 3000,
@@ -697,7 +717,7 @@ export class App implements OnInit {
       panelClass: 'dark-dialog',
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.snackBar.open('Kennwort wurde geändert', 'OK', { duration: 3000 });
       }
@@ -710,7 +730,7 @@ export class App implements OnInit {
       panelClass: 'dark-dialog',
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result?.success) {
         this.snackBar.open('Avatar wurde aktualisiert', 'OK', { duration: 3000 });
       }
@@ -729,9 +749,8 @@ export class App implements OnInit {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return;
 
-    const { UserProfileDialogComponent } = await import(
-      './components/shared/user-profile-dialog/user-profile-dialog.component'
-    );
+    const { UserProfileDialogComponent } =
+      await import('./components/shared/user-profile-dialog/user-profile-dialog.component');
 
     this.dialog.open(UserProfileDialogComponent, {
       data: { userId },
@@ -752,7 +771,7 @@ export class App implements OnInit {
       } as SoundEditDialogData,
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.snackBar.open(`"${result.name}" wurde aktualisiert`, 'OK', { duration: 2000 });
       }
@@ -761,14 +780,14 @@ export class App implements OnInit {
 
   onToggleSound(sound: Sound): void {
     this.soundService.toggleSound(sound.hash).subscribe({
-      next: result => {
+      next: (result) => {
         this.snackBar.open(
           result.enabled ? `"${sound.name}" aktiviert` : `"${sound.name}" deaktiviert`,
           'OK',
-          { duration: 2000 }
+          { duration: 2000 },
         );
       },
-      error: err => {
+      error: (err) => {
         this.snackBar.open(`Fehler: ${err.message || 'Unbekannter Fehler'}`, 'OK', {
           duration: 3000,
         });
@@ -783,7 +802,7 @@ export class App implements OnInit {
       data: { sound } as DeleteSoundDialogData,
     });
 
-    dialogRef.afterClosed().subscribe(deleted => {
+    dialogRef.afterClosed().subscribe((deleted) => {
       if (deleted) {
         this.snackBar.open(`"${sound.name}" wurde gelöscht`, 'OK', { duration: 3000 });
       }

@@ -1,4 +1,12 @@
-import { Component, inject, input, computed, signal, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  input,
+  computed,
+  signal,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialog } from '@angular/material/dialog';
 import { UserCacheService } from '../../../core/services/user-cache.service';
@@ -20,17 +28,13 @@ type AvatarSize = 'small' | 'medium' | 'large';
       (click)="onClick($event)"
     >
       @if (!imageError() && resolvedAvatarUrl()) {
-        <img
-          [src]="resolvedAvatarUrl()"
-          class="avatar-img"
-          alt="Avatar"
-          (error)="onImageError()"
-        />
+        <img [src]="resolvedAvatarUrl()" class="avatar-img" alt="Avatar" (error)="onImageError()" />
       } @else {
         <span class="avatar-initials">{{ resolvedInitials() }}</span>
       }
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .avatar-container {
       border-radius: 50%;
@@ -44,7 +48,9 @@ type AvatarSize = 'small' | 'medium' | 'large';
 
     .avatar-container.clickable {
       cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
     }
 
     .avatar-container.clickable:hover {
@@ -194,9 +200,8 @@ export class UserAvatarComponent implements OnInit {
     event.stopPropagation();
 
     // Dynamic import to avoid circular dependency
-    const { UserProfileDialogComponent } = await import(
-      '../user-profile-dialog/user-profile-dialog.component'
-    );
+    const { UserProfileDialogComponent } =
+      await import('../user-profile-dialog/user-profile-dialog.component');
 
     this.dialog.open(UserProfileDialogComponent, {
       data: { userId: id },

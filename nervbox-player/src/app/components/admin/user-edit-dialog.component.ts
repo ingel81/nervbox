@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -100,6 +100,7 @@ export interface UserEditDialogData {
       </button>
     </mat-dialog-actions>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     h2[mat-dialog-title] {
       display: flex;
@@ -226,7 +227,7 @@ export class UserEditDialogComponent {
           this.saving.set(false);
           this.dialogRef.close(true);
         },
-        error: err => {
+        error: (err) => {
           this.saving.set(false);
           this.error.set(err.error?.message || 'Fehler beim Speichern');
         },

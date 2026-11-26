@@ -7,6 +7,7 @@ import {
   inject,
   signal,
   computed,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -150,6 +151,7 @@ import { ApiService } from '../../../../core/services/api.service';
       </div>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .plinko-container {
       display: flex;
@@ -580,9 +582,7 @@ export class PlinkoGameComponent implements AfterViewInit, OnDestroy {
 
   readonly canDrop = computed(() => {
     return (
-      !this.isDropping() &&
-      this.betAmount() > 0 &&
-      this.betAmount() <= this.creditService.credits()
+      !this.isDropping() && this.betAmount() > 0 && this.betAmount() <= this.creditService.credits()
     );
   });
 
@@ -656,7 +656,7 @@ export class PlinkoGameComponent implements AfterViewInit, OnDestroy {
       next: () => {
         // Credits werden automatisch vom Service aktualisiert
       },
-      error: err => {
+      error: (err) => {
         console.error('Plinko error:', err);
       },
     });

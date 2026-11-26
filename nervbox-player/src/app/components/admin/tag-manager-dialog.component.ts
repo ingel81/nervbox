@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -91,7 +91,11 @@ import { SoundService } from '../../core/services/sound.service';
             </div>
           } @else {
             @for (tag of tags(); track tag.id) {
-              <div class="tag-item" [class.editing]="editingTagId() === tag.id" [class.pinned]="tag.isPinned">
+              <div
+                class="tag-item"
+                [class.editing]="editingTagId() === tag.id"
+                [class.pinned]="tag.isPinned"
+              >
                 @if (editingTagId() === tag.id) {
                   <input
                     type="color"
@@ -126,7 +130,10 @@ import { SoundService } from '../../core/services/sound.service';
                   }
                   <span class="tag-color" [style.background]="tag.color"></span>
                   <span class="tag-name"><span class="hash">#</span>{{ tag.name }}</span>
-                  <span class="tag-count" [matTooltip]="tag.soundCount + ' Sounds verwenden diesen Tag'">
+                  <span
+                    class="tag-count"
+                    [matTooltip]="tag.soundCount + ' Sounds verwenden diesen Tag'"
+                  >
                     {{ tag.soundCount }}
                   </span>
                   <button mat-icon-button (click)="startEdit(tag)" matTooltip="Bearbeiten">
@@ -135,7 +142,11 @@ import { SoundService } from '../../core/services/sound.service';
                   <button
                     mat-icon-button
                     (click)="deleteTag(tag)"
-                    [matTooltip]="tag.soundCount ? 'Wird von ' + tag.soundCount + ' Sounds verwendet' : 'Löschen'"
+                    [matTooltip]="
+                      tag.soundCount
+                        ? 'Wird von ' + tag.soundCount + ' Sounds verwendet'
+                        : 'Löschen'
+                    "
                     [disabled]="deleting() === tag.id"
                   >
                     @if (deleting() === tag.id) {
@@ -150,9 +161,7 @@ import { SoundService } from '../../core/services/sound.service';
           }
         </div>
 
-        <div class="tag-stats">
-          {{ tags().length }} Tags insgesamt
-        </div>
+        <div class="tag-stats">{{ tags().length }} Tags insgesamt</div>
       }
     </mat-dialog-content>
 
@@ -160,6 +169,7 @@ import { SoundService } from '../../core/services/sound.service';
       <button mat-button mat-dialog-close>Schließen</button>
     </mat-dialog-actions>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     h2[mat-dialog-title] {
       display: flex;
@@ -376,7 +386,7 @@ export class TagManagerDialogComponent implements OnInit {
   private loadTags(): void {
     this.loading.set(true);
     this.soundService.loadTags().subscribe({
-      next: tags => {
+      next: (tags) => {
         this.tags.set(tags);
         this.loading.set(false);
       },
@@ -392,8 +402,8 @@ export class TagManagerDialogComponent implements OnInit {
 
     this.creating.set(true);
     this.soundService.createTag(name, this.newTagColor, this.newTagPinned).subscribe({
-      next: newTag => {
-        this.tags.update(tags => this.sortTagList([...tags, newTag]));
+      next: (newTag) => {
+        this.tags.update((tags) => this.sortTagList([...tags, newTag]));
         this.newTagName = '';
         this.newTagColor = '#9333ea';
         this.newTagPinned = false;
@@ -434,25 +444,37 @@ export class TagManagerDialogComponent implements OnInit {
     }
 
     // Only update if something changed
-    if (name === tag.name && this.editingTagColor === tag.color && this.editingTagPinned === tag.isPinned) {
+    if (
+      name === tag.name &&
+      this.editingTagColor === tag.color &&
+      this.editingTagPinned === tag.isPinned
+    ) {
       this.cancelEdit();
       return;
     }
 
-    this.soundService.updateTag(tag.id, name, this.editingTagColor, this.editingTagPinned).subscribe({
-      next: updatedTag => {
-        this.tags.update(tags => this.sortTagList(tags.map(t => (t.id === tag.id ? updatedTag : t))));
-        this.cancelEdit();
-      },
-      error: () => {
-        this.cancelEdit();
-      },
-    });
+    this.soundService
+      .updateTag(tag.id, name, this.editingTagColor, this.editingTagPinned)
+      .subscribe({
+        next: (updatedTag) => {
+          this.tags.update((tags) =>
+            this.sortTagList(tags.map((t) => (t.id === tag.id ? updatedTag : t))),
+          );
+          this.cancelEdit();
+        },
+        error: () => {
+          this.cancelEdit();
+        },
+      });
   }
 
   deleteTag(tag: Tag): void {
     if (tag.soundCount && tag.soundCount > 0) {
-      if (!confirm(`Der Tag "${tag.name}" wird von ${tag.soundCount} Sounds verwendet. Trotzdem löschen?`)) {
+      if (
+        !confirm(
+          `Der Tag "${tag.name}" wird von ${tag.soundCount} Sounds verwendet. Trotzdem löschen?`,
+        )
+      ) {
         return;
       }
     }
@@ -460,7 +482,7 @@ export class TagManagerDialogComponent implements OnInit {
     this.deleting.set(tag.id);
     this.soundService.deleteTag(tag.id).subscribe({
       next: () => {
-        this.tags.update(tags => tags.filter(t => t.id !== tag.id));
+        this.tags.update((tags) => tags.filter((t) => t.id !== tag.id));
         this.deleting.set(null);
       },
       error: () => {

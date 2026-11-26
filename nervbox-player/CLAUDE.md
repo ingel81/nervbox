@@ -20,13 +20,13 @@ This file provides guidance to Claude Code when working with code in this reposi
 - `npm run build` - Create production build
 - `npm run build:prod` - Production build with optimizations
 - `npm run build:lan` - Build for Raspberry Pi deployment
-- `npm run lint` - Run ESLint to check for code quality issues
-- `npm run lint:fix` - Run ESLint with auto-fix
+- `npx eslint src` - Run ESLint (no npm lint script)
+- `npx eslint src --fix` - Run ESLint with auto-fix
 - `npm run format` - Format code with Prettier
 
 ## Architecture
 
-### Standalone Angular 21 Application
+### Standalone Angular 22 Application
 - **No NgModules** - Components use standalone: true and import dependencies directly
 - **Angular Signals** - All state management uses signals
 - **Bootstrap** - Uses `bootstrapApplication()` in main.ts

@@ -8,6 +8,7 @@ import {
   signal,
   computed,
   HostListener,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -133,6 +134,7 @@ import { CreditService } from '../../../../core/services/credit.service';
       </div>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .arkanoid-container {
       display: flex;
@@ -515,7 +517,10 @@ export class ArkanoidGameComponent implements AfterViewInit, OnDestroy {
       this.engine.movePaddle(this.keyboardPaddleX);
     }
     if (this.keysPressed.has('arrowright') || this.keysPressed.has('d')) {
-      this.keyboardPaddleX = Math.min(this.canvasWidth - 50, this.keyboardPaddleX + this.keyboardSpeed);
+      this.keyboardPaddleX = Math.min(
+        this.canvasWidth - 50,
+        this.keyboardPaddleX + this.keyboardSpeed,
+      );
       this.engine.movePaddle(this.keyboardPaddleX);
     }
   }
@@ -561,8 +566,8 @@ export class ArkanoidGameComponent implements AfterViewInit, OnDestroy {
     const ctx = this.canvasRef.nativeElement.getContext('2d');
     if (ctx) {
       this.engine = new ArkanoidEngine(ctx, this.canvasWidth, this.canvasHeight);
-      this.engine.onScoreChange = score => this.score.set(score);
-      this.engine.onLivesChange = lives => this.lives.set(lives);
+      this.engine.onScoreChange = (score) => this.score.set(score);
+      this.engine.onLivesChange = (lives) => this.lives.set(lives);
       this.engine.onGameOver = () => {
         this.stopGameLoop();
         this.gameState.set('gameover');
@@ -571,7 +576,7 @@ export class ArkanoidGameComponent implements AfterViewInit, OnDestroy {
         this.stopGameLoop();
         // Claim reward for completing the level
         this.creditService.claimMinigameReward('Arkanoid', this.level()).subscribe({
-          next: response => {
+          next: (response) => {
             this.levelReward.set(response.reward);
           },
           error: () => {
