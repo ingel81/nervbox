@@ -12,7 +12,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { UploadService, UploadResponse } from '../../core/services/upload.service';
 import { SoundService } from '../../core/services/sound.service';
-import { Tag } from '../../core/models';
+import { tagToneStyle } from '../../shared/tag-tone';
 
 interface FileUploadItem {
   file: File;
@@ -41,417 +41,191 @@ interface FileUploadItem {
     MatSnackBarModule,
   ],
   template: `
-    <h2 mat-dialog-title>
-      <mat-icon>upload_file</mat-icon>
-      Sounds hochladen
-    </h2>
+    <div class="nk-dlg up">
+      <header class="nk-dialog__head">
+        <mat-icon class="up-ico" aria-hidden="true">upload_file</mat-icon>
+        <h2 class="nk-dialog__title">Sounds hochladen</h2>
+        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close [disabled]="isUploading()">✕</button>
+      </header>
+      <div class="nk-dialog__body up-body">
+        <input type="file" #fileInput [accept]="uploadService.getAcceptString()" multiple hidden (change)="onFilesSelected($event)" />
+        <div class="nk-drop up-drop">
+          <button type="button" class="nk-key" (click)="fileInput.click()" [disabled]="isUploading()">
+            <mat-icon class="up-btn-ico">folder_open</mat-icon>Dateien auswählen
+          </button>
+          <span class="nk-drop__hint">.mp3, .wav, .ogg</span>
+        </div>
 
-    <mat-dialog-content>
-      <!-- File Picker -->
-      <div class="file-picker-section">
-        <input
-          type="file"
-          #fileInput
-          [accept]="uploadService.getAcceptString()"
-          multiple
-          hidden
-          (change)="onFilesSelected($event)"
-        />
-        <button
-          mat-stroked-button
-          class="pick-files-btn"
-          (click)="fileInput.click()"
-          [disabled]="isUploading()"
-        >
-          <mat-icon>folder_open</mat-icon>
-          Dateien auswählen
-        </button>
-        <span class="format-hint">.mp3, .wav, .ogg</span>
-      </div>
-
-      <!-- File List -->
-      @if (files().length > 0) {
-        <div class="files-list">
-          @for (item of files(); track item.file.name; let i = $index) {
-            <div
-              class="file-item"
-              [class.success]="item.status === 'success'"
-              [class.error]="item.status === 'error'"
-            >
-              <!-- Header Row -->
-              <div class="file-header">
-                <mat-icon class="file-icon">{{ getStatusIcon(item.status) }}</mat-icon>
-                <span class="file-name" [matTooltip]="item.file.name">{{ item.displayName }}</span>
-                <span class="file-size">{{ formatFileSize(item.file.size) }}</span>
+        @if (files().length > 0) {
+          <div class="nk-well up-list">
+            @for (item of files(); track item.file.name; let i = $index) {
+              <div class="up-file">
+                <div class="up-line">
+                  <span [class]="'up-state up-state--' + item.status" [attr.aria-label]="statusLabel(item.status)">{{ statusGlyph(item.status) }}</span>
+                  <span class="nk-row__title up-name" [matTooltip]="item.file.name">{{ item.displayName }}</span>
+                  <span class="nk-row__meta">{{ formatFileSize(item.file.size) }}</span>
+                  @if (item.status === 'pending') {
+                    <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Entfernen" matTooltip="Entfernen" (click)="removeFile(i)">✕</button>
+                  }
+                </div>
                 @if (item.status === 'pending') {
-                  <button
-                    mat-icon-button
-                    class="remove-btn"
-                    matTooltip="Entfernen"
-                    (click)="removeFile(i)"
-                  >
-                    <mat-icon>close</mat-icon>
-                  </button>
-                }
-              </div>
-
-              <!-- Tags Row -->
-              <div class="tags-row">
-                <mat-form-field class="tags-select" appearance="outline" subscriptSizing="dynamic">
-                  <mat-label>Tags</mat-label>
-                  <mat-select
-                    multiple
-                    [value]="item.selectedTags"
-                    [disabled]="item.status !== 'pending'"
-                    (selectionChange)="onTagsChange(i, $event.value)"
-                    panelClass="dark-select-panel"
-                  >
-                    @for (tag of availableTags(); track tag.name) {
-                      <mat-option [value]="tag.name">
-                        <span class="option-tag" [style.background]="getTagBackground(tag.name)">
-                          <span class="hash">#</span>{{ tag.name }}
-                        </span>
-                      </mat-option>
-                    }
-                  </mat-select>
-                </mat-form-field>
-                @if (item.selectedTags.length > 0) {
-                  <div class="selected-tags">
+                  <div class="up-line up-line--tags">
+                    <span class="nk-label up-tags-label">Tags</span>
+                    <div class="up-chips">
+                      @for (tag of availableTags(); track tag.name) {
+                        <button
+                          type="button"
+                          [class]="item.selectedTags.includes(tag.name) ? 'nk-tag nk-tag--selected' : 'nk-tag'"
+                          [style]="tone(tag.name)"
+                          [attr.aria-pressed]="item.selectedTags.includes(tag.name)"
+                          (click)="toggleTag(i, tag.name)"
+                        ><span class="nk-tag__lens" aria-hidden="true"></span>#{{ tag.name }}</button>
+                      }
+                    </div>
+                  </div>
+                } @else if (item.selectedTags.length > 0) {
+                  <div class="up-line up-line--tags">
                     @for (tagName of item.selectedTags; track tagName) {
-                      <span
-                        class="tag-chip"
-                        [style.background]="getTagBackground(tagName)"
-                        [style.border-color]="getTagBorderColor(tagName)"
-                        ><span class="hash">#</span>{{ tagName }}</span
-                      >
+                      <span class="nk-chip up-chip">#{{ tagName }}</span>
                     }
                   </div>
                 }
+                @if (item.status === 'uploading' || item.status === 'success') {
+                  <span [class]="item.status === 'success' ? 'nk-progress' : 'nk-progress nk-progress--lamp'" role="progressbar" [attr.aria-valuenow]="item.progress">
+                    <span class="nk-progress__fill" [style.width.%]="item.progress"></span>
+                  </span>
+                }
+                @if (item.error) {
+                  <span class="nk-field__hint nk-field__hint--error">{{ item.error }}</span>
+                }
               </div>
-
-              <!-- Progress Bar -->
-              @if (item.status === 'uploading' || item.status === 'success') {
-                <mat-progress-bar
-                  [mode]="item.status === 'uploading' ? 'determinate' : 'determinate'"
-                  [value]="item.progress"
-                  [color]="item.status === 'success' ? 'primary' : 'accent'"
-                ></mat-progress-bar>
-              }
-
-              <!-- Error Message -->
-              @if (item.error) {
-                <div class="error-message">
-                  <mat-icon>error</mat-icon>
-                  {{ item.error }}
-                </div>
-              }
-            </div>
-          }
-        </div>
-      } @else {
-        <div class="empty-state">
-          <mat-icon>audio_file</mat-icon>
-          <p>Wähle Audiodateien zum Hochladen aus</p>
-        </div>
-      }
-    </mat-dialog-content>
-
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close [disabled]="isUploading()">
-        {{ allDone() ? 'Schließen' : 'Abbrechen' }}
-      </button>
-      @if (!allDone()) {
-        <button
-          mat-flat-button
-          color="primary"
-          [disabled]="!canUpload() || isUploading()"
-          (click)="uploadAll()"
-        >
-          @if (isUploading()) {
-            <mat-icon class="spinning">sync</mat-icon>
-          } @else {
-            <mat-icon>cloud_upload</mat-icon>
-          }
-          @if (isUploading()) {
-            Hochladen...
-          } @else {
-            Alle hochladen ({{ pendingCount() }})
-          }
-        </button>
-      }
-    </mat-dialog-actions>
+            }
+          </div>
+        } @else {
+          <div class="up-empty">Wähle Audiodateien zum Hochladen aus</div>
+        }
+      </div>
+      <footer class="nk-dialog__foot">
+        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close [disabled]="isUploading()">{{ allDone() ? 'Schließen' : 'Abbrechen' }}</button>
+        @if (!allDone()) {
+          <button type="button" class="nk-key nk-key--accent" [disabled]="!canUpload() || isUploading()" (click)="uploadAll()">
+            @if (isUploading()) {
+              <span class="nk-spin" aria-hidden="true"></span>
+              Hochladen...
+            } @else {
+              <mat-icon class="up-btn-ico">cloud_upload</mat-icon>
+              Alle hochladen ({{ pendingCount() }})
+            }
+          </button>
+        }
+      </footer>
+    </div>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
-    :host {
-      display: block;
+    .up {
+      width: 700px;
+      max-width: 100%;
+      max-height: 90vh;
     }
-
-    h2[mat-dialog-title] {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      color: #fff;
-      margin: 0;
-      padding: 16px 24px;
-      background: linear-gradient(135deg, rgba(147, 51, 234, 0.2) 0%, rgba(236, 72, 153, 0.1) 100%);
-      border-bottom: 1px solid rgba(147, 51, 234, 0.3);
+    .up-ico {
+      color: var(--nk-iv);
+      filter: drop-shadow(0 0 4px rgb(255 226 176 / 0.6));
     }
-
-    h2 mat-icon {
-      color: #9333ea;
+    .up-body {
+      gap: 14px;
+      overflow-y: auto;
     }
-
-    mat-dialog-content {
-      padding: 24px !important;
-      min-width: 500px;
-      max-height: 60vh;
-    }
-
-    .file-picker-section {
-      display: flex;
-      align-items: center;
+    .up-drop {
+      flex-direction: row;
       gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .pick-files-btn {
-      border-color: rgba(147, 51, 234, 0.5) !important;
-      color: #9333ea !important;
-    }
-
-    .pick-files-btn:hover:not(:disabled) {
-      background: rgba(147, 51, 234, 0.1) !important;
-      border-color: #9333ea !important;
-    }
-
-    .pick-files-btn mat-icon {
-      margin-right: 8px;
-    }
-
-    .format-hint {
-      color: rgba(255, 255, 255, 0.5);
-      font-size: 13px;
-    }
-
-    .files-list {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .file-item {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
       padding: 16px;
-      transition: all 0.2s ease;
     }
-
-    .file-item.success {
-      border-color: rgba(34, 197, 94, 0.5);
-      background: rgba(34, 197, 94, 0.05);
-    }
-
-    .file-item.error {
-      border-color: rgba(239, 68, 68, 0.5);
-      background: rgba(239, 68, 68, 0.05);
-    }
-
-    .file-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .file-icon {
-      color: rgba(255, 255, 255, 0.6);
-      font-size: 24px;
-      width: 24px;
-      height: 24px;
-    }
-
-    .file-item.success .file-icon {
-      color: #22c55e;
-    }
-
-    .file-item.error .file-icon {
-      color: #ef4444;
-    }
-
-    .file-name {
-      flex: 1;
-      font-weight: 500;
-      color: #fff;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .file-size {
-      color: rgba(255, 255, 255, 0.5);
-      font-size: 13px;
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    .remove-btn {
-      width: 32px !important;
-      height: 32px !important;
-      opacity: 0.6;
-    }
-
-    .remove-btn:hover {
-      opacity: 1;
-      color: #ef4444;
-    }
-
-    .tags-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 8px;
-    }
-
-    .tags-select {
-      width: 140px;
-      flex-shrink: 0;
-    }
-
-    .tags-select ::ng-deep .mat-mdc-form-field-infix {
-      min-height: 36px;
-      padding: 8px 0 !important;
-    }
-
-    .tags-select ::ng-deep .mat-mdc-select-value {
-      font-size: 13px;
-    }
-
-    .tags-select ::ng-deep .mat-mdc-floating-label {
-      top: 18px !important;
-    }
-
-    .tags-select ::ng-deep .mdc-floating-label--float-above {
-      transform: translateY(-106%) scale(0.75) !important;
-    }
-
-    .tags-select ::ng-deep .mdc-notched-outline__leading,
-    .tags-select ::ng-deep .mdc-notched-outline__notch,
-    .tags-select ::ng-deep .mdc-notched-outline__trailing {
-      border-color: rgba(147, 51, 234, 0.3) !important;
-    }
-
-    .selected-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      flex: 1;
-      align-items: center;
-    }
-
-    .tag-chip {
-      background: rgba(255, 255, 255, 0.035);
-      border: 1px solid transparent;
-      border-radius: 5px;
-      padding: 3px 7px;
-      font-size: 10px;
-      color: rgba(255, 255, 255, 0.45);
-      letter-spacing: 0.2px;
-      white-space: nowrap;
-    }
-
-    .tag-chip .hash {
-      color: #9333ea;
-      font-weight: 600;
-    }
-
-    .option-tag {
-      display: inline-block;
-      border-radius: 5px;
-      padding: 3px 8px;
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.8);
-    }
-
-    .option-tag .hash {
-      color: #9333ea;
-      font-weight: 600;
-      margin-right: 1px;
-    }
-
-    mat-progress-bar {
-      border-radius: 4px;
-      height: 6px;
-    }
-
-    .error-message {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #ef4444;
-      font-size: 13px;
-      margin-top: 8px;
-    }
-
-    .error-message mat-icon {
-      font-size: 18px;
+    .up-btn-ico {
       width: 18px;
       height: 18px;
+      font-size: 18px;
     }
-
-    .empty-state {
+    .up-list {
+      padding: 2px 4px;
+    }
+    .up-file {
       display: flex;
       flex-direction: column;
+      gap: 8px;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgb(0 0 0 / 0.4);
+      box-shadow: 0 1px 0 rgb(255 226 176 / 0.05);
+    }
+    .up-line {
+      display: flex;
       align-items: center;
-      justify-content: center;
-      padding: 48px;
-      color: rgba(255, 255, 255, 0.4);
+      gap: 10px;
+      min-width: 0;
     }
-
-    .empty-state mat-icon {
-      font-size: 64px;
-      width: 64px;
-      height: 64px;
-      margin-bottom: 16px;
-      opacity: 0.5;
-    }
-
-    .empty-state p {
-      margin: 0;
-      font-size: 14px;
-    }
-
-    mat-dialog-actions {
-      padding: 16px 24px !important;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    mat-dialog-actions button {
-      display: inline-flex !important;
-      align-items: center !important;
+    .up-line--tags {
+      align-items: flex-start;
+      flex-wrap: wrap;
       gap: 8px;
     }
-
-    mat-dialog-actions button mat-icon {
-      margin: 0 !important;
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
+    .up-tags-label {
+      padding-top: 6px;
     }
-
-    .spinning {
-      animation: spin 1s linear infinite;
+    .up-name {
+      flex: 1;
+      min-width: 0;
     }
-
-    @keyframes spin {
-      from {
-        transform: rotate(0deg);
-      }
-      to {
-        transform: rotate(360deg);
-      }
+    .up-state {
+      width: 26px;
+      height: 26px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font: 800 13px/1 var(--nk-font-ui);
+    }
+    .up-state--success {
+      background: var(--nk-own);
+      color: #0b1712;
+      box-shadow: 0 0 8px rgb(75 229 133 / 0.8);
+    }
+    .up-state--uploading {
+      background: var(--nk-other);
+      color: #0b1712;
+      box-shadow: 0 0 8px rgb(111 203 255 / 0.8);
+    }
+    .up-state--pending {
+      background: #0e0c0a;
+      color: var(--nk-iv);
+      box-shadow: inset 0 0 0 1.5px var(--nk-iv-3);
+    }
+    .up-state--error {
+      background: var(--nk-danger-lit);
+      color: #ffffff;
+      box-shadow: 0 0 8px rgb(224 72 60 / 0.8);
+    }
+    .up-chips {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 3px;
+    }
+    .up-chips .nk-tag {
+      height: 24px;
+      font-size: 13px;
+    }
+    .up-chip {
+      --nk-key-line: rgb(255 244 216 / 0.6);
+      color: var(--nk-iv);
+    }
+    .up-empty {
+      padding: 18px 6px;
+      color: var(--nk-iv-2);
+      font: 500 13px var(--nk-font-mono);
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class SoundUploadDialogComponent {
   readonly uploadService = inject(UploadService);
@@ -551,7 +325,7 @@ export class SoundUploadDialogComponent {
       this.updateFileStatus(i, 'uploading', 0);
 
       try {
-        await new Promise<void>((resolve, reject) => {
+        await new Promise<void>((resolve, _reject) => {
           this.uploadService.uploadSound(item.file, item.selectedTags).subscribe({
             next: ({ progress, result }) => {
               this.updateFileProgress(i, progress);
@@ -648,39 +422,26 @@ export class SoundUploadDialogComponent {
     });
   }
 
-  getStatusIcon(status: FileUploadItem['status']): string {
-    switch (status) {
-      case 'pending':
-        return 'audio_file';
-      case 'uploading':
-        return 'sync';
-      case 'success':
-        return 'check_circle';
-      case 'error':
-        return 'error';
-    }
+  statusGlyph(status: FileUploadItem['status']): string {
+    return { pending: '•', uploading: '↑', success: '✓', error: '!' }[status];
+  }
+
+  statusLabel(status: FileUploadItem['status']): string {
+    return { pending: 'Wartet', uploading: 'Wird hochgeladen', success: 'Hochgeladen', error: 'Fehler' }[status];
+  }
+
+  toggleTag(fileIndex: number, tag: string): void {
+    const current = this.files()[fileIndex]?.selectedTags ?? [];
+    this.onTagsChange(fileIndex, current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag]);
+  }
+
+  tone(tag: string): string {
+    return tagToneStyle(this.soundService.tagColorMap()[tag]);
   }
 
   formatFileSize(bytes: number): string {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  }
-
-  getTagBackground(tag: string): string {
-    const color = this.soundService.tagColorMap()[tag] || '#9333ea';
-    return this.hexToRgba(color, 0.15);
-  }
-
-  getTagBorderColor(tag: string): string {
-    const color = this.soundService.tagColorMap()[tag] || '#9333ea';
-    return this.hexToRgba(color, 0.35);
-  }
-
-  private hexToRgba(hex: string, alpha: number): string {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 }

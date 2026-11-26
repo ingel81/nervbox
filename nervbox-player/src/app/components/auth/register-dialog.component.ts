@@ -25,235 +25,80 @@ import { AuthService } from '../../core/services/auth.service';
     MatCheckboxModule,
   ],
   template: `
-    <form class="register-dialog" (ngSubmit)="onSubmit()" autocomplete="on">
-      <h2 mat-dialog-title>
-        <mat-icon class="title-icon">person_add</mat-icon>
-        Registrieren
-      </h2>
-
-      <mat-dialog-content>
-        <div class="register-form">
-          <mat-form-field appearance="outline">
-            <mat-label>Benutzername</mat-label>
-            <input
-              matInput
-              [(ngModel)]="username"
-              name="username"
-              autocomplete="username"
-              required
-              minlength="3"
-            />
-            <mat-icon matPrefix>person</mat-icon>
-          </mat-form-field>
-
-          <div class="name-row">
-            <mat-form-field appearance="outline">
-              <mat-label>Vorname</mat-label>
-              <input matInput [(ngModel)]="firstname" name="firstname" autocomplete="given-name" />
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Nachname</mat-label>
-              <input matInput [(ngModel)]="lastname" name="lastname" autocomplete="family-name" />
-            </mat-form-field>
-          </div>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Passwort</mat-label>
-            <input
-              matInput
-              [type]="hidePassword() ? 'password' : 'text'"
-              [(ngModel)]="password"
-              name="password"
-              autocomplete="new-password"
-              required
-              minlength="6"
-            />
-            <mat-icon matPrefix>lock</mat-icon>
-            <button
-              mat-icon-button
-              matSuffix
-              type="button"
-              (click)="hidePassword.set(!hidePassword())"
-            >
+    <form class="nk-dlg" (ngSubmit)="onSubmit()" autocomplete="on">
+      <header class="nk-dialog__head">
+        <h2 class="nk-dialog__title">Registrieren</h2>
+        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" (click)="onCancel()">✕</button>
+      </header>
+      <div class="nk-dialog__body">
+        <label class="nk-field">
+          <span class="nk-label">Benutzername</span>
+          <span class="nk-input">
+            <input class="nk-input__field" [(ngModel)]="username" name="username" autocomplete="username" required minlength="3" aria-label="Benutzername" />
+          </span>
+        </label>
+        <div class="nk-field-row">
+          <label class="nk-field">
+            <span class="nk-label">Vorname</span>
+            <span class="nk-input"><input class="nk-input__field" [(ngModel)]="firstname" name="firstname" autocomplete="given-name" aria-label="Vorname" /></span>
+          </label>
+          <label class="nk-field">
+            <span class="nk-label">Nachname</span>
+            <span class="nk-input"><input class="nk-input__field" [(ngModel)]="lastname" name="lastname" autocomplete="family-name" aria-label="Nachname" /></span>
+          </label>
+        </div>
+        <label class="nk-field">
+          <span class="nk-label">Passwort</span>
+          <span class="nk-input">
+            <input class="nk-input__field" [type]="hidePassword() ? 'password' : 'text'" [(ngModel)]="password" name="password" autocomplete="new-password" required minlength="6" aria-label="Passwort" />
+            <button type="button" class="nk-input__eye" [attr.aria-label]="hidePassword() ? 'Passwort anzeigen' : 'Passwort verbergen'" (click)="hidePassword.set(!hidePassword())">
               <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
             </button>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Passwort bestätigen</mat-label>
-            <input
-              matInput
-              [type]="hidePassword() ? 'password' : 'text'"
-              [(ngModel)]="confirmPassword"
-              name="confirmPassword"
-              autocomplete="new-password"
-              required
-            />
-            <mat-icon matPrefix>lock_outline</mat-icon>
-          </mat-form-field>
-
-          <div class="terms-row">
-            <mat-checkbox [(ngModel)]="terms" name="terms" color="primary">
-              Ich akzeptiere die Nutzungsbedingungen
-            </mat-checkbox>
-          </div>
-
-          <div class="info-message">
-            <mat-icon>info</mat-icon>
-            <span>Pro IP-Adresse ist nur ein Account erlaubt.</span>
-          </div>
-
-          @if (error()) {
-            <div class="error-message">
-              <mat-icon>error</mat-icon>
-              {{ error() }}
-            </div>
-          }
-        </div>
-      </mat-dialog-content>
-
-      <mat-dialog-actions align="end">
-        <button mat-button type="button" (click)="onCancel()" [disabled]="loading()">
-          Abbrechen
+          </span>
+        </label>
+        <label class="nk-field">
+          <span class="nk-label">Passwort bestätigen</span>
+          <span class="nk-input" [class.nk-input--error]="!!confirmPassword && confirmPassword !== password">
+            <input class="nk-input__field" [type]="hidePassword() ? 'password' : 'text'" [(ngModel)]="confirmPassword" name="confirmPassword" autocomplete="new-password" required aria-label="Passwort bestätigen" />
+          </span>
+        </label>
+        <button type="button" role="checkbox" [attr.aria-checked]="terms" [class]="terms ? 'nk-check nk-check--on dlg-check' : 'nk-check dlg-check'" (click)="terms = !terms">
+          <span class="nk-check__box" aria-hidden="true">✓</span>Ich akzeptiere die Nutzungsbedingungen
         </button>
-        <button
-          mat-flat-button
-          class="register-btn"
-          type="submit"
-          [disabled]="loading() || !isValid()"
-        >
+        <span class="nk-field__hint dlg-info"><span class="nk-led nk-led--dot nk-led--warn" aria-hidden="true"></span>Pro IP-Adresse ist nur ein Account erlaubt.</span>
+        @if (error()) {
+          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert"><span class="nk-toast__text">{{ error() }}</span></div>
+        }
+      </div>
+      <footer class="nk-dialog__foot">
+        <button type="button" class="nk-key nk-key--ghost" (click)="onCancel()" [disabled]="loading()">Abbrechen</button>
+        <button type="submit" class="nk-key nk-key--accent" [disabled]="loading() || !isValid()">
           @if (loading()) {
-            <mat-spinner diameter="20"></mat-spinner>
-          } @else {
-            Registrieren
+            <span class="nk-spin" aria-hidden="true"></span>
           }
+          Registrieren
         </button>
-      </mat-dialog-actions>
+      </footer>
     </form>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
-    .register-dialog {
-      min-width: 380px;
+    .nk-dlg {
+      width: 460px;
+      max-width: 100%;
     }
-
-    :host {
-      display: block;
+    .dlg-check {
+      border: 0;
+      padding: 4px 3px;
+      background: transparent;
+      align-self: flex-start;
     }
-
-    h2[mat-dialog-title] {
+    .dlg-info {
       display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 0;
-      padding: 16px 24px;
-      background: linear-gradient(135deg, rgba(147, 51, 234, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
-      border-bottom: 1px solid rgba(147, 51, 234, 0.3);
-    }
-
-    .title-icon {
-      font-size: 28px !important;
-      width: 28px !important;
-      height: 28px !important;
-      color: #9333ea;
-    }
-
-    mat-dialog-content {
-      padding: 24px !important;
-    }
-
-    .register-form {
-      display: flex;
-      flex-direction: column;
       gap: 8px;
-    }
-
-    mat-form-field {
-      width: 100%;
-    }
-
-    .name-row {
-      display: flex;
-      gap: 12px;
-    }
-
-    .name-row mat-form-field {
-      flex: 1;
-    }
-
-    .terms-row {
-      margin: 8px 0;
-    }
-
-    .info-message {
-      display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 12px;
-      background: rgba(147, 51, 234, 0.1);
-      border: 1px solid rgba(147, 51, 234, 0.3);
-      border-radius: 8px;
-      color: rgba(255, 255, 255, 0.7);
-      font-size: 13px;
-    }
-
-    .info-message mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-      color: #9333ea;
-    }
-
-    .error-message {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px;
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      border-radius: 8px;
-      color: #f87171;
-      font-size: 13px;
-    }
-
-    .error-message mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
-
-    mat-dialog-actions {
-      padding: 16px 24px !important;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .register-btn {
-      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%) !important;
-      color: white !important;
-      min-width: 120px;
-    }
-
-    .register-btn:disabled {
-      opacity: 0.5;
-    }
-
-    .register-btn mat-spinner {
-      margin: 0 auto;
-    }
-
-    ::ng-deep .register-btn .mat-mdc-progress-spinner circle {
-      stroke: white !important;
-    }
-
-    ::ng-deep .mat-mdc-checkbox .mdc-checkbox__background {
-      border-color: rgba(147, 51, 234, 0.5) !important;
-    }
-
-    ::ng-deep .mat-mdc-checkbox.mat-primary .mdc-checkbox--selected ~ .mdc-checkbox__ripple {
-      background: rgba(147, 51, 234, 0.2) !important;
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class RegisterDialogComponent {
   private readonly authService = inject(AuthService);

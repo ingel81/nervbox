@@ -1,71 +1,21 @@
-// Custom Nervbox Dark Theme with Purple/Pink accents
+// Nervbox Nachtschicht: Material-Grundtheme in Putty/Lampenweiß (Feinschliff in styles/_material-nacht.scss)
 @use '@angular/material' as mat;
 
 // Define custom palettes for nervbox purple and pink
 $nervbox-purple-palette: (
-  50: #f5f3ff,
-  100: #ede9fe,
-  200: #ddd6fe,
-  300: #c4b5fd,
-  400: #a78bfa,
-  500: #9333ea,
-  600: #7c3aed,
-  700: #6d28d9,
-  800: #5b21b6,
-  900: #4c1d95,
-  A100: #c4b5fd,
-  A200: #a78bfa,
-  A400: #9333ea,
-  A700: #6d28d9,
-  contrast: (
-    50: rgba(0, 0, 0, 0.87),
-    100: rgba(0, 0, 0, 0.87),
-    200: rgba(0, 0, 0, 0.87),
-    300: rgba(0, 0, 0, 0.87),
-    400: rgba(0, 0, 0, 0.87),
-    500: white,
-    600: white,
-    700: white,
-    800: white,
-    900: white,
-    A100: rgba(0, 0, 0, 0.87),
-    A200: rgba(0, 0, 0, 0.87),
-    A400: white,
-    A700: white,
-  )
+  50: #FFF8E8, 100: #FFF4D8, 200: #FFE9C2, 300: #FFE2B0, 400: #EBCB94, 500: #D9B479,
+  600: #B9975F, 700: #8E7347, 800: #5A4A31, 900: #33291B,
+  A100: #FFF4D8, A200: #FFE2B0, A400: #D9B479, A700: #8E7347,
+  contrast: (50: #14110D, 100: #14110D, 200: #14110D, 300: #14110D, 400: #14110D, 500: #14110D,
+    600: #14110D, 700: white, 800: white, 900: white, A100: #14110D, A200: #14110D, A400: #14110D, A700: white)
 );
 
 $nervbox-pink-palette: (
-  50: #fdf2f8,
-  100: #fce7f3,
-  200: #fbcfe8,
-  300: #f9a8d4,
-  400: #f472b6,
-  500: #ec4899,
-  600: #db2777,
-  700: #be185d,
-  800: #9d174d,
-  900: #831843,
-  A100: #f9a8d4,
-  A200: #f472b6,
-  A400: #ec4899,
-  A700: #be185d,
-  contrast: (
-    50: rgba(0, 0, 0, 0.87),
-    100: rgba(0, 0, 0, 0.87),
-    200: rgba(0, 0, 0, 0.87),
-    300: rgba(0, 0, 0, 0.87),
-    400: rgba(0, 0, 0, 0.87),
-    500: white,
-    600: white,
-    700: white,
-    800: white,
-    900: white,
-    A100: rgba(0, 0, 0, 0.87),
-    A200: rgba(0, 0, 0, 0.87),
-    A400: white,
-    A700: white,
-  )
+  50: #EEFFF3, 100: #D2FBE0, 200: #96F7B9, 300: #6FEE9E, 400: #4BE585, 500: #44D97D,
+  600: #2FB466, 700: #1F8E4C, 800: #125F32, 900: #0C2A18,
+  A100: #96F7B9, A200: #4BE585, A400: #44D97D, A700: #1F8E4C,
+  contrast: (50: #14110D, 100: #14110D, 200: #14110D, 300: #14110D, 400: #14110D, 500: #14110D,
+    600: #14110D, 700: white, 800: white, 900: white, A100: #14110D, A200: #14110D, A400: #14110D, A700: white)
 );
 
 html {
@@ -74,7 +24,7 @@ html {
       primary: $nervbox-purple-palette,
       tertiary: $nervbox-pink-palette,
     ),
-    typography: Inter,
+    typography: 'Barlow Condensed',
     density: 0,
   ));
 }
@@ -84,9 +34,9 @@ body {
   color-scheme: dark;
 
   // Dark background
-  background-color: #0a0a0a;
+  background-color: #080605;
   color: rgba(255, 255, 255, 0.95);
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
 
   // Reset margin
   margin: 0;

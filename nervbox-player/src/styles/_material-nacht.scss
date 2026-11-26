@@ -1,0 +1,245 @@
+/* ---------------------------------------------------------------------------
+   Angular Material im Nachtschicht-Look.
+   M3-System-Tokens auf Nacht-Kit-Farben, dazu Oberflächen von Dialog, Menü,
+   Select-Panel, Snackbar, Tooltip, Formularfeld. Komponenten mit eigenem
+   nk-Markup brauchen davon nichts; das hier ist die Grundierung für alles.
+   --------------------------------------------------------------------------- */
+html {
+  --mat-sys-primary: #FFE2B0;
+  --mat-sys-on-primary: #14110D;
+  --mat-sys-primary-container: #4E483D;
+  --mat-sys-on-primary-container: #FFF4D8;
+  --mat-sys-secondary: #D9CFB6;
+  --mat-sys-on-secondary: #14110D;
+  --mat-sys-secondary-container: #3F3A31;
+  --mat-sys-on-secondary-container: #FFF4D8;
+  --mat-sys-tertiary: #4BE585;
+  --mat-sys-on-tertiary: #0B1712;
+  --mat-sys-error: #FF9A8E;
+  --mat-sys-on-error: #14110D;
+  --mat-sys-surface: #37332B;
+  --mat-sys-surface-dim: #292723;
+  --mat-sys-surface-bright: #554E41;
+  --mat-sys-surface-container-lowest: #14120F;
+  --mat-sys-surface-container-low: #24211B;
+  --mat-sys-surface-container: #302E29;
+  --mat-sys-surface-container-high: #3A3832;
+  --mat-sys-surface-container-highest: #453F35;
+  --mat-sys-on-surface: #FFF4D8;
+  --mat-sys-on-surface-variant: #D9CFB6;
+  --mat-sys-outline: #8D8676;
+  --mat-sys-outline-variant: #4E483D;
+  --mat-sys-inverse-surface: #EBDDB8;
+  --mat-sys-inverse-on-surface: #1F1B16;
+  --mat-sys-body-large-font: 'Barlow Condensed', sans-serif;
+  --mat-sys-body-medium-font: 'Barlow Condensed', sans-serif;
+  --mat-sys-label-large-font: 'Barlow Condensed', sans-serif;
+  --mat-sys-title-large-font: 'Barlow Condensed', sans-serif;
+}
+
+/* Dialog = Einschub-Modul (wie .nk-dialog) */
+.cdk-overlay-dark-backdrop,
+.cdk-overlay-backdrop.cdk-overlay-backdrop-showing:not(.cdk-overlay-transparent-backdrop) {
+  background: radial-gradient(ellipse 60% 60% at 50% 45%, rgb(8 6 5 / 0.62), rgb(8 6 5 / 0.88));
+}
+
+.mat-mdc-dialog-container .mat-mdc-dialog-surface {
+  border-radius: var(--nk-r-xl);
+  color: var(--nk-iv);
+  font-family: var(--nk-font-ui);
+  background: var(--nk-grain),
+    radial-gradient(ellipse 260px 180px at 0 0, rgb(var(--nk-lamp-warm-rgb) / 0.22) 0%, rgb(var(--nk-lamp-warm-rgb) / 0) 100%),
+    linear-gradient(135deg, var(--nk-chassis-1) 0%, var(--nk-chassis-2) 40%, var(--nk-chassis-4) 100%);
+  box-shadow: inset 0 2px 0 rgb(var(--nk-lamp-rgb) / 0.3), inset 2px 0 0 rgb(var(--nk-lamp-rgb) / 0.16),
+    inset 0 -3px 0 rgb(0 0 0 / 0.45), inset -2px 0 0 rgb(0 0 0 / 0.3), 0 0 0 1px #0B0A08,
+    0 0 0 5px rgb(0 0 0 / 0.45), 0 24px 70px rgb(0 0 0 / 0.9);
+}
+
+.mat-mdc-dialog-container .mat-mdc-dialog-title {
+  font: 700 19px/1.2 var(--nk-font-ui);
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--nk-iv);
+  text-shadow: var(--nk-glow-text);
+}
+
+.mat-mdc-dialog-container .mat-mdc-dialog-content {
+  color: var(--nk-iv);
+  font: 500 15px/1.35 var(--nk-font-ui);
+}
+
+/* Menü + Select-Panel + Autocomplete = Rauchglas-Tafel (wie .nk-menu) */
+.mat-mdc-menu-panel,
+.mat-mdc-select-panel,
+.mat-mdc-autocomplete-panel {
+  border-radius: 8px !important;
+  background: var(--nk-face-glare), var(--nk-face-glass) !important;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(var(--nk-lamp-rgb) / 0.35), var(--nk-shadow-float) !important;
+}
+
+.mat-mdc-menu-item,
+.mat-mdc-option {
+  min-height: 34px !important;
+  font: 600 var(--nk-fs-md) / 1 var(--nk-font-ui) !important;
+  letter-spacing: 0.4px !important;
+  color: var(--nk-iv) !important;
+}
+
+.mat-mdc-menu-item .mat-icon,
+.mat-mdc-menu-item .mat-mdc-menu-item-text {
+  color: var(--nk-iv);
+}
+
+.mat-mdc-menu-item:hover:not([disabled]),
+.mat-mdc-option:hover:not(.mdc-list-item--disabled),
+.mat-mdc-option.mat-mdc-option-active {
+  background: rgb(var(--nk-lamp-rgb) / 0.1) !important;
+}
+
+.mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
+  color: #FFFFFF !important;
+  text-shadow: 0 0 7px rgb(var(--nk-lamp-rgb) / 0.85);
+}
+
+/* Tooltip = kleines Rauchglas-Schild */
+.mat-mdc-tooltip .mdc-tooltip__surface {
+  border-radius: 5px !important;
+  background: var(--nk-glass-1) !important;
+  color: var(--nk-iv) !important;
+  font: 600 12.5px/1.3 var(--nk-font-ui) !important;
+  letter-spacing: 0.3px;
+  box-shadow: 0 0 0 1px rgb(var(--nk-lamp-rgb) / 0.35), 0 4px 12px rgb(0 0 0 / 0.7);
+}
+
+/* Snackbar = Toast */
+.mat-mdc-snack-bar-container .mdc-snackbar__surface {
+  border-radius: 9px !important;
+  background: var(--nk-face-glare), var(--nk-face-glass) !important;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(var(--nk-lamp-rgb) / 0.6), var(--nk-shadow-float) !important;
+}
+
+.mat-mdc-snack-bar-container .mat-mdc-snack-bar-label {
+  color: var(--nk-iv) !important;
+  font: 600 14.5px/1.3 var(--nk-font-ui) !important;
+}
+
+.mat-mdc-snack-bar-container .mat-mdc-button.mat-mdc-snack-bar-action {
+  color: var(--nk-iv) !important;
+  font-family: var(--nk-font-ui);
+  font-weight: 700;
+}
+
+/* Formularfelder = versenkter Eingabeschacht */
+.mat-mdc-form-field {
+  font-family: var(--nk-font-ui);
+  --mdc-outlined-text-field-outline-color: rgb(0 0 0 / 0.6);
+  --mdc-outlined-text-field-hover-outline-color: rgb(var(--nk-lamp-rgb) / 0.4);
+  --mdc-outlined-text-field-focus-outline-color: rgb(var(--nk-lamp-rgb) / 0.8);
+  --mdc-outlined-text-field-label-text-color: var(--nk-iv-2);
+  --mdc-outlined-text-field-focus-label-text-color: var(--nk-iv);
+  --mdc-outlined-text-field-input-text-color: var(--nk-iv);
+  --mat-form-field-outlined-outline-color: rgb(0 0 0 / 0.6);
+  --mat-form-field-outlined-hover-outline-color: rgb(var(--nk-lamp-rgb) / 0.4);
+  --mat-form-field-outlined-focus-outline-color: rgb(var(--nk-lamp-rgb) / 0.8);
+  --mat-form-field-outlined-label-text-color: var(--nk-iv-2);
+  --mat-form-field-outlined-focus-label-text-color: var(--nk-iv);
+  --mat-form-field-outlined-input-text-color: var(--nk-iv);
+}
+
+.mat-mdc-form-field .mdc-text-field--outlined {
+  border-radius: var(--nk-r-md);
+  background: var(--nk-face-field);
+  box-shadow: var(--nk-shadow-recess);
+}
+
+.mat-mdc-form-field .mat-mdc-form-field-hint,
+.mat-mdc-form-field .mat-mdc-form-field-error {
+  font: 500 11px/1.3 var(--nk-font-mono);
+}
+
+.mat-mdc-form-field .mat-mdc-form-field-hint {
+  color: var(--nk-iv-2);
+}
+
+.mat-mdc-form-field .mat-mdc-form-field-error {
+  color: var(--nk-danger-text);
+}
+
+/* Reiter */
+.mat-mdc-tab-group {
+  --mat-tab-header-active-label-text-color: #FFFFFF;
+  --mat-tab-header-inactive-label-text-color: var(--nk-iv-2);
+  --mat-tab-header-active-indicator-color: var(--nk-iv);
+  --mat-tab-header-active-focus-label-text-color: #FFFFFF;
+  --mat-tab-header-active-hover-label-text-color: #FFFFFF;
+  --mat-tab-header-active-focus-indicator-color: var(--nk-iv);
+  --mat-tab-header-active-hover-indicator-color: var(--nk-iv);
+  --mat-tab-header-label-text-font: var(--nk-font-ui);
+  --mat-tab-header-label-text-weight: 700;
+  --mat-tab-header-label-text-tracking: 0.6px;
+}
+
+/* Spinner + Fortschritt in Lampenweiß */
+.mat-mdc-progress-spinner {
+  --mdc-circular-progress-active-indicator-color: var(--nk-iv);
+  --mat-progress-spinner-active-indicator-color: var(--nk-iv);
+}
+
+.mat-mdc-progress-bar {
+  --mdc-linear-progress-active-indicator-color: var(--nk-own);
+  --mat-progress-bar-active-indicator-color: var(--nk-own);
+  --mdc-linear-progress-track-color: #0C0B09;
+  --mat-progress-bar-track-color: #0C0B09;
+}
+
+/* Schalter: an = grün */
+.mat-mdc-slide-toggle {
+  --mat-slide-toggle-selected-track-color: var(--nk-own-deep);
+  --mat-slide-toggle-selected-handle-color: var(--nk-own);
+  --mat-slide-toggle-selected-hover-handle-color: var(--nk-own-mid);
+  --mat-slide-toggle-selected-focus-handle-color: var(--nk-own-mid);
+  --mat-slide-toggle-selected-hover-track-color: var(--nk-own-deep);
+  --mat-slide-toggle-selected-focus-track-color: var(--nk-own-deep);
+  --mat-slide-toggle-label-text-font: var(--nk-font-ui);
+}
+
+.mat-divider {
+  border-top-color: rgb(0 0 0 / 0.55) !important;
+  box-shadow: 0 1px 0 rgb(var(--nk-lamp-rgb) / 0.12);
+}
+
+/* Kopfzeile + Gefahr-Eintrag in Material-Menüs (Admin, Konto, Pad ⋮) */
+.deck-menu-head {
+  padding: 8px 14px 9px;
+  font: 600 var(--nk-fs-label) var(--nk-font-ui);
+  letter-spacing: var(--nk-ls-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--nk-iv);
+  text-shadow: var(--nk-glow-text);
+}
+
+.deck-menu-current {
+  color: #FFFFFF;
+  text-shadow: 0 0 7px rgb(var(--nk-lamp-rgb) / 0.85);
+}
+
+.mat-mdc-menu-item.nk-menu-danger,
+.mat-mdc-menu-item.nk-menu-danger .mat-icon,
+.mat-mdc-menu-item.nk-menu-danger .mat-mdc-menu-item-text {
+  color: var(--nk-danger-text) !important;
+}
+
+.mat-mdc-menu-item.nk-menu-danger:hover {
+  background: rgb(var(--nk-danger-rgb) / 0.18) !important;
+}
+
+.mat-mdc-menu-item .mat-icon,
+.mat-mdc-option .mat-icon {
+  color: var(--nk-iv-2) !important;
+}
+
+.nk-tip-multiline .mdc-tooltip__surface {
+  white-space: pre-line;
+  text-align: left;
+}

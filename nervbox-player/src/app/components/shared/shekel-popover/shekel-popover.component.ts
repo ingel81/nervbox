@@ -29,540 +29,196 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
     MatDividerModule,
   ],
   template: `
-    <div class="shekel-popover">
-      <div
-        class="header"
-        [class.transfer-mode]="activeTab() === 0"
-        [class.casino-mode]="activeTab() === 1"
-      >
-        <img src="icons/nervbox-coin.svg" alt="Shekel" class="header-coin" />
-        <div class="header-text">
-          <span class="title">{{ activeTab() === 0 ? 'Shekel senden' : 'Shekel Casino' }}</span>
-          <span class="balance">{{ creditService.creditsFormatted() }} N$</span>
+    <div class="nk-dlg shekel-popover">
+      <header class="nk-dialog__head sk-head">
+        <span class="sk-coin" aria-hidden="true">N$</span>
+        <span class="sk-title">
+          <span class="nk-dialog__title">{{ activeTab() === 0 ? 'Shekel senden' : 'Shekel Casino' }}</span>
+          <span class="sk-bal">{{ creditService.creditsFormatted() }} N$</span>
+        </span>
+        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" (click)="close()">✕</button>
+      </header>
+      <div class="nk-dialog__body">
+        <div class="nk-tabs" role="tablist">
+          <button type="button" role="tab" [attr.aria-selected]="activeTab() === 0" [class]="activeTab() === 0 ? 'nk-tabs__tab nk-tabs__tab--on' : 'nk-tabs__tab'" (click)="activeTab.set(0)">Senden</button>
+          <button type="button" role="tab" [attr.aria-selected]="activeTab() === 1" [class]="activeTab() === 1 ? 'nk-tabs__tab nk-tabs__tab--on' : 'nk-tabs__tab'" (click)="activeTab.set(1)">Gamblen</button>
         </div>
-        <button mat-icon-button class="close-btn" (click)="close()">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
 
-      <mat-divider></mat-divider>
-
-      <mat-tab-group
-        animationDuration="200ms"
-        class="tabs"
-        (selectedIndexChange)="activeTab.set($event)"
-      >
-        <!-- TRANSFER TAB (now first) -->
-        <mat-tab>
-          <ng-template mat-tab-label>
-            <mat-icon>send</mat-icon>
-            <span>Senden</span>
-          </ng-template>
-
-          <div class="tab-content transfer-tab">
-            <div class="transfer-info">
-              <mat-icon class="send-icon">volunteer_activism</mat-icon>
-              <p>Sende Shekel an andere User!</p>
-            </div>
-
-            @if (transferResult()) {
-              <div
-                class="result-banner"
-                [class.won]="transferResult()!.success"
-                [class.lost]="!transferResult()!.success"
-              >
-                <mat-icon>{{ transferResult()!.success ? 'check_circle' : 'error' }}</mat-icon>
-                <span>{{ transferResult()!.message }}</span>
-              </div>
-            }
-
-            @if (isLoadingUsers()) {
-              <div class="loading-users">
-                <mat-spinner diameter="24"></mat-spinner>
-                <span>Lade User...</span>
-              </div>
-            } @else {
-              <mat-form-field appearance="outline" class="user-select">
-                <mat-label>Empfänger</mat-label>
-                <mat-select [(ngModel)]="selectedUserId" panelClass="shekel-select-panel">
+        @if (activeTab() === 0) {
+          <span class="sk-info"><mat-icon>volunteer_activism</mat-icon>Sende Shekel an andere User!</span>
+          @if (transferResult(); as r) {
+            <div [class]="r.success ? 'nk-toast nk-toast--success nk-toast--inline' : 'nk-toast nk-toast--error nk-toast--inline'" role="status"><span class="nk-toast__text">{{ r.message }}</span></div>
+          }
+          @if (isLoadingUsers()) {
+            <span class="sk-info"><span class="nk-spin" aria-hidden="true"></span>Lade User...</span>
+          } @else {
+            <label class="nk-field">
+              <span class="nk-label">Empfänger</span>
+              <span class="nk-input">
+                <select class="nk-input__field sk-select" [(ngModel)]="selectedUserId" aria-label="Empfänger">
+                  <option [ngValue]="null" disabled>Empfänger wählen …</option>
                   @for (user of users(); track user.id) {
-                    <mat-option [value]="user.id">{{ user.username }}</mat-option>
+                    <option [ngValue]="user.id">{{ user.username }}</option>
                   }
-                </mat-select>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline" class="amount-field">
-                <mat-label>Betrag (N$)</mat-label>
-                <input
-                  matInput
-                  type="number"
-                  [(ngModel)]="transferAmount"
-                  [min]="1"
-                  [max]="creditService.credits()"
-                  placeholder="Wie viel willst du senden?"
-                />
-                <mat-hint>Max: {{ creditService.credits() }} N$</mat-hint>
-              </mat-form-field>
-
-              <div class="quick-amounts">
-                <button
-                  mat-stroked-button
-                  (click)="setTransferAmount(5)"
-                  [disabled]="creditService.credits() < 5"
-                >
-                  5
-                </button>
-                <button
-                  mat-stroked-button
-                  (click)="setTransferAmount(10)"
-                  [disabled]="creditService.credits() < 10"
-                >
-                  10
-                </button>
-                <button
-                  mat-stroked-button
-                  (click)="setTransferAmount(25)"
-                  [disabled]="creditService.credits() < 25"
-                >
-                  25
-                </button>
-                <button
-                  mat-stroked-button
-                  (click)="setTransferAmount(50)"
-                  [disabled]="creditService.credits() < 50"
-                >
-                  50
-                </button>
-              </div>
-
-              <button
-                mat-raised-button
-                class="transfer-btn"
-                [disabled]="
-                  isTransferring() ||
-                  !selectedUserId ||
-                  transferAmount <= 0 ||
-                  transferAmount > creditService.credits()
-                "
-                (click)="transfer()"
-              >
-                @if (isTransferring()) {
-                  <mat-spinner diameter="20"></mat-spinner>
-                } @else {
-                  <ng-container><mat-icon>send</mat-icon> <span>SENDEN</span></ng-container>
-                }
-              </button>
-            }
-          </div>
-        </mat-tab>
-
-        <!-- GAMBLING TAB (now second) -->
-        <mat-tab>
-          <ng-template mat-tab-label>
-            <mat-icon>casino</mat-icon>
-            <span>Gamblen</span>
-          </ng-template>
-
-          <div class="tab-content gambling-tab">
-            <div class="gambling-info">
-              <mat-icon class="dice-icon">casino</mat-icon>
-              <p>Setze deine Shekel ein und verdopple sie - oder verliere alles!</p>
-              <p class="odds">50/50 Chance</p>
-            </div>
-
-            @if (gambleResult()) {
-              <div
-                class="result-banner"
-                [class.won]="gambleResult()!.won"
-                [class.lost]="!gambleResult()!.won"
-              >
-                <mat-icon>{{
-                  gambleResult()!.won ? 'celebration' : 'sentiment_very_dissatisfied'
-                }}</mat-icon>
-                <span>{{ gambleResult()!.message }}</span>
-              </div>
-            }
-
-            <mat-form-field appearance="outline" class="amount-field">
-              <mat-label>Einsatz (N$)</mat-label>
-              <input
-                matInput
-                type="number"
-                [(ngModel)]="gambleAmount"
-                [min]="1"
-                [max]="creditService.credits()"
-                placeholder="Wie viel willst du setzen?"
-              />
-              <mat-hint>Max: {{ creditService.credits() }} N$</mat-hint>
-            </mat-form-field>
-
-            <div class="quick-amounts">
-              <button
-                mat-stroked-button
-                (click)="setGambleAmount(10)"
-                [disabled]="creditService.credits() < 10"
-              >
-                10
-              </button>
-              <button
-                mat-stroked-button
-                (click)="setGambleAmount(25)"
-                [disabled]="creditService.credits() < 25"
-              >
-                25
-              </button>
-              <button
-                mat-stroked-button
-                (click)="setGambleAmount(50)"
-                [disabled]="creditService.credits() < 50"
-              >
-                50
-              </button>
-              <button
-                mat-stroked-button
-                (click)="setGambleAmount(100)"
-                [disabled]="creditService.credits() < 100"
-              >
-                100
-              </button>
-              <button mat-stroked-button (click)="setGambleAmount(creditService.credits())">
-                ALL IN!
-              </button>
-            </div>
-
-            <button
-              mat-raised-button
-              class="gamble-btn"
-              [disabled]="
-                isGambling() || gambleAmount <= 0 || gambleAmount > creditService.credits()
-              "
-              (click)="gamble()"
-            >
-              @if (isGambling()) {
-                <mat-spinner diameter="20"></mat-spinner>
-              } @else {
-                <ng-container><mat-icon>casino</mat-icon> <span>GAMBLEN!</span></ng-container>
+                </select>
+              </span>
+            </label>
+            <label class="nk-field">
+              <span class="nk-label">Betrag (N$)</span>
+              <span class="nk-input">
+                <input class="nk-input__field sk-num" type="number" [(ngModel)]="transferAmount" [min]="1" [max]="creditService.credits()" placeholder="Wie viel willst du senden?" aria-label="Betrag in N$" />
+              </span>
+              <span class="nk-field__hint">Max: {{ creditService.credits() }} N$</span>
+            </label>
+            <div class="sk-quick">
+              @for (a of transferQuick; track a) {
+                <button type="button" [class]="transferAmount === a ? 'nk-key nk-key--sm nk-key--pressed' : 'nk-key nk-key--sm'" [disabled]="creditService.credits() < a" (click)="setTransferAmount(a)">{{ a }}</button>
               }
+            </div>
+            <button
+              type="button"
+              class="nk-key nk-key--accent nk-key--lg sk-go"
+              [disabled]="isTransferring() || !selectedUserId || transferAmount <= 0 || transferAmount > creditService.credits()"
+              (click)="transfer()"
+            >
+              @if (isTransferring()) {
+                <span class="nk-spin" aria-hidden="true"></span>
+              } @else {
+                <mat-icon>send</mat-icon>
+              }
+              SENDEN
             </button>
+          }
+        } @else {
+          <span class="sk-info"><mat-icon>casino</mat-icon>Setze deine Shekel ein und verdopple sie - oder verliere alles!</span>
+          <span class="sk-odds">50/50 Chance</span>
+          @if (gambleResult(); as r) {
+            <div [class]="r.won ? 'nk-toast nk-toast--success nk-toast--inline' : 'nk-toast nk-toast--error nk-toast--inline'" role="status">
+              <mat-icon class="sk-res-ico">{{ r.won ? 'celebration' : 'sentiment_very_dissatisfied' }}</mat-icon>
+              <span class="nk-toast__text">{{ r.message }}</span>
+            </div>
+          }
+          <label class="nk-field">
+            <span class="nk-label">Einsatz (N$)</span>
+            <span class="nk-input">
+              <input class="nk-input__field sk-num" type="number" [(ngModel)]="gambleAmount" [min]="1" [max]="creditService.credits()" placeholder="Wie viel willst du setzen?" aria-label="Einsatz in N$" />
+            </span>
+            <span class="nk-field__hint">Max: {{ creditService.credits() }} N$</span>
+          </label>
+          <div class="sk-quick">
+            @for (a of gambleQuick; track a) {
+              <button type="button" [class]="gambleAmount === a ? 'nk-key nk-key--sm nk-key--pressed' : 'nk-key nk-key--sm'" [disabled]="creditService.credits() < a" (click)="setGambleAmount(a)">{{ a }}</button>
+            }
+            <button type="button" class="nk-key nk-key--sm sk-allin" (click)="setGambleAmount(creditService.credits())">ALL IN!</button>
           </div>
-        </mat-tab>
-      </mat-tab-group>
+          <button
+            type="button"
+            class="nk-key nk-key--danger nk-key--lg sk-go"
+            [disabled]="isGambling() || gambleAmount <= 0 || gambleAmount > creditService.credits()"
+            (click)="gamble()"
+          >
+            @if (isGambling()) {
+              <span class="nk-spin" aria-hidden="true"></span>
+            } @else {
+              <mat-icon>casino</mat-icon>
+            }
+            GAMBLEN!
+          </button>
+        }
+      </div>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
-    .shekel-popover {
-      min-width: 570px;
-      max-width: 650px;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-      border-radius: 16px;
-      overflow: hidden;
+    .nk-dlg {
+      width: 360px;
+      max-width: 100%;
     }
-
-    .header {
-      display: flex;
-      align-items: center;
+    .sk-head {
       gap: 12px;
-      padding: 16px;
-      background: linear-gradient(135deg, rgba(234, 179, 8, 0.15) 0%, rgba(251, 191, 36, 0.1) 100%);
-      transition: background 0.3s ease;
     }
-
-    .header.casino-mode {
-      background: linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(234, 179, 8, 0.1) 100%);
-    }
-
-    .header.transfer-mode {
-      background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(22, 163, 74, 0.1) 100%);
-    }
-
-    .header.transfer-mode .title {
-      background: linear-gradient(135deg, #86efac 0%, #22c55e 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-    }
-
-    .header.transfer-mode .header-coin {
-      filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.5));
-    }
-
-    .header-coin {
-      width: 48px;
-      height: 48px;
-      filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.5));
-      animation: coinSpin 3s ease-in-out infinite;
-      transition: filter 0.3s ease;
-    }
-
-    @keyframes coinSpin {
-      0%,
-      100% {
-        transform: rotateY(0deg);
-      }
-      50% {
-        transform: rotateY(180deg);
-      }
-    }
-
-    .header-text {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .title {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 18px;
-      font-weight: 700;
-      background: linear-gradient(135deg, #fde047 0%, #fbbf24 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .balance {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 24px;
-      font-weight: 700;
-      color: #fde047;
-      text-shadow: 0 0 10px rgba(253, 224, 71, 0.5);
-    }
-
-    .close-btn {
-      color: rgba(255, 255, 255, 0.6);
-    }
-
-    .close-btn:hover {
-      color: white;
-    }
-
-    .tabs {
-      background: transparent;
-    }
-
-    ::ng-deep .shekel-popover .mat-mdc-tab-group {
-      --mdc-tab-indicator-active-indicator-color: #fbbf24;
-      --mat-tab-header-active-label-text-color: #fde047;
-      --mat-tab-header-active-hover-label-text-color: #fde047;
-      --mat-tab-header-active-focus-label-text-color: #fde047;
-      --mat-tab-header-inactive-label-text-color: rgba(255, 255, 255, 0.6);
-    }
-
-    ::ng-deep .shekel-popover .mat-mdc-tab .mdc-tab__text-label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .tab-content {
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .gambling-info,
-    .transfer-info {
-      text-align: center;
-      padding: 12px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-    }
-
-    .gambling-info p,
-    .transfer-info p {
-      margin: 8px 0 0 0;
-      color: rgba(255, 255, 255, 0.8);
-      font-size: 14px;
-    }
-
-    .odds {
-      font-weight: 700;
-      color: #fbbf24 !important;
-      font-size: 16px !important;
-    }
-
-    .dice-icon,
-    .send-icon {
-      font-size: 48px;
-      width: 48px;
-      height: 48px;
-      color: #fbbf24;
-    }
-
-    .result-banner {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      border-radius: 8px;
-      font-weight: 500;
-      animation: slideIn 0.3s ease-out;
-      overflow: visible;
-    }
-
-    .result-banner mat-icon {
+    .sk-coin {
+      width: 34px;
+      height: 34px;
       flex-shrink: 0;
-      font-size: 24px;
-      width: 24px;
-      height: 24px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font: 400 22px/1 var(--nk-font-lcd);
+      color: var(--nk-lcd-ink);
+      background: var(--nk-face-lcd);
+      box-shadow: 0 0 0 2px #0B0A08, 0 0 12px rgb(196 220 112 / 0.45);
     }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .result-banner.won {
-      background: rgba(34, 197, 94, 0.2);
-      border: 1px solid rgba(34, 197, 94, 0.5);
-      color: #86efac;
-    }
-
-    .result-banner.won mat-icon {
-      color: #22c55e;
-    }
-
-    .result-banner.lost {
-      background: rgba(239, 68, 68, 0.2);
-      border: 1px solid rgba(239, 68, 68, 0.5);
-      color: #fca5a5;
-    }
-
-    .result-banner.lost mat-icon {
-      color: #ef4444;
-    }
-
-    .amount-field,
-    .user-select {
-      width: 100%;
-    }
-
-    ::ng-deep .shekel-popover .mat-mdc-form-field {
-      --mdc-outlined-text-field-outline-color: rgba(251, 191, 36, 0.3);
-      --mdc-outlined-text-field-hover-outline-color: rgba(251, 191, 36, 0.5);
-      --mdc-outlined-text-field-focus-outline-color: #fbbf24;
-      --mdc-outlined-text-field-label-text-color: rgba(255, 255, 255, 0.6);
-      --mdc-outlined-text-field-input-text-color: white;
-      --mdc-outlined-text-field-caret-color: #fbbf24;
-    }
-
-    .quick-amounts {
+    .sk-title {
+      flex: 1;
+      min-width: 0;
       display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: center;
+      flex-direction: column;
+      gap: 2px;
     }
-
-    .quick-amounts button {
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 600;
-      border-color: rgba(251, 191, 36, 0.4);
-      color: #fbbf24;
+    .sk-title .nk-dialog__title {
+      font-size: 17px;
     }
-
-    .quick-amounts button:hover:not(:disabled) {
-      background: rgba(251, 191, 36, 0.15);
-      border-color: #fbbf24;
+    .sk-bal {
+      font: 400 22px/1 var(--nk-font-lcd);
+      letter-spacing: 1px;
+      color: var(--nk-iv);
+      text-shadow: 0 0 6px rgb(255 226 176 / 0.5);
     }
-
-    .quick-amounts button:disabled {
-      opacity: 0.4;
-    }
-
-    .gamble-btn {
-      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
-      color: white !important;
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 700;
-      font-size: 16px;
-      padding: 12px 24px !important;
-      height: auto !important;
-      line-height: 1.2 !important;
-      transition: all 0.2s ease;
-    }
-
-    .gamble-btn ::ng-deep .mat-mdc-button-persistent-ripple,
-    .gamble-btn ::ng-deep .mdc-button__label {
+    .sk-info {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 8px;
+      gap: 10px;
+      font: 600 15px/1.3 var(--nk-font-ui);
     }
-
-    .gamble-btn mat-icon {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
+    .sk-info .mat-icon {
+      flex-shrink: 0;
+      color: var(--nk-iv);
+      filter: drop-shadow(0 0 4px rgb(255 226 176 / 0.6));
     }
-
-    .gamble-btn:hover:not(:disabled) {
-      transform: scale(1.02);
-      box-shadow: 0 4px 20px rgba(220, 38, 38, 0.4);
+    .sk-odds {
+      font: 400 26px/1 var(--nk-font-lcd);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--nk-warn);
+      text-shadow: 0 0 8px rgb(242 210 75 / 0.6);
     }
-
-    .gamble-btn:disabled {
-      opacity: 0.5;
+    .sk-res-ico {
+      flex-shrink: 0;
     }
-
-    .transfer-btn {
-      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
-      color: white !important;
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 700;
-      font-size: 16px;
-      padding: 12px 24px !important;
-      height: auto !important;
-      line-height: 1.2 !important;
-      transition: all 0.2s ease;
+    .sk-select {
+      appearance: none;
+      cursor: pointer;
     }
-
-    .transfer-btn ::ng-deep .mat-mdc-button-persistent-ripple,
-    .transfer-btn ::ng-deep .mdc-button__label {
+    .sk-select option {
+      background: #1A1814;
+      color: var(--nk-iv);
+    }
+    .sk-num {
+      font-family: var(--nk-font-lcd);
+      font-size: 22px;
+    }
+    .sk-quick {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      gap: 10px;
+      padding: 3px;
     }
-
-    .transfer-btn mat-icon {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
+    .sk-quick .nk-key {
+      flex: 1;
+      padding: 0 4px 2px;
     }
-
-    .transfer-btn:hover:not(:disabled) {
-      transform: scale(1.02);
-      box-shadow: 0 4px 20px rgba(34, 197, 94, 0.4);
+    .sk-quick .sk-allin {
+      flex: 1.6;
     }
-
-    .transfer-btn:disabled {
-      opacity: 0.5;
+    .sk-go {
+      margin: 2px 3px 4px;
     }
-
-    .loading-users {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      padding: 24px;
-      color: rgba(255, 255, 255, 0.6);
-    }
-
-    ::ng-deep .shekel-popover .mat-mdc-select-value {
-      color: white;
-    }
-
-    ::ng-deep .shekel-popover .mat-mdc-select-arrow {
-      color: rgba(255, 255, 255, 0.6);
+    .sk-go .mat-icon {
+      width: 18px;
+      height: 18px;
+      font-size: 18px;
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class ShekelPopoverComponent implements OnInit {
   readonly creditService = inject(CreditService);
@@ -570,6 +226,8 @@ export class ShekelPopoverComponent implements OnInit {
 
   // Tab state
   readonly activeTab = signal(0);
+  readonly transferQuick = [5, 10, 25, 50];
+  readonly gambleQuick = [10, 25, 50, 100];
 
   // Gambling state
   gambleAmount = 10;

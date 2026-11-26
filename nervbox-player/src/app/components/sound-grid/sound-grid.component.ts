@@ -1,53 +1,96 @@
-import { Component, input, output, computed, signal, ChangeDetectionStrategy, ElementRef, viewChild, AfterViewInit, OnDestroy, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {
+  Component,
+  input,
+  output,
+  computed,
+  signal,
+  ChangeDetectionStrategy,
+  ElementRef,
+  AfterViewInit,
+  OnDestroy,
+  inject,
+} from '@angular/core';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 import { Sound } from '../../core/models';
+import { NowPlayingService } from '../../core/services/now-playing.service';
 import { SoundCardComponent } from './sound-card.component';
 
+/**
+ * Pad-Platte: versenkte Aluplatte mit Schrauben und dem großen, schwach hinterleuchteten
+ * „CABD“ dahinter. Oben (bei „Meistgespielt“ ohne Filter) die Top-Sounds groß, darunter
+ * alle Pads in gleich großen Reihen mit virtuellem Scrollen.
+ */
 @Component({
   selector: 'app-sound-grid',
   standalone: true,
-  imports: [CommonModule, ScrollingModule, SoundCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ScrollingModule, SoundCardComponent],
   template: `
-    <div class="cabd-watermark">CABD</div>
-    @if (filteredSounds().length === 0) {
-      <div class="no-sounds">
-        <span class="no-sounds-icon">🔇</span>
-        <p>Keine Sounds gefunden</p>
-        @if (searchQuery() || selectedTags().length > 0) {
-          <p class="hint">Versuche andere Suchbegriffe oder Filter</p>
-        }
-      </div>
-    } @else {
-      <div class="grid-wrapper">
-        <cdk-virtual-scroll-viewport
-          #viewport
-          class="sound-grid-viewport nervbox-scrollbar"
-          [itemSize]="rowHeight()"
-        >
-          <div
-            *cdkVirtualFor="let row of rows(); trackBy: trackRow"
-            class="sound-row"
-            [style.grid-template-columns]="gridColumns()"
-          >
-            @for (sound of row; track sound.hash) {
-              <app-sound-card
-                [sound]="sound"
-                [tagColors]="tagColors()"
-                [selectionMode]="selectionMode()"
-                [isSelected]="selectedHashes().includes(sound.hash)"
-                (playClick)="playSound.emit($event)"
-                (editClick)="editSound.emit($event)"
-                (toggleClick)="toggleSound.emit($event)"
-                (deleteClick)="deleteSound.emit($event)"
-                (selectionToggle)="selectionToggle.emit($event)"
-              />
-            }
-          </div>
-        </cdk-virtual-scroll-viewport>
-      </div>
-    }
+    <div class="nk-plate grid-plate">
+      <span class="nk-screw nk-screw--sm nk-screw--tl" aria-hidden="true"></span>
+      <span class="nk-screw nk-screw--sm nk-screw--tr" aria-hidden="true"></span>
+      <span class="nk-screw nk-screw--sm nk-screw--bl" aria-hidden="true"></span>
+      <span class="nk-screw nk-screw--sm nk-screw--br" aria-hidden="true"></span>
+      <div [class]="fewResults() ? 'nk-watermark nk-watermark--hero' : 'nk-watermark'" aria-hidden="true">CABD</div>
+
+      @if (filteredSounds().length === 0) {
+        <div class="nk-empty grid-empty" role="status">
+          <span class="nk-empty__title">Keine Sounds gefunden</span>
+          @if (searchQuery() || selectedTags().length > 0) {
+            <span class="nk-empty__text">Versuche andere Suchbegriffe oder Filter</span>
+          }
+        </div>
+      } @else {
+        <div class="grid-scroll nervbox-scrollbar" cdkVirtualScrollingElement>
+          @if (featured().length) {
+            <div class="grid-featured" [style.height.px]="featuredHeight()">
+              @for (sound of featured(); track sound.hash; let i = $index) {
+                <app-sound-card
+                  [class]="i < 2 ? 'feat-xl feat-' + i : 'feat-wide feat-' + i"
+                  [sound]="sound"
+                  [variant]="i < 2 ? 'xl' : 'wide'"
+                  [rank]="i < 2 ? i + 1 : null"
+                  [lampF]="i < 2 ? 1 - i * 0.12 : 0.7 - (i - 2) * 0.08"
+                  [tagColors]="tagColors()"
+                  [selectionMode]="selectionMode()"
+                  [isSelected]="selectedHashes().includes(sound.hash)"
+                  [playState]="padStates().get(sound.hash)"
+                  (playClick)="playSound.emit($event)"
+                  (editClick)="editSound.emit($event)"
+                  (toggleClick)="toggleSound.emit($event)"
+                  (deleteClick)="deleteSound.emit($event)"
+                  (selectionToggle)="selectionToggle.emit($event)"
+                />
+              }
+            </div>
+          }
+          <cdk-virtual-scroll-viewport class="grid-viewport" [itemSize]="rowHeight" [minBufferPx]="400" [maxBufferPx]="800">
+            <div
+              *cdkVirtualFor="let row of rows(); let r = index; trackBy: trackRow"
+              class="grid-row"
+              [style.grid-template-columns]="gridColumns()"
+              [style.height.px]="rowHeight"
+            >
+              @for (sound of row; track sound.hash; let c = $index) {
+                <app-sound-card
+                  [sound]="sound"
+                  [lampF]="lampAt(c, r)"
+                  [tagColors]="tagColors()"
+                  [selectionMode]="selectionMode()"
+                  [isSelected]="selectedHashes().includes(sound.hash)"
+                  [playState]="padStates().get(sound.hash)"
+                  (playClick)="playSound.emit($event)"
+                  (editClick)="editSound.emit($event)"
+                  (toggleClick)="toggleSound.emit($event)"
+                  (deleteClick)="deleteSound.emit($event)"
+                  (selectionToggle)="selectionToggle.emit($event)"
+                />
+              }
+            </div>
+          </cdk-virtual-scroll-viewport>
+        </div>
+      }
+    </div>
   `,
   styles: `
     :host {
@@ -55,92 +98,65 @@ import { SoundCardComponent } from './sound-card.component';
       flex-direction: column;
       flex: 1;
       min-height: 0;
-      overflow: hidden;
-      position: relative;
     }
 
-    .grid-wrapper {
+    .grid-plate {
       flex: 1;
       min-height: 0;
-      padding: 16px;
-      padding-left: 48px; /* Platz für FAB-Button */
-      padding-right: 6px; /* Weniger Abstand zum Chat */
-      position: relative;
+      margin: 0 1px 2px;
     }
 
-    .cabd-watermark {
+    .grid-scroll {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-family: 'Inter', system-ui, sans-serif;
-      font-size: clamp(200px, 38vw, 500px);
-      font-weight: 900;
-      color: rgba(255, 255, 255, 0.02);
-      letter-spacing: -0.02em;
-      pointer-events: none;
-      user-select: none;
-      white-space: nowrap;
-      z-index: 0;
+      inset: 0;
+      z-index: 2;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 14px 10px 14px 16px;
     }
 
-    .sound-grid-viewport {
-      position: relative;
-      z-index: 1;
-      height: 100%;
-      overflow-x: hidden !important;
-    }
-
-    .sound-row {
+    .grid-featured {
       display: grid;
-      gap: 10px;
-      margin-bottom: 10px;
-      margin-right: 6px; /* Abstand zur Scrollbar */
-      min-width: 0;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin: 0 6px 14px 0;
+    }
+
+    .feat-0 { grid-column: 1; grid-row: 1 / span 2; }
+    .feat-1 { grid-column: 2; grid-row: 1 / span 2; }
+    .feat-2 { grid-column: 3; grid-row: 1; }
+    .feat-3 { grid-column: 4; grid-row: 1; }
+    .feat-4 { grid-column: 3; grid-row: 2; }
+    .feat-5 { grid-column: 4; grid-row: 2; }
+
+    .grid-viewport {
+      overflow: visible;
+      contain: none;
+    }
+
+    .grid-row {
+      display: grid;
+      gap: 14px;
+      padding: 4px 6px 10px 4px;
       box-sizing: border-box;
+      min-width: 0;
     }
 
-    .no-sounds {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 300px;
-      color: rgba(255, 255, 255, 0.5);
-    }
-
-    .no-sounds-icon {
-      font-size: 48px;
-      margin-bottom: 16px;
-    }
-
-    .no-sounds p {
-      margin: 4px 0;
-      font-size: 16px;
-    }
-
-    .no-sounds .hint {
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.3);
-    }
-
-    @media (max-width: 600px) {
-      .sound-row {
-        gap: 4px;
-        margin-right: 8px;
-      }
-
-      .grid-wrapper {
-        padding: 8px;
-      }
+    .grid-empty {
+      position: absolute;
+      left: 28px;
+      top: 24px;
+      z-index: 2;
     }
   `,
 })
 export class SoundGridComponent implements AfterViewInit, OnDestroy {
-  private static readonly MIN_CARD_WIDTH = 280;
-  private static readonly GAP = 10;
-  private static readonly PADDING = 16;
-  private static readonly ROW_HEIGHT = 80;
+  private static readonly MIN_PAD_WIDTH = 140;
+  private static readonly GAP = 14;
+  private static readonly PADDING = 36;
+  /** Reihenhöhe inkl. Abstand (Pad 72px + 14px Fuge) */
+  readonly rowHeight = 86;
 
   readonly sounds = input<Sound[]>([]);
   readonly searchQuery = input<string>('');
@@ -148,6 +164,8 @@ export class SoundGridComponent implements AfterViewInit, OnDestroy {
   readonly tagColors = input<Record<string, string>>({});
   readonly selectionMode = input<boolean>(false);
   readonly selectedHashes = input<string[]>([]);
+  /** Top-Sounds groß zeigen (nur bei Sortierung „Meistgespielt“ ohne Filter) */
+  readonly showFeatured = input<boolean>(false);
 
   readonly playSound = output<Sound>();
   readonly editSound = output<Sound>();
@@ -156,83 +174,83 @@ export class SoundGridComponent implements AfterViewInit, OnDestroy {
   readonly selectionToggle = output<Sound>();
 
   private readonly hostEl = inject(ElementRef);
-  private readonly viewport = viewChild<ElementRef>('viewport');
-  private readonly columnsCount = signal(4);
+  private readonly nowPlaying = inject(NowPlayingService);
+  private readonly columnsCount = signal(6);
   private resizeObserver: ResizeObserver | null = null;
 
-  readonly rowHeight = signal(SoundGridComponent.ROW_HEIGHT);
-
-  // Grid columns: N columns that share space equally
-  readonly gridColumns = computed(() => `repeat(${this.columnsCount()}, 1fr)`);
+  readonly padStates = this.nowPlaying.padStates;
+  readonly gridColumns = computed(() => `repeat(${this.columnsCount()}, minmax(0, 1fr))`);
 
   readonly filteredSounds = computed(() => {
     let result = this.sounds();
     const query = this.searchQuery().toLowerCase().trim();
     const tags = this.selectedTags();
 
-    // Filter by search query
     if (query) {
       result = result.filter(
         sound =>
           sound.name.toLowerCase().includes(query) ||
           sound.fileName.toLowerCase().includes(query) ||
-          sound.tags?.some(tag => tag.toLowerCase().includes(query))
+          sound.tags?.some(tag => tag.toLowerCase().includes(query)),
       );
     }
 
-    // Filter by selected tags
     if (tags.length > 0) {
-      result = result.filter(sound =>
-        tags.some(tag => sound.tags?.includes(tag))
-      );
+      result = result.filter(sound => tags.some(tag => sound.tags?.includes(tag)));
     }
 
     return result;
   });
 
-  // Group sounds into rows for virtual scrolling
+  /** Große Top-Pads: nur wenn genug Platz (mind. 6 Spalten) und genug Sounds */
+  readonly featured = computed(() => {
+    const list = this.filteredSounds();
+    if (!this.showFeatured() || this.columnsCount() < 6 || list.length < 12) return [];
+    return list.slice(0, 6);
+  });
+
+  readonly featuredHeight = computed(() => this.rowHeight * 2 + 46);
+
   readonly rows = computed(() => {
-    const sounds = this.filteredSounds();
+    const sounds = this.filteredSounds().slice(this.featured().length);
     const cols = this.columnsCount();
     const result: Sound[][] = [];
-
     for (let i = 0; i < sounds.length; i += cols) {
       result.push(sounds.slice(i, i + cols));
     }
-
     return result;
   });
 
+  /** Wenige Treffer: großes CABD leuchtet stärker durch */
+  readonly fewResults = computed(() => this.filteredSounds().length < this.columnsCount() * 2);
+
   ngAfterViewInit(): void {
-    this.setupResizeObserver();
+    const el = this.hostEl.nativeElement as HTMLElement;
+    const calc = () => {
+      const available = el.clientWidth - SoundGridComponent.PADDING;
+      const minPad = el.clientWidth < 600 ? 96 : SoundGridComponent.MIN_PAD_WIDTH;
+      const cols = Math.max(
+        1,
+        Math.floor(
+          (available + SoundGridComponent.GAP) /
+            (minPad + SoundGridComponent.GAP),
+        ),
+      );
+      this.columnsCount.set(cols);
+    };
+    requestAnimationFrame(calc);
+    this.resizeObserver = new ResizeObserver(calc);
+    this.resizeObserver.observe(el);
   }
 
   ngOnDestroy(): void {
     this.resizeObserver?.disconnect();
   }
 
-  private setupResizeObserver(): void {
-    const el = this.hostEl.nativeElement;
-
-    const calculateColumns = () => {
-      const totalWidth = el.clientWidth;
-      const availableWidth = totalWidth - (2 * SoundGridComponent.PADDING);
-
-      // Calculate how many whole cards fit (considering gaps between them)
-      // Formula: cols <= (availableWidth + gap) / (minWidth + gap)
-      const cols = Math.max(1, Math.floor(
-        (availableWidth + SoundGridComponent.GAP) /
-        (SoundGridComponent.MIN_CARD_WIDTH + SoundGridComponent.GAP)
-      ));
-
-      this.columnsCount.set(cols);
-    };
-
-    // Initial calculation with slight delay to ensure layout is complete
-    requestAnimationFrame(() => calculateColumns());
-
-    this.resizeObserver = new ResizeObserver(() => calculateColumns());
-    this.resizeObserver.observe(el);
+  /** Lampe steht oben links: Pads dort bekommen mehr Streulicht */
+  lampAt(col: number, row: number): number {
+    const f = 0.85 - (0.55 * col) / Math.max(1, this.columnsCount() - 1) - 0.06 * Math.min(row, 6);
+    return Math.max(0.15, Math.min(1, f));
   }
 
   trackRow(_index: number, row: Sound[]): string {

@@ -221,8 +221,8 @@ import { CreditService } from '../../../../core/services/credit.service';
       flex-direction: column;
       align-items: center;
       padding: 4px 12px;
-      background: rgba(147, 51, 234, 0.2);
-      border: 1px solid rgba(147, 51, 234, 0.4);
+      background: rgba(75, 229, 133, 0.2);
+      border: 1px solid rgba(75, 229, 133, 0.4);
       border-radius: 8px;
     }
 
@@ -237,7 +237,7 @@ import { CreditService } from '../../../../core/services/credit.service';
       font-family: 'JetBrains Mono', monospace;
       font-size: 16px;
       font-weight: 700;
-      color: #9333ea;
+      color: #1F8E4C;
     }
 
     .close-btn {

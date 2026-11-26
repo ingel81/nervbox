@@ -30,337 +30,173 @@ import { SoundService } from '../../core/services/sound.service';
     MatSlideToggleModule,
   ],
   template: `
-    <h2 mat-dialog-title>
-      <mat-icon>label</mat-icon>
-      Tag-Verwaltung
-    </h2>
-
-    <mat-dialog-content>
-      @if (loading()) {
-        <div class="loading-container">
-          <mat-spinner diameter="32"></mat-spinner>
-          <span>Tags werden geladen...</span>
-        </div>
-      } @else {
-        <!-- Add new tag -->
-        <div class="add-tag-section">
-          <input
-            type="color"
-            class="color-picker"
-            [(ngModel)]="newTagColor"
-            matTooltip="Farbe wählen"
-          />
-          <mat-form-field appearance="outline" class="tag-input">
-            <mat-label>Neuer Tag</mat-label>
-            <input
-              matInput
-              [(ngModel)]="newTagName"
-              (keydown.enter)="createTag()"
-              placeholder="Tag-Name eingeben"
-            />
-          </mat-form-field>
-          <button
-            mat-icon-button
-            [class.pinned]="newTagPinned"
-            (click)="newTagPinned = !newTagPinned"
-            [matTooltip]="newTagPinned ? 'Gepinnt' : 'Nicht gepinnt'"
-          >
-            <mat-icon>{{ newTagPinned ? 'push_pin' : 'push_pin' }}</mat-icon>
-          </button>
-          <button
-            mat-icon-button
-            color="primary"
-            (click)="createTag()"
-            [disabled]="!newTagName.trim() || creating()"
-            matTooltip="Tag erstellen"
-          >
-            @if (creating()) {
-              <mat-spinner diameter="20"></mat-spinner>
-            } @else {
-              <mat-icon>add</mat-icon>
-            }
-          </button>
-        </div>
-
-        <!-- Tag list -->
-        <div class="tag-list nervbox-scrollbar">
-          @if (tags().length === 0) {
-            <div class="empty-state">
-              <mat-icon>label_off</mat-icon>
-              <span>Keine Tags vorhanden</span>
-            </div>
-          } @else {
-            @for (tag of tags(); track tag.id) {
-              <div
-                class="tag-item"
-                [class.editing]="editingTagId() === tag.id"
-                [class.pinned]="tag.isPinned"
-              >
-                @if (editingTagId() === tag.id) {
-                  <input
-                    type="color"
-                    class="color-picker"
-                    [(ngModel)]="editingTagColor"
-                    matTooltip="Farbe wählen"
-                  />
-                  <input
-                    class="edit-input"
-                    [(ngModel)]="editingTagName"
-                    (keydown.enter)="saveTag(tag)"
-                    (keydown.escape)="cancelEdit()"
-                    #editInput
-                  />
-                  <button
-                    mat-icon-button
-                    [class.pinned]="editingTagPinned"
-                    (click)="editingTagPinned = !editingTagPinned"
-                    [matTooltip]="editingTagPinned ? 'Gepinnt' : 'Nicht gepinnt'"
-                  >
-                    <mat-icon>push_pin</mat-icon>
-                  </button>
-                  <button mat-icon-button (click)="saveTag(tag)" matTooltip="Speichern">
-                    <mat-icon>check</mat-icon>
-                  </button>
-                  <button mat-icon-button (click)="cancelEdit()" matTooltip="Abbrechen">
-                    <mat-icon>close</mat-icon>
-                  </button>
+    <div class="nk-dlg tm">
+      <header class="nk-dialog__head">
+        <mat-icon class="tm-ico" aria-hidden="true">label</mat-icon>
+        <h2 class="nk-dialog__title">Tag-Verwaltung</h2>
+        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close>✕</button>
+      </header>
+      <div class="nk-dialog__body tm-body">
+        @if (loading()) {
+          <div class="tm-state"><span class="nk-spin" aria-hidden="true"></span>Tags werden geladen...</div>
+        } @else {
+          <div class="nk-section">
+            <h3 class="nk-section__title">Neuer Tag</h3>
+            <div class="tm-line">
+              <input type="color" class="tm-color" [(ngModel)]="newTagColor" matTooltip="Farbe wählen" aria-label="Farbe wählen" />
+              <label class="nk-input tm-grow"><input class="nk-input__field" [(ngModel)]="newTagName" (keydown.enter)="createTag()" placeholder="Tag-Name eingeben" aria-label="Neuer Tag" /></label>
+              <button type="button" [class]="newTagPinned ? 'nk-key nk-key--icon nk-key--on' : 'nk-key nk-key--icon'" [attr.aria-pressed]="newTagPinned" [matTooltip]="newTagPinned ? 'Gepinnt' : 'Nicht gepinnt'" aria-label="Anpinnen" (click)="newTagPinned = !newTagPinned"><mat-icon>push_pin</mat-icon></button>
+              <button type="button" class="nk-key nk-key--icon nk-key--accent" matTooltip="Tag erstellen" aria-label="Tag erstellen" [disabled]="!newTagName.trim() || creating()" (click)="createTag()">
+                @if (creating()) {
+                  <span class="nk-spin" aria-hidden="true"></span>
                 } @else {
-                  @if (tag.isPinned) {
-                    <mat-icon class="pin-indicator" matTooltip="Gepinnt">push_pin</mat-icon>
-                  }
-                  <span class="tag-color" [style.background]="tag.color"></span>
-                  <span class="tag-name"><span class="hash">#</span>{{ tag.name }}</span>
-                  <span
-                    class="tag-count"
-                    [matTooltip]="tag.soundCount + ' Sounds verwenden diesen Tag'"
-                  >
-                    {{ tag.soundCount }}
-                  </span>
-                  <button mat-icon-button (click)="startEdit(tag)" matTooltip="Bearbeiten">
-                    <mat-icon>edit</mat-icon>
-                  </button>
-                  <button
-                    mat-icon-button
-                    (click)="deleteTag(tag)"
-                    [matTooltip]="
-                      tag.soundCount
-                        ? 'Wird von ' + tag.soundCount + ' Sounds verwendet'
-                        : 'Löschen'
-                    "
-                    [disabled]="deleting() === tag.id"
-                  >
-                    @if (deleting() === tag.id) {
-                      <mat-spinner diameter="18"></mat-spinner>
-                    } @else {
-                      <mat-icon [class.warn]="!tag.soundCount">delete</mat-icon>
-                    }
-                  </button>
+                  <mat-icon>add</mat-icon>
                 }
-              </div>
+              </button>
+            </div>
+          </div>
+          <div class="nk-well tm-list">
+            @if (tags().length === 0) {
+              <div class="tm-state">Keine Tags vorhanden</div>
+            } @else {
+              @for (tag of tags(); track tag.id) {
+                <div [class]="editingTagId() === tag.id ? 'nk-row nk-row--hl tm-row' : 'nk-row tm-row'">
+                  @if (editingTagId() === tag.id) {
+                    <input type="color" class="tm-color" [(ngModel)]="editingTagColor" matTooltip="Farbe wählen" aria-label="Farbe wählen" />
+                    <label class="nk-input nk-input--focus tm-grow tm-edit"><input #editInput class="nk-input__field" [(ngModel)]="editingTagName" (keydown.enter)="saveTag(tag)" (keydown.escape)="cancelEdit()" aria-label="Tag-Name" /></label>
+                    <button type="button" [class]="editingTagPinned ? 'nk-key nk-key--sm nk-key--icon nk-key--on' : 'nk-key nk-key--sm nk-key--icon'" [attr.aria-pressed]="editingTagPinned" [matTooltip]="editingTagPinned ? 'Gepinnt' : 'Nicht gepinnt'" aria-label="Anpinnen" (click)="editingTagPinned = !editingTagPinned"><mat-icon>push_pin</mat-icon></button>
+                    <button type="button" class="nk-key nk-key--sm nk-key--icon nk-key--accent" matTooltip="Speichern" aria-label="Speichern" (click)="saveTag(tag)"><mat-icon>check</mat-icon></button>
+                    <button type="button" class="nk-key nk-key--sm nk-key--icon" matTooltip="Abbrechen" aria-label="Abbrechen" (click)="cancelEdit()"><mat-icon>close</mat-icon></button>
+                  } @else {
+                    <span class="tm-swatch" [style.background]="tag.color" aria-hidden="true"></span>
+                    @if (tag.isPinned) {
+                      <mat-icon class="tm-pin" matTooltip="Gepinnt" aria-label="Gepinnt">push_pin</mat-icon>
+                    }
+                    <span class="nk-row__main"><span class="nk-row__title">#{{ tag.name }}</span></span>
+                    <span class="nk-counter tm-count" [matTooltip]="tag.soundCount + ' Sounds verwenden diesen Tag'">{{ tag.soundCount }}</span>
+                    <button type="button" class="nk-key nk-key--sm nk-key--icon" matTooltip="Bearbeiten" aria-label="Bearbeiten" (click)="startEdit(tag)"><mat-icon>edit</mat-icon></button>
+                    <button
+                      type="button"
+                      class="nk-key nk-key--sm nk-key--icon"
+                      [class.tm-del]="!tag.soundCount"
+                      [matTooltip]="tag.soundCount ? 'Wird von ' + tag.soundCount + ' Sounds verwendet' : 'Löschen'"
+                      aria-label="Löschen"
+                      [disabled]="deleting() === tag.id"
+                      (click)="deleteTag(tag)"
+                    >
+                      @if (deleting() === tag.id) {
+                        <span class="nk-spin" aria-hidden="true"></span>
+                      } @else {
+                        <mat-icon>delete</mat-icon>
+                      }
+                    </button>
+                  }
+                </div>
+              }
             }
-          }
-        </div>
-
-        <div class="tag-stats">{{ tags().length }} Tags insgesamt</div>
-      }
-    </mat-dialog-content>
-
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Schließen</button>
-    </mat-dialog-actions>
+          </div>
+        }
+      </div>
+      <footer class="nk-dialog__foot tm-foot">
+        <span class="tm-total">{{ tags().length }} Tags insgesamt</span>
+        <button type="button" class="nk-key" mat-dialog-close>Schließen</button>
+      </footer>
+    </div>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
-    h2[mat-dialog-title] {
+    .tm {
+      width: 560px;
+      max-width: 100%;
+      max-height: 90vh;
+    }
+    .tm-ico {
+      color: var(--nk-iv);
+      filter: drop-shadow(0 0 4px rgb(255 226 176 / 0.6));
+    }
+    .tm-body {
+      overflow: hidden;
+    }
+    .tm-state {
       display: flex;
       align-items: center;
-      gap: 8px;
-      color: #9333ea;
-      margin: 0;
-      padding: 16px 24px;
+      gap: 10px;
+      padding: 18px 8px;
+      color: var(--nk-iv-2);
+      font: 500 13px var(--nk-font-mono);
     }
-
-    h2 mat-icon {
-      font-size: 24px;
-      width: 24px;
-      height: 24px;
-    }
-
-    mat-dialog-content {
-      padding: 0 24px;
-      min-width: 400px;
-      min-height: 300px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .loading-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      height: 200px;
-      color: rgba(255, 255, 255, 0.6);
-    }
-
-    .add-tag-section {
+    .tm-line {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 16px;
+      gap: 12px;
+      padding: 3px;
     }
-
-    .color-picker {
-      width: 36px;
-      height: 36px;
+    .tm-grow {
+      flex: 1;
+      min-width: 0;
+    }
+    .tm-edit {
+      height: 34px;
+    }
+    .tm-color {
+      width: 30px;
+      height: 30px;
+      flex-shrink: 0;
       padding: 0;
-      border: 2px solid rgba(255, 255, 255, 0.2);
-      border-radius: 6px;
+      border: 0;
+      border-radius: 5px;
       cursor: pointer;
       background: transparent;
+      box-shadow: 0 0 0 3px #0b0a08, 1.5px 1.5px 0 3px rgb(255 226 176 / 0.17);
     }
-
-    .color-picker::-webkit-color-swatch-wrapper {
-      padding: 2px;
+    .tm-color::-webkit-color-swatch-wrapper {
+      padding: 0;
     }
-
-    .color-picker::-webkit-color-swatch {
-      border: none;
-      border-radius: 4px;
+    .tm-color::-webkit-color-swatch {
+      border: 0;
+      border-radius: 5px;
     }
-
-    .tag-input {
-      flex: 1;
-    }
-
-    .tag-list {
-      flex: 1;
-      max-height: 300px;
+    .tm-list {
       overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+      max-height: 56vh;
     }
-
-    .empty-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      height: 150px;
-      color: rgba(255, 255, 255, 0.4);
+    .tm-row {
+      min-height: 46px;
     }
-
-    .empty-state mat-icon {
-      font-size: 48px;
-      width: 48px;
-      height: 48px;
-    }
-
-    .tag-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 8px;
-      transition: background 0.2s;
-    }
-
-    .tag-item:hover {
-      background: rgba(255, 255, 255, 0.06);
-    }
-
-    .tag-item.editing {
-      background: rgba(147, 51, 234, 0.1);
-    }
-
-    .tag-item.pinned {
-      border-left: 2px solid #f97316;
-      background: rgba(249, 115, 22, 0.05);
-    }
-
-    .pin-indicator {
-      color: #f97316;
-      font-size: 14px;
-      width: 14px;
-      height: 14px;
-      flex-shrink: 0;
-    }
-
-    button.pinned mat-icon {
-      color: #f97316;
-    }
-
-    .tag-color {
+    .tm-row .nk-key .mat-icon,
+    .tm-line .nk-key .mat-icon {
       width: 16px;
       height: 16px;
-      border-radius: 4px;
+      font-size: 16px;
+    }
+    .tm-swatch {
+      width: 22px;
+      height: 22px;
       flex-shrink: 0;
+      border-radius: 5px;
+      box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.45), 0 0 0 3px #0b0a08;
     }
-
-    .tag-name {
-      flex: 1;
+    .tm-pin {
+      width: 14px;
+      height: 14px;
       font-size: 14px;
-      color: rgba(255, 255, 255, 0.9);
+      color: var(--nk-iv);
+      filter: drop-shadow(0 0 4px rgb(255 226 176 / 0.7));
     }
-
-    .tag-count {
-      background: rgba(147, 51, 234, 0.2);
-      border-radius: 10px;
-      padding: 2px 8px;
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.7);
-      font-family: 'JetBrains Mono', monospace;
-      cursor: help;
+    .tm-count {
+      min-width: 44px;
     }
-
-    .edit-input {
-      flex: 1;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(147, 51, 234, 0.3);
-      border-radius: 4px;
-      padding: 6px 10px;
-      color: white;
-      font-size: 14px;
-      outline: none;
+    .tm-del {
+      color: var(--nk-danger-text);
     }
-
-    .edit-input:focus {
-      border-color: #9333ea;
+    .tm-foot {
+      justify-content: space-between;
     }
-
-    .tag-item button {
-      opacity: 0.5;
-    }
-
-    .tag-item:hover button {
-      opacity: 1;
-    }
-
-    .tag-item button mat-icon.warn {
-      color: #ef4444;
-    }
-
-    .tag-stats {
-      padding-top: 12px;
-      margin-top: 12px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.4);
-      text-align: center;
-    }
-
-    mat-dialog-actions {
-      padding: 16px 24px;
-    }
-
-    ::ng-deep .mat-mdc-form-field-subscript-wrapper {
-      display: none;
+    .tm-total {
+      font: 500 12px var(--nk-font-mono);
+      color: var(--nk-iv-2);
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class TagManagerDialogComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<TagManagerDialogComponent>);

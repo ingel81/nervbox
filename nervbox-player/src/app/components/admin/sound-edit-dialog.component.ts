@@ -12,6 +12,7 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Sound } from '../../core/models';
 import { SoundService } from '../../core/services/sound.service';
+import { tagToneStyle } from '../../shared/tag-tone';
 
 export interface SoundEditDialogData {
   sound: Sound;
@@ -35,285 +36,106 @@ export interface SoundEditDialogData {
     MatProgressSpinnerModule,
   ],
   template: `
-    <h2 mat-dialog-title>
-      <mat-icon>edit</mat-icon>
-      Sound bearbeiten
-    </h2>
-
-    <mat-dialog-content>
-      <div class="form-content">
-        <!-- Name -->
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Name</mat-label>
-          <input matInput [(ngModel)]="name" />
-        </mat-form-field>
-
-        <!-- File Info (readonly) -->
-        <div class="info-row">
-          <span class="label">Datei:</span>
-          <span class="value monospace">{{ data.sound.fileName }}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">Hash:</span>
-          <span class="value monospace">{{ data.sound.hash }}</span>
-        </div>
-
-        <!-- Enabled Toggle -->
-        <div class="toggle-row">
-          <mat-slide-toggle [(ngModel)]="enabled" color="primary">
-            {{ enabled ? 'Aktiviert' : 'Deaktiviert' }}
-          </mat-slide-toggle>
-        </div>
-
-        <!-- Tags -->
-        <div class="tags-section">
-          <div class="tags-label">Tags</div>
-          <div class="tags-container">
+    <div class="nk-dlg se">
+      <header class="nk-dialog__head">
+        <h2 class="nk-dialog__title">Sound bearbeiten</h2>
+        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close>✕</button>
+      </header>
+      <div class="nk-dialog__body">
+        <label class="nk-field">
+          <span class="nk-label">Name</span>
+          <span class="nk-input"><input class="nk-input__field" [(ngModel)]="name" aria-label="Name" /></span>
+        </label>
+        <span class="se-kv">Datei: <b>{{ data.sound.fileName }}</b></span>
+        <span class="se-kv">Hash: <b>{{ data.sound.hash }}</b></span>
+        <span class="se-switch">
+          <button type="button" role="switch" [attr.aria-checked]="enabled" [class]="enabled ? 'nk-switch nk-switch--on' : 'nk-switch'" [attr.aria-label]="enabled ? 'Aktiviert' : 'Deaktiviert'" (click)="enabled = !enabled"><span class="nk-switch__knob" aria-hidden="true"></span></button>
+          {{ enabled ? 'Aktiviert' : 'Deaktiviert' }}
+        </span>
+        <div class="nk-section">
+          <h3 class="nk-section__title">Tags</h3>
+          <div class="se-chips">
             @for (tag of tags(); track tag) {
-              <span
-                class="tag-chip"
-                [style.background]="getTagBackground(tag)"
-                [style.border-color]="getTagBorderColor(tag)"
-              >
-                <span class="tag-dot" [style.background]="getTagColor(tag)"></span>
-                <span class="hash">#</span>{{ tag }}
-                <button class="remove-tag" (click)="removeTag(tag)">
-                  <mat-icon>close</mat-icon>
-                </button>
+              <span class="nk-tag-group">
+                <span class="nk-tag" [style]="tone(tag)"><span class="nk-tag__lens" aria-hidden="true"></span>#{{ tag }}</span>
+                <button type="button" class="nk-tag__remove" [attr.aria-label]="'#' + tag + ' entfernen'" (click)="removeTag(tag)">✕</button>
               </span>
             }
           </div>
-
-          <!-- Add Tag -->
-          <div class="add-tag-row">
-            <mat-form-field appearance="outline" class="tag-input">
-              <mat-label>Tag hinzufügen</mat-label>
-              <input
-                matInput
-                [(ngModel)]="newTag"
-                [matAutocomplete]="auto"
-                (keydown.enter)="addTag()"
-                (input)="updateFilteredTags()"
-              />
-              <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onTagSelected($event)">
-                @for (tag of filteredTags(); track tag) {
-                  <mat-option [value]="tag">
-                    <span class="autocomplete-tag">
-                      <span class="tag-dot-small" [style.background]="getTagColor(tag)"></span>
-                      <span class="hash">#</span>{{ tag }}
-                    </span>
-                  </mat-option>
-                }
-              </mat-autocomplete>
-            </mat-form-field>
-            <button mat-icon-button color="primary" (click)="addTag()" [disabled]="!newTag.trim()">
-              <mat-icon>add</mat-icon>
-            </button>
+          <div class="se-add">
+            <label class="nk-input se-grow">
+              <svg class="nk-input__icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+              <input class="nk-input__field" placeholder="Tag hinzufügen" aria-label="Tag hinzufügen" [(ngModel)]="newTag" [matAutocomplete]="auto" (keydown.enter)="addTag()" (input)="updateFilteredTags()" />
+            </label>
+            <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onTagSelected($event)">
+              @for (tag of filteredTags(); track tag) {
+                <mat-option [value]="tag"><span class="se-opt" [style]="tone(tag)"><span class="nk-tag__lens" aria-hidden="true"></span>#{{ tag }}</span></mat-option>
+              }
+            </mat-autocomplete>
+            <button type="button" class="nk-key nk-key--icon" aria-label="Tag hinzufügen" [disabled]="!newTag.trim()" (click)="addTag()"><mat-icon>add</mat-icon></button>
           </div>
         </div>
       </div>
-    </mat-dialog-content>
-
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Abbrechen</button>
-      <button mat-raised-button color="primary" (click)="save()" [disabled]="saving()">
-        @if (saving()) {
-          <mat-spinner diameter="20"></mat-spinner>
-        } @else {
+      <footer class="nk-dialog__foot">
+        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close>Abbrechen</button>
+        <button type="button" class="nk-key nk-key--accent" (click)="save()" [disabled]="saving()">
+          @if (saving()) {
+            <span class="nk-spin" aria-hidden="true"></span>
+          }
           Speichern
-        }
-      </button>
-    </mat-dialog-actions>
+        </button>
+      </footer>
+    </div>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
-    h2[mat-dialog-title] {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #9333ea;
-      margin: 0;
-      padding: 16px 24px;
+    .se {
+      width: 520px;
+      max-width: 100%;
     }
-
-    h2 mat-icon {
-      font-size: 24px;
-      width: 24px;
-      height: 24px;
-    }
-
-    mat-dialog-content {
-      padding: 0 24px;
-      min-width: 400px;
-    }
-
-    .form-content {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .full-width {
-      width: 100%;
-    }
-
-    .info-row {
+    .se-kv {
       display: flex;
       gap: 8px;
-      font-size: 12px;
-    }
-
-    .info-row .label {
-      color: rgba(255, 255, 255, 0.5);
-      min-width: 50px;
-    }
-
-    .info-row .value {
-      color: rgba(255, 255, 255, 0.8);
+      font: 500 11.5px var(--nk-font-mono);
+      color: var(--nk-iv-2);
       word-break: break-all;
     }
-
-    .toggle-row {
-      padding: 8px 0;
+    .se-kv b {
+      font-weight: 600;
+      color: var(--nk-iv);
     }
-
-    .tags-section {
-      margin-top: 8px;
+    .se-switch {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font: 600 15px var(--nk-font-ui);
     }
-
-    .tags-label {
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.5);
-      margin-bottom: 8px;
-    }
-
-    .tags-container {
+    .se-chips {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      min-height: 32px;
-      padding: 8px;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 8px;
-      margin-bottom: 12px;
+      gap: 12px;
+      padding: 3px;
     }
-
-    .tag-chip {
+    .se-chips .nk-tag {
+      height: 26px;
+      font-size: 13.5px;
+    }
+    .se-add {
+      display: flex;
+      gap: 12px;
+      padding: 3px;
+    }
+    .se-grow {
+      flex: 1;
+      min-width: 0;
+    }
+    .se-opt {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      background: rgba(147, 51, 234, 0.2);
-      border: 1px solid rgba(147, 51, 234, 0.3);
-      border-radius: 12px;
-      padding: 4px 8px 4px 10px;
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.9);
-    }
-
-    .tag-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .autocomplete-tag {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .tag-dot-small {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-    }
-
-    .remove-tag {
-      background: none;
-      border: none;
-      padding: 0;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      transition: background 0.2s;
-    }
-
-    .remove-tag:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    .remove-tag mat-icon {
-      font-size: 14px;
-      width: 14px;
-      height: 14px;
-      color: rgba(255, 255, 255, 0.6);
-    }
-
-    .add-tag-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .tag-input {
-      flex: 1;
-    }
-
-    mat-dialog-actions {
-      padding: 16px 24px;
-    }
-
-    mat-dialog-actions button[mat-raised-button] {
-      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%) !important;
-      border: none !important;
-    }
-
-    .monospace {
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    ::ng-deep .mat-mdc-form-field-subscript-wrapper {
-      display: none;
-    }
-
-    /* Slide Toggle Styling */
-    ::ng-deep .mat-mdc-slide-toggle .mdc-switch__icon {
-      display: none;
-    }
-
-    ::ng-deep .mat-mdc-slide-toggle .mdc-switch__handle {
-      background-color: rgba(255, 255, 255, 0.9) !important;
-    }
-
-    ::ng-deep .mat-mdc-slide-toggle.mat-mdc-slide-toggle-checked .mdc-switch__track {
-      background-color: rgba(147, 51, 234, 0.5) !important;
-    }
-
-    /* Autocomplete Dropdown */
-    ::ng-deep .mat-mdc-autocomplete-panel {
-      background: #1a1b1f !important;
-      border: 1px solid rgba(147, 51, 234, 0.3);
-      border-radius: 8px !important;
-      min-width: 250px !important;
-    }
-
-    ::ng-deep .mat-mdc-option {
-      color: rgba(255, 255, 255, 0.9) !important;
-    }
-
-    ::ng-deep .mat-mdc-option:hover {
-      background: rgba(147, 51, 234, 0.2) !important;
-    }
-
-    ::ng-deep .mat-mdc-option.mdc-list-item--selected {
-      background: rgba(147, 51, 234, 0.3) !important;
+      gap: 7px;
+      font: 700 var(--nk-fs-md) / 1 var(--nk-font-ui);
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class SoundEditDialogComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<SoundEditDialogComponent>);
@@ -350,22 +172,10 @@ export class SoundEditDialogComponent implements OnInit {
     return this.soundService.tagColorMap()[tag] || '#9333ea';
   }
 
-  getTagBackground(tag: string): string {
-    const color = this.getTagColor(tag);
-    return this.hexToRgba(color, 0.15);
+  tone(tag: string): string {
+    return tagToneStyle(this.getTagColor(tag));
   }
 
-  getTagBorderColor(tag: string): string {
-    const color = this.getTagColor(tag);
-    return this.hexToRgba(color, 0.35);
-  }
-
-  private hexToRgba(hex: string, alpha: number): string {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  }
 
   addTag(): void {
     const tag = this.newTag.trim().toLowerCase();

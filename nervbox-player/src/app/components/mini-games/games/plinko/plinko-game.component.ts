@@ -167,8 +167,8 @@ import { ApiService } from '../../../../core/services/api.service';
       align-items: center;
       justify-content: space-between;
       padding: 12px 16px;
-      background: linear-gradient(135deg, rgba(147, 51, 234, 0.3) 0%, rgba(236, 72, 153, 0.2) 100%);
-      border-bottom: 2px solid rgba(147, 51, 234, 0.5);
+      background: linear-gradient(135deg, rgba(75, 229, 133, 0.3) 0%, rgba(111, 203, 255, 0.2) 100%);
+      border-bottom: 2px solid rgba(75, 229, 133, 0.5);
     }
 
     .header-left {
@@ -178,18 +178,18 @@ import { ApiService } from '../../../../core/services/api.service';
     }
 
     .game-icon {
-      color: #ec4899;
+      color: #2F7FB0;
       font-size: 28px;
       width: 28px;
       height: 28px;
-      filter: drop-shadow(0 0 10px rgba(236, 72, 153, 0.5));
+      filter: drop-shadow(0 0 10px rgba(111, 203, 255, 0.5));
     }
 
     .game-title {
       font-family: 'JetBrains Mono', monospace;
       font-size: 20px;
       font-weight: 700;
-      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
+      background: linear-gradient(135deg, #1F8E4C 0%, #2F7FB0 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -203,7 +203,7 @@ import { ApiService } from '../../../../core/services/api.service';
       padding: 6px 12px;
       background: rgba(0, 0, 0, 0.3);
       border-radius: 20px;
-      border: 1px solid rgba(147, 51, 234, 0.3);
+      border: 1px solid rgba(75, 229, 133, 0.3);
     }
 
     .coin-icon {
@@ -260,7 +260,7 @@ import { ApiService } from '../../../../core/services/api.service';
       display: flex;
       align-items: center;
       background: rgba(0, 0, 0, 0.4);
-      border: 1px solid rgba(147, 51, 234, 0.3);
+      border: 1px solid rgba(75, 229, 133, 0.3);
       border-radius: 8px;
       padding: 0 12px;
     }
@@ -299,9 +299,9 @@ import { ApiService } from '../../../../core/services/api.service';
 
     .quick-bet-btn {
       padding: 6px 4px;
-      border: 1px solid rgba(147, 51, 234, 0.3);
+      border: 1px solid rgba(75, 229, 133, 0.3);
       border-radius: 4px;
-      background: rgba(147, 51, 234, 0.1);
+      background: rgba(75, 229, 133, 0.1);
       color: rgba(255, 255, 255, 0.7);
       font-family: 'JetBrains Mono', monospace;
       font-size: 11px;
@@ -311,8 +311,8 @@ import { ApiService } from '../../../../core/services/api.service';
     }
 
     .quick-bet-btn:hover:not(:disabled) {
-      background: rgba(147, 51, 234, 0.2);
-      border-color: #9333ea;
+      background: rgba(75, 229, 133, 0.2);
+      border-color: #1F8E4C;
       color: #ffffff;
     }
 
@@ -670,7 +670,7 @@ export class PlinkoGameComponent implements AfterViewInit, OnDestroy {
     if (multiplier >= 10) return '#f97316';
     if (multiplier >= 2) return '#eab308';
     if (multiplier >= 1) return '#22c55e';
-    return '#9333ea';
+    return '#1F8E4C';
   }
 
   private startGameLoop(): void {

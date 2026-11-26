@@ -27,57 +27,38 @@ import {
   standalone: true,
   imports: [CommonModule, MatIconModule, MatTooltipModule, MatProgressSpinnerModule],
   template: `
-    <div class="achievements-container">
+    <div class="nk-section ach">
       @if (loading()) {
-        <div class="loading-container">
-          <mat-spinner diameter="32"></mat-spinner>
-        </div>
+        <div class="ach-state"><span class="nk-spin" aria-hidden="true"></span>Achievements werden geladen …</div>
       } @else if (error()) {
-        <div class="error-container">
-          <mat-icon>error_outline</mat-icon>
-          <span>Achievements konnten nicht geladen werden</span>
-        </div>
+        <div class="ach-state">Achievements konnten nicht geladen werden</div>
       } @else {
-        <div class="achievements-header">
-          <div class="achievements-title">
-            <mat-icon>emoji_events</mat-icon>
-            <span>Achievements</span>
-          </div>
-          <div class="achievements-progress">
-            <span class="progress-text">{{ earnedCount() }} / {{ totalCount() }}</span>
-            <div class="progress-bar">
-              <div class="progress-fill" [style.width.%]="completionPercentage()"></div>
-            </div>
-          </div>
+        <h3 class="nk-section__title">Achievements <span class="nk-section__aside">{{ earnedCount() }} / {{ totalCount() }}</span></h3>
+        <div class="nk-progress nk-progress--lamp ach-progress" role="progressbar" [attr.aria-valuenow]="completionPercentage()" aria-valuemin="0" aria-valuemax="100" [attr.aria-label]="earnedCount() + ' von ' + totalCount() + ' Achievements'">
+          <span class="nk-progress__fill" [style.width.%]="completionPercentage()"></span>
         </div>
-
-        <div class="achievements-grid nervbox-scrollbar">
+        <div class="ach-felt" [class.ach-felt--compact]="compact">
           @for (category of groupedAchievements(); track category.category) {
-            <div class="category-section">
-              <h4 class="category-title">
-                <mat-icon>{{ category.categoryIcon }}</mat-icon>
-                {{ category.categoryName }}
-              </h4>
-              <div class="category-achievements">
-                @for (achievement of category.achievements; track achievement.id) {
+            <div class="ach-group">
+              <span class="ach-group__name">{{ category.categoryName }}</span>
+              <div class="ach-pins">
+                @for (a of category.achievements; track a.id) {
                   <div
-                    class="achievement-item"
-                    [class.earned]="achievement.earned"
-                    [matTooltip]="getTooltipText(achievement)"
+                    [class]="a.earned ? 'nk-pin' : 'nk-pin nk-pin--locked'"
+                    [style]="pinStyle(category.category)"
+                    [matTooltip]="getTooltipText(a)"
+                    matTooltipClass="nk-tip-multiline"
                     matTooltipPosition="above"
+                    tabindex="0"
+                    [attr.aria-label]="a.name + (a.earned ? ', verdient' : ', noch offen')"
                   >
-                    <div class="achievement-icon-container">
-                      <mat-icon class="achievement-icon">{{ achievement.icon }}</mat-icon>
-                      @if (achievement.earned) {
-                        <div class="earned-checkmark">
-                          <mat-icon>check_circle</mat-icon>
-                        </div>
+                    <span class="nk-pin__badge">
+                      <mat-icon class="ach-icon" aria-hidden="true">{{ a.icon }}</mat-icon>
+                      @if (a.rewardCredits > 0) {
+                        <span class="nk-pin__reward">+{{ a.rewardCredits }}</span>
                       }
-                    </div>
-                    <span class="achievement-name">{{ achievement.name }}</span>
-                    @if (achievement.rewardCredits > 0) {
-                      <span class="reward-badge">+{{ achievement.rewardCredits }}</span>
-                    }
+                    </span>
+                    <span class="nk-pin__name">{{ a.name }}</span>
                   </div>
                 }
               </div>
@@ -87,207 +68,70 @@ import {
       }
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
-    .achievements-container {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
+    :host {
+      display: block;
+      min-width: 0;
     }
-
-    .loading-container,
-    .error-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      padding: 32px 24px;
-      color: rgba(255, 255, 255, 0.5);
-    }
-
-    .error-container mat-icon {
-      font-size: 36px;
-      width: 36px;
-      height: 36px;
-      color: #ef4444;
-    }
-
-    .achievements-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .achievements-title {
+    .ach-state {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.8);
+      gap: 10px;
+      padding: 18px 4px;
+      color: var(--nk-iv-2);
+      font: 500 13px var(--nk-font-mono);
     }
-
-    .achievements-title mat-icon {
-      color: #fbbf24;
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
+    .ach-progress {
+      margin: 0 2px 4px;
     }
-
-    .achievements-progress {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .progress-text {
-      font-size: 12px;
-      font-family: 'JetBrains Mono', monospace;
-      color: rgba(255, 255, 255, 0.5);
-    }
-
-    .progress-bar {
-      width: 60px;
-      height: 6px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 3px;
-      overflow: hidden;
-    }
-
-    .progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #9333ea, #ec4899);
-      border-radius: 3px;
-      transition: width 0.3s ease;
-    }
-
-    .achievements-grid {
-      max-height: 300px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .category-section {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .category-title {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin: 0;
-      font-size: 11px;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.4);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .category-title mat-icon {
-      font-size: 14px;
-      width: 14px;
-      height: 14px;
-      color: rgba(147, 51, 234, 0.6);
-    }
-
-    .category-achievements {
+    .ach-felt {
+      position: relative;
+      padding: 16px 18px;
+      border-radius: 10px;
       display: flex;
       flex-wrap: wrap;
+      align-content: flex-start;
+      gap: 16px 26px;
+      background: radial-gradient(rgb(255 255 255 / 0.035) 0.7px, transparent 1px) 0 0 / 3px 3px,
+        radial-gradient(ellipse 520px 300px at 0 0, rgb(255 206 140 / 0.12), rgb(255 206 140 / 0)),
+        linear-gradient(160deg, #2b2620, #1d1a16);
+      box-shadow: inset 2px 3px 10px rgb(0 0 0 / 0.85), inset 0 0 0 1px rgb(0 0 0 / 0.6), 1px 1px 0 rgb(255 226 176 / 0.16);
+    }
+    .ach-felt--compact {
+      gap: 12px 18px;
+      padding: 12px;
+    }
+    .ach-group {
+      display: flex;
+      flex-direction: column;
       gap: 8px;
     }
-
-    .achievement-item {
+    .ach-group__name {
+      font: 700 11px/1 var(--nk-font-ui);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--nk-iv-2);
+    }
+    .ach-pins {
       display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      transition: all 0.2s ease;
-      opacity: 0.4;
-      filter: grayscale(100%);
-      cursor: default;
+      flex-wrap: wrap;
+      gap: 4px;
     }
-
-    .achievement-item.earned {
-      opacity: 1;
-      filter: none;
-      background: rgba(147, 51, 234, 0.1);
-      border-color: rgba(147, 51, 234, 0.3);
+    .nk-pin {
+      width: 92px;
+      outline: none;
     }
-
-    .achievement-item.earned:hover {
-      background: rgba(147, 51, 234, 0.15);
-      border-color: rgba(147, 51, 234, 0.4);
+    .nk-pin:focus-visible .nk-pin__badge {
+      outline: 2px solid var(--nk-iv);
+      outline-offset: 4px;
     }
-
-    .achievement-icon-container {
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .achievement-icon {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-      color: rgba(255, 255, 255, 0.5);
-    }
-
-    .achievement-item.earned .achievement-icon {
-      color: #fbbf24;
-    }
-
-    .earned-checkmark {
-      position: absolute;
-      bottom: -4px;
-      right: -4px;
-      background: #1a1a2e;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .earned-checkmark mat-icon {
-      font-size: 12px;
-      width: 12px;
-      height: 12px;
-      color: #22c55e;
-    }
-
-    .achievement-name {
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.7);
-      white-space: nowrap;
-    }
-
-    .achievement-item.earned .achievement-name {
-      color: rgba(255, 255, 255, 0.9);
-    }
-
-    .reward-badge {
-      font-size: 10px;
-      font-family: 'JetBrains Mono', monospace;
-      padding: 2px 6px;
-      background: rgba(251, 191, 36, 0.2);
-      color: #fbbf24;
-      border-radius: 4px;
-    }
-
-    .achievement-item:not(.earned) .reward-badge {
-      background: rgba(255, 255, 255, 0.05);
-      color: rgba(255, 255, 255, 0.3);
+    .ach-icon {
+      width: 24px;
+      height: 24px;
+      font-size: 24px;
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class AchievementDisplayComponent implements OnInit, OnChanges {
   @Input() userId!: number;
@@ -368,6 +212,22 @@ export class AchievementDisplayComponent implements OnInit, OnChanges {
         this.loading.set(false);
       },
     });
+  }
+
+  /** Emaille-Farbe je Kategorie */
+  pinStyle(category: string): string {
+    const c: Record<string, [string, string]> = {
+      General: ['#5E86AE', '94 134 174'],
+      SoundPlayback: ['#C33A2F', '195 58 47'],
+      SoundCreation: ['#2B8C86', '43 140 134'],
+      MiniGames: ['#C27A22', '194 122 34'],
+      Gambling: ['#8C6C12', '170 132 22'],
+      Chat: ['#4E7BA6', '78 123 166'],
+      Social: ['#9C5F63', '156 95 99'],
+      Wealth: ['#6E7F2A', '110 127 42'],
+    };
+    const [hex, rgb] = c[category] ?? ['#5A5346', '90 83 70'];
+    return `--nk-pin-c: ${hex}; --nk-pin-rgb: ${rgb}`;
   }
 
   getTooltipText(achievement: UserAchievementInfo): string {

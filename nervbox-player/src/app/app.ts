@@ -32,11 +32,12 @@ import { TagWizardDialogComponent } from './components/admin/tag-wizard-dialog.c
 import { UserManagementDialogComponent } from './components/admin/user-management-dialog.component';
 import { CreditSettingsDialogComponent } from './components/admin/credit-settings-dialog.component';
 import { ChatSidebarComponent } from './components/chat/chat-sidebar.component';
-import { EarnCoinsFabComponent } from './components/mini-games/earn-coins-fab.component';
-import { ShopFabComponent } from './components/shop/shop-fab.component';
 import { AvatarUploadDialogComponent } from './components/avatar-upload-dialog/avatar-upload-dialog.component';
 import { SoundUploadDialogComponent } from './components/sound-upload-dialog/sound-upload-dialog.component';
 import { AchievementToastComponent } from './components/shared/achievement-toast/achievement-toast.component';
+import { ChannelStripComponent } from './components/channels/channel-strip.component';
+import { MobileBarComponent, MobileAction, MobileView } from './components/mobile/mobile-bar.component';
+import { NowPlayingService } from './core/services/now-playing.service';
 import { SoundService } from './core/services/sound.service';
 import { AuthService } from './core/services/auth.service';
 import { SignalRService } from './core/services/signalr.service';
@@ -48,14 +49,6 @@ import { AvatarService } from './core/services/avatar.service';
 import { AchievementService } from './core/services/achievement.service';
 import { ConfigService } from './core/services/config.service';
 import { Sound } from './core/models';
-
-interface Activity {
-  id: number;
-  user: string;
-  sound: string;
-  timestamp: Date;
-  fading: boolean;
-}
 
 @Component({
   selector: 'app-root',
@@ -70,323 +63,207 @@ interface Activity {
     SoundGridComponent,
     TagFilterComponent,
     ChatSidebarComponent,
-    EarnCoinsFabComponent,
-    ShopFabComponent,
     AchievementToastComponent,
+    ChannelStripComponent,
+    MobileBarComponent,
   ],
   template: `
     <!-- Dev Routes (fullscreen) -->
     @if (isDevRoute()) {
       <router-outlet />
     } @else {
-      <div class="app-container">
-        <!-- Toolbar -->
-        <app-toolbar
-          [currentSort]="currentSort()"
-          [selectionMode]="selectionService.selectionMode()"
-          [selectionCount]="selectionService.selectionCount()"
-          [showFavoritesOnly]="showFavoritesOnly()"
-          (searchChange)="onSearchChange($event)"
-          (sortChange)="onSortChange($event)"
-          (favoritesFilterToggle)="toggleFavoritesFilter()"
-          (killAllClick)="onKillAll()"
-          (adminMenuAction)="onAdminMenuAction($event)"
-          (statsClick)="onStatsClick()"
-          (chatClick)="toggleChat()"
-          (loginClick)="onLoginClick()"
-          (changePasswordClick)="onChangePasswordClick()"
-          (changeAvatarClick)="onChangeAvatarClick()"
-          (uploadClick)="onUploadClick()"
-          (profileClick)="onProfileClick()"
-          (restartTourClick)="welcomeTour.restartTour()"
-          (selectionModeToggle)="selectionService.toggleSelectionMode()"
-          (openSelectionInMixer)="selectionService.openInMixer()"
-          (clearSelection)="selectionService.clearSelection()"
-        />
+      <div class="nk-desk app-desk">
+        <div class="nk-device app-device">
+          <span class="nk-lamp nk-lamp--top" aria-hidden="true"></span>
+          <span class="nk-lamp nk-lamp--left" aria-hidden="true"></span>
+          <span class="nk-screw nk-screw--tl" aria-hidden="true"></span>
+          <span class="nk-screw nk-screw--tr" aria-hidden="true"></span>
+          <span class="nk-screw nk-screw--bl" aria-hidden="true"></span>
+          <span class="nk-screw nk-screw--br" aria-hidden="true"></span>
 
-        <!-- Main Layout -->
-        <div class="main-layout">
-          <!-- Main Content -->
-          <main class="main-content">
-            <!-- Tag Filter -->
-            @if (soundService.sounds().length > 0) {
-              <app-tag-filter
-                [tags]="allTags()"
-                [tagColors]="soundService.tagColorMap()"
-                [pinnedTags]="soundService.pinnedTagNames()"
-                (selectedTagsChange)="onTagsChange($event)"
-              />
-            }
+          <app-toolbar
+            [currentSort]="currentSort()"
+            [selectionMode]="selectionService.selectionMode()"
+            [selectionCount]="selectionService.selectionCount()"
+            [showFavoritesOnly]="showFavoritesOnly()"
+            [chatOpen]="showChat()"
+            (searchChange)="onSearchChange($event)"
+            (sortChange)="onSortChange($event)"
+            (favoritesFilterToggle)="toggleFavoritesFilter()"
+            (killAllClick)="onKillAll()"
+            (adminMenuAction)="onAdminMenuAction($event)"
+            (statsClick)="onStatsClick()"
+            (chatClick)="toggleChat()"
+            (loginClick)="onLoginClick()"
+            (changePasswordClick)="onChangePasswordClick()"
+            (changeAvatarClick)="onChangeAvatarClick()"
+            (uploadClick)="onUploadClick()"
+            (profileClick)="onProfileClick()"
+            (restartTourClick)="welcomeTour.restartTour()"
+            (selectionModeToggle)="selectionService.toggleSelectionMode()"
+            (openSelectionInMixer)="selectionService.openInMixer()"
+            (clearSelection)="selectionService.clearSelection()"
+            (randomClick)="onPlayRandom()"
+          />
 
-            <!-- Sound Grid -->
-            @if (soundService.loading()) {
-              <div class="loading-container">
-                <mat-spinner diameter="48"></mat-spinner>
-                <p>Sounds werden geladen...</p>
-              </div>
-            } @else if (soundService.error()) {
-              <div class="error-container">
-                <span class="error-icon">!</span>
-                <p>{{ soundService.error() }}</p>
-                <button class="retry-btn" (click)="loadSounds()">Erneut versuchen</button>
-              </div>
-            } @else {
-              <app-sound-grid
-                [sounds]="sortedSounds()"
-                [searchQuery]="searchQuery()"
-                [selectedTags]="selectedTags()"
-                [tagColors]="soundService.tagColorMap()"
-                [selectionMode]="selectionService.selectionMode()"
-                [selectedHashes]="selectionService.selectedSounds()"
-                (playSound)="onPlaySound($event)"
-                (editSound)="onEditSound($event)"
-                (toggleSound)="onToggleSound($event)"
-                (deleteSound)="onDeleteSound($event)"
-                (selectionToggle)="selectionService.toggleSelection($event.hash)"
-              />
-            }
-          </main>
-
-          <!-- Resizable Divider -->
-          @if (showChat()) {
-            <div
-              class="resize-divider"
-              (mousedown)="startResize($event)"
-              (touchstart)="startResizeTouch($event)"
-            >
-              <div class="divider-handle"></div>
-            </div>
+          @if (soundService.sounds().length > 0) {
+            <app-tag-filter
+              [tags]="allTags()"
+              [tagColors]="soundService.tagColorMap()"
+              [pinnedTags]="soundService.pinnedTagNames()"
+              [tagCounts]="tagCounts()"
+              [soundCount]="soundService.sounds().length"
+              (selectedTagsChange)="onTagsChange($event)"
+            />
           }
 
-          <!-- Chat Sidebar (Desktop) -->
-          @if (showChat()) {
-            <app-chat-sidebar [style.width.px]="chatWidth()" />
-          }
-        </div>
+          <div class="app-body" [class.app-body--chat]="isMobile() && mobileView() === 'chat'">
+            <main class="app-main">
+              @if (soundService.loading()) {
+                <div class="nk-plate app-state">
+                  <div class="nk-watermark" aria-hidden="true">CABD</div>
+                  <div class="nk-empty app-state__box" role="status">
+                    <span class="nk-led nk-led--lamp nk-led--blink" aria-hidden="true"></span>
+                    <span class="nk-empty__title">Sounds werden geladen …</span>
+                  </div>
+                </div>
+              } @else if (soundService.error()) {
+                <div class="nk-plate app-state">
+                  <div class="nk-watermark" aria-hidden="true">CABD</div>
+                  <div class="nk-empty app-state__box" role="alert">
+                    <span class="nk-led nk-led--danger nk-led--blink" aria-hidden="true"></span>
+                    <span class="nk-empty__title">{{ soundService.error() }}</span>
+                    <button type="button" class="nk-key" (click)="loadSounds()">Erneut versuchen</button>
+                  </div>
+                </div>
+              } @else {
+                <app-sound-grid
+                  [sounds]="sortedSounds()"
+                  [searchQuery]="searchQuery()"
+                  [selectedTags]="selectedTags()"
+                  [tagColors]="soundService.tagColorMap()"
+                  [selectionMode]="selectionService.selectionMode()"
+                  [selectedHashes]="selectionService.selectedSounds()"
+                  [showFeatured]="showFeatured()"
+                  (playSound)="onPlaySound($event)"
+                  (editSound)="onEditSound($event)"
+                  (toggleSound)="onToggleSound($event)"
+                  (deleteSound)="onDeleteSound($event)"
+                  (selectionToggle)="selectionService.toggleSelection($event.hash)"
+                />
+              }
+            </main>
 
-        <!-- Mini-Games FAB (Admin only) -->
-        <app-earn-coins-fab />
-
-        <!-- Shop FAB -->
-        <app-shop-fab />
-
-        <!-- Achievement Toast -->
-        <app-achievement-toast />
-
-        <!-- Activity Bar -->
-        @if (recentActivity().length > 0) {
-          <div class="activity-bar">
-            @for (activity of recentActivity(); track activity.id) {
-              <div class="activity-item" [class.fading]="activity.fading">
-                <span class="activity-icon">▶</span>
-                <span class="activity-user">{{ activity.user }}</span>
-                <span class="activity-text">spielt</span>
-                <span class="activity-sound">{{ activity.sound }}</span>
+            @if (showChat() && !isMobile()) {
+              <div
+                class="app-grip"
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="Chatbreite ändern"
+                (mousedown)="startResize($event)"
+                (touchstart)="startResizeTouch($event)"
+              >
+                <span class="app-grip__handle" aria-hidden="true"></span>
               </div>
+              <app-chat-sidebar class="app-chat" [style.width.px]="chatWidth()" />
+            }
+            @if (isMobile() && mobileView() === 'chat') {
+              <app-chat-sidebar class="app-chat-mobile" />
             }
           </div>
-        }
+
+          @if (isMobile()) {
+            <app-mobile-bar [view]="mobileView()" (viewChange)="mobileView.set($event)" (action)="onMobileAction($event)" (again)="onPlayAgain()" />
+          } @else {
+            <app-channel-strip class="app-strip" (again)="onPlayAgain()" (killAll)="onKillAll()" />
+          }
+        </div>
       </div>
+
+      <app-achievement-toast />
     }
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
-    .app-container {
-      display: flex;
-      flex-direction: column;
+    .app-desk {
       height: 100vh;
-      background: #0a0a0a;
+      height: 100dvh;
+      box-sizing: border-box;
     }
 
-    .main-layout {
-      flex: 1;
+    .app-device {
+      height: 100%;
       display: flex;
-      margin-top: 56px;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .app-body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      gap: 0;
+    }
+
+    .app-main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .app-state {
+      flex: 1;
       min-height: 0;
     }
 
-    .main-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow-y: auto;
-      min-height: 0;
+    .app-state__box {
+      position: absolute;
+      left: 28px;
+      top: 24px;
+      z-index: 2;
     }
 
-    .loading-container,
-    .error-container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      color: rgba(255, 255, 255, 0.7);
-    }
-
-    .loading-container p,
-    .error-container p {
-      font-size: 14px;
-    }
-
-    .error-icon {
-      font-size: 48px;
-      width: 60px;
-      height: 60px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(239, 68, 68, 0.2);
-      border: 2px solid rgba(239, 68, 68, 0.5);
-      border-radius: 50%;
-      color: #ef4444;
-    }
-
-    .retry-btn {
-      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
-      border: none;
-      border-radius: 8px;
-      padding: 10px 20px;
-      color: white;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .retry-btn:hover {
-      box-shadow: 0 0 20px rgba(147, 51, 234, 0.5);
-      transform: translateY(-2px);
-    }
-
-    .activity-bar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 1000;
-      background: rgba(10, 10, 10, 0.95);
-      border-top: 2px solid rgba(147, 51, 234, 0.5);
-      box-shadow: 0 -4px 20px rgba(147, 51, 234, 0.3);
-      padding: 8px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      max-height: 120px;
-      overflow-y: auto;
-    }
-
-    .activity-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 12px;
-      background: linear-gradient(90deg, rgba(147, 51, 234, 0.15) 0%, rgba(236, 72, 153, 0.1) 100%);
-      border-radius: 6px;
-      border-left: 3px solid #9333ea;
-      font-size: 13px;
-      animation: slideIn 0.3s ease;
-      transition: opacity 0.5s ease;
-    }
-
-    .activity-item.fading {
-      opacity: 0.4;
-    }
-
-    @keyframes slideIn {
-      from {
-        transform: translateX(-20px);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-
-    .activity-icon {
-      color: #22c55e;
-      font-size: 12px;
-      animation: pulse 1s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%,
-      100% {
-        opacity: 1;
-      }
-      50% {
-        opacity: 0.5;
-      }
-    }
-
-    .activity-user {
-      color: #9333ea;
-      font-weight: 600;
-    }
-
-    .activity-text {
-      color: rgba(255, 255, 255, 0.6);
-    }
-
-    .activity-sound {
-      color: #ec4899;
-      font-weight: 500;
-    }
-
-    ::ng-deep .mat-mdc-progress-spinner circle {
-      stroke: #9333ea !important;
-    }
-
-    /* Resize Divider */
-    .resize-divider {
-      width: 8px;
-      background: rgba(147, 51, 234, 0.1);
+    .app-grip {
+      width: 12px;
+      flex-shrink: 0;
       cursor: col-resize;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.2s ease;
-      flex-shrink: 0;
     }
 
-    .resize-divider:hover {
-      background: rgba(147, 51, 234, 0.3);
-    }
-
-    .resize-divider:active {
-      background: rgba(147, 51, 234, 0.5);
-    }
-
-    .divider-handle {
-      width: 4px;
-      height: 40px;
-      background: rgba(147, 51, 234, 0.5);
+    .app-grip__handle {
+      width: 3px;
+      height: 54px;
       border-radius: 2px;
-      transition: all 0.2s ease;
+      background: repeating-linear-gradient(180deg, rgb(0 0 0 / 0.55) 0 2px, rgb(var(--nk-lamp-rgb) / 0.16) 2px 3px, transparent 3px 5px);
     }
 
-    .resize-divider:hover .divider-handle {
-      background: #9333ea;
-      height: 60px;
-      box-shadow: 0 0 10px rgba(147, 51, 234, 0.5);
+    .app-grip:hover .app-grip__handle {
+      background: repeating-linear-gradient(180deg, rgb(0 0 0 / 0.6) 0 2px, rgb(var(--nk-lamp-rgb) / 0.5) 2px 3px, transparent 3px 5px);
+    }
+
+    .app-chat-mobile {
+      flex: 1;
+      min-width: 0;
     }
 
     @media (max-width: 768px) {
-      .resize-divider {
-        display: none;
+      .app-desk {
+        padding: 0;
       }
-    }
-
-    :host ::ng-deep app-chat-sidebar {
-      display: block;
-    }
-
-    @media (max-width: 768px) {
-      :host ::ng-deep app-chat-sidebar {
+      .app-device {
+        border-radius: 0;
+        padding: 10px 10px 8px;
+        gap: 8px;
+      }
+      .app-body--chat .app-main {
         display: none;
       }
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class App implements OnInit {
   readonly soundService = inject(SoundService);
@@ -398,6 +275,7 @@ export class App implements OnInit {
   readonly avatarService = inject(AvatarService);
   readonly achievementService = inject(AchievementService);
   private readonly configService = inject(ConfigService);
+  readonly nowPlaying = inject(NowPlayingService);
   private readonly signalR = inject(SignalRService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
@@ -407,38 +285,34 @@ export class App implements OnInit {
 
   readonly searchQuery = signal('');
   readonly selectedTags = signal<string[]>([]);
-  readonly recentActivity = signal<Activity[]>([]);
   readonly currentSort = signal<SortOption>('plays-desc');
   readonly showChat = signal(true); // Desktop: Chat defaultmäßig offen
   readonly chatWidth = signal(335); // Default chat width in px
   readonly showFavoritesOnly = signal(false);
-  private activityCounter = 0;
   private isResizing = false;
   private readonly minChatWidth = 280;
   private readonly maxChatWidth = 600;
-  private processedEventTimes = new Set<string>();
   private randomSeed = Math.random();
 
+  /** Anzahl Sounds je Tag (Zähler an den Tag-Tasten) */
+  readonly tagCounts = computed(() => {
+    const counts: Record<string, number> = {};
+    for (const s of this.soundService.sounds()) {
+      for (const t of s.tags ?? []) counts[t] = (counts[t] ?? 0) + 1;
+    }
+    return counts;
+  });
+
+  /** Top-Sounds groß, solange „Meistgespielt“ ohne Filter angezeigt wird */
+  readonly showFeatured = computed(
+    () =>
+      this.currentSort() === 'plays-desc' &&
+      !this.searchQuery().trim() &&
+      this.selectedTags().length === 0 &&
+      !this.showFavoritesOnly(),
+  );
+
   constructor() {
-    // React to sound events for activity bar
-    effect(() => {
-      const events = this.signalR.soundEvents();
-      if (events.length > 0) {
-        const latestEvent = events[0];
-        // Check if we already processed this event
-        if (!this.processedEventTimes.has(latestEvent.time)) {
-          this.processedEventTimes.add(latestEvent.time);
-          this.addActivity(latestEvent.initiator.name, latestEvent.fileName);
-
-          // Cleanup old entries (keep last 50)
-          if (this.processedEventTimes.size > 50) {
-            const firstKey = this.processedEventTimes.values().next().value;
-            if (firstKey) this.processedEventTimes.delete(firstKey);
-          }
-        }
-      }
-    });
-
     // Load favorites, votes, and avatar when user logs in
     effect(() => {
       if (this.authService.isLoggedIn()) {
@@ -496,6 +370,7 @@ export class App implements OnInit {
   });
 
   ngOnInit(): void {
+    this.mobileQuery.addEventListener('change', e => this.isMobile.set(e.matches));
     // Load config first (playback mode etc.)
     this.configService.loadConfig().subscribe();
 
@@ -574,36 +449,59 @@ export class App implements OnInit {
     });
   }
 
-  private addActivity(user: string, sound: string): void {
-    const id = ++this.activityCounter;
-    const activity: Activity = {
-      id,
-      user,
-      sound,
-      timestamp: new Date(),
-      fading: false,
-    };
+  /** Schmaler Schirm: Taschen-Sampler-Layout mit unterer Tastenreihe */
+  private readonly mobileQuery = window.matchMedia('(max-width: 768px)');
+  readonly isMobile = signal(this.mobileQuery.matches);
+  readonly mobileView = signal<MobileView>('sounds');
 
-    // Add to beginning of list, keep max 5
-    this.recentActivity.update((list) => [activity, ...list].slice(0, 5));
+  onMobileAction(action: MobileAction): void {
+    switch (action) {
+      case 'stats': void this.onStatsClick(); return;
+      case 'selection': void this.selectionService.toggleSelectionMode(); return;
+      case 'mixer':
+        this.achievementService.markMixerVisited().subscribe();
+        window.location.href = '/mixer';
+        return;
+      case 'profile': void this.onProfileClick(); return;
+      case 'avatar': void this.onChangeAvatarClick(); return;
+      case 'upload': void this.onUploadClick(); return;
+      case 'password': void this.onChangePasswordClick(); return;
+      case 'tour': void this.welcomeTour.restartTour(); return;
+      case 'logout': void this.authService.logout(); return;
+      case 'login': void this.onLoginClick(); return;
+      case 'admin-users': void this.onAdminMenuAction('users'); return;
+      case 'admin-tags': void this.onAdminMenuAction('tags'); return;
+      case 'admin-wizard': void this.onAdminMenuAction('tag-wizard'); return;
+      case 'admin-credits': void this.onAdminMenuAction('credits'); return;
+      case 'kill-all': void this.onKillAll(); return;
+    }
+  }
 
-    // Start fading after 4 seconds
-    setTimeout(() => {
-      this.recentActivity.update((list) =>
-        list.map((a) => (a.id === id ? { ...a, fading: true } : a)),
-      );
-    }, 4000);
+  /** Zufall-Taste: spielt einen zufälligen aktiven Sound aus der aktuellen Ansicht */
+  onPlayRandom(): void {
+    const query = this.searchQuery().toLowerCase().trim();
+    const tags = this.selectedTags();
+    const pool = this.sortedSounds().filter(
+      s =>
+        s.enabled &&
+        (!query || s.name.toLowerCase().includes(query) || s.fileName.toLowerCase().includes(query)) &&
+        (tags.length === 0 || tags.some(t => s.tags?.includes(t))),
+    );
+    if (!pool.length) return;
+    this.onPlaySound(pool[Math.floor(Math.random() * pool.length)]);
+  }
 
-    // Remove after 6 seconds
-    setTimeout(() => {
-      this.recentActivity.update((list) => list.filter((a) => a.id !== id));
-    }, 6000);
+  /** Nochmal-Taste: letzten eigenen Sound erneut abspielen */
+  onPlayAgain(): void {
+    const hash = this.nowPlaying.lastOwnHash();
+    const sound = hash ? this.soundService.sounds().find(s => s.hash === hash) : undefined;
+    if (sound) this.onPlaySound(sound);
   }
 
   onKillAll(): void {
     this.soundService.killAll().subscribe({
       next: () => {
-        this.recentActivity.set([]);
+        this.nowPlaying.clear();
         this.snackBar.open('Alle Sounds gestoppt', 'OK', { duration: 2000 });
       },
       error: () => {
@@ -614,7 +512,7 @@ export class App implements OnInit {
 
   onStatsClick(): void {
     this.dialog.open(StatsDialogComponent, {
-      width: '600px',
+      maxWidth: '95vw',
       panelClass: 'dark-dialog',
     });
   }
@@ -623,20 +521,18 @@ export class App implements OnInit {
     switch (action) {
       case 'users':
         this.dialog.open(UserManagementDialogComponent, {
-          width: '900px',
           maxWidth: '95vw',
           panelClass: 'dark-dialog',
         });
         break;
       case 'tags':
         this.dialog.open(TagManagerDialogComponent, {
-          width: '500px',
+          maxWidth: '95vw',
           panelClass: 'dark-dialog',
         });
         break;
-      case 'tag-wizard':
+      case 'tag-wizard': {
         const dialogRef = this.dialog.open(TagWizardDialogComponent, {
-          width: '900px',
           maxWidth: '95vw',
           maxHeight: '90vh',
           panelClass: 'dark-dialog',
@@ -648,9 +544,9 @@ export class App implements OnInit {
           }
         });
         break;
+      }
       case 'credits':
         this.dialog.open(CreditSettingsDialogComponent, {
-          width: '550px',
           maxWidth: '95vw',
           panelClass: 'dark-dialog',
         });
@@ -677,7 +573,7 @@ export class App implements OnInit {
 
   private openLoginDialog(onSuccess?: () => void): void {
     const dialogRef = this.dialog.open(LoginDialogComponent, {
-      width: '400px',
+      maxWidth: '95vw',
       panelClass: 'dark-dialog',
     });
 
@@ -695,7 +591,7 @@ export class App implements OnInit {
 
   private openRegisterDialog(onSuccess?: () => void): void {
     const dialogRef = this.dialog.open(RegisterDialogComponent, {
-      width: '440px',
+      maxWidth: '95vw',
       panelClass: 'dark-dialog',
     });
 
@@ -713,7 +609,7 @@ export class App implements OnInit {
 
   onChangePasswordClick(): void {
     const dialogRef = this.dialog.open(ChangePasswordDialogComponent, {
-      width: '400px',
+      maxWidth: '95vw',
       panelClass: 'dark-dialog',
     });
 
@@ -726,7 +622,7 @@ export class App implements OnInit {
 
   onChangeAvatarClick(): void {
     const dialogRef = this.dialog.open(AvatarUploadDialogComponent, {
-      width: '500px',
+      maxWidth: '95vw',
       panelClass: 'dark-dialog',
     });
 
@@ -739,7 +635,6 @@ export class App implements OnInit {
 
   onUploadClick(): void {
     this.dialog.open(SoundUploadDialogComponent, {
-      width: '600px',
       maxWidth: '95vw',
       panelClass: 'dark-dialog',
     });
@@ -755,7 +650,7 @@ export class App implements OnInit {
     this.dialog.open(UserProfileDialogComponent, {
       data: { userId },
       panelClass: 'dark-dialog',
-      maxWidth: '600px',
+      maxWidth: '95vw',
     });
   }
 
@@ -763,7 +658,7 @@ export class App implements OnInit {
 
   onEditSound(sound: Sound): void {
     const dialogRef = this.dialog.open(SoundEditDialogComponent, {
-      width: '500px',
+      maxWidth: '95vw',
       panelClass: 'dark-dialog',
       data: {
         sound,
@@ -797,7 +692,7 @@ export class App implements OnInit {
 
   onDeleteSound(sound: Sound): void {
     const dialogRef = this.dialog.open(DeleteSoundDialogComponent, {
-      width: '450px',
+      maxWidth: '95vw',
       panelClass: 'dark-dialog',
       data: { sound } as DeleteSoundDialogData,
     });

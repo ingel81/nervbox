@@ -1,0 +1,15 @@
+/* ---------------------------------------------------------------------------
+   11 · MENÜ (Pad ⋮, Sortierung, Admin, Konto): Rauchglas-Tafel, schwebt
+   --------------------------------------------------------------------------- */
+.nk-menu { min-width: 180px; padding: 6px; display: flex; flex-direction: column; border-radius: 8px; font-family: var(--nk-font-ui); color: var(--nk-iv); background: var(--nk-face-glare), var(--nk-face-glass);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / .7), 0 0 0 1px rgb(var(--nk-lamp-rgb) / .3), var(--nk-shadow-float), 0 0 22px rgb(var(--nk-lamp-rgb) / .08); }
+.nk-menu__head { display: flex; align-items: center; gap: var(--nk-s-4); padding: 5px 9px 8px; font: 600 var(--nk-fs-label) var(--nk-font-ui); letter-spacing: var(--nk-ls-label); text-transform: uppercase; white-space: nowrap; color: var(--nk-iv); text-shadow: var(--nk-glow-text); }
+.nk-menu__head--plain { font: 700 15px var(--nk-font-ui); letter-spacing: .4px; text-transform: none; }
+.nk-menu__item { width: 100%; height: 28px; padding: 0 10px 1px 9px; display: flex; align-items: center; gap: 9px; border: 0; border-radius: 5px; cursor: pointer; background: transparent; color: var(--nk-iv); font: 600 var(--nk-fs-md)/1 var(--nk-font-ui); letter-spacing: .4px; text-align: left; white-space: nowrap; }
+.nk-menu__item:hover, .nk-menu__item--hover { background: rgb(var(--nk-lamp-rgb) / .12); box-shadow: inset 2px 0 0 var(--nk-iv); }
+.nk-menu__item--current { color: #FFFFFF; text-shadow: var(--nk-glow-key); }
+.nk-menu__item--danger { color: var(--nk-danger-text); }
+.nk-menu__item--danger:hover { background: rgb(var(--nk-danger-rgb) / .18); box-shadow: inset 2px 0 0 var(--nk-danger-lit); }
+.nk-menu__icon { width: 16px; height: 16px; flex-shrink: 0; }
+.nk-menu__hint { margin-left: auto; padding-left: 10px; font: 500 9.5px var(--nk-font-mono); letter-spacing: 0; color: var(--nk-iv-2); text-transform: none; text-shadow: none; }
+.nk-menu__divider { height: 1px; flex-shrink: 0; margin: 5px 4px; background: rgb(0 0 0 / .7); box-shadow: 0 1px 0 rgb(var(--nk-lamp-rgb) / .14); }

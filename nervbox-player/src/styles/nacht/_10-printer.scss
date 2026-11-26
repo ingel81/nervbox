@@ -1,0 +1,35 @@
+/* ---------------------------------------------------------------------------
+   10 · BONDRUCKER (Chat): Papier läuft aus dem Schlitz nach oben
+   --------------------------------------------------------------------------- */
+.nk-printer { display: flex; flex-direction: column; padding: var(--nk-s-5); }
+.nk-printer__bar { display: flex; align-items: center; gap: var(--nk-s-4); padding: 2px 3px 0; }
+.nk-printer__status { display: inline-flex; align-items: center; gap: var(--nk-s-3); margin-left: auto; }
+.nk-printer__feed { flex: 1; min-height: 0; position: relative; overflow: hidden; display: flex; flex-direction: column; padding: 20px 14px 0; }
+/* Papier: hellste matte Fläche, links grüner Widerschein der Pads */
+.nk-printer__paper { position: relative; flex: 1; min-height: 0; padding: 14px 12px 10px; display: flex; flex-direction: column; gap: var(--nk-s-4); font-family: var(--nk-font-paper); color: var(--nk-paper-ink);
+  background: radial-gradient(ellipse 70px 130px at 0% 6%, rgb(var(--nk-own-rgb) / .16), rgb(var(--nk-own-rgb) / 0) 100%), linear-gradient(90deg, rgb(0 0 0 / .1), rgb(0 0 0 / 0) 8%, rgb(0 0 0 / 0) 86%, rgb(0 0 0 / .14)), linear-gradient(180deg, rgb(0 0 0 / 0) 82%, rgb(0 0 0 / .13)), radial-gradient(ellipse 130% 105% at 0% 0%, rgb(255 240 205 / .3) 0%, rgb(255 240 205 / 0) 45%, rgb(48 30 10 / .22) 100%), var(--nk-paper);
+  box-shadow: 5px 6px 12px rgb(0 0 0 / .65), 0 0 18px rgb(var(--nk-lamp-rgb) / .1); }
+/* Abrisskante */
+.nk-printer__paper::before { content: ''; position: absolute; left: 0; right: 0; top: -7px; height: 8px; background: linear-gradient(to top left, var(--nk-paper) 50%, transparent 51%) 0 0 / 8px 8px repeat-x, linear-gradient(to top right, var(--nk-paper) 50%, transparent 51%) 0 0 / 8px 8px repeat-x; }
+.nk-printer__head { font: 700 11px var(--nk-font-paper); text-align: center; letter-spacing: .5px; padding-bottom: 8px; border-bottom: 1px dashed rgb(31 27 22 / .5); color: var(--nk-paper-ink-2); }
+.nk-printer__older { align-self: center; margin-bottom: auto; padding: 1px 6px; border: 0; background: transparent; cursor: pointer; font: 700 11px var(--nk-font-paper); letter-spacing: .5px; color: var(--nk-paper-ink); text-decoration: underline; text-underline-offset: 3px; }
+.nk-printer__msg { display: flex; flex-direction: column; gap: 3px; padding-bottom: 8px; border-bottom: 1px dashed rgb(31 27 22 / .5); }
+.nk-printer__msg--own { padding: 6px 8px 5px; margin: 0 -4px; border-bottom: 0; background: var(--nk-paper-ink); color: var(--nk-paper); }   /* eigene Nachricht: invers gedruckt */
+.nk-printer__msg--own .nk-avatar--paper { background: var(--nk-paper); color: var(--nk-paper-ink); }
+.nk-printer__meta { display: flex; align-items: center; gap: var(--nk-s-3); font-size: 12px; }
+.nk-printer__user { font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
+.nk-printer__time { margin-left: auto; color: var(--nk-paper-ink-2); }
+.nk-printer__msg--own .nk-printer__time { color: var(--nk-iv-2); }
+.nk-printer__text { font-size: 14px; line-height: 1.3; }
+/* GIF-Vorschau: Rasterdruck-Bild mit Ecketikett */
+.nk-printer__gif { position: relative; align-self: flex-start; width: 150px; height: 84px; margin-top: 2px; overflow: hidden; border: 1.5px solid var(--nk-paper-ink); border-radius: 2px;
+  background: radial-gradient(var(--nk-paper-ink) 1.1px, transparent 1.5px) 0 0 / 4px 4px, radial-gradient(var(--nk-paper-ink) .7px, transparent 1.1px) 2px 2px / 4px 4px,
+    radial-gradient(circle 17px at 34% 40%, rgb(31 27 22 / .8) 0 96%, transparent 100%), radial-gradient(ellipse 34px 30px at 34% 104%, rgb(31 27 22 / .8) 0 96%, transparent 100%),
+    radial-gradient(circle 44px at 78% 30%, rgb(255 244 216 / .75), rgb(255 244 216 / 0) 100%), linear-gradient(135deg, #7E7765, #C9BD9C); }
+.nk-printer__gif-tag { position: absolute; left: 0; bottom: 0; padding: 1px 6px 0; background: var(--nk-paper-ink); color: var(--nk-paper); font: 700 10px/14px var(--nk-font-paper); letter-spacing: 1px; }
+.nk-printer__slot { position: relative; z-index: 2; height: 13px; flex-shrink: 0; margin: 0 4px; border-radius: 4px; background: linear-gradient(180deg, #030302 0%, #0E0C0A 55%, #2A2620 100%); box-shadow: inset 0 3px 4px #000000, 0 1px 0 rgb(var(--nk-lamp-rgb) / .16), 0 -1px 0 rgb(0 0 0 / .5); }
+.nk-printer__input { display: flex; align-items: center; gap: var(--nk-s-5); margin-top: 12px; padding: 0 3px 3px; }
+/* Rate-Limit-Hinweis über der Eingabe */
+.nk-printer__warn { display: flex; align-items: center; gap: var(--nk-s-4); margin: 10px 3px 0; padding: 5px 9px; border-radius: 5px; background: #17140F; color: var(--nk-warn-text); font: 600 13px/1.25 var(--nk-font-ui); letter-spacing: .3px; box-shadow: inset 0 0 0 1px rgb(var(--nk-warn-rgb) / .55), 0 0 12px rgb(var(--nk-warn-rgb) / .18); }
+/* Gast: Hinweis statt Eingabe */
+.nk-printer__hint { height: 38px; margin: 12px 3px 3px; display: flex; align-items: center; justify-content: center; gap: var(--nk-s-4); border-radius: var(--nk-r-md); color: var(--nk-iv-2); font: 600 14px var(--nk-font-ui); letter-spacing: .6px; background: var(--nk-face-field); box-shadow: var(--nk-shadow-recess); }

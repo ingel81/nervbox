@@ -23,123 +23,55 @@ import { ApiService } from '../../core/services/api.service';
     MatProgressSpinnerModule,
   ],
   template: `
-    <h2 mat-dialog-title>Kennwort ändern</h2>
-
-    <form (ngSubmit)="onSubmit()">
-      <mat-dialog-content>
-        <mat-form-field appearance="outline">
-          <mat-label>Aktuelles Kennwort</mat-label>
-          <input
-            matInput
-            [type]="hideOld() ? 'password' : 'text'"
-            [(ngModel)]="oldPassword"
-            name="oldPassword"
-            required
-            autocomplete="current-password"
-          />
-          <button mat-icon-button matSuffix type="button" (click)="hideOld.set(!hideOld())">
-            <mat-icon>{{ hideOld() ? 'visibility_off' : 'visibility' }}</mat-icon>
-          </button>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Neues Kennwort</mat-label>
-          <input
-            matInput
-            [type]="hideNew() ? 'password' : 'text'"
-            [(ngModel)]="newPassword1"
-            name="newPassword1"
-            required
-            autocomplete="new-password"
-          />
-          <button mat-icon-button matSuffix type="button" (click)="hideNew.set(!hideNew())">
-            <mat-icon>{{ hideNew() ? 'visibility_off' : 'visibility' }}</mat-icon>
-          </button>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Neues Kennwort bestätigen</mat-label>
-          <input
-            matInput
-            [type]="hideConfirm() ? 'password' : 'text'"
-            [(ngModel)]="newPassword2"
-            name="newPassword2"
-            required
-            autocomplete="new-password"
-          />
-          <button mat-icon-button matSuffix type="button" (click)="hideConfirm.set(!hideConfirm())">
-            <mat-icon>{{ hideConfirm() ? 'visibility_off' : 'visibility' }}</mat-icon>
-          </button>
-        </mat-form-field>
-
+    <form class="nk-dlg" (ngSubmit)="onSubmit()">
+      <header class="nk-dialog__head">
+        <h2 class="nk-dialog__title">Kennwort ändern</h2>
+        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close>✕</button>
+      </header>
+      <div class="nk-dialog__body">
+        <label class="nk-field">
+          <span class="nk-label">Aktuelles Kennwort</span>
+          <span class="nk-input">
+            <input class="nk-input__field" [type]="hideOld() ? 'password' : 'text'" [(ngModel)]="oldPassword" name="oldPassword" autocomplete="current-password" required aria-label="Aktuelles Kennwort" />
+            <button type="button" class="nk-input__eye" [attr.aria-label]="hideOld() ? 'Kennwort anzeigen' : 'Kennwort verbergen'" (click)="hideOld.set(!hideOld())"><mat-icon>{{ hideOld() ? 'visibility_off' : 'visibility' }}</mat-icon></button>
+          </span>
+        </label>
+        <label class="nk-field">
+          <span class="nk-label">Neues Kennwort</span>
+          <span class="nk-input">
+            <input class="nk-input__field" [type]="hideNew() ? 'password' : 'text'" [(ngModel)]="newPassword1" name="newPassword1" autocomplete="new-password" required aria-label="Neues Kennwort" />
+            <button type="button" class="nk-input__eye" [attr.aria-label]="hideNew() ? 'Kennwort anzeigen' : 'Kennwort verbergen'" (click)="hideNew.set(!hideNew())"><mat-icon>{{ hideNew() ? 'visibility_off' : 'visibility' }}</mat-icon></button>
+          </span>
+        </label>
+        <label class="nk-field">
+          <span class="nk-label">Neues Kennwort bestätigen</span>
+          <span class="nk-input" [class.nk-input--error]="!!newPassword2 && newPassword2 !== newPassword1">
+            <input class="nk-input__field" [type]="hideConfirm() ? 'password' : 'text'" [(ngModel)]="newPassword2" name="newPassword2" autocomplete="new-password" required aria-label="Neues Kennwort bestätigen" />
+            <button type="button" class="nk-input__eye" [attr.aria-label]="hideConfirm() ? 'Kennwort anzeigen' : 'Kennwort verbergen'" (click)="hideConfirm.set(!hideConfirm())"><mat-icon>{{ hideConfirm() ? 'visibility_off' : 'visibility' }}</mat-icon></button>
+          </span>
+        </label>
         @if (error()) {
-          <div class="error-message">{{ error() }}</div>
+          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert"><span class="nk-toast__text">{{ error() }}</span></div>
         }
-      </mat-dialog-content>
-
-      <mat-dialog-actions>
-        <button mat-button type="button" mat-dialog-close [disabled]="loading()">Abbrechen</button>
-        <button
-          mat-flat-button
-          type="submit"
-          class="submit-btn"
-          [disabled]="loading() || !isValid()"
-        >
+      </div>
+      <footer class="nk-dialog__foot">
+        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close [disabled]="loading()">Abbrechen</button>
+        <button type="submit" class="nk-key nk-key--accent" [disabled]="loading() || !isValid()">
           @if (loading()) {
-            <mat-spinner diameter="20"></mat-spinner>
-          } @else {
-            Ändern
+            <span class="nk-spin" aria-hidden="true"></span>
           }
+          Ändern
         </button>
-      </mat-dialog-actions>
+      </footer>
     </form>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
-    mat-dialog-content {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-width: 320px;
-    }
-
-    mat-form-field {
-      width: 100%;
-    }
-
-    .error-message {
-      color: #ef4444;
-      font-size: 13px;
-      padding: 8px 12px;
-      background: rgba(239, 68, 68, 0.1);
-      border-radius: 6px;
-      border-left: 3px solid #ef4444;
-    }
-
-    mat-dialog-actions {
-      padding: 16px 24px;
-      gap: 8px;
-      justify-content: flex-end;
-    }
-
-    .submit-btn {
-      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
-      color: white;
-      min-width: 100px;
-    }
-
-    .submit-btn:disabled {
-      opacity: 0.5;
-    }
-
-    .submit-btn mat-spinner {
-      display: inline-block;
-    }
-
-    ::ng-deep .submit-btn .mat-mdc-progress-spinner circle {
-      stroke: white !important;
+    .nk-dlg {
+      width: 420px;
+      max-width: 100%;
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class ChangePasswordDialogComponent {
   private readonly api = inject(ApiService);

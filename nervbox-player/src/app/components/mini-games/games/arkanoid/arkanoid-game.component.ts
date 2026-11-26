@@ -151,8 +151,8 @@ import { CreditService } from '../../../../core/services/credit.service';
       align-items: center;
       justify-content: space-between;
       padding: 12px 16px;
-      background: linear-gradient(90deg, rgba(147, 51, 234, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
-      border-bottom: 1px solid rgba(147, 51, 234, 0.3);
+      background: linear-gradient(90deg, rgba(75, 229, 133, 0.2) 0%, rgba(111, 203, 255, 0.2) 100%);
+      border-bottom: 1px solid rgba(75, 229, 133, 0.3);
     }
 
     .header-left {
@@ -182,8 +182,8 @@ import { CreditService } from '../../../../core/services/credit.service';
       align-items: center;
       gap: 6px;
       padding: 4px 10px;
-      background: rgba(147, 51, 234, 0.2);
-      border: 1px solid rgba(147, 51, 234, 0.4);
+      background: rgba(75, 229, 133, 0.2);
+      border: 1px solid rgba(75, 229, 133, 0.4);
       border-radius: 6px;
     }
 
@@ -198,7 +198,7 @@ import { CreditService } from '../../../../core/services/credit.service';
       font-family: 'JetBrains Mono', monospace;
       font-size: 16px;
       font-weight: 700;
-      color: #9333ea;
+      color: #1F8E4C;
     }
 
     .lives-display {
@@ -207,11 +207,11 @@ import { CreditService } from '../../../../core/services/credit.service';
     }
 
     .heart {
-      color: #ec4899;
+      color: #2F7FB0;
       font-size: 22px;
       width: 22px;
       height: 22px;
-      filter: drop-shadow(0 0 4px rgba(236, 72, 153, 0.5));
+      filter: drop-shadow(0 0 4px rgba(111, 203, 255, 0.5));
     }
 
     .close-btn {
@@ -245,13 +245,13 @@ import { CreditService } from '../../../../core/services/credit.service';
       left: 50%;
       transform: translate(-50%, -50%);
       background: rgba(10, 10, 10, 0.95);
-      border: 1px solid rgba(147, 51, 234, 0.5);
+      border: 1px solid rgba(75, 229, 133, 0.5);
       border-radius: 20px;
       padding: 32px 48px;
       text-align: center;
       z-index: 10;
       backdrop-filter: blur(10px);
-      box-shadow: 0 0 40px rgba(147, 51, 234, 0.3);
+      box-shadow: 0 0 40px rgba(75, 229, 133, 0.3);
     }
 
     .overlay-icon {
@@ -259,7 +259,7 @@ import { CreditService } from '../../../../core/services/credit.service';
       width: 64px;
       height: 64px;
       margin-bottom: 16px;
-      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
+      background: linear-gradient(135deg, #1F8E4C 0%, #2F7FB0 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -283,7 +283,7 @@ import { CreditService } from '../../../../core/services/credit.service';
       font-family: 'JetBrains Mono', monospace;
       font-size: 28px;
       font-weight: 700;
-      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
+      background: linear-gradient(135deg, #1F8E4C 0%, #2F7FB0 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -292,13 +292,13 @@ import { CreditService } from '../../../../core/services/credit.service';
 
     .level-info {
       font-size: 16px;
-      color: #9333ea;
+      color: #1F8E4C;
       font-weight: 600;
       margin-bottom: 16px;
     }
 
     .start-btn {
-      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%) !important;
+      background: linear-gradient(135deg, #1F8E4C 0%, #2F7FB0 100%) !important;
       padding: 8px 32px !important;
       font-size: 16px !important;
       margin-bottom: 16px;
@@ -312,10 +312,10 @@ import { CreditService } from '../../../../core/services/credit.service';
     @keyframes pulse-btn {
       0%,
       100% {
-        box-shadow: 0 4px 20px rgba(147, 51, 234, 0.4);
+        box-shadow: 0 4px 20px rgba(75, 229, 133, 0.4);
       }
       50% {
-        box-shadow: 0 4px 30px rgba(147, 51, 234, 0.7);
+        box-shadow: 0 4px 30px rgba(75, 229, 133, 0.7);
       }
     }
 
@@ -376,7 +376,7 @@ import { CreditService } from '../../../../core/services/credit.service';
     }
 
     .overlay-actions button[color='primary'] {
-      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
+      background: linear-gradient(135deg, #1F8E4C 0%, #2F7FB0 100%);
     }
 
     .overlay-actions button mat-icon {
@@ -389,8 +389,8 @@ import { CreditService } from '../../../../core/services/credit.service';
       align-items: center;
       justify-content: space-between;
       padding: 8px 16px;
-      background: rgba(147, 51, 234, 0.1);
-      border-top: 1px solid rgba(147, 51, 234, 0.2);
+      background: rgba(75, 229, 133, 0.1);
+      border-top: 1px solid rgba(75, 229, 133, 0.2);
     }
 
     .game-footer button {

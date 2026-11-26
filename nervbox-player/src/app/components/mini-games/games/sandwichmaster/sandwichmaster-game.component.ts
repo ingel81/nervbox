@@ -410,8 +410,8 @@ import { ApiService } from '../../../../core/services/api.service';
     }
 
     .ingredient-card.normal {
-      background: rgba(147, 51, 234, 0.1);
-      border-color: rgba(147, 51, 234, 0.3);
+      background: rgba(75, 229, 133, 0.1);
+      border-color: rgba(75, 229, 133, 0.3);
     }
 
     .ingredient-card.sauce {
@@ -428,7 +428,7 @@ import { ApiService } from '../../../../core/services/api.service';
       background: linear-gradient(
         135deg,
         rgba(239, 68, 68, 0.15) 0%,
-        rgba(147, 51, 234, 0.15) 100%
+        rgba(75, 229, 133, 0.15) 100%
       );
       border-color: rgba(239, 68, 68, 0.5);
     }
@@ -438,8 +438,8 @@ import { ApiService } from '../../../../core/services/api.service';
     }
 
     .ingredient-card.normal:hover:not(.disabled) {
-      border-color: #9333ea;
-      box-shadow: 0 5px 20px rgba(147, 51, 234, 0.3);
+      border-color: #1F8E4C;
+      box-shadow: 0 5px 20px rgba(75, 229, 133, 0.3);
     }
 
     .ingredient-card.sauce:hover:not(.disabled) {
@@ -490,7 +490,7 @@ import { ApiService } from '../../../../core/services/api.service';
       position: absolute;
       top: 4px;
       right: 4px;
-      background: linear-gradient(135deg, #ef4444 0%, #9333ea 100%);
+      background: linear-gradient(135deg, #ef4444 0%, #1F8E4C 100%);
       color: white;
       font-family: 'JetBrains Mono', monospace;
       font-size: 10px;
@@ -562,7 +562,7 @@ import { ApiService } from '../../../../core/services/api.service';
       background: rgba(0, 0, 0, 0.3);
       border-radius: 12px;
       overflow: hidden;
-      border: 1px solid rgba(147, 51, 234, 0.2);
+      border: 1px solid rgba(75, 229, 133, 0.2);
     }
 
     canvas {
@@ -765,7 +765,7 @@ import { ApiService } from '../../../../core/services/api.service';
       align-items: center;
       gap: 20px;
       padding: 40px;
-      background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(75, 229, 133, 0.1) 100%);
       border: 2px solid rgba(34, 197, 94, 0.3);
       border-radius: 20px;
       animation: overlay-pop 0.3s ease-out;

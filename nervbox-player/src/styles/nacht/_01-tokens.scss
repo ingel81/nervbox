@@ -1,0 +1,98 @@
+/* ---------------------------------------------------------------------------
+   1 · TOKENS
+   Farben mit Suffix -rgb sind „R G B“-Tripel für rgb(var(--x) / alpha).
+   --------------------------------------------------------------------------- */
+:root {
+  /* 1.1 Schriftfamilien */
+  --nk-font-ui: 'Barlow Condensed', 'Arial Narrow', sans-serif;   /* Tasten, Pads, Beschriftung */
+  --nk-font-mono: 'IBM Plex Mono', ui-monospace, monospace;       /* Meta, Zähler, Chips */
+  --nk-font-lcd: 'VT323', ui-monospace, monospace;                /* LCD, Ziffern */
+  --nk-font-paper: 'Courier Prime', 'Courier New', monospace;     /* Bondrucker */
+  --nk-font-logo: 'Michroma', sans-serif;                         /* nur Wortmarke */
+
+  /* 1.2 Schriftgrößen */
+  --nk-fs-micro: 9px;   --nk-fs-label: 10px;  --nk-fs-xs: 11px;   --nk-fs-sm: 12.5px;
+  --nk-fs-md: 14.5px;   --nk-fs-lg: 17px;     --nk-fs-xl: 25px;   --nk-fs-2xl: 52px;
+  --nk-fs-lcd-sm: 21px; --nk-fs-lcd-md: 24px; --nk-fs-lcd-lg: 42px; --nk-fs-hero: 540px;
+  --nk-ls-label: 1.6px;
+
+  /* 1.3 Abstände */
+  --nk-s-1: 2px;  --nk-s-2: 4px;  --nk-s-3: 6px;  --nk-s-4: 8px;  --nk-s-5: 10px;
+  --nk-s-6: 12px; --nk-s-7: 14px; --nk-s-8: 16px; --nk-s-9: 24px; --nk-s-10: 32px;
+
+  /* 1.4 Radien */
+  --nk-r-xs: 2px; --nk-r-sm: 3px; --nk-r-md: 6px; --nk-r-lg: 10px; --nk-r-xl: 14px;
+  --nk-r-device: 20px; --nk-r-pill: 999px;
+
+  /* 1.5 Tisch, Gehäuse, Flächen */
+  --nk-desk-1: #6B4F33; --nk-desk-2: #33261A; --nk-desk-3: #130F0B; --nk-desk-4: #080605;
+  --nk-chassis-1: #645B4C; --nk-chassis-2: #554E41; --nk-chassis-3: #453F35; --nk-chassis-4: #38332B;
+  --nk-panel-1: #4A443A; --nk-panel-2: #37332B;                    /* versenkte Module (Drucker) */
+  --nk-plate-1: #3A3832; --nk-plate-2: #302E29; --nk-plate-3: #292723; --nk-plate-4: #1E1D1A;
+  --nk-glass-1: #0D0C0A; --nk-glass-2: #1A1814;                    /* Rauchglas (Logo, Menü, Toast) */
+  --nk-field-1: #14120F; --nk-field-2: #24211B; --nk-field-3: #2D2921; /* Eingabeschacht */
+  --nk-cap: #5A5346; --nk-cap-on: #3F3A31; --nk-cap-dim: #4E483D;  /* Funktionstasten-Kappe */
+  --nk-well: #090807;                                              /* schwarzer Schacht um jede Taste */
+
+  /* 1.6 Tinte & Licht */
+  --nk-ink: #14110D;                                               /* dunkler Aufdruck auf Leuchtflächen */
+  --nk-iv: #FFF4D8; --nk-iv-2: #D9CFB6; --nk-iv-3: #B9B09A;        /* hinterleuchtete Schrift, 3 Stufen */
+  --nk-key-ink-light: #FFF8E8;                                     /* heller Aufdruck auf dunklem Gummi */
+  --nk-lamp: #FFE2B0; --nk-lamp-rgb: 255 226 176;                  /* Lampen-/Streulicht */
+  --nk-lamp-warm-rgb: 255 206 140; --nk-lamp-edge-rgb: 255 232 186;
+
+  /* 1.7 LCD & Papier */
+  --nk-lcd-ink: #18210D; --nk-lcd-ink-rgb: 24 33 13;
+  --nk-lcd-1: #A6BC5C; --nk-lcd-2: #B8CD6C; --nk-lcd-3: #ADC263;
+  --nk-lcd-bleed-rgb: 250 255 200; --nk-lcd-glow-rgb: 196 220 112;
+  --nk-lcd-low-1: #D4705A; --nk-lcd-low-2: #E08468;                /* Konto leer */
+  --nk-paper: #EBDDB8; --nk-paper-ink: #1F1B16; --nk-paper-ink-2: #3A352E;
+
+  /* 1.8 Signalfarben */
+  --nk-own: #4BE585;   --nk-own-rgb: 75 229 133;                   /* EIGENER laufender Sound */
+  --nk-own-hot: #EEFFF3; --nk-own-mid: #96F7B9; --nk-own-edge: #44D97D; --nk-own-deep: #0C2A18;
+  --nk-other: #6FCBFF; --nk-other-rgb: 111 203 255;                /* FREMDER laufender Sound */
+  --nk-other-hot: #F1FAFF; --nk-other-mid: #ABE0FF; --nk-other-edge: #5BBBF3; --nk-other-deep: #0B2434;
+  --nk-danger: #C5392F; --nk-danger-rgb: 224 72 60;                /* Stopp, Löschen, ungelesen */
+  --nk-danger-hot: #E0574B; --nk-danger-edge: #8C231C; --nk-danger-lit: #FF5A4F; --nk-danger-text: #FF9A8E;
+  --nk-warn: #F2D24B;  --nk-warn-rgb: 242 210 75;                  /* Warnung */
+  --nk-warn-stripe: #86701F; --nk-warn-text: #FFE9A6; --nk-tape: #B8AC78;
+  --nk-vu-g: #4BE585; --nk-vu-y: #F2D24B; --nk-vu-r: #FF5A4F;      /* Pegelkette */
+
+  /* 1.9 Tag-Tastenfarben: Ruhe (= Mitte) · -hot Lichtkern · -edge Rand · -glow Lichtfarbe · -lens Linse */
+  --nk-tone-voice: #AA9D7C;    --nk-tone-voice-hot: #C6B892;    --nk-tone-voice-edge: #8E8367;    --nk-tone-voice-glow: 226 208 160;    --nk-tone-voice-lens: #EBDDB4;
+  --nk-tone-fx: #BC972C;       --nk-tone-fx-hot: #DDB640;       --nk-tone-fx-edge: #9E7D23;       --nk-tone-fx-glow: 232 190 64;        --nk-tone-fx-lens: #F0C84A;
+  --nk-tone-cabd: #93271F;     --nk-tone-cabd-hot: #B8382D;     --nk-tone-cabd-edge: #681914;     --nk-tone-cabd-glow: 226 70 56;       --nk-tone-cabd-lens: #E5483C;
+  --nk-tone-assitoni: #43586E; --nk-tone-assitoni-hot: #567089; --nk-tone-assitoni-edge: #314256; --nk-tone-assitoni-glow: 104 146 188; --nk-tone-assitoni-lens: #7FA5CC;
+  --nk-tone-trash: #909E59;    --nk-tone-trash-hot: #AABA6C;    --nk-tone-trash-edge: #7D8A4D;    --nk-tone-trash-glow: 176 196 108;    --nk-tone-trash-lens: #B9CC76;
+  --nk-tone-classic: #C4802F;  --nk-tone-classic-hot: #DD9642;  --nk-tone-classic-edge: #B2742A;  --nk-tone-classic-glow: 232 150 62;   --nk-tone-classic-lens: #EFA24A;
+  --nk-tone-remix: #22635F;    --nk-tone-remix-hot: #2B7C77;    --nk-tone-remix-edge: #184A47;    --nk-tone-remix-glow: 60 176 168;     --nk-tone-remix-lens: #3FB8B0;
+  --nk-tone-alarm: #443E37;    --nk-tone-alarm-hot: #5B5249;    --nk-tone-alarm-edge: #2E2A25;    --nk-tone-alarm-glow: 150 134 116;    --nk-tone-alarm-lens: #9C8E7C;
+  --nk-tone-themes: #BE8789;   --nk-tone-themes-hot: #DAA4A6;   --nk-tone-themes-edge: #A87577;   --nk-tone-themes-glow: 226 160 164;   --nk-tone-themes-lens: #E9AFB1;
+  --nk-tone-off: #34302B;      --nk-tone-off-hot: #3B3731;      --nk-tone-off-edge: #2A2723;      --nk-tone-off-ink: #CFC7B4; /* deaktiviert */
+
+  /* 1.10 Aktive Tastenfarbe (setzen .nk-tone-* oder inline bei dynamischen Tag-Farben) */
+  --nk-key-hot: var(--nk-tone-voice-hot); --nk-key-mid: var(--nk-tone-voice); --nk-key-edge: var(--nk-tone-voice-edge);
+  --nk-key-glow: var(--nk-tone-voice-glow); --nk-key-lens: var(--nk-tone-voice-lens);
+  --nk-key-ink: var(--nk-ink); --nk-key-line: rgb(20 17 13 / .65); --nk-key-emboss: 0 1px 0 rgb(255 255 255 / .22);
+  --nk-key-hl-a: .14; --nk-key-hl-b: .42; --nk-key-sheen: .2;
+  --nk-lamp-f: .5;      /* Lampenanteil 0…1 je Pad (nah an der Lampe = 1) */
+  --nk-beat: 1.9s;      /* Pulsdauer laufender Pads */
+
+  /* 1.11 Licht- und Schattenrezepte */
+  --nk-grain: radial-gradient(rgb(0 0 0 / .16) .8px, transparent 1.1px) 0 0 / 3px 3px, radial-gradient(rgb(var(--nk-lamp-rgb) / .06) .8px, transparent 1.1px) 1px 2px / 4px 4px;
+  --nk-shadow-well: 0 0 0 3px var(--nk-well), 1.5px 1.5px 0 3px rgb(var(--nk-lamp-rgb) / .17), -1px -1px 0 3px rgb(0 0 0 / .5);
+  --nk-shadow-seat: 0 0 0 3.5px var(--nk-well), 1.5px 1.5px 0 3.5px rgb(var(--nk-lamp-rgb) / .15), -1px -1px 0 3.5px rgb(0 0 0 / .6);
+  --nk-shadow-recess: inset 2px 3px 6px rgb(0 0 0 / .85), inset 0 0 0 1px rgb(0 0 0 / .55), inset 0 -9px 9px -9px rgb(var(--nk-lamp-rgb) / .22), 1px 1px 0 rgb(var(--nk-lamp-rgb) / .18), -1px -1px 0 rgb(0 0 0 / .4);
+  --nk-shadow-cap: inset 0 1px 0 rgb(var(--nk-lamp-rgb) / .26), inset 0 -3px 0 rgb(0 0 0 / .38), 0 0 0 1px rgb(var(--nk-lamp-rgb) / .24), var(--nk-shadow-well);
+  --nk-shadow-cap-down: inset 0 2px 5px rgb(0 0 0 / .6), inset 0 -1px 0 rgb(0 0 0 / .3), 0 0 0 1px rgb(var(--nk-lamp-rgb) / .24), var(--nk-shadow-well);
+  --nk-shadow-ring: 0 0 0 3px var(--nk-well), 0 0 0 7px #4B453A, 1.5px 1.5px 0 7px rgb(var(--nk-lamp-rgb) / .2), -1px -1px 0 7px rgb(0 0 0 / .5);
+  --nk-shadow-float: 0 0 0 4px rgb(0 0 0 / .45), 0 14px 34px rgb(0 0 0 / .85);
+  --nk-glow-text: 0 1px 1px rgb(0 0 0 / .55), 0 0 6px rgb(var(--nk-lamp-rgb) / .4);
+  --nk-glow-key: 0 0 6px rgb(var(--nk-lamp-rgb) / .5);
+  --nk-face-cap: linear-gradient(160deg, rgb(var(--nk-lamp-rgb) / .11) 0%, rgb(var(--nk-lamp-rgb) / .02) 45%, rgb(0 0 0 / .2) 100%);
+  --nk-face-field: linear-gradient(180deg, var(--nk-field-1), var(--nk-field-2) 70%, var(--nk-field-3));
+  --nk-face-glass: linear-gradient(165deg, var(--nk-glass-1) 0%, var(--nk-glass-2) 100%);
+  --nk-face-lcd: linear-gradient(180deg, var(--nk-lcd-1) 0%, var(--nk-lcd-2) 45%, var(--nk-lcd-3) 100%);
+  --nk-face-glare: linear-gradient(118deg, rgb(var(--nk-lamp-edge-rgb) / .16) 0%, rgb(var(--nk-lamp-edge-rgb) / .03) 24%, rgb(255 255 255 / 0) 25%);
+}

@@ -17,677 +17,179 @@ import { AuthService } from '../../core/services/auth.service';
   standalone: true,
   imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule],
   template: `
-    <div class="game-selection-dialog">
-      <div class="dialog-header">
-        <div class="header-glow"></div>
-        <mat-icon class="title-icon spinning">videogame_asset</mat-icon>
-        <h2>MINI GAMES</h2>
-        <div class="coin-display">
-          <img src="icons/nervbox-coin.svg" alt="" class="coin-icon bouncing" />
-          <span>Earn N$</span>
-        </div>
+    <div class="nk-dlg gs">
+      <header class="nk-dialog__head gs-head">
+        <mat-icon class="gs-ico" aria-hidden="true">sports_esports</mat-icon>
+        <h2 class="nk-dialog__title gs-title">Mini Games</h2>
+        <span class="nk-counter">EARN N$</span>
+        <span class="gs-flex"></span>
+        <span class="nk-label gs-hint">Modul einstecken = spielen</span>
+        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close>✕</button>
+      </header>
+      <div class="nk-dialog__body gs-body">
+        @for (shelf of shelves; track shelf.label) {
+          <div class="gs-shelf-wrap">
+            <div class="gs-shelf">
+              @for (c of shelf.carts; track c.title) {
+                <button
+                  type="button"
+                  [class]="c.soon ? 'nk-cart nk-cart--soon' : c.isNew ? 'nk-cart nk-cart--new' : 'nk-cart'"
+                  [style.--nk-cart-c]="c.color"
+                  [attr.aria-label]="c.soon ? c.title + ' – bald verfügbar' : c.title + ' spielen'"
+                  [disabled]="c.soon"
+                  (click)="start(c.key)"
+                >
+                  <span class="nk-cart__grip" aria-hidden="true"></span>
+                  <span class="nk-cart__label">
+                    <span class="nk-cart__kind"><span>{{ c.kind }}</span><span [class]="c.soon ? 'nk-led nk-led--dot' : 'nk-led nk-led--dot nk-led--own'" aria-hidden="true"></span></span>
+                    <span class="gs-art" aria-hidden="true"><mat-icon>{{ c.icon }}</mat-icon></span>
+                    <span class="nk-cart__title">{{ c.title }}</span>
+                    @if (c.text) {
+                      <span class="nk-cart__text">{{ c.text }}</span>
+                    }
+                    @if (c.pay) {
+                      <span class="nk-cart__pay">{{ c.pay }}</span>
+                    }
+                  </span>
+                  <span class="nk-cart__edge" aria-hidden="true"><span class="nk-cart__pins"></span></span>
+                </button>
+              }
+            </div>
+            <div class="gs-rail" aria-hidden="true">
+              <span class="gs-rail__tag">{{ shelf.label }}</span>
+              <span class="nk-slot gs-slot"></span>
+              <span class="nk-led nk-led--dot nk-led--own"></span>
+            </div>
+          </div>
+        }
       </div>
-
-      <mat-dialog-content>
-        <!-- Games Grid -->
-        <div class="games-grid">
-          <!-- Arkanoid -->
-          <button class="game-card arkanoid" (click)="startArkanoid()">
-            <div class="game-glow"></div>
-            <div class="game-badge">SPIELEN</div>
-            <mat-icon class="game-icon">sports_tennis</mat-icon>
-            <span class="game-name">ARKANOID</span>
-            <span class="game-desc">Zerstoere alle Bloecke!</span>
-            <div class="game-reward">
-              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin" />
-              <span>N$ pro Level</span>
-            </div>
-          </button>
-
-          <!-- Hotdog Katapult -->
-          <button class="game-card hotdog" (click)="startHotdog()">
-            <div class="game-glow"></div>
-            <div class="game-badge">SPIELEN</div>
-            <span class="game-emoji">🌭</span>
-            <span class="game-name">HOTDOG KATAPULT</span>
-            <span class="game-desc">Stopfe die Mäuler!</span>
-            <div class="game-reward">
-              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin" />
-              <span>1 N$/Treffer</span>
-            </div>
-          </button>
-
-          <!-- Plinko -->
-          <button class="game-card plinko" (click)="startPlinko()">
-            <div class="game-glow"></div>
-            <div class="game-badge casino">CASINO</div>
-            <mat-icon class="game-icon plinko-icon">casino</mat-icon>
-            <span class="game-name">PLINKO</span>
-            <span class="game-desc">Drop & Win!</span>
-            <div class="game-reward">
-              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin" />
-              <span>0.2x - 50x</span>
-            </div>
-          </button>
-
-          <!-- Slot Machine -->
-          <button class="game-card slot-machine" (click)="startSlotMachine()">
-            <div class="game-glow"></div>
-            <div class="game-badge casino">CASINO</div>
-            <mat-icon class="game-icon slot-icon">casino</mat-icon>
-            <span class="game-name">SLOT MACHINE</span>
-            <span class="game-desc">Pull the lever!</span>
-            <div class="game-reward">
-              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin" />
-              <span>1x - 100x</span>
-            </div>
-          </button>
-
-          <!-- Kayberg Hunter -->
-          <button class="game-card kayberg" (click)="startKayberg()">
-            <div class="game-glow"></div>
-            <mat-icon class="game-icon kayberg-icon">flight</mat-icon>
-            <span class="game-name">KAYBERG HUNTER</span>
-            <span class="game-desc">Jage als Greifvogel!</span>
-            <div class="game-reward">
-              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin" />
-              <span>N$ pro Level</span>
-            </div>
-          </button>
-
-          <!-- Weinfest Shooter -->
-          <button class="game-card weinfest" (click)="startWeinfestShooter()">
-            <div class="game-glow"></div>
-            <span class="game-emoji wine">🍷</span>
-            <span class="game-name">WEINFEST SHOOTER</span>
-            <span class="game-desc">Schiess die Flaschen ab!</span>
-            <div class="game-reward">
-              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin" />
-              <span>+3/-2 N$</span>
-            </div>
-          </button>
-
-          <!-- Sandwichmaster -->
-          <button class="game-card sandwichmaster" (click)="startSandwichmaster()">
-            <div class="game-glow"></div>
-            <div class="game-badge new">NEU</div>
-            <span class="game-emoji sandwich">🥪</span>
-            <span class="game-name">SANDWICHMASTER</span>
-            <span class="game-desc">Baue das ultimative Sandwich!</span>
-            <div class="game-reward">
-              <img src="icons/nervbox-coin.svg" alt="" class="mini-coin" />
-              <span>Punkte sammeln</span>
-            </div>
-          </button>
-        </div>
-
-        <!-- Coming Soon Section -->
-        <div class="coming-soon-section">
-          <div class="coming-soon-header">
-            <div class="coming-soon-line"></div>
-            <span class="coming-soon-title">
-              <mat-icon>rocket_launch</mat-icon>
-              COMING SOON
-            </span>
-            <div class="coming-soon-line"></div>
-          </div>
-
-          <div class="coming-soon-games">
-            <div class="coming-soon-card">
-              <mat-icon>local_florist</mat-icon>
-              <span>Mary Haze - The Game</span>
-            </div>
-            <div class="coming-soon-card">
-              <mat-icon>search</mat-icon>
-              <span>Fehlersuche mit Paddi</span>
-            </div>
-            <div class="coming-soon-card">
-              <mat-icon>local_bar</mat-icon>
-              <span>Mixe das perfekte Spezi</span>
-            </div>
-          </div>
-        </div>
-      </mat-dialog-content>
-
-      <mat-dialog-actions align="end">
-        <button mat-button mat-dialog-close>Schliessen</button>
-      </mat-dialog-actions>
+      <footer class="nk-dialog__foot">
+        <button type="button" class="nk-key" mat-dialog-close>Schließen</button>
+      </footer>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
-    .game-selection-dialog {
-      overflow: hidden;
+    .gs {
+      width: 1240px;
+      max-width: 100%;
+      max-height: 92vh;
     }
-
-    .dialog-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 20px 24px;
-      background: linear-gradient(135deg, rgba(147, 51, 234, 0.3) 0%, rgba(236, 72, 153, 0.3) 100%);
-      border-bottom: 2px solid rgba(147, 51, 234, 0.5);
-      position: relative;
-      overflow: hidden;
+    .gs-head {
+      gap: 14px;
     }
-
-    .header-glow {
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(147, 51, 234, 0.3) 0%, transparent 50%);
-      animation: rotate-glow 10s linear infinite;
+    .gs-ico {
+      color: var(--nk-iv);
+      filter: drop-shadow(0 0 4px rgb(255 226 176 / 0.6));
     }
-
-    @keyframes rotate-glow {
-      from {
-        transform: rotate(0deg);
-      }
-      to {
-        transform: rotate(360deg);
-      }
+    .gs-title {
+      flex: 0 0 auto;
+      font-size: 24px;
+      letter-spacing: 3px;
     }
-
-    .title-icon {
-      font-size: 36px;
-      width: 36px;
-      height: 36px;
-      color: #ec4899;
-      position: relative;
-      z-index: 1;
+    .gs-flex {
+      flex: 1;
     }
-
-    .title-icon.spinning {
-      animation: wiggle 2s ease-in-out infinite;
-    }
-
-    @keyframes wiggle {
-      0%,
-      100% {
-        transform: rotate(-5deg);
-      }
-      50% {
-        transform: rotate(5deg);
-      }
-    }
-
-    .dialog-header h2 {
-      margin: 0;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 28px;
-      font-weight: 900;
-      letter-spacing: 4px;
-      background: linear-gradient(135deg, #fff 0%, #ec4899 50%, #9333ea 100%);
-      background-size: 200% 200%;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: gradient-shift 3s ease infinite;
-      position: relative;
-      z-index: 1;
-    }
-
-    @keyframes gradient-shift {
-      0%,
-      100% {
-        background-position: 0% 50%;
-      }
-      50% {
-        background-position: 100% 50%;
-      }
-    }
-
-    .coin-display {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-left: auto;
-      padding: 8px 16px;
-      background: rgba(251, 191, 36, 0.15);
-      border: 1px solid rgba(251, 191, 36, 0.4);
-      border-radius: 20px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .coin-icon {
-      width: 24px;
-      height: 24px;
-    }
-
-    .coin-icon.bouncing {
-      animation: bounce 1s ease-in-out infinite;
-    }
-
-    @keyframes bounce {
-      0%,
-      100% {
-        transform: translateY(0);
-      }
-      50% {
-        transform: translateY(-4px);
-      }
-    }
-
-    .coin-display span {
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 700;
-      font-size: 14px;
-      color: #fbbf24;
-    }
-
-    mat-dialog-content {
-      padding: 24px !important;
-      max-height: 65vh;
+    .gs-body {
+      gap: 26px;
+      padding: 30px 22px 22px;
       overflow-y: auto;
     }
-
-    /* Games Grid */
-    .games-grid {
+    .gs-shelf {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-      margin-bottom: 24px;
+      grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+      gap: 22px;
+      align-items: end;
+      padding: 0 14px;
     }
-
-    .game-card {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      padding: 24px 16px;
-      border-radius: 16px;
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      border: 2px solid;
+    .nk-cart {
+      height: 292px;
     }
-
-    .game-card.arkanoid {
-      background: linear-gradient(
-        135deg,
-        rgba(147, 51, 234, 0.15) 0%,
-        rgba(236, 72, 153, 0.1) 100%
-      );
-      border-color: rgba(147, 51, 234, 0.5);
+    .nk-cart[disabled] {
+      cursor: default;
     }
-
-    .game-card.hotdog {
-      background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(234, 179, 8, 0.1) 100%);
-      border-color: rgba(249, 115, 22, 0.5);
+    .gs-art {
+      height: 78px;
+      margin: 4px 0 2px;
+      border-radius: 3px;
+      display: grid;
+      place-items: center;
+      color: var(--nk-paper-ink);
+      background: repeating-linear-gradient(0deg, rgb(31 27 22 / 0.06) 0 1px, transparent 1px 4px);
+      box-shadow: inset 0 0 0 1.5px var(--nk-paper-ink);
     }
-
-    .game-card.plinko {
-      background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(251, 191, 36, 0.1) 100%);
-      border-color: rgba(239, 68, 68, 0.5);
-    }
-
-    .game-card.slot-machine {
-      background: linear-gradient(135deg, rgba(255, 0, 255, 0.15) 0%, rgba(0, 255, 255, 0.1) 100%);
-      border-color: rgba(255, 0, 255, 0.5);
-    }
-
-    .game-card.kayberg {
-      background: linear-gradient(135deg, rgba(34, 139, 34, 0.15) 0%, rgba(139, 69, 19, 0.1) 100%);
-      border-color: rgba(34, 139, 34, 0.5);
-    }
-
-    .game-card.weinfest {
-      background: linear-gradient(135deg, rgba(139, 69, 19, 0.2) 0%, rgba(128, 0, 128, 0.15) 100%);
-      border-color: rgba(139, 69, 19, 0.5);
-    }
-
-    .game-card.sandwichmaster {
-      background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(234, 179, 8, 0.15) 100%);
-      border-color: rgba(34, 197, 94, 0.5);
-    }
-
-    .game-card:hover {
-      transform: translateY(-6px) scale(1.02);
-    }
-
-    .game-card.arkanoid:hover {
-      border-color: #9333ea;
-      box-shadow:
-        0 15px 40px rgba(147, 51, 234, 0.4),
-        0 0 50px rgba(147, 51, 234, 0.2);
-    }
-
-    .game-card.hotdog:hover {
-      border-color: #f97316;
-      box-shadow:
-        0 15px 40px rgba(249, 115, 22, 0.4),
-        0 0 50px rgba(249, 115, 22, 0.2);
-    }
-
-    .game-card.plinko:hover {
-      border-color: #ef4444;
-      box-shadow:
-        0 15px 40px rgba(239, 68, 68, 0.4),
-        0 0 50px rgba(239, 68, 68, 0.2);
-    }
-
-    .game-card.slot-machine:hover {
-      border-color: #ff00ff;
-      box-shadow:
-        0 15px 40px rgba(255, 0, 255, 0.4),
-        0 0 50px rgba(255, 0, 255, 0.2);
-    }
-
-    .game-card.kayberg:hover {
-      border-color: #228b22;
-      box-shadow:
-        0 15px 40px rgba(34, 139, 34, 0.4),
-        0 0 50px rgba(34, 139, 34, 0.2);
-    }
-
-    .game-card.weinfest:hover {
-      border-color: #8b4513;
-      box-shadow:
-        0 15px 40px rgba(139, 69, 19, 0.4),
-        0 0 50px rgba(128, 0, 128, 0.3);
-    }
-
-    .game-card.sandwichmaster:hover {
-      border-color: #22c55e;
-      box-shadow:
-        0 15px 40px rgba(34, 197, 94, 0.4),
-        0 0 50px rgba(234, 179, 8, 0.3);
-    }
-
-    .game-glow {
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
-      animation: shine 3s ease-in-out infinite;
-    }
-
-    @keyframes shine {
-      0% {
-        left: -100%;
-      }
-      50%,
-      100% {
-        left: 100%;
-      }
-    }
-
-    .game-badge {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      font-size: 9px;
-      font-weight: 800;
-      padding: 4px 10px;
-      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-      border-radius: 12px;
-      color: white;
-      letter-spacing: 0.5px;
-    }
-
-    .game-badge.new {
-      background: linear-gradient(135deg, #f97316 0%, #eab308 100%);
-      animation: pulse-new 1.5s ease-in-out infinite;
-    }
-
-    .game-badge.casino {
-      background: linear-gradient(135deg, #ef4444 0%, #fbbf24 100%);
-      animation: pulse-casino 1.5s ease-in-out infinite;
-    }
-
-    @keyframes pulse-casino {
-      0%,
-      100% {
-        box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4);
-      }
-      50% {
-        box-shadow: 0 2px 20px rgba(239, 68, 68, 0.8);
-      }
-    }
-
-    @keyframes pulse-new {
-      0%,
-      100% {
-        box-shadow: 0 2px 10px rgba(249, 115, 22, 0.4);
-      }
-      50% {
-        box-shadow: 0 2px 20px rgba(249, 115, 22, 0.8);
-      }
-    }
-
-    .game-icon {
-      font-size: 48px;
+    .gs-art .mat-icon {
       width: 48px;
       height: 48px;
-      color: #9333ea;
-      filter: drop-shadow(0 0 15px rgba(147, 51, 234, 0.5));
-      animation: icon-float 3s ease-in-out infinite;
-    }
-
-    .game-icon.plinko-icon {
-      color: #ef4444;
-      filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0.5));
-    }
-
-    .game-icon.slot-icon {
-      color: #ff00ff;
-      filter: drop-shadow(0 0 15px rgba(255, 0, 255, 0.5));
-      animation:
-        icon-float 3s ease-in-out infinite,
-        icon-pulse 2s ease-in-out infinite;
-    }
-
-    .game-icon.kayberg-icon {
-      color: #228b22;
-      filter: drop-shadow(0 0 15px rgba(34, 139, 34, 0.5));
-      transform: rotate(-30deg);
-    }
-
-    @keyframes icon-pulse {
-      0%,
-      100% {
-        filter: drop-shadow(0 0 15px rgba(255, 0, 255, 0.5));
-      }
-      50% {
-        filter: drop-shadow(0 0 25px rgba(255, 0, 255, 0.8));
-      }
-    }
-
-    .game-emoji {
       font-size: 48px;
-      filter: drop-shadow(0 0 15px rgba(249, 115, 22, 0.5));
-      animation: icon-float 3s ease-in-out infinite;
     }
-
-    .game-emoji.wine {
-      filter: drop-shadow(0 0 15px rgba(128, 0, 128, 0.5));
-    }
-
-    .game-emoji.sandwich {
-      filter: drop-shadow(0 0 15px rgba(34, 197, 94, 0.5));
-    }
-
-    @keyframes icon-float {
-      0%,
-      100% {
-        transform: translateY(0);
-      }
-      50% {
-        transform: translateY(-5px);
-      }
-    }
-
-    .game-name {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
-      font-weight: 800;
-      color: white;
-      letter-spacing: 1px;
-      text-align: center;
-    }
-
-    .game-desc {
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.6);
-      text-align: center;
-    }
-
-    .game-reward {
+    .gs-rail {
+      height: 26px;
+      margin: 0 -6px;
+      border-radius: 4px;
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      background: rgba(251, 191, 36, 0.15);
-      border: 1px solid rgba(251, 191, 36, 0.3);
-      border-radius: 10px;
-      margin-top: 4px;
+      gap: 10px;
+      padding: 0 12px;
+      background: linear-gradient(180deg, #2a2620, #171410);
+      box-shadow: inset 0 2px 0 rgb(255 226 176 / 0.14), inset 0 -2px 0 rgb(0 0 0 / 0.6), 0 3px 8px rgb(0 0 0 / 0.7);
     }
-
-    .mini-coin {
-      width: 16px;
-      height: 16px;
-    }
-
-    .game-reward span {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      font-weight: 700;
-      color: #fbbf24;
-    }
-
-    /* Coming Soon Section */
-    .coming-soon-section {
-      opacity: 0.7;
-    }
-
-    .coming-soon-header {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 20px;
-    }
-
-    .coming-soon-line {
-      flex: 1;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(147, 51, 234, 0.5), transparent);
-    }
-
-    .coming-soon-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      font-weight: 700;
-      color: rgba(147, 51, 234, 0.8);
+    .gs-rail__tag {
+      font: 700 10px/1 var(--nk-font-ui);
       letter-spacing: 2px;
+      color: var(--nk-iv-2);
+      white-space: nowrap;
     }
-
-    .coming-soon-title mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-      animation: rocket 2s ease-in-out infinite;
+    .gs-slot {
+      flex: 1;
+      height: 8px;
     }
-
-    @keyframes rocket {
-      0%,
-      100% {
-        transform: translateY(0);
-      }
-      50% {
-        transform: translateY(-3px);
-      }
-    }
-
-    .coming-soon-games {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-    }
-
-    .coming-soon-card {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      padding: 16px 12px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px dashed rgba(147, 51, 234, 0.3);
-      border-radius: 12px;
-      transition: all 0.3s ease;
-    }
-
-    .coming-soon-card:hover {
-      background: rgba(147, 51, 234, 0.1);
-      border-color: rgba(147, 51, 234, 0.5);
-      transform: translateY(-2px);
-    }
-
-    .coming-soon-card mat-icon {
-      font-size: 28px;
-      width: 28px;
-      height: 28px;
-      color: rgba(147, 51, 234, 0.6);
-    }
-
-    .coming-soon-card span {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.5);
-      letter-spacing: 0.5px;
-    }
-
-    .coming-soon-hint {
-      text-align: center;
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.3);
-      margin-top: 16px;
-      font-style: italic;
-    }
-
-    mat-dialog-actions {
-      padding: 12px 24px !important;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    mat-dialog-actions button {
-      color: rgba(255, 255, 255, 0.7);
-    }
-
-    mat-dialog-actions button:hover {
-      color: rgba(255, 255, 255, 0.9);
-    }
-
-    @media (max-width: 500px) {
-      .coming-soon-games {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .featured-content {
-        flex-direction: column;
-        text-align: center;
-      }
-
-      .featured-name {
-        font-size: 22px;
-      }
-
-      .coin-display span {
+    @media (max-width: 700px) {
+      .gs-hint {
         display: none;
+      }
+      .gs-shelf {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        padding: 0;
+      }
+      .nk-cart {
+        height: 250px;
       }
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class GameSelectionDialogComponent {
+  /** Steckmodule 1:1 wie die bisherigen Spielkarten (Badge, Titel, Untertitel, Auszahlung) */
+  readonly carts = [
+    { key: 'arkanoid', kind: 'SPIELEN', title: 'ARKANOID', text: 'Zerstöre alle Blöcke!', pay: 'N$ pro Level', color: '#4E7BA6', icon: 'sports_tennis' },
+    { key: 'hotdog', kind: 'SPIELEN', title: 'HOTDOG KATAPULT', text: 'Stopfe die Mäuler!', pay: '1 N$/Treffer', color: '#B8702A', icon: 'lunch_dining' },
+    { key: 'plinko', kind: 'CASINO', title: 'PLINKO', text: 'Drop & Win!', pay: '0.2x - 50x', color: '#93271F', icon: 'scatter_plot' },
+    { key: 'slot', kind: 'CASINO', title: 'SLOT MACHINE', text: 'Pull the lever!', pay: '1x - 100x', color: '#7E6212', icon: 'casino' },
+    { key: 'kayberg', kind: 'MODUL 05', title: 'KAYBERG HUNTER', text: 'Jage als Greifvogel!', pay: 'N$ pro Level', color: '#22635F', icon: 'flight' },
+    { key: 'weinfest', kind: 'MODUL 06', title: 'WEINFEST SHOOTER', text: 'Schieß die Flaschen ab!', pay: '+3/-2 N$', color: '#7A2E4A', icon: 'wine_bar' },
+    { key: 'sandwich', kind: 'NEU', title: 'SANDWICHMASTER', text: 'Baue das ultimative Sandwich!', pay: 'Punkte sammeln', color: '#5E7426', icon: 'bakery_dining', isNew: true },
+    { key: '', kind: 'COMING SOON', title: 'Mary Haze – The Game', text: '', pay: '', color: '#5A5346', icon: 'local_florist', soon: true },
+    { key: '', kind: 'COMING SOON', title: 'Fehlersuche mit Paddi', text: '', pay: '', color: '#5A5346', icon: 'search', soon: true },
+    { key: '', kind: 'COMING SOON', title: 'Mixe das perfekte Spezi', text: '', pay: '', color: '#5A5346', icon: 'local_bar', soon: true },
+  ];
+  readonly shelves = [
+    { label: 'SCHACHT A · SPIELEN & CASINO', carts: this.carts.slice(0, 5) },
+    { label: 'SCHACHT B · NEU & DEMNÄCHST', carts: this.carts.slice(5) },
+  ];
+
+  start(key: string): void {
+    switch (key) {
+      case 'arkanoid': return this.startArkanoid();
+      case 'hotdog': return this.startHotdog();
+      case 'plinko': return this.startPlinko();
+      case 'slot': return this.startSlotMachine();
+      case 'kayberg': return this.startKayberg();
+      case 'weinfest': return this.startWeinfestShooter();
+      case 'sandwich': return this.startSandwichmaster();
+    }
+  }
+
   private readonly dialogRef = inject(MatDialogRef<GameSelectionDialogComponent>);
   private readonly dialog = inject(MatDialog);
   private readonly auth = inject(AuthService);

@@ -1,0 +1,32 @@
+/* =============================================================================
+   NACHT-KIT · Nervbox Design-System „Nachtschicht“                  (nacht.css)
+   -----------------------------------------------------------------------------
+   Ein helles Putty-Gerät um 3 Uhr nachts: Licht kommt fast nur aus dem Gerät
+   selbst (durchscheinende Tasten, LCD, LEDs) plus Schreibtischlampe oben links.
+   Präfix nk-  ·  BEM:  .nk-block  .nk-block__teil  .nk-block--variante
+   Farbsemantik: GRÜN = eigener laufender Sound · EISBLAU = fremder Sound ·
+                 ROT = Gefahr/Stopp/ungelesen · LAMPENWEISS = Auswahl/Primäraktion
+   Später: :root → SCSS-Tokens, jeder Block → eine Angular-Komponente.
+   Schriften lädt die Seite per Google-Fonts-<link>; hier kein @import.
+   Selektoren nur Klassen + Nachfahren (kein  >  +  ~), damit Template-Wrapper
+   (ng-container, sc-for …) nichts brechen.
+   ============================================================================= */
+
+@use '01-tokens' as tokens;
+@use '02-base' as base;
+@use '03-device' as device;
+@use '04-keys' as keys;
+@use '05-inputs' as inputs;
+@use '06-lcd' as lcd;
+@use '07-tags' as tags;
+@use '08-pad' as pad;
+@use '09-channel' as channel;
+@use '10-printer' as printer;
+@use '11-menu' as menu;
+@use '12-toast' as toast;
+@use '13-dialog' as dialog;
+@use '14-motion' as motion;
+@use '15-dialog-parts' as dialog_parts;
+@use '16-shop-item' as shop_item;
+@use '17-pin' as pin;
+@use '18-cart' as cart;

@@ -28,145 +28,46 @@ export interface DeleteUserDialogData {
     MatProgressSpinnerModule,
   ],
   template: `
-    <h2 mat-dialog-title>
-      <mat-icon>delete</mat-icon>
-      User löschen
-    </h2>
-
-    <mat-dialog-content>
-      <div class="warning-box">
-        <mat-icon>warning</mat-icon>
-        <div class="warning-text">
-          <strong>Achtung!</strong>
-          <p>
-            Der User <strong>"{{ data.user.username }}"</strong> wird unwiderruflich gelöscht. Alle
-            zugehörigen Daten (Favoriten, Statistiken, etc.) gehen verloren.
-          </p>
+    <div class="nk-dlg ad-sm">
+      <header class="nk-dialog__head">
+        <h2 class="nk-dialog__title ad-danger">User löschen</h2>
+        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close [disabled]="deleting()">✕</button>
+      </header>
+      <div class="nk-dialog__body">
+        <div class="nk-alert" role="alert">
+          <span class="nk-alert__title">Achtung!</span>
+          <span>Der User <b>"{{ data.user.username }}"</b> wird unwiderruflich gelöscht. Alle zugehörigen Daten (Favoriten, Statistiken, etc.) gehen verloren.</span>
         </div>
-      </div>
-
-      <div class="confirm-section">
-        <p>Zur Bestätigung bitte den Usernamen eingeben:</p>
-        <mat-form-field appearance="outline">
-          <mat-label>Username</mat-label>
-          <input matInput [(ngModel)]="confirmUsername" [placeholder]="data.user.username" />
-        </mat-form-field>
-      </div>
-
-      @if (error()) {
-        <div class="error-message">
-          <mat-icon>error</mat-icon>
-          {{ error() }}
-        </div>
-      }
-    </mat-dialog-content>
-
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close [disabled]="deleting()">Abbrechen</button>
-      <button
-        mat-raised-button
-        color="warn"
-        (click)="onDelete()"
-        [disabled]="confirmUsername !== data.user.username || deleting()"
-      >
-        @if (deleting()) {
-          <mat-spinner diameter="20"></mat-spinner>
-        } @else {
-          User löschen
+        <label class="nk-field">
+          <span class="nk-field__hint">Zur Bestätigung bitte den Usernamen eingeben:</span>
+          <span class="nk-label">Username</span>
+          <span class="nk-input"><input class="nk-input__field" [(ngModel)]="confirmUsername" [placeholder]="data.user.username" autocomplete="off" aria-label="Username zur Bestätigung" /></span>
+        </label>
+        @if (error()) {
+          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert"><span class="nk-toast__text">{{ error() }}</span></div>
         }
-      </button>
-    </mat-dialog-actions>
+      </div>
+      <footer class="nk-dialog__foot">
+        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close [disabled]="deleting()">Abbrechen</button>
+        <button type="button" class="nk-key nk-key--danger" (click)="onDelete()" [disabled]="confirmUsername !== data.user.username || deleting()">
+          @if (deleting()) {
+            <span class="nk-spin" aria-hidden="true"></span>
+          }
+          User löschen
+        </button>
+      </footer>
+    </div>
+  `,
+  styles: `
+    .ad-sm {
+      width: 400px;
+      max-width: 100%;
+    }
+    .ad-danger {
+      color: var(--nk-danger-text);
+    }
   `,
   changeDetection: ChangeDetectionStrategy.Eager,
-  styles: `
-    h2[mat-dialog-title] {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #ef4444;
-      margin: 0;
-      padding: 16px 24px;
-    }
-
-    h2 mat-icon {
-      font-size: 24px;
-      width: 24px;
-      height: 24px;
-    }
-
-    mat-dialog-content {
-      padding: 0 24px;
-      min-width: 350px;
-    }
-
-    .warning-box {
-      display: flex;
-      gap: 12px;
-      padding: 16px;
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      border-radius: 8px;
-      margin-bottom: 16px;
-    }
-
-    .warning-box mat-icon {
-      color: #ef4444;
-      font-size: 24px;
-      width: 24px;
-      height: 24px;
-      flex-shrink: 0;
-    }
-
-    .warning-text {
-      flex: 1;
-    }
-
-    .warning-text strong {
-      color: #ef4444;
-    }
-
-    .warning-text p {
-      margin: 8px 0 0;
-      color: rgba(255, 255, 255, 0.7);
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    .confirm-section {
-      margin-top: 16px;
-    }
-
-    .confirm-section p {
-      margin: 0 0 12px;
-      color: rgba(255, 255, 255, 0.7);
-      font-size: 13px;
-    }
-
-    .confirm-section mat-form-field {
-      width: 100%;
-    }
-
-    .error-message {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px;
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      border-radius: 8px;
-      color: #ef4444;
-      font-size: 13px;
-      margin-top: 12px;
-    }
-
-    mat-dialog-actions {
-      padding: 16px 24px;
-    }
-
-    mat-dialog-actions button mat-spinner {
-      display: inline-block;
-    }
-  `,
 })
 export class DeleteUserDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<DeleteUserDialogComponent>);

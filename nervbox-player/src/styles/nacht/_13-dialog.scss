@@ -1,0 +1,13 @@
+/* ---------------------------------------------------------------------------
+   13 · DIALOG: Einschub/Modul über dem abgedunkelten Gerät
+   .nk-backdrop füllt das Gerät, .nk-dialog ist ein eigenes kleines Putty-Gehäuse.
+   --------------------------------------------------------------------------- */
+.nk-backdrop { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; background: radial-gradient(ellipse 60% 60% at 50% 45%, rgb(8 6 5 / .62), rgb(8 6 5 / .88)); }
+.nk-dialog { position: relative; width: 520px; max-width: calc(100% - 32px); max-height: calc(100% - 32px); display: flex; flex-direction: column; border-radius: var(--nk-r-xl); font-family: var(--nk-font-ui); color: var(--nk-iv);
+  background: var(--nk-grain), radial-gradient(ellipse 260px 180px at 0 0, rgb(var(--nk-lamp-warm-rgb) / .22) 0%, rgb(var(--nk-lamp-warm-rgb) / 0) 100%), linear-gradient(135deg, var(--nk-chassis-1) 0%, var(--nk-chassis-2) 40%, var(--nk-chassis-4) 100%);
+  box-shadow: inset 0 2px 0 rgb(var(--nk-lamp-rgb) / .3), inset 2px 0 0 rgb(var(--nk-lamp-rgb) / .16), inset 0 -3px 0 rgb(0 0 0 / .45), inset -2px 0 0 rgb(0 0 0 / .3), 0 0 0 1px #0B0A08, 0 0 0 5px rgb(0 0 0 / .45), 0 24px 70px rgb(0 0 0 / .9); }
+.nk-dialog--sm { width: 380px; } .nk-dialog--lg { width: 860px; }
+.nk-dialog__head { min-height: 46px; flex-shrink: 0; display: flex; align-items: center; gap: var(--nk-s-5); padding: 9px 12px 8px 18px; border-bottom: 1px solid rgb(0 0 0 / .55); box-shadow: 0 1px 0 rgb(var(--nk-lamp-rgb) / .12); }
+.nk-dialog__title { flex: 1; min-width: 0; margin: 0; font: 700 19px/1 var(--nk-font-ui); letter-spacing: 1.4px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: var(--nk-glow-text); }
+.nk-dialog__body { flex: 1; min-height: 0; overflow: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: var(--nk-s-6); font: 500 15px/1.35 var(--nk-font-ui); letter-spacing: .2px; }
+.nk-dialog__foot { flex-shrink: 0; display: flex; justify-content: flex-end; align-items: center; gap: var(--nk-s-7); padding: 12px 18px 14px; border-top: 1px solid rgb(0 0 0 / .55); box-shadow: inset 0 1px 0 rgb(var(--nk-lamp-rgb) / .1); }

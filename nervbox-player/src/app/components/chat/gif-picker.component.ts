@@ -46,211 +46,125 @@ interface GiphyResponse {
   standalone: true,
   imports: [CommonModule, FormsModule, MatIconModule, MatButtonModule, MatProgressSpinnerModule],
   template: `
-    <div class="gif-picker" (click)="$event.stopPropagation()">
-      <div class="picker-header">
-        <div class="search-box">
-          <mat-icon>search</mat-icon>
-          <input
-            #searchInput
-            type="text"
-            [(ngModel)]="searchQuery"
-            (ngModelChange)="onSearchChange($event)"
-            placeholder="GIFs suchen..."
-            autocomplete="off"
-          />
+    <div class="gp" role="dialog" aria-label="GIF suchen" (click)="$event.stopPropagation()">
+      <div class="gp-head">
+        <label class="nk-input gp-search">
+          <svg class="nk-input__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+          <input #searchInput class="nk-input__field" type="text" [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange($event)" placeholder="GIFs suchen..." autocomplete="off" aria-label="GIFs suchen" />
           @if (searchQuery) {
-            <button mat-icon-button (click)="clearSearch()">
-              <mat-icon>close</mat-icon>
-            </button>
+            <button type="button" class="nk-input__clear" aria-label="Suche leeren" (click)="clearSearch()">✕</button>
           }
-        </div>
-        <button mat-icon-button class="close-btn" (click)="close.emit()">
-          <mat-icon>close</mat-icon>
-        </button>
+        </label>
+        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="GIF-Suche schließen" (click)="close.emit()">✕</button>
       </div>
-
-      <div class="gif-grid" #gifGrid (scroll)="onScroll($event)">
+      <div class="gp-grid" #gifGrid (scroll)="onScroll($event)">
         @if (loading() && gifs().length === 0) {
-          <div class="loading">
-            <mat-spinner diameter="32"></mat-spinner>
-          </div>
+          <div class="gp-state"><span class="nk-spin" aria-hidden="true"></span>lädt …</div>
         } @else if (error()) {
-          <div class="error">
-            <mat-icon>error</mat-icon>
-            <span>{{ error() }}</span>
-          </div>
+          <div class="gp-state gp-state--err">{{ error() }}</div>
         } @else if (gifs().length === 0) {
-          <div class="empty">
-            <mat-icon>gif_box</mat-icon>
-            <span>{{ searchQuery ? 'Keine GIFs gefunden' : 'Suche nach GIFs...' }}</span>
-          </div>
+          <div class="gp-state">{{ searchQuery ? 'Keine GIFs gefunden' : 'Suche nach GIFs...' }}</div>
         } @else {
           @for (gif of gifs(); track gif.id) {
-            <div class="gif-item" (click)="selectGif(gif)">
+            <button type="button" class="gp-item" [attr.aria-label]="gif.title || 'GIF'" (click)="selectGif(gif)">
               <img [src]="gif.images.fixed_height_small.url" [alt]="gif.title" loading="lazy" />
-            </div>
+            </button>
           }
           @if (loading()) {
-            <div class="loading-more">
-              <mat-spinner diameter="24"></mat-spinner>
-            </div>
+            <div class="gp-state gp-more"><span class="nk-spin" aria-hidden="true"></span></div>
           }
         }
       </div>
-
-      <div class="picker-footer">
-        <img
-          src="https://giphy.com/static/img/giphy_logo_square_social.png"
-          alt="Powered by GIPHY"
-          class="giphy-logo"
-        />
+      <div class="gp-foot">
+        <img src="https://giphy.com/static/img/giphy_logo_square_social.png" alt="Powered by GIPHY" class="gp-logo" />
+        <span class="nk-label">Powered by GIPHY</span>
       </div>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
-    .gif-picker {
-      position: absolute;
-      inset: 0;
-      background: #1a1b1f;
+    :host {
+      display: block;
+    }
+    .gp {
+      height: 100%;
       display: flex;
       flex-direction: column;
-      z-index: 100;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      background: var(--nk-face-glare), var(--nk-face-glass);
+      box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(var(--nk-lamp-rgb) / 0.35), var(--nk-shadow-float);
     }
-
-    .picker-header {
+    .gp-head {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      gap: 10px;
+      padding: 3px;
     }
-
-    .search-box {
+    .gp-search {
       flex: 1;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 20px;
-      padding: 4px 12px;
+      min-width: 0;
+      height: 36px;
     }
-
-    .search-box mat-icon:first-child {
-      color: rgba(255, 255, 255, 0.4);
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
-
-    .search-box input {
+    .gp-grid {
       flex: 1;
-      background: none;
-      border: none;
-      color: white;
-      font-size: 13px;
+      min-height: 0;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-auto-rows: 90px;
+      gap: 6px;
+      align-content: start;
+    }
+    .gp-item {
+      padding: 0;
+      border: 0;
+      border-radius: 4px;
+      overflow: hidden;
+      cursor: pointer;
+      background: #0d0c0a;
+      box-shadow: 0 0 0 1px rgb(0 0 0 / 0.7);
+    }
+    .gp-item:hover,
+    .gp-item:focus-visible {
       outline: none;
+      box-shadow: 0 0 0 2px var(--nk-iv), 0 0 10px rgb(var(--nk-lamp-rgb) / 0.5);
     }
-
-    .search-box input::placeholder {
-      color: rgba(255, 255, 255, 0.3);
+    .gp-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
-
-    .search-box button {
-      width: 24px;
-      height: 24px;
+    .gp-state {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 24px 6px;
+      color: var(--nk-iv-2);
+      font: 500 12px var(--nk-font-mono);
     }
-
-    .search-box button mat-icon {
-      font-size: 16px;
+    .gp-state--err {
+      color: var(--nk-danger-text);
+    }
+    .gp-more {
+      padding: 8px;
+    }
+    .gp-foot {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .gp-logo {
       width: 16px;
       height: 16px;
-      color: rgba(255, 255, 255, 0.5);
-    }
-
-    .close-btn mat-icon {
-      color: rgba(255, 255, 255, 0.5);
-    }
-
-    .gif-grid {
-      flex: 1;
-      overflow-y: auto;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      padding: 8px;
-      align-content: flex-start;
-    }
-
-    .gif-item {
-      cursor: pointer;
-      border-radius: 6px;
-      overflow: hidden;
-      background: rgba(255, 255, 255, 0.05);
-      width: calc(33.333% - 3px);
-      height: 0;
-      padding-bottom: calc(33.333% - 3px);
-      position: relative;
-    }
-
-    .gif-item:hover {
-      box-shadow: 0 0 0 2px #9333ea;
-    }
-
-    .gif-item img {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-    }
-
-    .loading,
-    .empty,
-    .error {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 32px;
-      color: rgba(255, 255, 255, 0.4);
-      font-size: 13px;
-    }
-
-    .loading-more {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      padding: 16px;
-    }
-
-    .error {
-      color: #ef4444;
-    }
-
-    .error mat-icon,
-    .empty mat-icon {
-      font-size: 32px;
-      width: 32px;
-      height: 32px;
-    }
-
-    .picker-footer {
-      display: flex;
-      justify-content: flex-end;
-      padding: 4px 8px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .giphy-logo {
-      height: 16px;
-      opacity: 0.5;
+      opacity: 0.8;
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class GifPickerComponent implements OnInit {
   private readonly api = inject(ApiService);

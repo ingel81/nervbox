@@ -1,16 +1,9 @@
 import { Component, inject, output, input, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatInputModule } from '@angular/material/input';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatBadgeModule } from '@angular/material/badge';
 import { MatDividerModule } from '@angular/material/divider';
-import { MatSelectModule } from '@angular/material/select';
 import { MatDialog } from '@angular/material/dialog';
 import { AuthService } from '../../core/services/auth.service';
 import { FavoritesService } from '../../core/services/favorites.service';
@@ -21,6 +14,7 @@ import { InventoryService } from '../../core/services/inventory.service';
 import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component';
 import { ShekelPopoverComponent } from '../shared/shekel-popover/shekel-popover.component';
 import { ShopDialogComponent } from '../shop/shop-dialog.component';
+import { GameSelectionDialogComponent } from '../mini-games/game-selection-dialog.component';
 
 export type SortOption =
   | 'name-asc'
@@ -33,939 +27,537 @@ export type SortOption =
   | 'votes-asc'
   | 'random';
 
+export const SORT_LABELS: Record<SortOption, string> = {
+  'name-asc': 'Name A-Z',
+  'name-desc': 'Name Z-A',
+  'plays-desc': 'Meistgespielt',
+  'votes-desc': 'Beste Bewertung',
+  'votes-asc': 'Schlechteste Bewertung',
+  newest: 'Neueste',
+  'duration-desc': 'Längste',
+  'duration-asc': 'Kürzeste',
+  random: 'Zufall',
+};
+
+/** Drehknopf-Stellung je Sortierung (Grad) */
+const KNOB_ANGLE: Record<SortOption, number> = {
+  'name-asc': -120,
+  'name-desc': -90,
+  'plays-desc': -60,
+  'votes-desc': -30,
+  'votes-asc': 0,
+  newest: 30,
+  'duration-desc': 60,
+  'duration-asc': 90,
+  random: 120,
+};
+
+/**
+ * Bedienleiste des Geräts (.nk-deck): Wortmarke, Suche, Sortier-Drehknopf, Favoriten-Schalter,
+ * Zufall, Konto-LCD, Funktionstasten, Konto-Taste.
+ */
 @Component({
   selector: 'app-toolbar',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatToolbarModule,
-    MatButtonModule,
-    MatIconModule,
-    MatMenuModule,
-    MatTooltipModule,
-    MatInputModule,
-    MatFormFieldModule,
-    MatBadgeModule,
-    MatDividerModule,
-    MatSelectModule,
-    UserAvatarComponent,
-  ],
+  imports: [FormsModule, MatIconModule, MatMenuModule, MatTooltipModule, MatDividerModule, UserAvatarComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <mat-toolbar class="toolbar">
-      <!-- Logo -->
-      <div class="logo">
-        <span class="logo-text">NervBox</span>
-        <span class="logo-edition">cabd 2025 edition</span>
+    <header class="nk-deck deck">
+      <!-- Wortmarke -->
+      <div class="nk-logo logo">
+        <span class="nk-logo__stripes" aria-hidden="true">
+          <span class="nk-logo__stripe"></span><span class="nk-logo__stripe nk-logo__stripe--2"></span><span class="nk-logo__stripe nk-logo__stripe--3"></span><span class="nk-logo__stripe nk-logo__stripe--4"></span><span class="nk-logo__stripe nk-logo__stripe--5"></span>
+        </span>
+        <span class="nk-logo__word">NERVBOX</span>
+        <span class="nk-logo__sub">30 JAHRE CABD · 1996–2026</span>
       </div>
 
-      <!-- Search -->
-      <div class="search-container">
-        <mat-icon class="search-icon">search</mat-icon>
-        <input
-          type="text"
-          class="search-input"
-          placeholder="Sound suchen..."
-          [(ngModel)]="searchQuery"
-          (input)="onSearchChange()"
-        />
-        @if (searchQuery) {
+      <!-- Suche -->
+      <div class="nk-ctl search-container">
+        <span class="nk-label">Suche</span>
+        <label class="nk-input deck-search">
+          <svg class="nk-input__icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+          <input
+            class="nk-input__field"
+            type="text"
+            aria-label="Sound suchen"
+            placeholder="Sound suchen …"
+            [(ngModel)]="searchQuery"
+            (input)="onSearchChange()"
+            (keydown.escape)="clearSearch()"
+          />
           <button
-            mat-icon-button
-            class="clear-btn"
-            (click)="clearSearch()"
+            type="button"
+            class="nk-input__clear"
+            aria-label="Suche leeren"
             matTooltip="Suche leeren"
+            [disabled]="!searchQuery"
+            (click)="clearSearch()"
+          >✕</button>
+        </label>
+      </div>
+
+      <!-- Sortierung (Drehknopf) -->
+      <div class="nk-ctl sort-container">
+        <span class="nk-label">Sortierung</span>
+        <button
+          type="button"
+          class="nk-select deck-sort"
+          aria-haspopup="listbox"
+          [attr.aria-label]="'Sortierung: ' + sortLabel()"
+          [matMenuTriggerFor]="sortMenu"
+          [style.--nk-knob-angle]="knobAngle()"
+        >
+          <span class="nk-select__knob" aria-hidden="true"></span>
+          <span class="deck-sort__label">{{ sortLabel() }}</span>
+          <span aria-hidden="true">▾</span>
+        </button>
+        <mat-menu #sortMenu="matMenu" class="nk-mat-menu">
+          @for (opt of sortOptions; track opt) {
+            <button mat-menu-item role="menuitemradio" [attr.aria-checked]="opt === currentSort()" (click)="onSortChange(opt)">
+              <span [class.deck-menu-current]="opt === currentSort()">{{ sortLabels[opt] }}</span>
+            </button>
+          }
+        </mat-menu>
+      </div>
+
+      <!-- Nur Favoriten -->
+      @if (auth.isLoggedIn()) {
+        <div class="nk-ctl deck-fav">
+          <span class="nk-label">Nur Favoriten</span>
+          <button
+            type="button"
+            class="nk-switch deck-switch"
+            role="switch"
+            [attr.aria-checked]="showFavoritesOnly()"
+            [attr.aria-label]="showFavoritesOnly() ? 'Alle Sounds anzeigen' : 'Nur Favoriten anzeigen'"
+            [matTooltip]="showFavoritesOnly() ? 'Alle Sounds anzeigen' : 'Nur Favoriten anzeigen'"
+            (click)="favoritesFilterToggle.emit()"
           >
-            <mat-icon>close</mat-icon>
+            <span class="nk-switch__knob" aria-hidden="true"></span>♥
           </button>
-        }
-      </div>
-
-      <!-- Sort Dropdown -->
-      <div class="sort-container">
-        <mat-icon class="sort-icon">sort</mat-icon>
-        <mat-select
-          class="sort-select"
-          [value]="currentSort()"
-          (selectionChange)="onSortChange($event.value)"
-          panelClass="sort-panel"
-          disableOptionCentering
-        >
-          <mat-option value="name-asc">Name A-Z</mat-option>
-          <mat-option value="name-desc">Name Z-A</mat-option>
-          <mat-option value="plays-desc">Meistgespielt</mat-option>
-          <mat-option value="votes-desc">Beste Bewertung</mat-option>
-          <mat-option value="votes-asc">Schlechteste Bewertung</mat-option>
-          <mat-option value="newest">Neueste</mat-option>
-          <mat-option value="duration-desc">Längste</mat-option>
-          <mat-option value="duration-asc">Kürzeste</mat-option>
-          <mat-option value="random">Zufall</mat-option>
-        </mat-select>
-      </div>
-
-      <!-- Favorites Filter - nur wenn eingeloggt -->
-      @if (auth.isLoggedIn()) {
-        <button
-          class="favorites-filter-btn"
-          [class.active]="showFavoritesOnly()"
-          (click)="favoritesFilterToggle.emit()"
-          [matTooltip]="showFavoritesOnly() ? 'Alle Sounds anzeigen' : 'Nur Favoriten anzeigen'"
-        >
-          <mat-icon>{{ showFavoritesOnly() ? 'favorite' : 'favorite_border' }}</mat-icon>
-        </button>
+        </div>
       }
 
-      <!-- SHEKEL DISPLAY - Prominent! -->
-      @if (auth.isLoggedIn()) {
-        <div
-          class="credit-display clickable"
-          [class.low-credits]="!creditService.canPlay()"
-          matTooltip="Shekel Funktionen"
-          (click)="openShekelPopover()"
+      <!-- Zufall -->
+      <div class="nk-ctl nk-ctl--center deck-random">
+        <button
+          type="button"
+          class="nk-key nk-key--round"
+          aria-label="Zufälligen Sound spielen"
+          matTooltip="Zufälligen Sound spielen"
+          (click)="randomClick.emit()"
         >
-          <img src="icons/nervbox-coin.svg" alt="Shekel" class="coin-icon" />
-          <span class="credit-amount">{{ creditService.creditsFormatted() }}</span>
-          <span class="credit-currency">N$</span>
-        </div>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M9 9h.01M15 15h.01M15 9h.01M9 15h.01M12 12h.01" stroke-width="3" stroke-linecap="round"></path></svg>
+        </button>
+        <span class="nk-label">Zufall</span>
+      </div>
 
-        <!-- LOGS - Clickable to open shop -->
-        <div class="logs-display clickable" matTooltip="Holz kaufen" (click)="openShop()">
-          <img src="icons/nervbox-log.svg" alt="" class="log-icon" />
-          <span class="log-amount">{{ inventoryService.wood() }}</span>
-        </div>
-
-        <!-- INCOME/h -->
-        @if (creditService.hourlyCreditsEnabled()) {
-          <div class="income-display" matTooltip="Stündliches Einkommen">
-            <span class="income-label">Income</span>
-            <span class="income-amount">+{{ creditService.hourlyCreditsAmount() }}</span>
-            <span class="income-unit">N$/h</span>
+      <!-- Konto-LCD -->
+      @if (auth.isLoggedIn()) {
+        <div class="nk-lcd deck-lcd" [class.nk-lcd--low]="!creditService.canPlay()" role="group" aria-label="Konto">
+          <div class="nk-lcd__glass">
+            <button
+              type="button"
+              class="nk-lcd__cell credit-display"
+              matTooltip="Shekel Funktionen"
+              [attr.aria-label]="'Schekel-Funktionen öffnen, Kontostand ' + creditService.creditsFormatted() + ' N$'"
+              (click)="openShekelPopover($event)"
+            >
+              <span class="nk-lcd__label">SCHEKEL (N$)</span>
+              <span class="nk-lcd__value">
+                <span class="nk-lcd__ghost" aria-hidden="true">{{ ghost(creditService.creditsFormatted()) }}</span>
+                <span class="nk-lcd__digits">{{ creditService.creditsFormatted() }}</span>
+              </span>
+              <span class="nk-lcd__label">{{ creditService.costPerPlay() }} N$/SOUND</span>
+            </button>
+            <span class="nk-lcd__div" aria-hidden="true"></span>
+            <button
+              type="button"
+              class="nk-lcd__cell"
+              matTooltip="Holz kaufen"
+              [attr.aria-label]="'Holz kaufen, Bestand ' + inventoryService.wood()"
+              (click)="openShop()"
+            >
+              <span class="nk-lcd__label">HOLZ</span>
+              <span class="nk-lcd__value">
+                <span class="nk-lcd__ghost" aria-hidden="true">{{ ghost('' + inventoryService.wood()) }}</span>
+                <span class="nk-lcd__digits">{{ inventoryService.wood() }}</span>
+              </span>
+              <span class="nk-lcd__label">&nbsp;</span>
+            </button>
+            @if (creditService.hourlyCreditsEnabled()) {
+              <span class="nk-lcd__div" aria-hidden="true"></span>
+              <div class="nk-lcd__cell deck-income" matTooltip="Stündliches Einkommen">
+                <span class="nk-lcd__label">● ONLINE-BONUS</span>
+                <span class="nk-lcd__value nk-lcd__value--md">+{{ creditService.hourlyCreditsAmount() }} N$/h</span>
+                <span class="nk-lcd__label">STÜNDLICH</span>
+              </div>
+            }
           </div>
-        }
+        </div>
       }
 
-      <div class="spacer"></div>
+      <span class="deck-spacer"></span>
 
-      <!-- MIXER FEATURE GROUP - Das Killer-Feature! -->
-      <div class="mixer-feature-group">
-        <button
-          class="selection-toggle-btn"
-          data-tour="selection"
-          [class.active]="selectionMode()"
-          [matTooltip]="selectionMode() ? 'Auswahlmodus beenden' : 'Mehrfachauswahl'"
-          (click)="selectionModeToggle.emit()"
-        >
-          <mat-icon>{{ selectionMode() ? 'check_box' : 'checklist' }}</mat-icon>
-        </button>
+      <!-- Funktionstasten -->
+      <div class="deck-tools">
+        <div class="nk-toolkey">
+          <span [class]="selectionMode() ? 'nk-led nk-led--own' : 'nk-led'" aria-hidden="true"></span>
+          <button
+            type="button"
+            data-tour="selection"
+            [class]="selectionMode() ? 'nk-key nk-key--icon nk-key--on' : 'nk-key nk-key--icon'"
+            [attr.aria-pressed]="selectionMode()"
+            [attr.aria-label]="selectionMode() ? 'Auswahlmodus beenden' : 'Mehrfachauswahl'"
+            [matTooltip]="selectionMode() ? 'Auswahlmodus beenden' : 'Mehrfachauswahl'"
+            (click)="selectionModeToggle.emit()"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6l2 2 3-3M4 13l2 2 3-3M12 7h8M12 14h8"></path></svg>
+            @if (selectionMode() && selectionCount() > 0) {
+              <span class="nk-badge nk-badge--corner nk-badge--lamp">{{ selectionCount() }}</span>
+            }
+          </button>
+          <span class="nk-toolkey__label">Auswahl</span>
+        </div>
 
         @if (selectionMode() && selectionCount() > 0) {
-          <span class="selection-badge">{{ selectionCount() }}</span>
-          <button
-            class="clear-selection-btn"
-            matTooltip="Alle abwählen"
-            (click)="clearSelection.emit()"
-          >
-            <mat-icon>clear</mat-icon>
-          </button>
+          <div class="nk-toolkey">
+            <span class="nk-led" aria-hidden="true"></span>
+            <button
+              type="button"
+              class="nk-key nk-key--icon"
+              aria-label="Alle abwählen"
+              matTooltip="Alle abwählen"
+              (click)="clearSelection.emit()"
+            >✕</button>
+            <span class="nk-toolkey__label">Abwählen</span>
+          </div>
         }
 
-        <button
-          class="mixer-main-btn"
-          [class.has-selection]="selectionMode() && selectionCount() > 0"
-          data-tour="mixer"
-          [matTooltip]="
-            selectionMode() && selectionCount() > 0 ? 'Auswahl im Mixer öffnen' : 'Mixer öffnen'
-          "
-          (click)="
-            selectionMode() && selectionCount() > 0 ? openSelectionInMixer.emit() : openMixer()
-          "
-        >
-          <mat-icon>{{
-            selectionMode() && selectionCount() > 0 ? 'arrow_forward' : 'queue_music'
-          }}</mat-icon>
-          <span class="mixer-label">{{
-            selectionMode() && selectionCount() > 0 ? 'AB IN DEN MIXER' : 'MIXER'
-          }}</span>
-        </button>
-      </div>
+        <div class="nk-toolkey">
+          <span [class]="hasSelection() ? 'nk-led nk-led--own nk-led--blink' : 'nk-led'" aria-hidden="true"></span>
+          <button
+            type="button"
+            data-tour="mixer"
+            [class]="hasSelection() ? 'nk-key nk-key--icon nk-key--accent' : 'nk-key nk-key--icon'"
+            [attr.aria-label]="hasSelection() ? 'Auswahl im Mixer öffnen' : 'Mixer öffnen'"
+            [matTooltip]="hasSelection() ? 'Auswahl im Mixer öffnen' : 'Mixer öffnen'"
+            (click)="hasSelection() ? openSelectionInMixer.emit() : openMixer()"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"></path></svg>
+          </button>
+          <span class="nk-toolkey__label">{{ hasSelection() ? 'In Mixer' : 'Mixer' }}</span>
+        </div>
 
-      <div class="toolbar-divider"></div>
+        @if (auth.currentUser()) {
+          <div class="nk-toolkey">
+            <span class="nk-led" aria-hidden="true"></span>
+            <button type="button" class="nk-key nk-key--icon" aria-label="Spielhalle (Minispiele)" matTooltip="Mini-Games – Earn N$" (click)="openGames()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 8h12a4 4 0 014 4v1a4 4 0 01-4 4H6a4 4 0 01-4-4v-1a4 4 0 014-4zM7 11v3M5.5 12.5h3M16 12h.01M18 14h.01"></path></svg>
+            </button>
+            <span class="nk-toolkey__label">Spielhalle</span>
+          </div>
+          <div class="nk-toolkey">
+            <span class="nk-led" aria-hidden="true"></span>
+            <button type="button" class="nk-key nk-key--icon" aria-label="Shop" matTooltip="Shop" (click)="openShop()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8zM9 8V6a3 3 0 016 0v2"></path></svg>
+            </button>
+            <span class="nk-toolkey__label">Shop</span>
+          </div>
+        }
 
-      <!-- Action Buttons -->
-      <div class="actions">
-        <!-- Stats -->
-        <button
-          mat-icon-button
-          class="action-btn"
-          data-tour="stats"
-          matTooltip="Statistiken"
-          (click)="statsClick.emit()"
-        >
-          <mat-icon>leaderboard</mat-icon>
-        </button>
+        <div class="nk-toolkey">
+          <span class="nk-led" aria-hidden="true"></span>
+          <button type="button" class="nk-key nk-key--icon" data-tour="stats" aria-label="Statistiken" matTooltip="Statistiken" (click)="statsClick.emit()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"></path></svg>
+          </button>
+          <span class="nk-toolkey__label">Statistik</span>
+        </div>
 
-        <!-- Chat -->
-        <button
-          mat-icon-button
-          class="action-btn"
-          data-tour="chat"
-          matTooltip="Chat"
-          (click)="chatClick.emit()"
-        >
-          <mat-icon>chat</mat-icon>
-        </button>
+        <div class="nk-toolkey">
+          <span [class]="chatOpen() ? 'nk-led nk-led--own' : 'nk-led'" aria-hidden="true"></span>
+          <button
+            type="button"
+            data-tour="chat"
+            [class]="chatOpen() ? 'nk-key nk-key--icon nk-key--on' : 'nk-key nk-key--icon'"
+            [attr.aria-pressed]="chatOpen()"
+            aria-label="Chat"
+            matTooltip="Chat"
+            (click)="chatClick.emit()"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"></path></svg>
+          </button>
+          <span class="nk-toolkey__label">Chat</span>
+        </div>
 
-        <!-- ADMIN SECTION -->
         @if (auth.currentUser()?.role === 'admin') {
-          <div class="toolbar-divider"></div>
-          <button
-            mat-icon-button
-            class="action-btn admin-btn"
-            [matMenuTriggerFor]="adminMenu"
-            data-tour="admin-menu"
-            matTooltip="Admin"
-          >
-            <mat-icon>admin_panel_settings</mat-icon>
-          </button>
+          <div class="nk-toolkey">
+            <span class="nk-led" aria-hidden="true"></span>
+            <button
+              type="button"
+              class="nk-key nk-key--icon"
+              data-tour="admin-menu"
+              aria-label="Admin"
+              aria-haspopup="menu"
+              matTooltip="Admin"
+              [matMenuTriggerFor]="adminMenu"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"></path></svg>
+            </button>
+            <span class="nk-toolkey__label">Admin</span>
+          </div>
           <mat-menu #adminMenu="matMenu">
-            <div class="menu-header admin-menu-header">
-              <mat-icon>admin_panel_settings</mat-icon>
-              <span>Administration</span>
-            </div>
+            <div class="deck-menu-head">Administration</div>
             <mat-divider></mat-divider>
-            <button mat-menu-item (click)="adminMenuAction.emit('users')">
-              <mat-icon>people</mat-icon>
-              <span>Userverwaltung</span>
-            </button>
-            <button mat-menu-item (click)="adminMenuAction.emit('tags')">
-              <mat-icon>label</mat-icon>
-              <span>Tag-Verwaltung</span>
-            </button>
-            <button mat-menu-item (click)="adminMenuAction.emit('tag-wizard')">
-              <mat-icon>auto_fix_high</mat-icon>
-              <span>Tag-Wizard</span>
-            </button>
-            <button mat-menu-item (click)="adminMenuAction.emit('credits')">
-              <img src="icons/nervbox-coin.svg" alt="" class="menu-coin-icon" />
-              <span>Shekel-Einstellungen</span>
-            </button>
+            <button mat-menu-item (click)="adminMenuAction.emit('users')"><mat-icon>people</mat-icon><span>Userverwaltung</span></button>
+            <button mat-menu-item (click)="adminMenuAction.emit('tags')"><mat-icon>label</mat-icon><span>Tag-Verwaltung</span></button>
+            <button mat-menu-item (click)="adminMenuAction.emit('tag-wizard')"><mat-icon>auto_fix_high</mat-icon><span>Tag-Wizard</span></button>
+            <button mat-menu-item (click)="adminMenuAction.emit('credits')"><mat-icon>savings</mat-icon><span>Shekel-Einstellungen</span></button>
             <mat-divider></mat-divider>
-            <button mat-menu-item (click)="killAllClick.emit()" class="danger-item">
-              <mat-icon>stop_circle</mat-icon>
-              <span>Alle Sounds stoppen</span>
-            </button>
+            <button mat-menu-item class="nk-menu-danger" (click)="killAllClick.emit()"><mat-icon>stop_circle</mat-icon><span>Alle Sounds stoppen</span></button>
           </mat-menu>
-        }
-
-        <!-- PROFILE SECTION -->
-        <div class="toolbar-divider"></div>
-        @if (auth.isLoggedIn()) {
-          <button
-            mat-icon-button
-            [matMenuTriggerFor]="userMenu"
-            class="user-btn"
-            data-tour="profile"
-          >
-            <app-user-avatar
-              [imageUrl]="avatarService.currentUserAvatarUrl()"
-              [initials]="userInitials()"
-              [name]="$safeNavigationMigration(auth.currentUser()?.username)"
-              size="medium"
-            />
-          </button>
-          <mat-menu #userMenu="matMenu">
-            <div class="menu-header user-menu-header">
-              <app-user-avatar
-                [imageUrl]="avatarService.currentUserAvatarUrl()"
-                [initials]="userInitials()"
-                [name]="$safeNavigationMigration(auth.currentUser()?.username)"
-                size="medium"
-              />
-              <span>{{ auth.currentUser()?.username }}</span>
-            </div>
-            <mat-divider></mat-divider>
-            <button mat-menu-item (click)="profileClick.emit()">
-              <mat-icon>person</mat-icon>
-              <span>Mein Profil</span>
-            </button>
-            <button mat-menu-item (click)="changeAvatarClick.emit()">
-              <mat-icon>photo_camera</mat-icon>
-              <span>Avatar ändern</span>
-            </button>
-            <button mat-menu-item (click)="uploadClick.emit()">
-              <mat-icon>upload_file</mat-icon>
-              <span>Sound hochladen</span>
-            </button>
-            <button mat-menu-item (click)="changePasswordClick.emit()">
-              <mat-icon>key</mat-icon>
-              <span>Kennwort ändern</span>
-            </button>
-            <button mat-menu-item (click)="restartTourClick.emit()">
-              <mat-icon>help_outline</mat-icon>
-              <span>Tour starten</span>
-            </button>
-            <mat-divider></mat-divider>
-            <button mat-menu-item (click)="auth.logout()">
-              <mat-icon>logout</mat-icon>
-              <span>Abmelden</span>
-            </button>
-          </mat-menu>
-        } @else {
-          <button
-            mat-icon-button
-            class="action-btn"
-            data-tour="profile"
-            matTooltip="Anmelden"
-            (click)="loginClick.emit()"
-          >
-            <mat-icon>login</mat-icon>
-          </button>
         }
       </div>
-    </mat-toolbar>
+
+      <!-- Konto -->
+      @if (auth.isLoggedIn()) {
+        <button
+          type="button"
+          class="deck-account"
+          data-tour="profile"
+          aria-haspopup="menu"
+          [attr.aria-label]="'Mein Konto (' + (auth.currentUser()?.username ?? '') + ')'"
+          [matMenuTriggerFor]="userMenu"
+        >
+          <app-user-avatar
+            [imageUrl]="avatarService.currentUserAvatarUrl()"
+            [initials]="userInitials()"
+            [name]="auth.currentUser()?.username ?? ''"
+            size="large"
+          />
+        </button>
+        <mat-menu #userMenu="matMenu">
+          <div class="deck-menu-head">{{ auth.currentUser()?.username }}</div>
+          <mat-divider></mat-divider>
+          <button mat-menu-item (click)="profileClick.emit()"><mat-icon>person</mat-icon><span>Mein Profil</span></button>
+          <button mat-menu-item (click)="changeAvatarClick.emit()"><mat-icon>photo_camera</mat-icon><span>Avatar ändern</span></button>
+          <button mat-menu-item (click)="uploadClick.emit()"><mat-icon>upload_file</mat-icon><span>Sound hochladen</span></button>
+          <button mat-menu-item (click)="changePasswordClick.emit()"><mat-icon>key</mat-icon><span>Kennwort ändern</span></button>
+          <button mat-menu-item (click)="restartTourClick.emit()"><mat-icon>help_outline</mat-icon><span>Tour starten</span></button>
+          <mat-divider></mat-divider>
+          <button mat-menu-item (click)="auth.logout()"><mat-icon>logout</mat-icon><span>Abmelden</span></button>
+        </mat-menu>
+      } @else {
+        <div class="nk-toolkey deck-login">
+          <span class="nk-led nk-led--lamp nk-led--blink" aria-hidden="true"></span>
+          <button type="button" class="nk-key nk-key--accent" data-tour="profile" (click)="loginClick.emit()">Anmelden</button>
+          <span class="nk-toolkey__label">&nbsp;</span>
+        </div>
+      }
+    </header>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
-    .toolbar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 1000;
-      height: 56px;
-      background: linear-gradient(90deg, #0a0a0a 0%, #1a0f1f 50%, #0a0a0a 100%);
-      border-bottom: 1px solid rgba(147, 51, 234, 0.3);
-      box-shadow: 0 2px 20px rgba(147, 51, 234, 0.2);
-      padding: 0 16px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-    }
-
-    .logo-text {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 20px;
-      font-weight: 700;
-      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      text-shadow: 0 0 30px rgba(147, 51, 234, 0.5);
-    }
-
-    .logo-edition {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      font-weight: 500;
-      color: rgba(255, 255, 255, 0.35);
-      margin-left: 8px;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-
-    .search-container {
-      display: flex;
-      align-items: center;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(147, 51, 234, 0.3);
-      border-radius: 8px;
-      padding: 4px 12px;
-      max-width: 300px;
-      flex: 1;
-      transition: all 0.2s ease;
-    }
-
-    .search-container:focus-within {
-      border-color: rgba(147, 51, 234, 0.6);
-      box-shadow: 0 0 10px rgba(147, 51, 234, 0.2);
-    }
-
-    .search-icon {
-      color: rgba(255, 255, 255, 0.5);
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-      margin-right: 8px;
-    }
-
-    .search-input {
-      flex: 1;
-      background: transparent;
-      border: none;
-      outline: none;
-      color: white;
-      font-family: Inter, sans-serif;
-      font-size: 14px;
-    }
-
-    .search-input::placeholder {
-      color: rgba(255, 255, 255, 0.4);
-    }
-
-    .clear-btn {
-      width: 24px !important;
-      height: 24px !important;
-      min-width: 24px !important;
-      padding: 0 !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
+    :host {
+      display: block;
       flex-shrink: 0;
     }
-
-    .clear-btn mat-icon {
-      font-size: 16px !important;
-      width: 16px !important;
-      height: 16px !important;
-      line-height: 16px !important;
-      color: rgba(255, 255, 255, 0.5);
+    .deck {
+      gap: 10px;
     }
-
-    .clear-btn:hover mat-icon {
-      color: #ec4899;
+    /* Wortmarke: Breite aus dem Inhalt, damit „NERVBOX“ nie abgeschnitten wird */
+    .deck .nk-logo {
+      width: auto;
+      padding-right: 14px;
     }
-
-    .spacer {
+    .deck .nk-logo__word {
+      font-size: 24px;
+    }
+    .deck-search {
+      width: 196px;
+    }
+    .deck-sort {
+      margin: 1px 2px;
+      min-width: 150px;
+    }
+    .deck-sort__label {
+      flex: 1;
+      text-align: left;
+    }
+    .deck-switch {
+      margin: 5px 0;
+    }
+    .deck-random {
+      width: 66px;
+    }
+    .deck-random .nk-key--round {
+      margin-top: 8px;
+    }
+    .deck-lcd .nk-lcd__cell:first-child {
+      min-width: 108px;
+    }
+    .deck-income {
+      cursor: default;
+      min-width: 92px;
+    }
+    .deck-spacer {
       flex: 1;
     }
-
-    .sort-container {
+    .deck-tools {
       display: flex;
-      align-items: center;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(147, 51, 234, 0.3);
-      border-radius: 8px;
-      padding: 4px 10px;
-      gap: 6px;
-      transition: all 0.2s ease;
-    }
-
-    .sort-container:hover {
-      border-color: rgba(147, 51, 234, 0.5);
-    }
-
-    .sort-icon {
-      color: rgba(255, 255, 255, 0.5);
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
-
-    .sort-select {
-      width: auto;
-      min-width: 120px;
-    }
-
-    .sort-select ::ng-deep .mat-mdc-select-value {
-      color: rgba(255, 255, 255, 0.8);
-      font-family: Inter, sans-serif;
-      font-size: 13px;
-      padding-right: 8px;
-    }
-
-    .sort-select ::ng-deep .mat-mdc-select-arrow {
-      color: rgba(255, 255, 255, 0.5);
-      margin-left: 4px;
-    }
-
-    .sort-container:hover .sort-select ::ng-deep .mat-mdc-select-arrow {
-      color: rgba(255, 255, 255, 0.8);
-    }
-
-    /* Favorites Filter Button */
-    .favorites-filter-btn {
-      width: 36px;
-      height: 36px;
-      padding: 0;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(236, 72, 153, 0.3);
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .favorites-filter-btn:hover {
-      background: rgba(236, 72, 153, 0.15);
-      border-color: rgba(236, 72, 153, 0.5);
-    }
-
-    .favorites-filter-btn mat-icon {
-      color: rgba(236, 72, 153, 0.6);
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-      transition:
-        color 0.2s ease,
-        transform 0.2s ease;
-    }
-
-    .favorites-filter-btn:hover mat-icon {
-      color: #ec4899;
-      transform: scale(1.1);
-    }
-
-    .favorites-filter-btn.active {
-      background: rgba(236, 72, 153, 0.2);
-      border-color: rgba(236, 72, 153, 0.6);
-    }
-
-    .favorites-filter-btn.active mat-icon {
-      color: #ec4899;
-    }
-
-    /* CREDIT DISPLAY - Das Guthaben! */
-    .credit-display {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: linear-gradient(135deg, rgba(234, 179, 8, 0.15) 0%, rgba(251, 191, 36, 0.1) 100%);
-      border: 1px solid rgba(234, 179, 8, 0.4);
-      border-radius: 20px;
-      padding: 6px 14px;
-      margin-left: 8px;
-      transition: all 0.3s ease;
-      animation: creditGlow 3s ease-in-out infinite;
-    }
-
-    .credit-display.clickable {
-      cursor: pointer;
-    }
-
-    .credit-display:hover {
-      background: linear-gradient(135deg, rgba(234, 179, 8, 0.25) 0%, rgba(251, 191, 36, 0.2) 100%);
-      border-color: rgba(234, 179, 8, 0.6);
-      transform: scale(1.05);
-    }
-
-    .credit-display.low-credits {
-      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.15) 100%);
-      border-color: rgba(239, 68, 68, 0.5);
-      animation: lowCreditPulse 1.5s ease-in-out infinite;
-    }
-
-    .credit-display.low-credits .coin-icon {
-      filter: grayscale(100%) brightness(0.8);
-    }
-
-    .credit-display.low-credits .credit-amount {
-      color: #fca5a5;
-    }
-
-    .coin-icon {
-      width: 32px;
-      height: 32px;
-      filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.5));
-    }
-
-    .menu-coin-icon {
-      width: 24px;
-      height: 24px;
-      margin-right: 16px;
-      vertical-align: middle;
-      position: relative;
-      top: -2px;
-    }
-
-    .credit-amount {
-      color: #fde047;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
-      font-weight: 700;
-      text-shadow: 0 0 8px rgba(253, 224, 71, 0.4);
-      min-width: 24px;
-    }
-
-    .credit-currency {
-      color: #fbbf24;
-      font-size: 13px;
-      font-weight: 600;
-      opacity: 0.85;
-    }
-
-    @keyframes creditGlow {
-      0%,
-      100% {
-        box-shadow: 0 0 8px rgba(234, 179, 8, 0.3);
-      }
-      50% {
-        box-shadow: 0 0 16px rgba(234, 179, 8, 0.5);
-      }
-    }
-
-    @keyframes lowCreditPulse {
-      0%,
-      100% {
-        box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
-        transform: scale(1);
-      }
-      50% {
-        box-shadow: 0 0 16px rgba(239, 68, 68, 0.6);
-        transform: scale(1.02);
-      }
-    }
-
-    /* LOGS - Mysteriös */
-    .logs-display {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: linear-gradient(135deg, rgba(46, 125, 50, 0.15) 0%, rgba(27, 94, 32, 0.1) 100%);
-      border: 1px solid rgba(46, 125, 50, 0.3);
-      border-radius: 20px;
-      padding: 6px 14px;
-      margin-left: 8px;
-      cursor: default;
-      user-select: none;
-      transition: all 0.3s ease;
-    }
-
-    .logs-display.clickable {
-      cursor: pointer;
-    }
-
-    .logs-display.clickable:hover {
-      background: linear-gradient(135deg, rgba(46, 125, 50, 0.25) 0%, rgba(27, 94, 32, 0.2) 100%);
-      border-color: rgba(46, 125, 50, 0.5);
-      transform: scale(1.05);
-    }
-
-    .log-icon {
-      width: 22px;
-      height: 22px;
-      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-    }
-
-    .log-amount {
-      color: rgba(129, 199, 132, 0.95);
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
-      font-weight: 700;
-      text-shadow: 0 0 8px rgba(129, 199, 132, 0.3);
-    }
-
-    .income-display {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 20px;
-      padding: 6px 14px;
-      margin-left: 8px;
-      cursor: default;
-      user-select: none;
-    }
-
-    .income-label {
-      color: rgba(255, 255, 255, 0.5);
-      font-size: 13px;
-      font-weight: 400;
-    }
-
-    .income-amount {
-      color: rgba(255, 255, 255, 0.8);
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .income-unit {
-      color: rgba(255, 255, 255, 0.5);
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      font-weight: 500;
-    }
-
-    .actions {
-      display: flex;
-      align-items: center;
       gap: 4px;
+      flex-shrink: 0;
     }
-
-    .toolbar-divider {
-      width: 1px;
-      height: 28px;
-      background: rgba(147, 51, 234, 0.4);
-      margin: 0 4px;
-    }
-
-    .actions .toolbar-divider {
-      margin: 0 8px;
-    }
-
-    /* MIXER FEATURE GROUP - Das Killer-Feature! */
-    .mixer-feature-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .selection-toggle-btn {
-      width: 36px;
-      height: 36px;
+    .deck-account {
+      flex-shrink: 0;
+      margin-right: 4px;
       padding: 0;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 8px;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
       cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      box-shadow: var(--nk-shadow-ring);
     }
-
-    .selection-toggle-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.4);
+    .deck-account:focus-visible {
+      outline: 2px solid var(--nk-iv);
+      outline-offset: 9px;
     }
-
-    .selection-toggle-btn mat-icon {
-      color: rgba(255, 255, 255, 0.7);
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
+    .deck-login {
+      width: auto;
+      margin-right: 4px;
     }
-
-    .selection-toggle-btn.active {
-      background: rgba(34, 197, 94, 0.2);
-      border-color: rgba(34, 197, 94, 0.6);
-    }
-
-    .selection-toggle-btn.active mat-icon {
-      color: #22c55e;
-    }
-
-    .selection-badge {
-      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-      color: white;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 10px;
-      min-width: 20px;
-      text-align: center;
-      box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
-    }
-
-    .clear-selection-btn {
-      width: 32px;
-      height: 32px;
-      padding: 0;
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.4);
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .clear-selection-btn:hover {
-      background: rgba(239, 68, 68, 0.25);
-      border-color: rgba(239, 68, 68, 0.6);
-    }
-
-    .clear-selection-btn mat-icon {
-      color: #ef4444;
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-      margin-top: 2px;
-    }
-
-    /* MIXER MAIN BUTTON - Das Highlight! */
-    .mixer-main-btn {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: linear-gradient(90deg, #9333ea 0%, #ec4899 50%, #9333ea 100%);
-      background-size: 200% 100%;
-      border: none;
-      border-radius: 10px;
-      padding: 8px 16px;
-      cursor: pointer;
-      transition: transform 0.2s ease;
-      animation:
-        mixerGlow 2.5s ease-in-out infinite,
-        mixerGradient 3s linear infinite;
-      box-shadow:
-        0 0 15px rgba(147, 51, 234, 0.6),
-        0 0 30px rgba(236, 72, 153, 0.4);
-    }
-
-    .mixer-main-btn:hover {
-      transform: scale(1.08);
-      animation:
-        mixerGlow 1.5s ease-in-out infinite,
-        mixerGradient 1.5s linear infinite;
-      box-shadow:
-        0 0 25px rgba(147, 51, 234, 0.8),
-        0 0 50px rgba(236, 72, 153, 0.6);
-    }
-
-    .mixer-main-btn mat-icon {
-      color: white;
-      font-size: 22px;
-      width: 22px;
-      height: 22px;
-      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-    }
-
-    .mixer-label {
-      color: white;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    }
-
-    @keyframes mixerGlow {
-      0%,
-      100% {
-        box-shadow:
-          0 0 15px rgba(147, 51, 234, 0.6),
-          0 0 30px rgba(236, 72, 153, 0.4);
+    @media (max-width: 1680px) {
+      .nk-logo__sub {
+        display: none;
       }
-      50% {
-        box-shadow:
-          0 0 25px rgba(147, 51, 234, 0.8),
-          0 0 45px rgba(236, 72, 153, 0.5);
+      .deck .nk-logo {
+        justify-content: center;
+      }
+      .deck .nk-logo__word {
+        font-size: 20px;
+      }
+      .deck-search {
+        width: 160px;
       }
     }
-
-    @keyframes mixerGradient {
-      0% {
-        background-position: 0% 50%;
+    @media (max-width: 1500px) {
+      .deck-income {
+        display: none;
       }
-      100% {
-        background-position: 100% 50%;
-      }
-    }
-
-    /* Mixer Button mit Auswahl */
-    .mixer-main-btn.has-selection {
-      background: linear-gradient(90deg, #22c55e 0%, #16a34a 50%, #22c55e 100%);
-      box-shadow:
-        0 0 20px rgba(34, 197, 94, 0.7),
-        0 0 40px rgba(22, 163, 74, 0.5);
-    }
-
-    .mixer-main-btn.has-selection:hover {
-      box-shadow:
-        0 0 30px rgba(34, 197, 94, 0.9),
-        0 0 60px rgba(22, 163, 74, 0.7);
-    }
-
-    @keyframes mixerGlowGreen {
-      0%,
-      100% {
-        box-shadow:
-          0 0 20px rgba(34, 197, 94, 0.7),
-          0 0 40px rgba(22, 163, 74, 0.5);
-      }
-      50% {
-        box-shadow:
-          0 0 30px rgba(34, 197, 94, 0.9),
-          0 0 50px rgba(22, 163, 74, 0.6);
+      .deck-lcd {
+        width: auto;
       }
     }
-
-    .mixer-main-btn.has-selection {
-      animation:
-        mixerGlowGreen 2s ease-in-out infinite,
-        mixerGradient 3s linear infinite;
-    }
-
-    .admin-btn {
-      background: rgba(249, 115, 22, 0.1) !important;
-      border-color: rgba(249, 115, 22, 0.3) !important;
-    }
-
-    .admin-btn:hover {
-      background: rgba(249, 115, 22, 0.2) !important;
-      border-color: rgba(249, 115, 22, 0.5) !important;
-    }
-
-    .admin-btn mat-icon {
-      color: #f97316 !important;
-    }
-
-    .action-btn,
-    .user-btn {
-      width: 40px !important;
-      height: 40px !important;
-      background: rgba(147, 51, 234, 0.1) !important;
-      border: 1px solid rgba(147, 51, 234, 0.3) !important;
-      border-radius: 8px !important;
-      transition: all 0.2s ease !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-    }
-
-    .action-btn:hover,
-    .user-btn:hover {
-      background: rgba(147, 51, 234, 0.2) !important;
-      border-color: rgba(147, 51, 234, 0.5) !important;
-      transform: scale(1.05);
-    }
-
-    .action-btn mat-icon,
-    .user-btn mat-icon {
-      color: rgba(255, 255, 255, 0.8);
-    }
-
-    .action-btn:hover mat-icon,
-    .user-btn:hover mat-icon {
-      color: #ec4899;
-    }
-
-    .menu-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      color: rgba(255, 255, 255, 0.9);
-      font-weight: 500;
-    }
-
-    .menu-header mat-icon {
-      color: #9333ea;
-    }
-
-    .user-menu-header {
-      min-width: 180px;
-    }
-
-    .admin-menu-header mat-icon {
-      color: #f97316;
-    }
-
-    ::ng-deep .mat-mdc-menu-panel .danger-item {
-      color: #ef4444;
-    }
-
-    ::ng-deep .mat-mdc-menu-panel .danger-item mat-icon {
-      color: #ef4444;
-    }
-
-    @media (max-width: 600px) {
-      .search-container {
-        max-width: 150px;
+    @media (max-width: 1400px) {
+      .deck-random .nk-label,
+      .sort-container .nk-label,
+      .search-container .nk-label {
+        display: none;
       }
-
-      .logo-text {
-        font-size: 16px;
+      .deck-tools .nk-toolkey {
+        width: 46px;
+      }
+      .deck-random {
+        width: auto;
+      }
+      .deck-random .nk-key--round {
+        margin-top: 0;
+      }
+    }
+    @media (max-width: 768px) {
+      .deck.deck {
+        height: auto;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+        grid-template-areas:
+          'logo lcd lcd lcd acc'
+          'search search sort fav rnd';
+        gap: 8px 8px;
+        padding-bottom: 8px;
+      }
+      .deck .nk-logo {
+        grid-area: logo;
+        width: auto;
+        padding: 6px 8px 5px;
+        justify-content: center;
+      }
+      .deck .nk-logo__word {
+        font-size: 15px;
+      }
+      .deck .nk-logo__stripe {
+        width: 12px;
+        height: 3px;
+      }
+      .deck .deck-lcd {
+        grid-area: lcd;
+        width: auto;
+        min-width: 0;
+        height: 48px;
+      }
+      .deck .deck-lcd .nk-lcd__glass {
+        padding: 4px 7px 3px;
+        gap: 6px;
+      }
+      .deck .deck-lcd .nk-lcd__value {
+        font-size: 26px;
+        line-height: 22px;
+      }
+      .deck .deck-lcd .nk-lcd__cell:first-child {
+        min-width: 0;
+      }
+      .deck .deck-account,
+      .deck .deck-login {
+        grid-area: acc;
+        align-self: center;
+        margin: 0 4px 0 6px;
+        box-shadow: 0 0 0 3px var(--nk-well), 1.5px 1.5px 0 3px rgb(var(--nk-lamp-rgb) / 0.17);
+      }
+      .deck .deck-account app-user-avatar {
+        display: block;
+      }
+      .deck .search-container {
+        grid-area: search;
+        min-width: 0;
+      }
+      .deck .sort-container {
+        grid-area: sort;
+      }
+      .deck .deck-fav {
+        grid-area: fav;
+      }
+      .deck .deck-random {
+        grid-area: rnd;
+        display: flex;
+        width: auto;
+      }
+      .deck .deck-spacer,
+      .deck .deck-tools,
+      .deck .deck-income,
+      .deck .nk-ctl .nk-label,
+      .deck .nk-logo__sub {
+        display: none;
+      }
+      .deck .deck-search {
+        width: auto;
+        height: 36px;
+      }
+      .deck .deck-sort {
+        min-width: 0;
+        height: 36px;
+        padding: 0 8px 2px 6px;
+      }
+      .deck .deck-sort__label,
+      .deck .deck-sort > span:last-child {
+        display: none;
+      }
+      .deck .deck-switch {
+        width: 56px;
+        margin: 3px 0;
+      }
+      .deck .deck-random .nk-key--round {
+        width: 38px;
+        height: 38px;
+        margin-top: 0;
       }
     }
   `,
@@ -979,26 +571,33 @@ export class ToolbarComponent {
   private readonly dialog = inject(MatDialog);
   private readonly achievementService = inject(AchievementService);
 
+  readonly sortOptions: SortOption[] = [
+    'name-asc',
+    'name-desc',
+    'plays-desc',
+    'votes-desc',
+    'votes-asc',
+    'newest',
+    'duration-desc',
+    'duration-asc',
+    'random',
+  ];
+  readonly sortLabels = SORT_LABELS;
+
   searchQuery = '';
 
-  // Computed: Initialen des Benutzers für Avatar-Fallback
   readonly userInitials = computed(() => {
     const user = this.auth.currentUser();
     if (!user) return '?';
-
-    // Versuche zuerst Vor- und Nachname
     if (user.firstName && user.lastName) {
       return (user.firstName[0] + user.lastName[0]).toUpperCase();
     }
     if (user.firstName) {
       return user.firstName.substring(0, 2).toUpperCase();
     }
-
-    // Fallback: Benutzername
     if (user.username) {
       return user.username.substring(0, 2).toUpperCase();
     }
-
     return '?';
   });
 
@@ -1007,6 +606,11 @@ export class ToolbarComponent {
   readonly selectionMode = input<boolean>(false);
   readonly selectionCount = input<number>(0);
   readonly showFavoritesOnly = input<boolean>(false);
+  readonly chatOpen = input<boolean>(false);
+
+  readonly sortLabel = computed(() => SORT_LABELS[this.currentSort()]);
+  readonly knobAngle = computed(() => `${KNOB_ANGLE[this.currentSort()]}deg`);
+  readonly hasSelection = computed(() => this.selectionMode() && this.selectionCount() > 0);
 
   // Outputs
   readonly searchChange = output<string>();
@@ -1025,6 +629,12 @@ export class ToolbarComponent {
   readonly selectionModeToggle = output<void>();
   readonly openSelectionInMixer = output<void>();
   readonly clearSelection = output<void>();
+  readonly randomClick = output<void>();
+
+  /** unbeleuchtete Segmente hinter den LCD-Ziffern („88.888“) */
+  ghost(value: string): string {
+    return value.replace(/[0-9]/g, '8');
+  }
 
   onSearchChange(): void {
     this.searchChange.emit(this.searchQuery);
@@ -1040,25 +650,37 @@ export class ToolbarComponent {
   }
 
   openMixer(): void {
-    // Grant mixer visit achievement before navigation
     this.achievementService.markMixerVisited().subscribe();
-    // Mixer is served at /mixer (same origin, shares localStorage)
     window.location.href = '/mixer';
   }
 
-  openShekelPopover(): void {
+  /** Popover hängt direkt unter dem LCD-Feld (auf schmalen Schirmen mittig) */
+  openShekelPopover(event?: Event): void {
+    const el = event?.currentTarget as HTMLElement | undefined;
+    const rect = el?.getBoundingClientRect();
+    const position =
+      rect && window.innerWidth > 768
+        ? { top: `${Math.round(rect.bottom + 14)}px`, left: `${Math.max(8, Math.round(rect.left - 20))}px` }
+        : undefined;
     this.dialog.open(ShekelPopoverComponent, {
       panelClass: 'shekel-popover-dialog',
       backdropClass: 'shekel-popover-backdrop',
       autoFocus: false,
+      position,
     });
   }
 
   openShop(): void {
     this.dialog.open(ShopDialogComponent, {
-      width: '1100px',
       maxWidth: '95vw',
-      maxHeight: '90vh',
+      maxHeight: '92vh',
+      panelClass: 'dark-dialog',
+    });
+  }
+
+  openGames(): void {
+    this.dialog.open(GameSelectionDialogComponent, {
+      maxWidth: '95vw',
       panelClass: 'dark-dialog',
     });
   }

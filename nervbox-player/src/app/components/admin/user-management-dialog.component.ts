@@ -44,402 +44,209 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
     UserAvatarComponent,
   ],
   template: `
-    <h2 mat-dialog-title>
-      <mat-icon>people</mat-icon>
-      Userverwaltung
-    </h2>
-
-    <mat-dialog-content>
-      @if (loading()) {
-        <div class="loading-container">
-          <mat-spinner diameter="32"></mat-spinner>
-          <span>User werden geladen...</span>
-        </div>
-      } @else {
-        <!-- Search -->
-        <div class="search-section">
-          <mat-form-field appearance="outline" class="search-input">
-            <mat-label>Suche nach Username, Name oder IP</mat-label>
-            <input matInput [(ngModel)]="searchQuery" placeholder="Suchen..." />
-            <mat-icon matSuffix>search</mat-icon>
-          </mat-form-field>
-        </div>
-
-        <!-- User list -->
-        <div class="user-list nervbox-scrollbar">
-          @if (filteredUsers().length === 0) {
-            <div class="empty-state">
-              <mat-icon>person_off</mat-icon>
-              @if (searchQuery) {
-                <span>Keine User gefunden</span>
-              } @else {
-                <span>Keine User vorhanden</span>
-              }
-            </div>
-          } @else {
-            @for (user of filteredUsers(); track user.id) {
-              <div class="user-item" [class.inactive]="!user.isActive">
-                <div class="user-main">
-                  <app-user-avatar
-                    [userId]="user.id"
-                    size="medium"
-                    [clickable]="user.role !== 'system'"
-                  />
-                  <div class="user-info">
-                    <div class="user-header">
-                      <span class="username">{{ user.username }}</span>
-                      <span class="role-badge" [class]="'role-' + user.role">{{ user.role }}</span>
+    <div class="nk-dlg um">
+      <header class="nk-dialog__head">
+        <mat-icon class="um-ico" aria-hidden="true">people</mat-icon>
+        <h2 class="nk-dialog__title">Userverwaltung</h2>
+        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close>✕</button>
+      </header>
+      <div class="nk-dialog__body um-body">
+        @if (loading()) {
+          <div class="um-state"><span class="nk-spin" aria-hidden="true"></span>User werden geladen...</div>
+        } @else {
+          <label class="nk-field">
+            <span class="nk-label">Suche nach Username, Name oder IP</span>
+            <span class="nk-input">
+              <svg class="nk-input__icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+              <input class="nk-input__field" [(ngModel)]="searchQuery" placeholder="Suchen..." aria-label="User suchen" />
+            </span>
+          </label>
+          <div class="nk-well um-list">
+            @if (filteredUsers().length === 0) {
+              <div class="um-state">{{ searchQuery ? 'Keine User gefunden' : 'Keine User vorhanden' }}</div>
+            } @else {
+              @for (user of filteredUsers(); track user.id) {
+                <div [class]="user.isActive ? 'nk-row um-row' : 'nk-row nk-row--off um-row'">
+                  <app-user-avatar class="um-av" [userId]="user.id" size="medium" [clickable]="user.role !== 'system'" />
+                  <span class="nk-row__main um-main">
+                    <span class="um-name">
+                      <span class="nk-row__title">{{ user.username }}</span>
+                      <span [class]="'um-role um-role--' + user.role">{{ user.role }}</span>
                       @if (!user.isActive) {
-                        <span class="status-badge inactive">Deaktiviert</span>
+                        <span class="um-off">Deaktiviert</span>
                       }
-                    </div>
-                    <div class="user-details">
-                      @if (user.firstName || user.lastName) {
-                        <span class="name">{{ user.firstName }} {{ user.lastName }}</span>
-                        <span class="separator">|</span>
-                      }
-                      <span class="ip" matTooltip="IP-Adresse">{{
-                        user.ipAddress || 'Keine IP'
-                      }}</span>
-                      <span class="separator">|</span>
-                      <span class="credits" matTooltip="Credits">{{ user.credits }} N$</span>
-                    </div>
-                    <div class="user-dates">
-                      <span class="date">Erstellt: {{ formatDate(user.createdAt) }}</span>
+                    </span>
+                    @if (user.firstName || user.lastName) {
+                      <span class="nk-row__meta um-full">{{ user.firstName }} {{ user.lastName }}</span>
+                    }
+                    <span class="nk-row__meta">
+                      <span matTooltip="IP-Adresse">{{ user.ipAddress || 'Keine IP' }}</span> ·
+                      <span matTooltip="Credits">{{ user.credits }} N$</span>
+                    </span>
+                    <span class="nk-row__meta">
+                      Erstellt: {{ formatDate(user.createdAt) }}
                       @if (user.lastLoginAt) {
-                        <span class="separator">|</span>
-                        <span class="date">Letzter Login: {{ formatDate(user.lastLoginAt) }}</span>
+                        · Letzter Login: {{ formatDate(user.lastLoginAt) }}
                       }
-                    </div>
-                  </div>
-                </div>
-                <div class="user-actions">
+                    </span>
+                  </span>
                   @if (user.role !== 'system') {
-                    <button
-                      mat-stroked-button
-                      class="credit-btn"
-                      (click)="onGrantCredits(user, 1)"
-                      matTooltip="+1 Credit"
-                      [disabled]="actionInProgress() === user.id"
-                    >
-                      +1 N$
-                    </button>
-                    <button
-                      mat-stroked-button
-                      class="credit-btn"
-                      (click)="onGrantCredits(user, 5)"
-                      matTooltip="+5 Credits"
-                      [disabled]="actionInProgress() === user.id"
-                    >
-                      +5 N$
-                    </button>
-                    <button
-                      mat-icon-button
-                      (click)="onEditUser(user)"
-                      matTooltip="Bearbeiten"
-                      [disabled]="actionInProgress() === user.id"
-                    >
-                      <mat-icon>edit</mat-icon>
-                    </button>
-                    <button
-                      mat-icon-button
-                      (click)="onResetPassword(user)"
-                      matTooltip="Passwort zurücksetzen"
-                      [disabled]="actionInProgress() === user.id"
-                    >
-                      <mat-icon>key</mat-icon>
-                    </button>
-                    <button
-                      mat-icon-button
-                      (click)="onToggleActive(user)"
-                      [matTooltip]="user.isActive ? 'Deaktivieren' : 'Aktivieren'"
-                      [disabled]="actionInProgress() === user.id || user.username === 'admin'"
-                    >
-                      @if (actionInProgress() === user.id) {
-                        <mat-spinner diameter="18"></mat-spinner>
-                      } @else {
-                        <mat-icon [class.active]="user.isActive">
-                          {{ user.isActive ? 'person' : 'person_off' }}
-                        </mat-icon>
-                      }
-                    </button>
-                    <button
-                      mat-icon-button
-                      (click)="onDeleteUser(user)"
-                      matTooltip="Löschen"
-                      [disabled]="actionInProgress() === user.id || user.username === 'admin'"
-                    >
-                      <mat-icon class="delete-icon">delete</mat-icon>
-                    </button>
+                    <span class="um-acts">
+                      <button type="button" class="nk-key nk-key--sm" matTooltip="+1 Credit" [disabled]="actionInProgress() === user.id" (click)="onGrantCredits(user, 1)">+1 N$</button>
+                      <button type="button" class="nk-key nk-key--sm" matTooltip="+5 Credits" [disabled]="actionInProgress() === user.id" (click)="onGrantCredits(user, 5)">+5 N$</button>
+                      <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Bearbeiten" matTooltip="Bearbeiten" [disabled]="actionInProgress() === user.id" (click)="onEditUser(user)"><mat-icon>edit</mat-icon></button>
+                      <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Passwort zurücksetzen" matTooltip="Passwort zurücksetzen" [disabled]="actionInProgress() === user.id" (click)="onResetPassword(user)"><mat-icon>key</mat-icon></button>
+                      <button
+                        type="button"
+                        [class]="user.isActive ? 'nk-key nk-key--sm nk-key--icon' : 'nk-key nk-key--sm nk-key--icon nk-key--on'"
+                        [attr.aria-label]="user.isActive ? 'Deaktivieren' : 'Aktivieren'"
+                        [matTooltip]="user.isActive ? 'Deaktivieren' : 'Aktivieren'"
+                        [disabled]="actionInProgress() === user.id || user.username === 'admin'"
+                        (click)="onToggleActive(user)"
+                      >
+                        @if (actionInProgress() === user.id) {
+                          <span class="nk-spin" aria-hidden="true"></span>
+                        } @else {
+                          <mat-icon>{{ user.isActive ? 'person' : 'person_off' }}</mat-icon>
+                        }
+                      </button>
+                      <button type="button" class="nk-key nk-key--sm nk-key--icon um-del" aria-label="Löschen" matTooltip="Löschen" [disabled]="actionInProgress() === user.id || user.username === 'admin'" (click)="onDeleteUser(user)"><mat-icon>delete</mat-icon></button>
+                    </span>
                   }
                 </div>
-              </div>
+              }
             }
-          }
-        </div>
-
-        <div class="user-stats">
+          </div>
+        }
+      </div>
+      <footer class="nk-dialog__foot um-foot">
+        <span class="um-count">
           {{ users().length }} User insgesamt
           @if (inactiveUserCount() > 0) {
-            <span class="inactive-count">({{ inactiveUserCount() }} deaktiviert)</span>
+            <span class="um-count-off">({{ inactiveUserCount() }} deaktiviert)</span>
           }
-        </div>
+        </span>
+        <button type="button" class="nk-key" (click)="onCreateUser()"><mat-icon class="um-btn-ico">person_add</mat-icon>Neuer User</button>
+        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close>Schließen</button>
+      </footer>
+    </div>
+  `,
+  styles: `
+    .um {
+      width: 860px;
+      max-width: 100%;
+      max-height: 90vh;
+    }
+    .um-ico {
+      color: var(--nk-iv);
+      filter: drop-shadow(0 0 4px rgb(255 226 176 / 0.6));
+    }
+    .um-body {
+      overflow: hidden;
+    }
+    .um-list {
+      overflow-y: auto;
+      max-height: 62vh;
+    }
+    .um-state {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 18px 8px;
+      color: var(--nk-iv-2);
+      font: 500 13px var(--nk-font-mono);
+    }
+    .um-row {
+      min-height: 80px;
+      gap: 12px;
+    }
+    .um-av {
+      flex-shrink: 0;
+    }
+    .um-main {
+      gap: 3px;
+    }
+    .um-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .um-full {
+      color: var(--nk-iv);
+      font-size: 12px;
+    }
+    .um-role,
+    .um-off {
+      height: 16px;
+      padding: 0 5px;
+      border-radius: 3px;
+      font: 700 10px/16px var(--nk-font-mono);
+      letter-spacing: 0.5px;
+      text-transform: lowercase;
+      white-space: nowrap;
+    }
+    .um-role--admin {
+      background: var(--nk-iv);
+      color: var(--nk-ink);
+      box-shadow: 0 0 8px rgb(255 226 176 / 0.6);
+    }
+    .um-role--user {
+      box-shadow: inset 0 0 0 1px var(--nk-iv-2);
+      color: var(--nk-iv);
+    }
+    .um-role--system {
+      background: var(--nk-other-deep);
+      color: #cdebff;
+      box-shadow: inset 0 0 0 1px var(--nk-other);
+    }
+    .um-off {
+      background: var(--nk-danger);
+      color: #ffffff;
+      text-transform: none;
+    }
+    .um-acts {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+      padding: 3px;
+      flex-shrink: 0;
+    }
+    .um-acts .mat-icon {
+      width: 16px;
+      height: 16px;
+      font-size: 16px;
+    }
+    .um-del {
+      color: var(--nk-danger-text);
+    }
+    .um-foot {
+      gap: 14px;
+    }
+    .um-count {
+      flex: 1;
+      font: 500 12px var(--nk-font-mono);
+      color: var(--nk-iv-2);
+    }
+    .um-count-off {
+      color: var(--nk-danger-text);
+    }
+    .um-btn-ico {
+      width: 17px;
+      height: 17px;
+      font-size: 17px;
+    }
+    @media (max-width: 760px) {
+      .um-row {
+        flex-wrap: wrap;
       }
-    </mat-dialog-content>
-
-    <mat-dialog-actions align="end">
-      <button mat-button (click)="onCreateUser()" class="create-btn">
-        <mat-icon>person_add</mat-icon>
-        Neuer User
-      </button>
-      <button mat-button mat-dialog-close>Schließen</button>
-    </mat-dialog-actions>
+      .um-acts {
+        width: 100%;
+        flex-wrap: wrap;
+      }
+    }
   `,
   changeDetection: ChangeDetectionStrategy.Eager,
-  styles: `
-    h2[mat-dialog-title] {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #9333ea;
-      margin: 0;
-      padding: 16px 24px;
-    }
-
-    h2 mat-icon {
-      font-size: 24px;
-      width: 24px;
-      height: 24px;
-    }
-
-    mat-dialog-content {
-      padding: 0 24px;
-      min-width: 800px;
-      max-width: 900px;
-      min-height: 400px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .loading-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      height: 200px;
-      color: rgba(255, 255, 255, 0.6);
-    }
-
-    .search-section {
-      margin-bottom: 16px;
-    }
-
-    .search-input {
-      width: 100%;
-    }
-
-    .user-list {
-      flex: 1;
-      max-height: 350px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .empty-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      height: 150px;
-      color: rgba(255, 255, 255, 0.4);
-    }
-
-    .empty-state mat-icon {
-      font-size: 48px;
-      width: 48px;
-      height: 48px;
-    }
-
-    .user-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 8px;
-      transition: background 0.2s;
-    }
-
-    .user-item:hover {
-      background: rgba(255, 255, 255, 0.06);
-    }
-
-    .user-item.inactive {
-      opacity: 0.6;
-      background: rgba(239, 68, 68, 0.05);
-    }
-
-    .user-main {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex: 1;
-      min-width: 0;
-    }
-
-    .user-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .user-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .username {
-      font-weight: 600;
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.95);
-    }
-
-    .role-badge {
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-weight: 500;
-      text-transform: uppercase;
-    }
-
-    .role-badge.role-admin {
-      background: rgba(249, 115, 22, 0.2);
-      color: #f97316;
-    }
-
-    .role-badge.role-user {
-      background: rgba(147, 51, 234, 0.2);
-      color: #9333ea;
-    }
-
-    .role-badge.role-system {
-      background: rgba(100, 116, 139, 0.2);
-      color: #94a3b8;
-    }
-
-    .status-badge {
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-weight: 500;
-    }
-
-    .status-badge.inactive {
-      background: rgba(239, 68, 68, 0.2);
-      color: #ef4444;
-    }
-
-    .user-details {
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.6);
-      margin-top: 2px;
-    }
-
-    .user-dates {
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.4);
-      margin-top: 2px;
-    }
-
-    .separator {
-      margin: 0 4px;
-    }
-
-    .ip {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-    }
-
-    .credits {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      color: #fbbf24;
-      font-weight: 500;
-    }
-
-    .user-actions {
-      display: flex;
-      gap: 4px;
-      align-items: center;
-    }
-
-    .user-actions button {
-      opacity: 0.5;
-    }
-
-    .user-item:hover .user-actions button {
-      opacity: 1;
-    }
-
-    .credit-btn {
-      min-width: 44px;
-      height: 28px;
-      padding: 0 8px;
-      font-size: 12px;
-      font-weight: 600;
-      line-height: 28px;
-      border-color: rgba(251, 191, 36, 0.3);
-      color: #fbbf24;
-    }
-
-    .credit-btn:hover:not([disabled]) {
-      background: rgba(251, 191, 36, 0.15);
-      border-color: #fbbf24;
-    }
-
-    .user-actions mat-icon.active {
-      color: #22c55e;
-    }
-
-    .user-actions mat-icon.delete-icon {
-      color: #ef4444;
-    }
-
-    .user-stats {
-      padding-top: 12px;
-      margin-top: 12px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.4);
-      text-align: center;
-    }
-
-    .inactive-count {
-      color: #ef4444;
-    }
-
-    mat-dialog-actions {
-      padding: 16px 24px;
-    }
-
-    .create-btn {
-      background: rgba(147, 51, 234, 0.1);
-      color: #9333ea;
-    }
-
-    .create-btn mat-icon {
-      margin-right: 4px;
-    }
-
-    ::ng-deep .mat-mdc-form-field-subscript-wrapper {
-      display: none;
-    }
-  `,
 })
 export class UserManagementDialogComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<UserManagementDialogComponent>);
@@ -500,7 +307,7 @@ export class UserManagementDialogComponent implements OnInit {
 
   onCreateUser(): void {
     const dialogRef = this.dialog.open(UserCreateDialogComponent, {
-      width: '400px',
+      maxWidth: '95vw',
       panelClass: 'dark-dialog',
     });
 
@@ -514,7 +321,7 @@ export class UserManagementDialogComponent implements OnInit {
 
   onEditUser(user: UserAdmin): void {
     const dialogRef = this.dialog.open(UserEditDialogComponent, {
-      width: '400px',
+      maxWidth: '95vw',
       panelClass: 'dark-dialog',
       data: { user },
     });
@@ -529,7 +336,7 @@ export class UserManagementDialogComponent implements OnInit {
 
   onResetPassword(user: UserAdmin): void {
     const dialogRef = this.dialog.open(PasswordResetDialogComponent, {
-      width: '400px',
+      maxWidth: '95vw',
       panelClass: 'dark-dialog',
       data: { user },
     });
@@ -566,7 +373,7 @@ export class UserManagementDialogComponent implements OnInit {
 
   onDeleteUser(user: UserAdmin): void {
     const dialogRef = this.dialog.open(DeleteUserDialogComponent, {
-      width: '400px',
+      maxWidth: '95vw',
       panelClass: 'dark-dialog',
       data: { user },
     });

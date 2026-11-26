@@ -32,720 +32,122 @@ interface ShopItem {
     MatSnackBarModule,
   ],
   template: `
-    <div class="shop-container">
-      <!-- EPIC HEADER -->
-      <div class="shop-header">
-        <div class="header-glow"></div>
-        <div class="header-particles">
-          @for (i of particles; track i) {
-            <div
-              class="particle"
-              [style.--delay]="i * 0.5 + 's'"
-              [style.--x]="((i * 17) % 100) + '%'"
-            ></div>
-          }
-        </div>
-        <div class="header-content">
-          <div class="logo-container">
-            <span class="sparkle left">✨</span>
-            <h1 class="shop-title">NERVBOX SHOP</h1>
-            <span class="sparkle right">✨</span>
-          </div>
-        </div>
-        <button mat-icon-button class="close-btn" (click)="close()">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-
-      <!-- BALANCE BAR -->
-      <div class="balance-bar">
-        <div class="balance-item shekel">
-          <img src="icons/nervbox-coin.svg" alt="" class="balance-icon" />
-          <span class="balance-value">{{ creditService.creditsFormatted() }}</span>
-          <span class="balance-label">N$</span>
-        </div>
-        <div class="balance-divider"></div>
-        <div class="balance-item wood">
-          <img src="icons/nervbox-log.svg" alt="" class="balance-icon wood-icon" />
-          <span class="balance-value">{{ inventoryService.wood() }}</span>
-          <span class="balance-label">Holz</span>
-        </div>
-      </div>
-
-      <!-- MAIN CONTENT -->
-      <mat-dialog-content class="shop-content">
-        <!-- SEARCH BAR -->
-        <div class="search-bar">
-          <mat-icon>search</mat-icon>
-          <input
-            type="text"
-            placeholder="Items durchsuchen..."
-            [value]="searchQuery()"
-            (input)="onSearch($event)"
-          />
-          @if (searchQuery()) {
-            <button class="clear-search" (click)="clearSearch()">
-              <mat-icon>close</mat-icon>
-            </button>
-          }
-        </div>
-
-        <div class="items-section">
-          <div class="section-header">
-            <mat-icon>storefront</mat-icon>
-            <h2>
-              {{ searchQuery() ? 'SUCHERGEBNISSE' : 'ALLE ITEMS' }} ({{ filteredItems().length }})
-            </h2>
-            <mat-icon>storefront</mat-icon>
-          </div>
-
-          @if (filteredItems().length === 0) {
-            <div class="no-results">
-              <mat-icon>search_off</mat-icon>
-              <p>Keine Items gefunden für "{{ searchQuery() }}"</p>
-            </div>
-          }
-
-          <div class="items-grid">
+    <div class="nk-dlg shop">
+      <header class="nk-dialog__head shop-head">
+        <span class="nk-logo__stripes" aria-hidden="true"><span class="nk-logo__stripe"></span><span class="nk-logo__stripe nk-logo__stripe--2"></span><span class="nk-logo__stripe nk-logo__stripe--3"></span><span class="nk-logo__stripe nk-logo__stripe--4"></span><span class="nk-logo__stripe nk-logo__stripe--5"></span></span>
+        <h2 class="nk-dialog__title shop-title">Nervbox Shop</h2>
+        <span class="nk-label">Guthaben</span>
+        <span class="nk-counter" [attr.aria-label]="'Guthaben ' + creditService.creditsFormatted() + ' Schekel'">{{ creditService.creditsFormatted() }} N$</span>
+        <span class="nk-label">Holz</span>
+        <span class="nk-counter" [attr.aria-label]="'Holz-Bestand ' + inventoryService.wood()">{{ inventoryService.wood() }} HOLZ</span>
+        <button type="button" class="nk-key nk-key--sm nk-key--icon shop-close" aria-label="Shop schließen" (click)="close()">✕</button>
+      </header>
+      <div class="nk-dialog__body shop-body">
+        <label class="nk-input shop-search">
+          <svg class="nk-input__icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+          <input class="nk-input__field" type="text" aria-label="Items durchsuchen" placeholder="Items durchsuchen..." [value]="searchQuery()" (input)="onSearch($event)" />
+          <button type="button" class="nk-input__clear" aria-label="Suche leeren" [disabled]="!searchQuery()" (click)="clearSearch()">✕</button>
+        </label>
+        <h3 class="nk-section__title">{{ searchQuery() ? 'Suchergebnisse' : 'Alle Items' }} ({{ filteredItems().length }})</h3>
+        @if (filteredItems().length === 0) {
+          <div class="nk-empty shop-empty"><span class="nk-empty__text">Keine Items gefunden für "{{ searchQuery() }}"</span></div>
+        } @else {
+          <div class="shop-grid">
             @for (item of filteredItems(); track item.id) {
-              <div
-                class="shop-item"
-                [class]="'status-' + item.status"
-                [attr.data-category]="item.category"
-              >
-                <div class="item-badge" [class]="item.status">
-                  {{ getStatusLabel(item.status) }}
-                </div>
-
-                <span class="item-emoji">{{ item.emoji }}</span>
-                <span class="item-title">{{ item.name }}</span>
-                <span class="item-desc">{{ item.description }}</span>
-
-                <div class="item-price">
-                  <img src="icons/nervbox-coin.svg" alt="" class="mini-coin" />
-                  <span>{{ formatPrice(item.price) }}</span>
-                </div>
-
+              <article [class]="'nk-item ' + itemClass(item.status)" [attr.data-category]="item.category" [attr.aria-label]="item.name">
+                <span class="nk-item__head">
+                  <span [class]="'nk-led nk-led--dot ' + ledClass(item.status)" aria-hidden="true"></span>
+                  <span class="nk-item__status">{{ getStatusLabel(item.status) }}</span>
+                  <span class="shop-flex"></span>
+                  <span class="nk-item__glyph" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path [attr.d]="iconFor(item.category)"></path></svg>
+                  </span>
+                </span>
+                <span class="nk-item__name" [title]="item.name">{{ item.name }}</span>
+                <span class="nk-item__desc">{{ item.description }}</span>
+                <span class="nk-item__foot">
+                  <span class="nk-counter" [attr.aria-label]="'Preis ' + formatPrice(item.price) + ' Schekel'">{{ formatPrice(item.price) }} N$</span>
+                </span>
                 @if (item.status === 'available') {
-                  <button
-                    class="item-button available"
-                    [disabled]="isPurchasing() || !canAffordItem(item)"
-                    (click)="purchaseItem(item)"
-                  >
+                  <button type="button" class="nk-key nk-key--sm nk-key--accent" [disabled]="isPurchasing() || !canAffordItem(item)" (click)="purchaseItem(item)">
                     @if (isPurchasing()) {
-                      <mat-spinner diameter="14"></mat-spinner>
+                      <span class="nk-spin" aria-hidden="true"></span>
                     } @else {
                       {{ canAffordItem(item) ? 'KAUFEN' : 'ZU ARM' }}
                     }
                   </button>
                 } @else {
-                  <button class="item-button" disabled>
-                    {{ getButtonLabel(item.status) }}
-                  </button>
+                  <button type="button" class="nk-key nk-key--sm nk-key--ghost" disabled>{{ getButtonLabel(item.status) }}</button>
                 }
-              </div>
+              </article>
             }
           </div>
-        </div>
-      </mat-dialog-content>
-
-      <!-- FOOTER -->
-      <div class="shop-footer">
-        <p class="disclaimer">* Alle Verkäufe sind endgültig. Keine Rückgabe. Holz ist Holz.</p>
-        <button mat-button (click)="close()">Schließen</button>
+        }
       </div>
+      <footer class="nk-dialog__foot shop-foot">
+        <span class="shop-disclaimer">* Alle Verkäufe sind endgültig. Keine Rückgabe. Holz ist Holz.</span>
+        <button type="button" class="nk-key" (click)="close()">Schließen</button>
+      </footer>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
-    :host {
-      display: flex;
-      flex-direction: column;
-      height: 85vh;
-      max-height: 85vh;
+    .shop {
+      width: 1180px;
+      max-width: 100%;
+      max-height: 90vh;
     }
-
-    .shop-container {
-      background: linear-gradient(180deg, #0a0a1a 0%, #1a0f2e 50%, #0a0a1a 100%);
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      overflow: hidden;
+    .shop-head {
+      gap: 14px;
     }
-
-    /* === EPIC HEADER === */
-    .shop-header {
-      position: relative;
-      padding: 30px 24px 20px;
-      background: linear-gradient(
-        135deg,
-        rgba(251, 191, 36, 0.15) 0%,
-        rgba(249, 115, 22, 0.1) 50%,
-        rgba(147, 51, 234, 0.1) 100%
-      );
-      border-bottom: 2px solid rgba(251, 191, 36, 0.4);
-      overflow: hidden;
-    }
-
-    .header-glow {
-      position: absolute;
-      top: -100%;
-      left: -50%;
-      width: 200%;
-      height: 300%;
-      background: radial-gradient(circle, rgba(251, 191, 36, 0.2) 0%, transparent 50%);
-      animation: header-rotate 20s linear infinite;
-    }
-
-    @keyframes header-rotate {
-      from {
-        transform: rotate(0deg);
-      }
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    .header-particles {
-      position: absolute;
-      inset: 0;
-      overflow: hidden;
-      pointer-events: none;
-    }
-
-    .particle {
-      position: absolute;
-      bottom: -10px;
-      left: var(--x);
-      width: 8px;
-      height: 8px;
-      background: #fbbf24;
-      border-radius: 50%;
-      animation: particle-rise 4s ease-out infinite;
-      animation-delay: var(--delay);
-      opacity: 0;
-    }
-
-    @keyframes particle-rise {
-      0% {
-        transform: translateY(0) scale(0);
-        opacity: 0;
-      }
-      10% {
-        opacity: 1;
-      }
-      100% {
-        transform: translateY(-200px) scale(0);
-        opacity: 0;
-      }
-    }
-
-    .header-content {
-      position: relative;
-      z-index: 1;
-      text-align: center;
-    }
-
-    .logo-container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-    }
-
-    .sparkle {
-      font-size: 32px;
-      animation: sparkle-pulse 1.5s ease-in-out infinite;
-    }
-
-    .sparkle.left {
-      animation-delay: 0s;
-    }
-    .sparkle.right {
-      animation-delay: 0.75s;
-    }
-
-    @keyframes sparkle-pulse {
-      0%,
-      100% {
-        opacity: 0.5;
-        transform: scale(0.8);
-      }
-      50% {
-        opacity: 1;
-        transform: scale(1.2);
-      }
-    }
-
     .shop-title {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 36px;
-      font-weight: 900;
-      letter-spacing: 6px;
-      margin: 0;
-      background: linear-gradient(135deg, #fde047 0%, #fbbf24 30%, #f97316 60%, #fbbf24 100%);
-      background-size: 200% 200%;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: gold-shimmer 3s ease infinite;
-      text-shadow: 0 0 30px rgba(251, 191, 36, 0.5);
-    }
-
-    @keyframes gold-shimmer {
-      0%,
-      100% {
-        background-position: 0% 50%;
-      }
-      50% {
-        background-position: 100% 50%;
-      }
-    }
-
-    .close-btn {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      color: rgba(255, 255, 255, 0.6);
-      z-index: 2;
-    }
-
-    .close-btn:hover {
-      color: white;
-    }
-
-    /* === BALANCE BAR === */
-    .balance-bar {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 24px;
-      padding: 16px;
-      background: rgba(0, 0, 0, 0.3);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .balance-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      border-radius: 20px;
-    }
-
-    .balance-item.shekel {
-      background: linear-gradient(
-        135deg,
-        rgba(251, 191, 36, 0.15) 0%,
-        rgba(249, 115, 22, 0.1) 100%
-      );
-      border: 1px solid rgba(251, 191, 36, 0.4);
-    }
-
-    .balance-item.wood {
-      background: linear-gradient(135deg, rgba(46, 125, 50, 0.15) 0%, rgba(27, 94, 32, 0.1) 100%);
-      border: 1px solid rgba(46, 125, 50, 0.4);
-    }
-
-    .balance-icon {
-      width: 28px;
-      height: 28px;
-    }
-
-    .balance-icon.wood-icon {
-      width: 22px;
-      height: 22px;
-    }
-
-    .balance-value {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 18px;
-      font-weight: 700;
-      color: #fde047;
-    }
-
-    .balance-item.wood .balance-value {
-      color: #81c784;
-    }
-
-    .balance-label {
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.6);
-    }
-
-    .balance-divider {
-      width: 1px;
-      height: 30px;
-      background: rgba(255, 255, 255, 0.2);
-    }
-
-    /* === MAIN CONTENT === */
-    .shop-content {
-      flex: 1 1 auto;
-      padding: 24px !important;
-      overflow-y: auto !important;
-      overflow-x: hidden;
-      min-height: 0;
-      max-height: none !important;
-    }
-
-    /* Custom scrollbar */
-    .shop-content::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    .shop-content::-webkit-scrollbar-track {
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 4px;
-    }
-
-    .shop-content::-webkit-scrollbar-thumb {
-      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
-      border-radius: 4px;
-    }
-
-    .shop-content::-webkit-scrollbar-thumb:hover {
-      background: linear-gradient(135deg, #a855f7 0%, #f472b6 100%);
-    }
-
-    .section-header {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      margin-bottom: 20px;
-    }
-
-    .section-header mat-icon {
-      color: #fbbf24;
       font-size: 24px;
-      width: 24px;
-      height: 24px;
-    }
-
-    .section-header h2 {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 18px;
-      font-weight: 800;
-      color: white;
       letter-spacing: 3px;
-      margin: 0;
     }
-
-    /* === SEARCH BAR === */
-    .search-bar {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 8px;
-      margin-bottom: 16px;
+    .shop-close {
+      margin-left: 8px;
     }
-
-    .search-bar mat-icon {
-      color: rgba(255, 255, 255, 0.4);
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
+    .shop-body {
+      gap: 14px;
+      overflow-y: auto;
     }
-
-    .search-bar input {
-      width: 180px;
-      padding: 6px 10px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 6px;
-      outline: none;
-      color: white;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      transition: all 0.2s;
+    .shop-search {
+      width: 360px;
+      max-width: 100%;
+      margin: 2px 3px 0;
     }
-
-    .search-bar input:focus {
-      border-color: rgba(251, 191, 36, 0.4);
-      background: rgba(255, 255, 255, 0.08);
-    }
-
-    .search-bar input::placeholder {
-      color: rgba(255, 255, 255, 0.3);
-    }
-
-    .clear-search {
-      background: transparent;
-      border: none;
-      padding: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      opacity: 0.5;
-      transition: opacity 0.2s;
-    }
-
-    .clear-search:hover {
-      opacity: 1;
-    }
-
-    .clear-search mat-icon {
-      font-size: 14px;
-      width: 14px;
-      height: 14px;
-    }
-
-    .no-results {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      padding: 40px;
-      color: rgba(255, 255, 255, 0.5);
-    }
-
-    .no-results mat-icon {
-      font-size: 48px;
-      width: 48px;
-      height: 48px;
-      opacity: 0.5;
-    }
-
-    .no-results p {
-      margin: 0;
-      font-size: 14px;
-    }
-
-    /* === ITEMS GRID === */
-    .items-section {
-      margin-top: 0;
-    }
-
-    .items-grid {
+    .shop-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 14px;
+      padding: 6px 5px;
     }
-
-    .shop-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      padding: 16px 12px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      position: relative;
-      transition: all 0.3s;
+    .shop-flex {
+      flex: 1;
     }
-
-    .shop-item:hover {
-      background: rgba(255, 255, 255, 0.06);
-      transform: translateY(-2px);
+    .shop-empty {
+      padding: 20px 6px;
     }
-
-    .shop-item.status-available {
-      border-color: rgba(34, 197, 94, 0.5);
-      background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(22, 163, 74, 0.05) 100%);
-      box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
-    }
-
-    .shop-item.status-available:hover {
-      border-color: rgba(34, 197, 94, 0.8);
-      box-shadow: 0 0 30px rgba(34, 197, 94, 0.4);
-    }
-
-    .shop-item.status-coming_soon {
-      border-color: rgba(147, 51, 234, 0.3);
-    }
-
-    .shop-item.status-sold_out {
-      border-color: rgba(239, 68, 68, 0.3);
-      opacity: 0.7;
-    }
-
-    .shop-item.status-never {
-      border-color: rgba(239, 68, 68, 0.5);
-      background: rgba(239, 68, 68, 0.05);
-    }
-
-    .item-badge.available {
-      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-      color: white;
-      animation: badge-pulse 1.5s ease-in-out infinite;
-    }
-
-    @keyframes badge-pulse {
-      0%,
-      100% {
-        transform: scale(1);
-      }
-      50% {
-        transform: scale(1.05);
-      }
-    }
-
-    .item-badge {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      padding: 3px 8px;
-      border-radius: 8px;
-      font-size: 8px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-    }
-
-    .item-badge.coming_soon {
-      background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
-      color: white;
-    }
-
-    .item-badge.sold_out {
-      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-      color: white;
-    }
-
-    .item-badge.never {
-      background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-      color: #ef4444;
-      border: 1px solid #ef4444;
-    }
-
-    .item-emoji {
-      font-size: 36px;
-      margin-bottom: 4px;
-    }
-
-    .item-title {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      font-weight: 700;
-      color: white;
-      text-align: center;
-      line-height: 1.2;
-    }
-
-    .item-desc {
-      font-size: 9px;
-      color: rgba(255, 255, 255, 0.5);
-      text-align: center;
-      line-height: 1.3;
-      min-height: 24px;
-    }
-
-    .item-price {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      margin-top: 4px;
-    }
-
-    .mini-coin {
-      width: 14px;
-      height: 14px;
-    }
-
-    .item-price span {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      font-weight: 700;
-      color: #fbbf24;
-    }
-
-    .item-button {
-      width: 100%;
-      padding: 6px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 6px;
-      color: rgba(255, 255, 255, 0.4);
-      font-size: 9px;
-      font-weight: 600;
-      cursor: not-allowed;
-      margin-top: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-    }
-
-    .item-button.available {
-      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-      border-color: #22c55e;
-      color: white;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .item-button.available:hover:not(:disabled) {
-      transform: scale(1.05);
-      box-shadow: 0 4px 15px rgba(34, 197, 94, 0.5);
-    }
-
-    .item-button.available:disabled {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.2);
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
-    }
-
-    /* === FOOTER === */
-    .shop-footer {
-      display: flex;
-      align-items: center;
+    .shop-foot {
       justify-content: space-between;
-      padding: 16px 24px;
-      background: rgba(0, 0, 0, 0.3);
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
-
-    .disclaimer {
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.4);
-      margin: 0;
-      font-style: italic;
+    .shop-disclaimer {
+      font: 500 12px var(--nk-font-mono);
+      color: var(--nk-iv-2);
     }
-
-    .shop-footer button {
-      color: rgba(255, 255, 255, 0.6);
-    }
-
-    .shop-footer button:hover {
-      color: white;
-    }
-
-    @media (max-width: 600px) {
+    @media (max-width: 700px) {
+      .shop-head .nk-label {
+        display: none;
+      }
       .shop-title {
-        font-size: 24px;
-        letter-spacing: 3px;
+        font-size: 18px;
+        letter-spacing: 1.5px;
       }
-
-      .featured-item {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-      }
-
-      .item-visual {
-        width: 140px;
-        height: 140px;
-      }
-
-      .wood-big-icon {
-        width: 80px;
-        height: 80px;
-      }
-
-      .items-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .balance-bar {
-        flex-wrap: wrap;
+      .shop-head .nk-logo__stripes {
+        display: none;
       }
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class ShopDialogComponent {
   readonly creditService = inject(CreditService);
@@ -1180,6 +582,30 @@ export class ShopDialogComponent {
     if (price >= 1000000) return `${(price / 1000000).toFixed(1)}M`;
     if (price >= 1000) return `${(price / 1000).toFixed(0)}K`;
     return price.toString();
+  }
+
+  itemClass(status: ShopItem['status']): string {
+    return { available: 'nk-item--available', coming_soon: 'nk-item--soon', sold_out: 'nk-item--sold', never: 'nk-item--never' }[status];
+  }
+
+  ledClass(status: ShopItem['status']): string {
+    return { available: 'nk-led--own', coming_soon: 'nk-led--warn', sold_out: 'nk-led--danger', never: 'nk-led--other' }[status];
+  }
+
+  /** Glyphe im Leuchtfenster je Kategorie (ersetzt die Emojis) */
+  iconFor(category: string): string {
+    const icons: Record<string, string> = {
+      resource: 'M4 8h13a3 4 0 010 8H4M4 8a3 4 0 100 8 3 4 0 100-8zM4 10.5a1 1.5 0 100 3',
+      premium: 'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z',
+      cosmetic: 'M6 4h12l3 5-9 11L3 9zM3 9h18M9 4l3 16M15 4l-3 16',
+      fun: 'M12 3a9 9 0 110 18 9 9 0 010-18zM8 14c1 2 2.5 3 4 3s3-1 4-3M9 9.5h.01M15 9.5h.01',
+      meta: 'M12 3a9 9 0 110 18 9 9 0 010-18zM9.5 9.5a2.5 2.5 0 115 0c0 2-2.5 2-2.5 4M12 17h.01',
+      social: 'M9 11a3 3 0 100-6 3 3 0 000 6zM3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 11a3 3 0 100-6M21 20c0-3-2-5.4-4.5-5.9',
+      time: 'M12 3a9 9 0 110 18 9 9 0 010-18zM12 7v5l3 2',
+      prestige: 'M4 8l4 4 4-7 4 7 4-4-2 11H6zM6 21h12',
+      seasonal: 'M12 3v18M4.5 7.5l15 9M19.5 7.5l-15 9',
+    };
+    return icons[category] ?? icons['premium'];
   }
 
   close(): void {

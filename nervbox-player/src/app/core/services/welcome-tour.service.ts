@@ -172,7 +172,7 @@ export class WelcomeTourService {
       setTimeout(() => {
         if (tabIndex > 0) {
           // Find the tab group and click the second tab
-          const tabs = document.querySelectorAll('.shekel-popover .mat-mdc-tab');
+          const tabs = document.querySelectorAll('.shekel-popover [role=tab]');
           if (tabs[tabIndex]) {
             (tabs[tabIndex] as HTMLElement).click();
           }
@@ -334,7 +334,7 @@ export class WelcomeTourService {
       buttons: this.getNavButtons(),
       beforeShowPromise: () => {
         this.setMenuStepActive(true);
-        return this.openMenu('app-sound-card .more-btn');
+        return this.openMenu('app-sound-card .nk-pad__more');
       },
       when: {
         hide: () => {
@@ -587,7 +587,7 @@ export class WelcomeTourService {
       ],
       beforeShowPromise: () => {
         this.setMenuStepActive(true);
-        return this.openMenu('app-sound-card .more-btn');
+        return this.openMenu('app-sound-card .nk-pad__more');
       },
       when: {
         hide: () => {

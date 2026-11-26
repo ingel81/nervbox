@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, OnInit, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -20,280 +20,96 @@ import { TopSound, TopUser } from '../../core/models';
     MatProgressSpinnerModule,
   ],
   template: `
-    <div class="stats-dialog">
-      <h2 mat-dialog-title>
-        <mat-icon class="title-icon">leaderboard</mat-icon>
-        Statistiken
-      </h2>
-
-      <mat-dialog-content>
-        <mat-tab-group animationDuration="200ms">
-          <!-- Top Sounds Tab -->
-          <mat-tab>
-            <ng-template mat-tab-label>
-              <mat-icon>music_note</mat-icon>
-              <span>Top Sounds</span>
-            </ng-template>
-
-            @if (loadingSounds()) {
-              <div class="loading">
-                <mat-spinner diameter="32"></mat-spinner>
-              </div>
-            } @else if (topSounds().length === 0) {
-              <div class="empty">Noch keine Daten vorhanden</div>
-            } @else {
-              <div class="stats-list">
-                @for (sound of topSounds(); track sound.hash; let i = $index) {
-                  <div class="stats-item" [class.top-three]="i < 3">
-                    <span
-                      class="rank"
-                      [class.gold]="i === 0"
-                      [class.silver]="i === 1"
-                      [class.bronze]="i === 2"
-                    >
-                      {{ i + 1 }}
-                    </span>
-                    <span class="name">{{ sound.name }}</span>
-                    <span class="count">{{ sound.count }}×</span>
-                  </div>
-                }
+    <div class="nk-dlg">
+      <header class="nk-dialog__head">
+        <mat-icon class="st-ico" aria-hidden="true">leaderboard</mat-icon>
+        <h2 class="nk-dialog__title">Statistiken</h2>
+        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" (click)="onClose()">✕</button>
+      </header>
+      <div class="nk-dialog__body">
+        <div class="nk-tabs" role="tablist">
+          @for (t of tabs; track t.key; let i = $index) {
+            <button type="button" role="tab" [attr.aria-selected]="tab() === i" [class]="tab() === i ? 'nk-tabs__tab nk-tabs__tab--on' : 'nk-tabs__tab'" (click)="tab.set(i)">{{ t.label }}</button>
+          }
+        </div>
+        @if (loading()) {
+          <div class="st-state"><span class="nk-spin" aria-hidden="true"></span>lädt …</div>
+        } @else if (rows().length === 0) {
+          <div class="st-state">{{ tab() === 2 ? 'Noch keine Favoriten vorhanden' : 'Noch keine Daten vorhanden' }}</div>
+        } @else {
+          <div class="nk-well st-list">
+            @for (r of rows(); track $index; let i = $index) {
+              <div [class]="i < 3 ? 'nk-row nk-row--hl' : 'nk-row'">
+                <span [class]="i < 3 ? 'nk-rank nk-rank--' + (i + 1) : 'nk-rank'">{{ i + 1 }}</span>
+                <span class="nk-row__main"><span class="nk-row__title">{{ r.name }}</span></span>
+                <span class="st-bar" aria-hidden="true">
+                  @for (s of segs; track s) {
+                    <span [class]="s < r.level ? (i === 0 ? 'st-seg st-seg--top' : 'st-seg st-seg--on') : 'st-seg'"></span>
+                  }
+                </span>
+                <span class="nk-row__num st-count">{{ r.count }}×</span>
               </div>
             }
-          </mat-tab>
-
-          <!-- Top Users Tab -->
-          <mat-tab>
-            <ng-template mat-tab-label>
-              <mat-icon>people</mat-icon>
-              <span>Top Users</span>
-            </ng-template>
-
-            @if (loadingUsers()) {
-              <div class="loading">
-                <mat-spinner diameter="32"></mat-spinner>
-              </div>
-            } @else if (topUsers().length === 0) {
-              <div class="empty">Noch keine Daten vorhanden</div>
-            } @else {
-              <div class="stats-list">
-                @for (user of topUsers(); track user.playedById; let i = $index) {
-                  <div class="stats-item" [class.top-three]="i < 3">
-                    <span
-                      class="rank"
-                      [class.gold]="i === 0"
-                      [class.silver]="i === 1"
-                      [class.bronze]="i === 2"
-                    >
-                      {{ i + 1 }}
-                    </span>
-                    <span class="name">{{ user.name }}</span>
-                    <span class="count">{{ user.count }}×</span>
-                  </div>
-                }
-              </div>
-            }
-          </mat-tab>
-
-          <!-- Top Favorites Tab -->
-          <mat-tab>
-            <ng-template mat-tab-label>
-              <mat-icon>favorite</mat-icon>
-              <span>Top Favoriten</span>
-            </ng-template>
-
-            @if (loadingFavorites()) {
-              <div class="loading">
-                <mat-spinner diameter="32"></mat-spinner>
-              </div>
-            } @else if (topFavorites().length === 0) {
-              <div class="empty">Noch keine Favoriten vorhanden</div>
-            } @else {
-              <div class="stats-list">
-                @for (sound of topFavorites(); track sound.hash; let i = $index) {
-                  <div class="stats-item" [class.top-three]="i < 3">
-                    <span
-                      class="rank"
-                      [class.gold]="i === 0"
-                      [class.silver]="i === 1"
-                      [class.bronze]="i === 2"
-                    >
-                      {{ i + 1 }}
-                    </span>
-                    <span class="name">{{ sound.name }}</span>
-                    <span class="count favorite-count">{{ sound.count }}×</span>
-                  </div>
-                }
-              </div>
-            }
-          </mat-tab>
-        </mat-tab-group>
-      </mat-dialog-content>
-
-      <mat-dialog-actions align="end">
-        <button mat-button (click)="onClose()">Schließen</button>
-      </mat-dialog-actions>
+          </div>
+        }
+      </div>
+      <footer class="nk-dialog__foot">
+        <button type="button" class="nk-key" (click)="onClose()">Schließen</button>
+      </footer>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
-    .stats-dialog {
-      min-width: 550px;
+    .nk-dlg {
+      width: 520px;
+      max-width: 100%;
     }
-
-    h2[mat-dialog-title] {
+    .st-ico {
+      color: var(--nk-iv);
+      filter: drop-shadow(0 0 4px rgb(255 226 176 / 0.6));
+    }
+    .st-state {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin: 0;
-      padding: 16px 24px;
-      background: linear-gradient(135deg, rgba(147, 51, 234, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
-      border-bottom: 1px solid rgba(147, 51, 234, 0.3);
+      gap: 10px;
+      padding: 24px 6px;
+      color: var(--nk-iv-2);
+      font: 500 13px var(--nk-font-mono);
     }
-
-    .title-icon {
-      font-size: 28px !important;
-      width: 28px !important;
-      height: 28px !important;
-      color: #9333ea;
-    }
-
-    mat-dialog-content {
-      padding: 0 !important;
-      min-height: 300px;
-    }
-
-    ::ng-deep .mat-mdc-tab-group {
-      --mdc-tab-indicator-active-indicator-color: #9333ea;
-      --mat-tab-header-active-focus-indicator-color: #9333ea;
-      --mat-tab-header-active-hover-indicator-color: #9333ea;
-    }
-
-    ::ng-deep .mat-mdc-tab {
-      --mdc-tab-label-text-color: rgba(255, 255, 255, 0.6);
-      --mdc-tab-active-label-text-color: #ffffff;
-    }
-
-    ::ng-deep .mat-mdc-tab:not(.mdc-tab--active):hover {
-      --mdc-tab-label-text-color: rgba(255, 255, 255, 0.8);
-    }
-
-    ::ng-deep .mat-mdc-tab .mdc-tab__text-label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    ::ng-deep .mat-mdc-tab-header {
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .loading,
-    .empty {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 200px;
-      color: rgba(255, 255, 255, 0.5);
-    }
-
-    .stats-list {
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      max-height: 350px;
+    .st-list {
+      max-height: 60vh;
       overflow-y: auto;
     }
-
-    .stats-item {
+    .st-bar {
+      flex: 0 0 120px;
+      height: 10px;
       display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 14px;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      transition: all 0.2s ease;
+      gap: 2px;
     }
-
-    .stats-item:hover {
-      background: rgba(147, 51, 234, 0.1);
-      border-color: rgba(147, 51, 234, 0.2);
-    }
-
-    .stats-item.top-three {
-      background: rgba(147, 51, 234, 0.1);
-      border-color: rgba(147, 51, 234, 0.2);
-    }
-
-    .rank {
-      width: 28px;
-      height: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      font-weight: 700;
-      font-size: 13px;
-      background: rgba(255, 255, 255, 0.1);
-      color: rgba(255, 255, 255, 0.6);
-    }
-
-    .rank.gold {
-      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-      color: #000;
-      box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
-    }
-
-    .rank.silver {
-      background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%);
-      color: #000;
-      box-shadow: 0 0 10px rgba(209, 213, 219, 0.3);
-    }
-
-    .rank.bronze {
-      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-      color: #fff;
-      box-shadow: 0 0 10px rgba(217, 119, 6, 0.3);
-    }
-
-    .name {
+    .st-seg {
       flex: 1;
-      font-weight: 500;
-      color: rgba(255, 255, 255, 0.9);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      border-radius: 1px;
+      background: rgb(0 0 0 / 0.45);
+      box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.8);
     }
-
-    .count {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      font-weight: 600;
-      color: #ec4899;
-      background: rgba(236, 72, 153, 0.1);
-      padding: 4px 10px;
-      border-radius: 12px;
+    .st-seg--on {
+      background: var(--nk-iv);
+      box-shadow: 0 0 5px rgb(var(--nk-lamp-rgb) / 0.8);
     }
-
-    .count.favorite-count {
-      color: #f472b6;
-      background: rgba(244, 114, 182, 0.15);
+    .st-seg--top {
+      background: var(--nk-own);
+      box-shadow: 0 0 6px rgb(var(--nk-own-rgb) / 0.9);
     }
-
-    mat-dialog-actions {
-      padding: 12px 24px !important;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    .st-count {
+      width: 70px;
+      text-align: right;
     }
-
-    mat-dialog-actions button {
-      color: rgba(255, 255, 255, 0.7) !important;
-    }
-
-    mat-dialog-actions button:hover {
-      color: rgba(255, 255, 255, 0.9) !important;
+    @media (max-width: 520px) {
+      .st-bar {
+        display: none;
+      }
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class StatsDialogComponent implements OnInit {
   private readonly soundService = inject(SoundService);
@@ -305,6 +121,27 @@ export class StatsDialogComponent implements OnInit {
   readonly loadingSounds = signal(true);
   readonly loadingUsers = signal(true);
   readonly loadingFavorites = signal(true);
+
+  readonly tabs = [
+    { key: 'sounds', label: 'Top Sounds' },
+    { key: 'users', label: 'Top Users' },
+    { key: 'favorites', label: 'Top Favoriten' },
+  ];
+  readonly tab = signal(0);
+  /** 15 Segmente für die Pegel-Balken (Anzeige der vorhandenen Zahlen) */
+  readonly segs = Array.from({ length: 15 }, (_, i) => i);
+
+  readonly loading = computed(
+    () => [this.loadingSounds(), this.loadingUsers(), this.loadingFavorites()][this.tab()],
+  );
+
+  readonly rows = computed(() => {
+    const t = this.tab();
+    const list: { name: string; count: number }[] =
+      t === 0 ? this.topSounds() : t === 1 ? this.topUsers() : this.topFavorites();
+    const max = Math.max(1, ...list.map(r => r.count));
+    return list.map(r => ({ name: r.name, count: r.count, level: Math.max(1, Math.round((r.count / max) * 15)) }));
+  });
 
   ngOnInit(): void {
     this.loadStats();

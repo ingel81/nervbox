@@ -48,305 +48,185 @@ interface UserProfile {
     DurationPipe,
   ],
   template: `
-    <div class="profile-dialog">
+    <div class="nk-dlg pf">
       @if (loading()) {
-        <div class="loading-container">
-          <mat-spinner diameter="40"></mat-spinner>
-        </div>
+        <div class="pf-state"><span class="nk-spin" aria-hidden="true"></span>Profil wird geladen …</div>
       } @else if (error()) {
-        <div class="error-container">
-          <mat-icon>error_outline</mat-icon>
+        <div class="pf-state pf-state--col">
           <span>Profil konnte nicht geladen werden</span>
-          <button mat-button (click)="dialogRef.close()">Schließen</button>
+          <button type="button" class="nk-key" (click)="dialogRef.close()">Schließen</button>
         </div>
-      } @else if (profile()) {
-        <div class="profile-header">
-          <app-user-avatar
-            [userId]="data.userId"
-            size="large"
-            [clickable]="false"
-            class="profile-avatar"
-          />
-          <div class="profile-info">
-            <h2 class="username">{{ profile()!.username }}</h2>
-            @if (profile()!.firstName || profile()!.lastName) {
-              <span class="fullname">{{ profile()!.firstName }} {{ profile()!.lastName }}</span>
+      } @else if (profile(); as p) {
+        <header class="nk-dialog__head pf-head">
+          <app-user-avatar class="pf-avatar" [userId]="data.userId" size="large" [clickable]="false" />
+          <div class="pf-who">
+            <h2 class="nk-dialog__title pf-name">{{ p.username }}</h2>
+            @if (p.firstName || p.lastName) {
+              <span class="pf-full">{{ p.firstName }} {{ p.lastName }}</span>
             }
-            <span class="member-since">Dabei seit {{ formatDate(profile()!.createdAt) }}</span>
+            <span class="pf-since">Dabei seit {{ formatDate(p.createdAt) }}</span>
           </div>
-          <button mat-icon-button class="close-btn" (click)="dialogRef.close()">
-            <mat-icon>close</mat-icon>
-          </button>
-        </div>
-
-        <div class="profile-stats">
-          <div class="stat">
-            <span class="stat-value">{{ profile()!.stats.soundCount }}</span>
-            <span class="stat-label">Sounds</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value">{{ profile()!.stats.totalPlays }}</span>
-            <span class="stat-label">Plays</span>
-          </div>
-          <div class="stat credits-stat">
-            <span class="stat-value credits-value">
-              <img src="icons/nervbox-coin.svg" alt="" class="profile-coin" />
-              {{ formatCredits(profile()!.credits) }}
-            </span>
-            <span class="stat-label">Shekel</span>
-          </div>
-        </div>
-
-        @if (profile()!.sounds.length > 0) {
-          <div class="sounds-section">
-            <h3>
-              <mat-icon>music_note</mat-icon>
-              Eigene Sounds
-            </h3>
-            <div class="sounds-list nervbox-scrollbar">
-              @for (sound of profile()!.sounds; track sound.hash) {
-                <div class="sound-item">
-                  <mat-icon class="sound-icon">audiotrack</mat-icon>
-                  <span class="sound-name">{{ sound.name }}</span>
-                  <span class="sound-duration monospace">{{ sound.durationMs | duration }}</span>
-                  <span class="sound-plays monospace" matTooltip="Abgespielt"
-                    >{{ sound.playCount }}x</span
-                  >
+          <button type="button" class="nk-key nk-key--sm nk-key--icon pf-close" aria-label="Profil schließen" (click)="dialogRef.close()">✕</button>
+        </header>
+        <div class="nk-dialog__body pf-body">
+          <div class="pf-left">
+            <div class="pf-stats">
+              <div class="pf-stat"><b>{{ p.stats.soundCount }}</b><span>Sounds</span></div>
+              <div class="pf-stat"><b>{{ p.stats.totalPlays }}</b><span>Plays</span></div>
+              <div class="pf-stat"><b>{{ formatCredits(p.credits) }}</b><span>Shekel</span></div>
+            </div>
+            <div class="nk-section">
+              <h3 class="nk-section__title">Eigene Sounds</h3>
+              @if (p.sounds.length > 0) {
+                <div class="nk-well pf-sounds">
+                  @for (sound of p.sounds; track sound.hash) {
+                    <div class="nk-row pf-row">
+                      <mat-icon class="pf-note" aria-hidden="true">audiotrack</mat-icon>
+                      <span class="nk-row__main"><span class="nk-row__title pf-sound">{{ sound.name }}</span></span>
+                      <span class="nk-row__meta">{{ sound.durationMs | duration }}</span>
+                      <span class="nk-row__meta pf-plays" matTooltip="Abgespielt">{{ sound.playCount }}x</span>
+                    </div>
+                  }
                 </div>
+              } @else {
+                <span class="pf-none">Noch keine eigenen Sounds</span>
               }
             </div>
           </div>
-        } @else {
-          <div class="no-sounds">
-            <mat-icon>music_off</mat-icon>
-            <span>Noch keine eigenen Sounds</span>
-          </div>
-        }
-
-        <div class="achievements-section">
-          <app-achievement-display [userId]="data.userId" />
+          <app-achievement-display class="pf-ach" [userId]="data.userId" />
         </div>
       }
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
-    .profile-dialog {
-      min-width: 500px;
-      max-width: 600px;
+    .pf {
+      width: 1180px;
+      max-width: 100%;
+      max-height: 90vh;
     }
-
-    .loading-container,
-    .error-container {
+    .pf-state {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      gap: 16px;
-      padding: 48px 24px;
-      color: rgba(255, 255, 255, 0.6);
+      gap: 10px;
+      padding: 30px 24px;
+      color: var(--nk-iv-2);
+      font: 500 13px var(--nk-font-mono);
     }
-
-    .error-container mat-icon {
-      font-size: 48px;
-      width: 48px;
-      height: 48px;
-      color: #ef4444;
-    }
-
-    .profile-header {
-      display: flex;
+    .pf-state--col {
+      flex-direction: column;
       align-items: flex-start;
+    }
+    .pf-head {
+      min-height: 92px;
       gap: 16px;
-      padding: 24px;
-      background: linear-gradient(
-        135deg,
-        rgba(147, 51, 234, 0.15) 0%,
-        rgba(236, 72, 153, 0.1) 100%
-      );
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      position: relative;
+      padding-left: 22px;
     }
-
-    .profile-avatar {
+    .pf-avatar {
       flex-shrink: 0;
+      border-radius: 50%;
+      box-shadow: var(--nk-shadow-ring);
+      transform: scale(1.3);
+      margin: 0 8px;
     }
-
-    .profile-info {
+    .pf-who {
       flex: 1;
       min-width: 0;
       display: flex;
       flex-direction: column;
       gap: 4px;
     }
-
-    .username {
-      margin: 0;
-      font-size: 20px;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.95);
+    .pf-name {
+      font-size: 30px;
+      letter-spacing: 1.5px;
+      text-transform: none;
     }
-
-    .fullname {
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.6);
+    .pf-full {
+      font: 600 16px var(--nk-font-ui);
     }
-
-    .member-since {
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.4);
-      margin-top: 4px;
+    .pf-since {
+      font: 500 11.5px var(--nk-font-mono);
+      color: var(--nk-iv-2);
     }
-
-    .close-btn {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      opacity: 0.5;
+    .pf-close {
+      align-self: flex-start;
     }
-
-    .close-btn:hover {
-      opacity: 1;
-    }
-
-    .profile-stats {
-      display: flex;
-      justify-content: center;
-      gap: 48px;
-      padding: 20px 24px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .stat {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .stat-value {
-      font-size: 24px;
-      font-weight: 700;
-      font-family: 'JetBrains Mono', monospace;
-      color: #9333ea;
-    }
-
-    .stat-label {
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.5);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .credits-stat .credits-value {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: #fbbf24;
-      text-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
-    }
-
-    .profile-coin {
-      width: 28px;
-      height: 28px;
-    }
-
-    .sounds-section {
-      padding: 16px 24px 24px;
-    }
-
-    .sounds-section h3 {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 0 0 12px;
-      font-size: 14px;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.7);
-    }
-
-    .sounds-section h3 mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-      color: #9333ea;
-    }
-
-    .sounds-list {
-      max-height: 200px;
+    .pf-body {
+      flex-direction: row;
+      gap: 20px;
       overflow-y: auto;
+    }
+    .pf-left {
+      width: 330px;
+      flex-shrink: 0;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 16px;
     }
-
-    .sound-item {
+    .pf-stats {
       display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 8px;
-      transition: background 0.15s ease;
+      gap: 14px;
+      padding: 4px;
     }
-
-    .sound-item:hover {
-      background: rgba(255, 255, 255, 0.06);
-    }
-
-    .sound-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-      color: rgba(147, 51, 234, 0.6);
-      flex-shrink: 0;
-    }
-
-    .sound-name {
+    .pf-stat {
       flex: 1;
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.85);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .sound-duration {
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.35);
-      flex-shrink: 0;
-    }
-
-    .sound-plays {
-      font-size: 11px;
-      color: rgba(236, 72, 153, 0.6);
-      flex-shrink: 0;
-    }
-
-    .no-sounds {
+      min-width: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
-      padding: 32px 24px;
-      color: rgba(255, 255, 255, 0.4);
+      gap: 2px;
+      padding: 8px 4px 6px;
+      border-radius: 6px;
+      color: var(--nk-lcd-ink);
+      background: var(--nk-face-lcd);
+      box-shadow: inset 0 0 6px rgb(46 62 14 / 0.45), 0 0 0 3px #0b0a08, 1.5px 1.5px 0 3px rgb(255 226 176 / 0.18), 0 0 14px 3px rgb(196 220 112 / 0.2);
     }
-
-    .no-sounds mat-icon {
-      font-size: 36px;
-      width: 36px;
-      height: 36px;
+    .pf-stat b {
+      font: 400 32px/28px var(--nk-font-lcd);
+      letter-spacing: 1px;
+      white-space: nowrap;
     }
-
-    .monospace {
-      font-family: 'JetBrains Mono', monospace;
+    .pf-stat span {
+      font: 600 10px var(--nk-font-mono);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
     }
-
-    .achievements-section {
-      padding: 16px 24px 24px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    .pf-sounds {
+      max-height: 46vh;
+      overflow-y: auto;
+    }
+    .pf-row {
+      min-height: 36px;
+    }
+    .pf-note {
+      width: 15px;
+      height: 15px;
+      font-size: 15px;
+    }
+    .pf-sound {
+      font-size: 15px;
+    }
+    .pf-plays {
+      width: 44px;
+      text-align: right;
+    }
+    .pf-none {
+      font: 500 12px var(--nk-font-mono);
+      color: var(--nk-iv-2);
+    }
+    .pf-ach {
+      flex: 1;
+      min-width: 0;
+    }
+    @media (max-width: 900px) {
+      .pf-body {
+        flex-direction: column;
+      }
+      .pf-left {
+        width: auto;
+      }
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class UserProfileDialogComponent implements OnInit {
   readonly dialogRef = inject(MatDialogRef<UserProfileDialogComponent>);

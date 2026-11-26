@@ -1,11 +1,9 @@
-/* Nervbox Player - Global Styles */
-/* Fonts loaded via index.html link tag to avoid build-time 403 errors */
-/* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap'); */
+/* Nervbox Player – globale Basis. Das eigentliche Design-System steckt in styles/nervbox.scss
+   (Nacht-Kit + Material-Anpassung). Hier nur Tour, Legacy-Variablen und Plattform-Fixes. */
 
-/* Shepherd.js Tour Styles */
+/* Shepherd.js Tour */
 @import 'shepherd.js/dist/css/shepherd.css';
 
-/* Custom Tour Theme */
 .shepherd-element {
   z-index: 10000 !important;
 }
@@ -14,16 +12,15 @@
   z-index: 9999 !important;
 }
 
+/* Tour-Blase = .nk-tour (Rauchglas mit Lampenrand) */
 .nervbox-tour-step {
-  background: linear-gradient(135deg, rgba(20, 10, 30, 0.98) 0%, rgba(30, 15, 40, 0.98) 100%) !important;
-  border: 1px solid rgba(147, 51, 234, 0.5) !important;
-  border-radius: 12px !important;
-  box-shadow:
-    0 0 30px rgba(147, 51, 234, 0.3),
-    0 0 60px rgba(236, 72, 153, 0.15),
-    0 10px 40px rgba(0, 0, 0, 0.5) !important;
-  max-width: 350px !important;
-  backdrop-filter: blur(10px) !important;
+  background: linear-gradient(118deg, rgb(255 232 186 / 0.16) 0%, rgb(255 232 186 / 0.03) 24%, rgb(255 255 255 / 0) 25%),
+    linear-gradient(165deg, #0d0c0a 0%, #1a1814 100%) !important;
+  border: 0 !important;
+  border-radius: 9px !important;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.7), 0 0 0 1.5px rgb(255 226 176 / 0.75), 0 0 0 4px rgb(0 0 0 / 0.45),
+    0 14px 34px rgb(0 0 0 / 0.85), 0 0 26px rgb(255 226 176 / 0.2) !important;
+  max-width: 330px !important;
 }
 
 .shepherd-content {
@@ -32,76 +29,61 @@
 
 .shepherd-header {
   background: transparent !important;
-  padding: 16px 20px 8px !important;
+  padding: 14px 16px 6px !important;
   border-bottom: none !important;
 }
 
 .shepherd-title {
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 16px !important;
-  font-weight: 600 !important;
-  background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  background-clip: text !important;
+  font: 700 19px/1.1 'Barlow Condensed', sans-serif !important;
+  letter-spacing: 0.6px !important;
+  color: #ffffff !important;
+  text-shadow: 0 0 8px rgb(255 226 176 / 0.6) !important;
 }
 
 .shepherd-cancel-icon {
-  color: rgba(255, 255, 255, 0.5) !important;
+  color: #d9cfb6 !important;
   font-size: 24px !important;
-  transition: color 0.2s ease !important;
 }
 
 .shepherd-cancel-icon:hover {
-  color: #ec4899 !important;
+  color: #fff4d8 !important;
 }
 
 .shepherd-text {
-  color: rgba(255, 255, 255, 0.85) !important;
-  font-family: 'Inter', sans-serif !important;
-  font-size: 14px !important;
-  line-height: 1.6 !important;
-  padding: 0 20px 16px !important;
+  color: #fff4d8 !important;
+  font: 500 14.5px/1.4 'Barlow Condensed', sans-serif !important;
+  letter-spacing: 0.2px;
+  padding: 0 16px 14px !important;
 }
 
 .shepherd-footer {
-  padding: 12px 20px 16px !important;
-  border-top: 1px solid rgba(147, 51, 234, 0.2) !important;
+  padding: 10px 16px 14px !important;
+  border-top: 1px solid rgb(0 0 0 / 0.55) !important;
   display: flex !important;
   justify-content: flex-end !important;
-  gap: 8px !important;
+  gap: 12px !important;
 }
 
 .shepherd-button {
-  font-family: 'Inter', sans-serif !important;
-  font-size: 13px !important;
-  font-weight: 500 !important;
-  padding: 8px 16px !important;
+  font: 700 14.5px/1 'Barlow Condensed', sans-serif !important;
+  letter-spacing: 0.6px !important;
+  height: 34px;
+  padding: 0 12px 2px !important;
+  border: 0 !important;
   border-radius: 6px !important;
-  border: none !important;
-  cursor: pointer !important;
-  transition: all 0.2s ease !important;
+  cursor: pointer;
 }
 
 .shepherd-button:not(.shepherd-button-secondary) {
-  background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%) !important;
-  color: white !important;
-}
-
-.shepherd-button:not(.shepherd-button-secondary):hover {
-  box-shadow: 0 0 20px rgba(147, 51, 234, 0.5) !important;
-  transform: translateY(-1px) !important;
+  color: #14110d !important;
+  background: radial-gradient(ellipse 80% 120% at 50% 60%, #fff6df 0%, #eeddb0 60%, #cdb988 100%) !important;
+  box-shadow: 0 0 0 3px #090807, 0 0 10px rgb(255 226 176 / 0.4) !important;
 }
 
 .shepherd-button-secondary {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: rgba(255, 255, 255, 0.7) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-}
-
-.shepherd-button-secondary:hover {
-  background: rgba(255, 255, 255, 0.15) !important;
-  color: white !important;
+  color: #d9cfb6 !important;
+  background: rgb(0 0 0 / 0.25) !important;
+  box-shadow: inset 2px 3px 6px rgb(0 0 0 / 0.85), 1px 1px 0 rgb(255 226 176 / 0.18) !important;
 }
 
 .shepherd-arrow {
@@ -109,8 +91,8 @@
 }
 
 .shepherd-arrow:before {
-  background: rgba(20, 10, 30, 0.98) !important;
-  border: 1px solid rgba(147, 51, 234, 0.5) !important;
+  background: #100f0c !important;
+  border: 1px solid rgb(255 226 176 / 0.75) !important;
 }
 
 .shepherd-modal-overlay-container.shepherd-modal-is-visible {
@@ -118,523 +100,119 @@
 }
 
 .shepherd-modal-overlay-container .shepherd-modal-mask-rect {
-  fill: rgba(0, 0, 0, 0.75) !important;
+  fill: rgb(8 6 5 / 0.8) !important;
 }
 
-/* CSS Variables for theming */
+/* Legacy-Variablen (ältere Komponenten) – auf Nachtschicht-Farben umgebogen */
 :root {
-  --color-purple: #9333ea;
-  --color-purple-light: #a855f7;
-  --color-purple-dark: #7c3aed;
-  --color-pink: #ec4899;
-  --color-pink-light: #f472b6;
-  --color-orange: #f97316;
-  --color-green: #22c55e;
-  --color-red: #ef4444;
+  --color-purple: #ffe2b0;
+  --color-purple-light: #fff4d8;
+  --color-purple-dark: #d9b479;
+  --color-pink: #4be585;
+  --color-pink-light: #96f7b9;
+  --color-orange: #f2d24b;
+  --color-green: #4be585;
+  --color-red: #ff5a4f;
 
-  --bg-dark: #0a0a0a;
-  --bg-surface: #1a1b1f;
-  --bg-surface-light: #1a1f3a;
-  --bg-overlay: rgba(0, 0, 0, 0.8);
+  --bg-dark: #080605;
+  --bg-surface: #37332b;
+  --bg-surface-light: #453f35;
+  --bg-overlay: rgb(8 6 5 / 0.85);
 
-  --text-primary: rgba(255, 255, 255, 0.95);
-  --text-secondary: rgba(255, 255, 255, 0.7);
-  --text-muted: rgba(255, 255, 255, 0.5);
+  --text-primary: #fff4d8;
+  --text-secondary: #d9cfb6;
+  --text-muted: #b9b09a;
 
-  --border-purple: rgba(147, 51, 234, 0.3);
-  --border-purple-hover: rgba(147, 51, 234, 0.6);
-  --border-subtle: rgba(255, 255, 255, 0.1);
+  --border-purple: rgb(255 226 176 / 0.3);
+  --border-purple-hover: rgb(255 226 176 / 0.6);
+  --border-subtle: rgb(255 255 255 / 0.1);
 
-  --shadow-purple: 0 0 20px rgba(147, 51, 234, 0.3);
-  --shadow-glow: 0 0 40px rgba(147, 51, 234, 0.2);
+  --shadow-purple: 0 0 20px rgb(255 226 176 / 0.25);
+  --shadow-glow: 0 0 40px rgb(255 226 176 / 0.15);
 }
 
-/* Base styles */
-html, body {
+html,
+body {
   height: 100%;
   margin: 0;
   padding: 0;
 }
 
 body {
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  background: var(--bg-dark);
-  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 .monospace {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
 }
 
-/* Hash symbol for tags - dezenter */
+/* Raute vor Tag-Namen dezent */
 .hash {
   opacity: 0.5;
   margin-right: 0.5px;
 }
 
-/* Custom Dialog Styling for Dark Theme */
-.mat-mdc-dialog-container {
-  --mat-dialog-container-color: #1a1b1f !important;
-  --mat-dialog-container-shape: 12px !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+/* Schekel-Popover: hängt unter dem LCD, Hintergrund nur leicht abgedunkelt */
+.shekel-popover-backdrop {
+  background: rgb(8 6 5 / 0.45) !important;
 }
 
-.mat-mdc-dialog-title {
-  color: #ffffff !important;
-  font-family: Inter, sans-serif !important;
-  font-weight: 600 !important;
-  font-size: 20px !important;
-  display: flex !important;
-  align-items: center !important;
-  padding: 20px 24px 16px !important;
-  margin: 0 !important;
+/* Während der Tour: Shepherd über dem Dialog */
+body.shepherd-menu-step-active .cdk-overlay-container {
+  z-index: 9998 !important;
 }
 
-.mat-mdc-dialog-content {
-  color: var(--text-secondary) !important;
-  font-family: Inter, sans-serif !important;
-  padding: 0 24px 20px !important;
-  overflow: visible !important;
+body.shepherd-menu-step-active .shekel-popover-backdrop {
+  background: rgb(8 6 5 / 0.2) !important;
 }
 
-.mat-mdc-dialog-actions {
-  padding: 12px 24px !important;
-  border-top: 1px solid var(--border-subtle) !important;
-  background: rgba(0, 0, 0, 0.2) !important;
-}
-
-/* Form Fields in Dialogs */
-.mat-mdc-dialog-content .mat-mdc-text-field-wrapper {
-  background-color: rgba(255, 255, 255, 0.05) !important;
-}
-
-.mat-mdc-dialog-content .mat-mdc-form-field-focus-overlay {
-  background-color: rgba(147, 51, 234, 0.1) !important;
-}
-
-.mat-mdc-dialog-content .mdc-text-field--filled:not(.mdc-text-field--disabled) {
-  background-color: rgba(255, 255, 255, 0.05) !important;
-}
-
-.mat-mdc-dialog-content input {
-  color: #ffffff !important;
-}
-
-.mat-mdc-dialog-content .mat-mdc-floating-label {
-  color: var(--text-muted) !important;
-}
-
-.mat-mdc-dialog-content .mdc-text-field--focused .mat-mdc-floating-label {
-  color: var(--color-purple) !important;
-}
-
-/* Buttons in Dialogs */
-.mat-mdc-dialog-actions .mat-mdc-button {
-  font-family: Inter, sans-serif !important;
-  font-weight: 500 !important;
-}
-
-.mat-mdc-dialog-actions .mat-mdc-unelevated-button.mat-primary {
-  background-color: var(--color-purple) !important;
-}
-
-.mat-mdc-dialog-actions .mat-mdc-unelevated-button.mat-primary:hover {
-  background-color: var(--color-purple-light) !important;
-}
-
-.mat-mdc-dialog-actions .mat-mdc-unelevated-button.mat-warn {
-  background-color: var(--color-red) !important;
-}
-
-/* Shop Dialog - needs scrolling */
-.dark-dialog .mat-mdc-dialog-surface {
-  display: flex;
-  flex-direction: column;
-  max-height: 90vh;
-}
-
-.dark-dialog .mat-mdc-dialog-content.shop-content {
-  flex: 1 1 auto;
-  overflow-y: auto !important;
-  overflow-x: hidden;
-  max-height: none !important;
-  min-height: 0;
-}
-
-/* Snackbar Styling */
-.mat-mdc-snack-bar-container {
-  --mdc-snackbar-container-color: #1a1b1f !important;
-  --mdc-snackbar-supporting-text-color: #ffffff !important;
-  margin-bottom: 24px !important;
-}
-
-.mat-mdc-snack-bar-container .mdc-snackbar__surface {
-  background: #1a1b1f !important;
-  border: 1px solid var(--border-purple) !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 20px rgba(147, 51, 234, 0.2) !important;
-  border-radius: 8px !important;
-}
-
-.mat-mdc-snack-bar-container .mdc-snackbar__label {
-  color: #ffffff !important;
-  font-family: Inter, sans-serif !important;
-  font-size: 14px !important;
-  font-weight: 500 !important;
-}
-
-.mat-mdc-snack-bar-container .mat-mdc-button {
-  color: var(--color-purple-light) !important;
-  font-weight: 600 !important;
-}
-
-.mat-mdc-snack-bar-container .mat-mdc-button:hover {
-  color: var(--color-pink) !important;
-}
-
-/* Select Panel Styling (Sort Dropdown) */
-.sort-panel {
-  background: #1a1b1f !important;
-  border: 1px solid var(--border-purple) !important;
-  border-radius: 8px !important;
-  box-shadow: 0 4px 20px rgba(147, 51, 234, 0.15), 0 0 40px rgba(147, 51, 234, 0.1) !important;
-  margin-top: 4px !important;
-  margin-left: -34px !important;
-  min-width: 168px !important;
-  max-width: 168px !important;
-}
-
-.sort-panel .mat-mdc-option {
-  font-family: Inter, sans-serif !important;
-  font-size: 13px !important;
-  color: var(--text-secondary) !important;
-  min-height: 40px !important;
-}
-
-.sort-panel .mat-mdc-option:hover {
-  background: rgba(147, 51, 234, 0.15) !important;
-}
-
-.sort-panel .mat-mdc-option.mdc-list-item--selected {
-  background: rgba(147, 51, 234, 0.2) !important;
-  color: var(--color-pink) !important;
-}
-
-.sort-panel .mat-mdc-option.mdc-list-item--selected .mdc-list-item__primary-text {
-  color: var(--color-pink) !important;
-}
-
-/* Tag Autocomplete Panel Styling */
-.tag-autocomplete-panel {
-  background: #1a1b1f !important;
-  border: 1px solid var(--border-purple) !important;
-  border-radius: 8px !important;
-  box-shadow: 0 4px 20px rgba(147, 51, 234, 0.15), 0 0 40px rgba(147, 51, 234, 0.1) !important;
-  margin-top: 4px !important;
-}
-
-.tag-autocomplete-panel .mat-mdc-option {
-  font-family: Inter, sans-serif !important;
-  font-size: 13px !important;
-  color: var(--text-secondary) !important;
-  min-height: 40px !important;
-}
-
-.tag-autocomplete-panel .mat-mdc-option:hover {
-  background: rgba(147, 51, 234, 0.15) !important;
-}
-
-.tag-autocomplete-panel .mat-mdc-option.mdc-list-item--selected {
-  background: rgba(147, 51, 234, 0.2) !important;
-}
-
-/* Menu Styling for Dark Theme */
-.mat-mdc-menu-panel {
-  --mat-menu-container-color: #1a1b1f !important;
-  --mat-menu-container-shape: 8px !important;
-  border: 1px solid var(--border-purple) !important;
-  box-shadow: 0 4px 20px rgba(147, 51, 234, 0.15), 0 0 40px rgba(147, 51, 234, 0.1) !important;
-  min-width: 200px !important;
-}
-
-.mat-mdc-menu-content {
-  background: #1a1b1f !important;
-  padding: 8px 0 !important;
-}
-
-.mat-mdc-menu-item {
-  --mat-menu-item-label-text-color: var(--text-secondary) !important;
-  --mat-menu-item-hover-state-layer-color: rgba(147, 51, 234, 0.08) !important;
-  --mat-menu-item-focus-state-layer-color: rgba(147, 51, 234, 0.12) !important;
-  font-family: Inter, sans-serif !important;
-  font-size: 14px !important;
-  font-weight: 500 !important;
-  min-height: 42px !important;
-  transition: all 0.2s ease !important;
-}
-
-.mat-mdc-menu-item:hover {
-  background: rgba(147, 51, 234, 0.15) !important;
-}
-
-.mat-mdc-menu-item:hover .mat-icon {
-  color: var(--color-pink) !important;
-  transform: translateX(2px);
-  transition: all 0.2s ease !important;
-}
-
-.mat-mdc-menu-item .mat-icon {
-  color: var(--color-purple) !important;
-  margin-right: 12px !important;
-  transition: all 0.2s ease !important;
-}
-
-/* Menu Divider */
-.mat-divider {
-  --mat-divider-color: var(--border-purple) !important;
-  margin: 4px 0 !important;
-}
-
-/* Chips Styling */
-.mat-mdc-chip {
-  background-color: rgba(147, 51, 234, 0.2) !important;
-  color: #ffffff !important;
-  border: 1px solid var(--border-purple) !important;
-  font-family: Inter, sans-serif !important;
-  font-size: 12px !important;
-  font-weight: 500 !important;
-}
-
-.mat-mdc-chip:hover {
-  background-color: rgba(147, 51, 234, 0.3) !important;
-}
-
-.mat-mdc-chip.mat-mdc-chip-selected {
-  background-color: var(--color-purple) !important;
-  border-color: var(--color-purple-light) !important;
-}
-
-/* Tooltip Styling */
-.mat-mdc-tooltip {
-  --mdc-plain-tooltip-container-color: #1a1b1f !important;
-  --mdc-plain-tooltip-supporting-text-color: #ffffff !important;
-  --mdc-plain-tooltip-supporting-text-font: Inter, sans-serif !important;
-  --mdc-plain-tooltip-supporting-text-size: 12px !important;
-  --mdc-plain-tooltip-container-shape: 6px !important;
-}
-
-.mat-mdc-tooltip .mdc-tooltip__surface {
-  background: #1a1b1f !important;
-  color: #ffffff !important;
-  border: 1px solid var(--border-purple) !important;
-  box-shadow: 0 4px 12px rgba(147, 51, 234, 0.2) !important;
-  padding: 6px 12px !important;
-  font-size: 12px !important;
-  font-weight: 500 !important;
-}
-
-/* Global Nervbox Scrollbar Theme */
-.nervbox-scrollbar::-webkit-scrollbar,
+/* Scrollbars (WebKit) */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-.nervbox-scrollbar::-webkit-scrollbar-track,
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.4);
-  border-radius: 4px;
-  border: 1px solid rgba(147, 51, 234, 0.1);
+  background: rgb(0 0 0 / 0.25);
 }
 
-.nervbox-scrollbar::-webkit-scrollbar-thumb,
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, rgba(147, 51, 234, 0.6) 0%, rgba(236, 72, 153, 0.5) 100%);
+  background: #5a5346;
   border-radius: 4px;
-  border: 1px solid rgba(147, 51, 234, 0.3);
-  box-shadow: 0 0 8px rgba(147, 51, 234, 0.4);
 }
 
-.nervbox-scrollbar::-webkit-scrollbar-thumb:hover,
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, rgba(147, 51, 234, 0.8) 0%, rgba(236, 72, 153, 0.7) 100%);
-  box-shadow: 0 0 15px rgba(147, 51, 234, 0.6);
-  border-color: rgba(147, 51, 234, 0.5);
+  background: #7a715f;
 }
 
-/* Button Utilities */
-.btn-primary {
-  background: linear-gradient(135deg, var(--color-purple) 0%, var(--color-pink) 100%) !important;
-  border: 1px solid var(--border-purple) !important;
-  color: white !important;
-  border-radius: 6px !important;
-  padding: 8px 16px !important;
-  font-weight: 500 !important;
-  transition: all 0.2s ease !important;
-  box-shadow: 0 0 15px rgba(147, 51, 234, 0.3) !important;
-}
-
-.btn-primary:hover {
-  box-shadow: 0 0 25px rgba(147, 51, 234, 0.5) !important;
-  transform: translateY(-1px) !important;
-}
-
-.btn-icon {
-  background: rgba(147, 51, 234, 0.1) !important;
-  border: 1px solid var(--border-purple) !important;
-  border-radius: 6px !important;
-  color: var(--text-secondary) !important;
-  transition: all 0.2s ease !important;
-}
-
-.btn-icon:hover {
-  background: rgba(147, 51, 234, 0.2) !important;
-  border-color: var(--border-purple-hover) !important;
-  color: var(--color-pink) !important;
-  transform: scale(1.05) !important;
-}
-
-/* Mobile-specific global styles */
+/* Mobil */
 @media (max-width: 768px) {
   body {
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Dialogs on mobile */
   .mat-mdc-dialog-container {
-    margin: 16px !important;
-    max-height: calc(100vh - 32px) !important;
+    max-height: calc(100dvh - 24px) !important;
   }
 
-  .mat-mdc-dialog-content {
-    max-height: calc(100vh - 200px) !important;
-    overflow-y: auto !important;
-  }
-
-  /* Menus on mobile */
   .mat-mdc-menu-panel {
     max-width: calc(100vw - 32px) !important;
   }
 }
 
-/* Touch-specific global styles */
 @media (pointer: coarse) {
-  /* Prevent text selection during interactions */
   * {
     -webkit-tap-highlight-color: transparent;
   }
-
-  /* Improve scrolling performance */
-  .scrollable {
-    -webkit-overflow-scrolling: touch;
-  }
 }
 
-/* iOS-specific fixes */
+/* iOS: kein Zoom beim Fokussieren von Eingaben */
 @supports (-webkit-touch-callout: none) {
-  /* Fix iOS input zoom */
-  input, textarea, select {
+  input,
+  textarea,
+  select {
     font-size: 16px !important;
   }
-}
-
-/* Shekel Popover Dialog Styling */
-.shekel-popover-dialog .mat-mdc-dialog-container {
-  padding: 0 !important;
-  border-radius: 16px !important;
-  background: transparent !important;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), 0 0 60px rgba(251, 191, 36, 0.15) !important;
-}
-
-.shekel-popover-dialog .mat-mdc-dialog-surface {
-  background: transparent !important;
-  border-radius: 16px !important;
-  overflow: hidden !important;
-}
-
-.shekel-popover-backdrop {
-  background: rgba(0, 0, 0, 0.7) !important;
-  backdrop-filter: blur(4px) !important;
-}
-
-/* During tour: lower z-index so Shepherd appears above the dialog */
-body.shepherd-menu-step-active .cdk-overlay-container {
-  z-index: 9998 !important;
-}
-
-body.shepherd-menu-step-active .shekel-popover-backdrop {
-  background: rgba(0, 0, 0, 0.3) !important;
-  backdrop-filter: none !important;
-}
-
-/* Shekel Select Panel (User Dropdown) */
-.shekel-select-panel {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
-  border: 1px solid rgba(251, 191, 36, 0.3) !important;
-  border-radius: 8px !important;
-}
-
-.shekel-select-panel .mat-mdc-option {
-  color: rgba(255, 255, 255, 0.9) !important;
-  font-family: 'JetBrains Mono', monospace !important;
-}
-
-.shekel-select-panel .mat-mdc-option:hover:not(.mdc-list-item--disabled) {
-  background: rgba(251, 191, 36, 0.15) !important;
-}
-
-.shekel-select-panel .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) {
-  background: rgba(251, 191, 36, 0.25) !important;
-  color: #fde047 !important;
-}
-
-.shekel-select-panel .mat-mdc-option .mdc-list-item__primary-text {
-  color: inherit !important;
-}
-
-/* Dark Select Panel (Upload Dialog Tags) */
-.dark-select-panel {
-  background: #1a1b1f !important;
-  border: 1px solid var(--border-purple) !important;
-  border-radius: 8px !important;
-  box-shadow: 0 4px 20px rgba(147, 51, 234, 0.2), 0 0 40px rgba(147, 51, 234, 0.1) !important;
-}
-
-.dark-select-panel .mat-mdc-option {
-  font-family: Inter, sans-serif !important;
-  min-height: 36px !important;
-  padding: 4px 16px !important;
-}
-
-.dark-select-panel .mat-mdc-option:hover:not(.mdc-list-item--disabled) {
-  background: rgba(147, 51, 234, 0.1) !important;
-}
-
-.dark-select-panel .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) {
-  background: rgba(147, 51, 234, 0.15) !important;
-}
-
-.dark-select-panel .mat-pseudo-checkbox {
-  margin-right: 12px !important;
-}
-
-.dark-select-panel .mat-pseudo-checkbox-checked {
-  background: var(--color-purple) !important;
-  border-color: var(--color-purple) !important;
-}
-
-.dark-select-panel .option-tag {
-  display: inline-block;
-  border-radius: 5px;
-  padding: 3px 8px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.dark-select-panel .option-tag .hash {
-  color: #9333ea;
-  font-weight: 600;
-  margin-right: 1px;
 }

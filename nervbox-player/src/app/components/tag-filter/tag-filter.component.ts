@@ -10,284 +10,143 @@ import {
   effect,
   ChangeDetectionStrategy,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import {
   MatAutocompleteModule,
   MatAutocompleteSelectedEvent,
 } from '@angular/material/autocomplete';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
+import { tagToneStyle } from '../../shared/tag-tone';
 
 @Component({
   selector: 'app-tag-filter',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatChipsModule,
-    MatIconModule,
-    MatAutocompleteModule,
-    MatFormFieldModule,
-    MatInputModule,
-  ],
+  imports: [FormsModule, MatTooltipModule, MatAutocompleteModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="tag-filter nervbox-scrollbar">
-      <!-- Gepinnte Tags -->
+    <nav class="nk-rail tag-rail" aria-label="Tags">
+      @if (pinnedTags().length) {
+        <span class="nk-label">Angepinnt</span>
+      }
       @for (tag of pinnedTags(); track tag) {
-        <button
-          class="tag-chip"
-          [class.selected]="isSelected(tag)"
-          [style.--tag-color]="getTagColor(tag)"
-          (click)="toggleTag(tag)"
-        >
-          <mat-icon class="pin-icon">lock</mat-icon>
-          <span
-            class="tag-dot"
-            [style.background]="isSelected(tag) ? 'white' : getTagColor(tag)"
-          ></span>
-          <span class="hash">#</span>{{ tag }}
-        </button>
+        <span class="nk-tag-group">
+          <button
+            type="button"
+            [class]="isSelected(tag) ? 'nk-tag nk-tag--selected' : 'nk-tag'"
+            [style]="tone(tag)"
+            [attr.aria-pressed]="isSelected(tag)"
+            (click)="toggleTag(tag)"
+          >
+            <svg class="nk-tag__pin" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-label="angepinnt"><path d="M16 3l5 5-4 1-4 4 1 5-2 2-4-4-5 5-1-1 5-5-4-4 2-2 5 1 4-4z"></path></svg>
+            <span class="nk-tag__lens" aria-hidden="true"></span>
+            <span>#{{ tag }}</span>
+            @if (tagCounts()[tag]) {
+              <span class="nk-tag__count">{{ tagCounts()[tag] }}</span>
+            }
+          </button>
+        </span>
       }
 
-      <!-- Divider zwischen gepinnten und eigenen Tags -->
-      @if (pinnedTags().length > 0 && visibleNonPinnedTags().length > 0) {
-        <div class="tag-divider"></div>
+      @if (visibleNonPinnedTags().length) {
+        <span class="nk-label" [class.nk-rail__sep]="pinnedTags().length > 0">Meine Tags</span>
       }
-
-      <!-- Sichtbare nicht-gepinnte Tags -->
       @for (tag of visibleNonPinnedTags(); track tag) {
-        <button
-          class="tag-chip"
-          [class.selected]="isSelected(tag)"
-          [style.--tag-color]="getTagColor(tag)"
-          (click)="toggleTag(tag)"
-        >
-          <span
-            class="tag-dot"
-            [style.background]="isSelected(tag) ? 'white' : getTagColor(tag)"
-          ></span>
-          <span class="hash">#</span>{{ tag }}
-          <mat-icon class="remove-icon" (click)="removeVisibleTag(tag, $event)">close</mat-icon>
-        </button>
+        <span class="nk-tag-group">
+          <button
+            type="button"
+            [class]="isSelected(tag) ? 'nk-tag nk-tag--selected' : 'nk-tag'"
+            [style]="tone(tag)"
+            [attr.aria-pressed]="isSelected(tag)"
+            (click)="toggleTag(tag)"
+          >
+            <span class="nk-tag__lens" aria-hidden="true"></span>
+            <span>#{{ tag }}</span>
+            @if (tagCounts()[tag]) {
+              <span class="nk-tag__count">{{ tagCounts()[tag] }}</span>
+            }
+          </button>
+          <button
+            type="button"
+            class="nk-tag__remove"
+            [attr.aria-label]="'#' + tag + ' aus der Leiste entfernen'"
+            [matTooltip]="'#' + tag + ' entfernen'"
+            (click)="removeVisibleTag(tag, $event)"
+          >✕</button>
+        </span>
       }
 
-      <!-- Tag-Suche -->
-      <div class="tag-search" #searchOrigin="matAutocompleteOrigin" matAutocompleteOrigin>
-        <mat-icon class="search-icon">search</mat-icon>
+      <label class="nk-input nk-input--sm tag-search" #searchOrigin="matAutocompleteOrigin" matAutocompleteOrigin>
+        <svg class="nk-input__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
         <input
           #searchInput
+          class="nk-input__field"
           type="text"
-          class="search-input"
-          placeholder="Tag suchen..."
-          [(ngModel)]="searchQuery"
+          aria-label="Tag suchen und hinzufügen"
+          placeholder="Tag suchen …"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
           [matAutocomplete]="auto"
           [matAutocompleteConnectedTo]="searchOrigin"
-          (focus)="onSearchFocus()"
         />
-        @if (searchQuery) {
-          <button class="clear-btn" (click)="clearSearch($event)">
-            <mat-icon>close</mat-icon>
-          </button>
+        @if (searchQuery()) {
+          <button type="button" class="nk-input__clear" aria-label="Tag-Suche leeren" (click)="clearSearch($event)">✕</button>
         }
-        <mat-autocomplete
-          #auto="matAutocomplete"
-          class="tag-autocomplete"
-          panelClass="tag-autocomplete-panel"
-          (optionSelected)="onTagSelected($event)"
-        >
+        <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onTagSelected($event)">
           @for (tag of filteredTags(); track tag) {
             <mat-option [value]="tag">
-              <span class="autocomplete-tag">
-                <span class="tag-dot-small" [style.background]="getTagColor(tag)"></span>
-                <span class="hash">#</span>{{ tag }}
-              </span>
+              <span class="tag-opt" [style]="tone(tag)"><span class="nk-tag__lens" aria-hidden="true"></span>#{{ tag }}</span>
             </mat-option>
           }
-          @if (filteredTags().length === 0 && searchQuery) {
+          @if (filteredTags().length === 0 && searchQuery()) {
             <mat-option disabled>Kein Tag gefunden</mat-option>
           }
         </mat-autocomplete>
-      </div>
-    </div>
+      </label>
+
+      <span class="tag-spacer"></span>
+      <span class="nk-label tag-lib">Bibliothek</span>
+      <span class="nk-counter">{{ soundCount() }} SOUNDS</span>
+    </nav>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
-    .tag-filter {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
+    :host {
+      display: block;
+      flex-shrink: 0;
+    }
+    .tag-rail {
       overflow-x: auto;
-      background: rgba(0, 0, 0, 0.3);
-      border-bottom: 1px solid rgba(147, 51, 234, 0.2);
+      overflow-y: hidden;
+      scrollbar-width: none;
     }
-
-    .tag-chip {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 16px;
-      padding: 6px 14px;
-      font-size: 12px;
-      font-weight: 500;
-      color: rgba(255, 255, 255, 0.8);
-      cursor: pointer;
-      transition: all 0.2s ease;
-      white-space: nowrap;
-      font-family: Inter, sans-serif;
-    }
-
-    .tag-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .tag-chip:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: var(--tag-color, #9333ea);
-    }
-
-    .tag-chip.selected {
-      background: var(--tag-color, #9333ea);
-      border-color: transparent;
-      color: white;
-      box-shadow: 0 0 10px color-mix(in srgb, var(--tag-color, #9333ea) 40%, transparent);
-    }
-
-    .tag-chip.selected .tag-dot {
-      background: white !important;
-    }
-
-    .pin-icon {
-      font-size: 12px;
-      width: 12px;
-      height: 12px;
-      opacity: 0.6;
-      margin-right: -2px;
-    }
-
-    .tag-chip.selected .pin-icon {
-      opacity: 1;
-      color: white;
-    }
-
-    .tag-divider {
-      width: 1px;
-      height: 20px;
-      background: rgba(255, 255, 255, 0.2);
-      flex-shrink: 0;
-    }
-
-    .remove-icon {
-      font-size: 14px;
-      width: 14px;
-      height: 14px;
-      margin-left: 2px;
-      opacity: 0.7;
-    }
-
-    .tag-chip:hover .remove-icon {
-      opacity: 1;
-    }
-
     .tag-search {
-      display: flex;
+      width: 138px;
+      flex-shrink: 0;
+      margin-left: 6px;
+    }
+    .tag-spacer {
+      flex: 1;
+    }
+    .tag-opt {
+      display: inline-flex;
       align-items: center;
-      gap: 4px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 16px;
-      padding: 4px 12px;
-      min-width: 160px;
-      transition: all 0.2s ease;
+      gap: 7px;
+      font: 700 var(--nk-fs-md) / 1 var(--nk-font-ui);
     }
-
-    .tag-search:focus-within {
-      border-color: #9333ea;
-      background: rgba(147, 51, 234, 0.1);
+    @media (max-width: 1280px) {
+      .tag-lib {
+        display: none;
+      }
     }
-
-    .search-icon {
-      font-size: 14px;
-      width: 14px;
-      height: 14px;
-      color: rgba(255, 255, 255, 0.5);
-    }
-
-    .search-input {
-      background: transparent;
-      border: none;
-      outline: none;
-      color: rgba(255, 255, 255, 0.9);
-      font-size: 12px;
-      font-family: Inter, sans-serif;
-      width: 120px;
-    }
-
-    .search-input::placeholder {
-      color: rgba(255, 255, 255, 0.4);
-    }
-
-    .clear-btn {
-      background: none;
-      border: none;
-      padding: 0;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0.5;
-      transition: opacity 0.2s;
-    }
-
-    .clear-btn:hover {
-      opacity: 1;
-    }
-
-    .clear-btn mat-icon {
-      font-size: 14px;
-      width: 14px;
-      height: 14px;
-      color: rgba(255, 255, 255, 0.7);
-    }
-
-    .autocomplete-tag {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .tag-dot-small {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-    }
-
-    ::ng-deep .mat-mdc-autocomplete-panel {
-      background: #1a1b1f !important;
-      border: 1px solid rgba(147, 51, 234, 0.3);
-      border-radius: 8px !important;
-      min-width: 200px !important;
-    }
-
-    ::ng-deep .mat-mdc-option {
-      color: rgba(255, 255, 255, 0.9) !important;
-      font-size: 13px !important;
-    }
-
-    ::ng-deep .mat-mdc-option:hover {
-      background: rgba(147, 51, 234, 0.2) !important;
-    }
-
-    ::ng-deep .mat-mdc-option.mdc-list-item--selected {
-      background: rgba(147, 51, 234, 0.3) !important;
+    @media (max-width: 768px) {
+      .tag-rail {
+        height: 38px;
+        padding: 0 8px;
+      }
+      .tag-rail > .nk-label,
+      .tag-spacer,
+      .tag-rail > .nk-counter {
+        display: none;
+      }
     }
   `,
 })
@@ -298,6 +157,8 @@ export class TagFilterComponent implements OnInit {
   readonly tags = input<string[]>([]);
   readonly tagColors = input<Record<string, string>>({});
   readonly pinnedTags = input<string[]>([]);
+  readonly tagCounts = input<Record<string, number>>({});
+  readonly soundCount = input<number>(0);
   readonly selectedTagsChange = output<string[]>();
 
   private readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
@@ -306,7 +167,7 @@ export class TagFilterComponent implements OnInit {
   private readonly _visibleTags = signal<string[]>([]); // Tags that are shown (not pinned)
   readonly selectedTags = computed(() => this._selectedTags());
 
-  searchQuery = '';
+  readonly searchQuery = signal('');
 
   constructor() {
     // Persist selected tags to localStorage whenever they change
@@ -358,7 +219,7 @@ export class TagFilterComponent implements OnInit {
   readonly filteredTags = computed(() => {
     const pinned = this.pinnedTags();
     const visible = this._visibleTags();
-    const query = this.searchQuery.toLowerCase();
+    const query = this.searchQuery().toLowerCase();
 
     return this.tags()
       .filter((t) => !pinned.includes(t) && !visible.includes(t))
@@ -366,8 +227,8 @@ export class TagFilterComponent implements OnInit {
       .slice(0, 10);
   });
 
-  getTagColor(tag: string): string {
-    return this.tagColors()[tag] || '#9333ea';
+  tone(tag: string): string {
+    return tagToneStyle(this.tagColors()[tag]);
   }
 
   isSelected(tag: string): boolean {
@@ -384,13 +245,10 @@ export class TagFilterComponent implements OnInit {
     this.selectedTagsChange.emit(this._selectedTags());
   }
 
-  onSearchFocus(): void {
-    // Trigger filter update when focusing
-  }
-
   clearSearch(event: Event): void {
     event.stopPropagation();
-    this.searchQuery = '';
+    event.preventDefault();
+    this.searchQuery.set('');
   }
 
   onTagSelected(event: MatAutocompleteSelectedEvent): void {
@@ -403,7 +261,7 @@ export class TagFilterComponent implements OnInit {
       this._selectedTags.update((tags) => [...tags, tag]);
       this.selectedTagsChange.emit(this._selectedTags());
     }
-    this.searchQuery = '';
+    this.searchQuery.set('');
     this.searchInput()?.nativeElement.blur();
   }
 

@@ -39,7 +39,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 ├─────────────────────────────────────────────────────────────┤
 │  Sound Grid (responsive, multiple cards per row)            │
 ├─────────────────────────────────────────────────────────────┤
-│  NOW PLAYING: [User] spielt [Sound]                         │
+│  KANALZÜGE: alle gleichzeitig laufenden Sounds              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -97,22 +97,40 @@ src/app/
 - `POST /api/users/auth/register` - Register (1 account per IP)
 - `GET /api/chat` - Get chat messages
 
-## Design System
+## Design System – „Nachtschicht“ (Jubiläumsedition 30 Jahre CABD)
 
-### Colors (match nervbox-mixer)
-- Primary Purple: #9333ea
-- Secondary Pink: #ec4899
-- Dark Background: #0a0a0a / #1a1b1f
-- Accent Orange: #f97316
+Das ganze Gerät ist ein Putty-Vintage-Soundboard um 3 Uhr nachts: Licht kommt aus hinterleuchteten
+Gummitasten, LCD und LEDs plus Schreibtischlampe oben links. Quelle des Designs: Claude-Design-Canvas
+(Seite „Runde 6“), Datei `nacht.css`.
 
-### Typography
-- Monospace: JetBrains Mono
-- Body: Inter, system-ui
+### Wo liegt was
+- `src/styles/nacht/` – Nacht-Kit als SCSS-Partials (`_01-tokens` … `_18-cart`), Präfix `nk-`, BEM.
+  Tokens als CSS-Variablen in `:root` (`--nk-*`). Neue Bausteine IMMER hier ergänzen, nicht pro Komponente.
+- `src/styles/_material-nacht.scss` – Angular Material an das Gerät angepasst (M3-Systemtokens, Dialog-,
+  Menü-, Tooltip-, Snackbar-Oberflächen).
+- `src/styles/nervbox.scss` – Einstieg (in `angular.json` registriert).
+- `src/styles.css` – nur Tour (Shepherd), Legacy-Variablen, Plattform-Fixes.
+- `src/app/shared/tag-tone.ts` – DB-Tagfarbe → Gummi-Palette (`--nk-key-*` inline).
 
-### Material Theme
-- Dark theme with heavy customization
-- Purple/pink accent colors
-- Glassmorphism effects
+### Farbsemantik
+- Grün `--nk-own` = eigener laufender Sound · Eisblau `--nk-other` = fremder laufender Sound
+- Rot = Gefahr/Stopp/ungelesen · Lampenweiß = Auswahl/Primäraktion (`nk-key--accent`)
+- Kein Lila/Pink, Orange nicht als Highlight.
+
+### Schriften (index.html)
+Barlow Condensed (UI), IBM Plex Mono (Meta), VT323 (LCD), Courier Prime (Chat-Bondrucker), Michroma (Logo).
+
+### Layout
+`app.ts`: `.nk-desk` › `.nk-device` mit Deck (`toolbar`), Tag-Leiste (`tag-filter`), Pad-Platte
+(`sound-grid` mit CABD-Wasserzeichen, Top-Sounds groß bei „Meistgespielt“), Bondrucker-Chat
+(`chat-sidebar`), Kanalzüge (`channels/channel-strip`). ≤ 768 px: `mobile/mobile-bar` (Laufend-Leiste +
+Tastenreihe Sounds/Chat/Spielhalle/Shop/Mehr).
+`core/services/now-playing.service.ts` leitet aus SignalR `soundPlayed` ab, was gerade läuft (Pads + Kanäle).
+
+### Dialoge
+Wurzel `.nk-dlg`, darin `.nk-dialog__head` / `__body` / `__foot`; Felder `.nk-field` + `.nk-input`,
+Tasten `.nk-key` (`--accent`, `--ghost`, `--danger`, `--sm`, `--icon`). Breite bestimmt der Inhalt
+(`dialog.open(...)` nur mit `maxWidth: '95vw'`).
 
 ## Git Configuration
 

@@ -32,171 +32,75 @@ export interface UserEditDialogData {
     MatSlideToggleModule,
   ],
   template: `
-    <h2 mat-dialog-title>
-      <mat-icon>edit</mat-icon>
-      User bearbeiten
-    </h2>
-
-    <mat-dialog-content>
-      <div class="user-header">
-        <mat-icon class="user-avatar">person</mat-icon>
-        <span class="username">{{ data.user.username }}</span>
-      </div>
-
-      <form class="user-form">
-        <div class="name-row">
-          <mat-form-field appearance="outline">
-            <mat-label>Vorname</mat-label>
-            <input matInput [(ngModel)]="firstName" name="firstName" />
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Nachname</mat-label>
-            <input matInput [(ngModel)]="lastName" name="lastName" />
-          </mat-form-field>
+    <div class="nk-dlg ad-sm">
+      <header class="nk-dialog__head">
+        <h2 class="nk-dialog__title">User bearbeiten</h2>
+        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close [disabled]="saving()">✕</button>
+      </header>
+      <div class="nk-dialog__body">
+        <span class="ad-sub">{{ data.user.username }}</span>
+        <div class="nk-field-row">
+          <label class="nk-field"><span class="nk-label">Vorname</span><span class="nk-input"><input class="nk-input__field" [(ngModel)]="firstName" name="firstName" aria-label="Vorname" /></span></label>
+          <label class="nk-field"><span class="nk-label">Nachname</span><span class="nk-input"><input class="nk-input__field" [(ngModel)]="lastName" name="lastName" aria-label="Nachname" /></span></label>
         </div>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Rolle</mat-label>
-          <mat-select [(ngModel)]="role" name="role" [disabled]="data.user.username === 'admin'">
-            <mat-option value="user">User</mat-option>
-            <mat-option value="admin">Admin</mat-option>
-          </mat-select>
-          @if (data.user.username === 'admin') {
-            <mat-hint>Admin-Rolle kann nicht geändert werden</mat-hint>
-          }
-        </mat-form-field>
-
-        <div class="status-toggle">
-          <mat-slide-toggle
-            [(ngModel)]="isActive"
-            name="isActive"
-            [disabled]="data.user.username === 'admin'"
-          >
-            User ist aktiv
-          </mat-slide-toggle>
-          @if (data.user.username === 'admin') {
-            <span class="hint">Admin kann nicht deaktiviert werden</span>
-          }
-        </div>
-
-        @if (error()) {
-          <div class="error-message">
-            <mat-icon>error</mat-icon>
-            {{ error() }}
+        <div class="nk-field">
+          <span class="nk-label">Rolle</span>
+          <div class="ad-seg" role="radiogroup" aria-label="Rolle">
+            <button type="button" role="radio" [attr.aria-checked]="role === 'user'" [class]="role === 'user' ? 'nk-key nk-key--sm nk-key--on' : 'nk-key nk-key--sm'" [disabled]="data.user.username === 'admin'" (click)="role = 'user'">User</button>
+            <button type="button" role="radio" [attr.aria-checked]="role === 'admin'" [class]="role === 'admin' ? 'nk-key nk-key--sm nk-key--on' : 'nk-key nk-key--sm'" [disabled]="data.user.username === 'admin'" (click)="role = 'admin'">Admin</button>
           </div>
+          @if (data.user.username === 'admin') {
+            <span class="nk-field__hint">Admin-Rolle kann nicht geändert werden</span>
+          }
+        </div>
+        <span class="ad-switch">
+          <button type="button" role="switch" [attr.aria-checked]="isActive" [class]="isActive ? 'nk-switch nk-switch--on' : 'nk-switch'" aria-label="User ist aktiv" [disabled]="data.user.username === 'admin'" (click)="isActive = !isActive"><span class="nk-switch__knob" aria-hidden="true"></span></button>
+          User ist aktiv
+        </span>
+        @if (data.user.username === 'admin') {
+          <span class="nk-field__hint">Admin kann nicht deaktiviert werden</span>
         }
-      </form>
-    </mat-dialog-content>
-
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close [disabled]="saving()">Abbrechen</button>
-      <button mat-raised-button color="primary" (click)="onSave()" [disabled]="saving()">
-        @if (saving()) {
-          <mat-spinner diameter="20"></mat-spinner>
-        } @else {
+        @if (error()) {
+          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert"><span class="nk-toast__text">{{ error() }}</span></div>
+        }
+      </div>
+      <footer class="nk-dialog__foot">
+        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close [disabled]="saving()">Abbrechen</button>
+        <button type="button" class="nk-key nk-key--accent" (click)="onSave()" [disabled]="saving()">
+          @if (saving()) {
+            <span class="nk-spin" aria-hidden="true"></span>
+          }
           Speichern
-        }
-      </button>
-    </mat-dialog-actions>
+        </button>
+      </footer>
+    </div>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
-    h2[mat-dialog-title] {
+    .ad-sm {
+      width: 380px;
+      max-width: 100%;
+    }
+    .ad-sub {
+      font: 500 12px var(--nk-font-mono);
+      color: var(--nk-iv-2);
+    }
+    .ad-seg {
       display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #9333ea;
-      margin: 0;
-      padding: 16px 24px;
+      gap: 10px;
+      padding: 3px;
     }
-
-    h2 mat-icon {
-      font-size: 24px;
-      width: 24px;
-      height: 24px;
-    }
-
-    mat-dialog-content {
-      padding: 0 24px;
-      min-width: 350px;
-    }
-
-    .user-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      background: rgba(147, 51, 234, 0.1);
-      border-radius: 8px;
-      margin-bottom: 16px;
-    }
-
-    .user-avatar {
-      font-size: 32px;
-      width: 32px;
-      height: 32px;
-      color: #9333ea;
-    }
-
-    .username {
-      font-weight: 600;
-      font-size: 16px;
-      color: rgba(255, 255, 255, 0.95);
-    }
-
-    .user-form {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .user-form mat-form-field {
-      width: 100%;
-    }
-
-    .name-row {
-      display: flex;
-      gap: 12px;
-    }
-
-    .name-row mat-form-field {
+    .ad-seg .nk-key {
       flex: 1;
     }
-
-    .status-toggle {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      padding: 8px 0;
-    }
-
-    .status-toggle .hint {
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.4);
-      margin-left: 48px;
-    }
-
-    .error-message {
+    .ad-switch {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 12px;
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      border-radius: 8px;
-      color: #ef4444;
-      font-size: 13px;
-    }
-
-    mat-dialog-actions {
-      padding: 16px 24px;
-    }
-
-    mat-dialog-actions button mat-spinner {
-      display: inline-block;
+      gap: 12px;
+      font: 600 15px var(--nk-font-ui);
+      padding: 2px 0;
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class UserEditDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<UserEditDialogComponent>);

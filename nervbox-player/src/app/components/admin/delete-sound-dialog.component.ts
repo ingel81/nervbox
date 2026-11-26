@@ -28,121 +28,46 @@ export interface DeleteSoundDialogData {
     MatProgressSpinnerModule,
   ],
   template: `
-    <h2 mat-dialog-title>
-      <mat-icon class="warn-icon">warning</mat-icon>
-      Sound löschen
-    </h2>
-
-    <mat-dialog-content>
-      <div class="warning-box">
-        <p>Diese Aktion kann nicht rückgängig gemacht werden!</p>
-        <p>
-          Der Sound <strong>"{{ data.sound.name }}"</strong> wird unwiderruflich gelöscht.
-        </p>
-      </div>
-
-      <div class="confirm-section">
-        <p>Gib den Namen des Sounds zur Bestätigung ein:</p>
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Sound-Name</mat-label>
-          <input
-            matInput
-            [(ngModel)]="confirmName"
-            [placeholder]="data.sound.name"
-            autocomplete="off"
-          />
-        </mat-form-field>
-      </div>
-
-      @if (error()) {
-        <div class="error-message">{{ error() }}</div>
-      }
-    </mat-dialog-content>
-
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close [disabled]="deleting()">Abbrechen</button>
-      <button
-        mat-raised-button
-        color="warn"
-        (click)="delete()"
-        [disabled]="!canDelete() || deleting()"
-      >
-        @if (deleting()) {
-          <mat-spinner diameter="20"></mat-spinner>
-        } @else {
-          Endgültig löschen
+    <div class="nk-dlg sd">
+      <header class="nk-dialog__head">
+        <h2 class="nk-dialog__title sd-danger">Sound löschen</h2>
+        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close [disabled]="deleting()">✕</button>
+      </header>
+      <div class="nk-dialog__body">
+        <div class="nk-alert" role="alert">
+          <span class="nk-alert__title">Diese Aktion kann nicht rückgängig gemacht werden!</span>
+          <span>Der Sound <b>"{{ data.sound.name }}"</b> wird unwiderruflich gelöscht.</span>
+        </div>
+        <label class="nk-field">
+          <span class="nk-field__hint">Gib den Namen des Sounds zur Bestätigung ein:</span>
+          <span class="nk-label">Sound-Name</span>
+          <span class="nk-input"><input class="nk-input__field" [(ngModel)]="confirmName" [placeholder]="data.sound.name" autocomplete="off" aria-label="Sound-Name zur Bestätigung" /></span>
+        </label>
+        @if (error()) {
+          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert"><span class="nk-toast__text">{{ error() }}</span></div>
         }
-      </button>
-    </mat-dialog-actions>
+      </div>
+      <footer class="nk-dialog__foot">
+        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close [disabled]="deleting()">Abbrechen</button>
+        <button type="button" class="nk-key nk-key--danger" (click)="delete()" [disabled]="!canDelete() || deleting()">
+          @if (deleting()) {
+            <span class="nk-spin" aria-hidden="true"></span>
+          }
+          Endgültig löschen
+        </button>
+      </footer>
+    </div>
+  `,
+  styles: `
+    .sd {
+      width: 420px;
+      max-width: 100%;
+    }
+    .sd-danger {
+      color: var(--nk-danger-text);
+    }
   `,
   changeDetection: ChangeDetectionStrategy.Eager,
-  styles: `
-    h2[mat-dialog-title] {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #ef4444;
-      margin: 0;
-      padding: 16px 24px;
-    }
-
-    .warn-icon {
-      font-size: 24px;
-      width: 24px;
-      height: 24px;
-    }
-
-    mat-dialog-content {
-      padding: 0 24px;
-      min-width: 400px;
-    }
-
-    .warning-box {
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 20px;
-    }
-
-    .warning-box p {
-      margin: 0 0 8px 0;
-      color: rgba(255, 255, 255, 0.8);
-      font-size: 14px;
-    }
-
-    .warning-box p:last-child {
-      margin-bottom: 0;
-    }
-
-    .warning-box strong {
-      color: #ef4444;
-    }
-
-    .confirm-section p {
-      color: rgba(255, 255, 255, 0.7);
-      font-size: 14px;
-      margin-bottom: 12px;
-    }
-
-    .full-width {
-      width: 100%;
-    }
-
-    .error-message {
-      color: #ef4444;
-      font-size: 13px;
-      margin-top: 8px;
-    }
-
-    mat-dialog-actions {
-      padding: 16px 24px;
-    }
-
-    ::ng-deep .mat-mdc-form-field-subscript-wrapper {
-      display: none;
-    }
-  `,
 })
 export class DeleteSoundDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<DeleteSoundDialogComponent>);

@@ -29,212 +29,111 @@ import { CreditService, CreditSettings } from '../../core/services/credit.servic
     MatDividerModule,
   ],
   template: `
-    <div class="dialog-container">
-      <div class="dialog-header">
-        <img src="icons/nervbox-coin.svg" alt="Shekel" class="header-coin" />
-        <h2>Shekel-Einstellungen</h2>
-      </div>
-
+    <div class="nk-dlg cs">
+      <header class="nk-dialog__head">
+        <mat-icon class="cs-ico" aria-hidden="true">savings</mat-icon>
+        <h2 class="nk-dialog__title">Shekel-Einstellungen</h2>
+        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" (click)="dialogRef.close()">✕</button>
+      </header>
       @if (loading()) {
-        <div class="loading-container">
-          <mat-spinner diameter="40"></mat-spinner>
-        </div>
-      } @else if (settings()) {
-        <div class="settings-content">
-          <div class="settings-section">
-            <h3>
-              <img src="icons/nervbox-coin.svg" alt="" class="section-coin" />
-              Start-N$
-            </h3>
-            <mat-form-field appearance="outline">
-              <mat-label>N$ für neue User</mat-label>
-              <input matInput type="number" [(ngModel)]="settings()!.initialCreditsUser" min="0" />
-              <mat-hint>Initiale N$ bei Registrierung</mat-hint>
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>N$ für Admins</mat-label>
-              <input matInput type="number" [(ngModel)]="settings()!.initialCreditsAdmin" min="0" />
-              <mat-hint>Admins haben quasi unbegrenzte N$</mat-hint>
-            </mat-form-field>
-          </div>
-
-          <mat-divider></mat-divider>
-
-          <div class="settings-section">
-            <h3>
-              <mat-icon>play_circle</mat-icon>
-              Sound-Abspielen
-            </h3>
-            <mat-form-field appearance="outline">
-              <mat-label>Kosten pro Sound</mat-label>
-              <input matInput type="number" [(ngModel)]="settings()!.costPerSoundPlay" min="0" />
-              <mat-hint>N$ die pro Abspielen abgezogen werden</mat-hint>
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Min. N$ zum Spielen</mat-label>
-              <input matInput type="number" [(ngModel)]="settings()!.minCreditsToPlay" min="0" />
-              <mat-hint>Mindestguthaben um abspielen zu können</mat-hint>
-            </mat-form-field>
-          </div>
-
-          <mat-divider></mat-divider>
-
-          <div class="settings-section">
-            <h3>
-              <mat-icon>schedule</mat-icon>
-              Stündliche Bonus-N$
-            </h3>
-            <div class="toggle-row">
-              <mat-slide-toggle [(ngModel)]="settings()!.hourlyCreditsEnabled">
-                Stündliche N$ aktiviert
-              </mat-slide-toggle>
+        <div class="nk-dialog__body"><div class="cs-state"><span class="nk-spin" aria-hidden="true"></span>lädt …</div></div>
+      } @else if (settings(); as s) {
+        <div class="nk-dialog__body cs-body">
+          <div class="nk-section">
+            <h3 class="nk-section__title">Start-N$</h3>
+            <div class="cs-grid">
+              <label class="nk-field"><span class="nk-label">N$ für neue User</span><span class="nk-input"><input class="nk-input__field cs-num" type="number" min="0" [(ngModel)]="s.initialCreditsUser" aria-label="N$ für neue User" /><span class="cs-unit">N$</span></span><span class="nk-field__hint">Initiale N$ bei Registrierung</span></label>
+              <label class="nk-field"><span class="nk-label">N$ für Admins</span><span class="nk-input"><input class="nk-input__field cs-num" type="number" min="0" [(ngModel)]="s.initialCreditsAdmin" aria-label="N$ für Admins" /><span class="cs-unit">N$</span></span><span class="nk-field__hint">Admins haben quasi unbegrenzte N$</span></label>
             </div>
-            @if (settings()!.hourlyCreditsEnabled) {
-              <mat-form-field appearance="outline">
-                <mat-label>N$ pro Stunde</mat-label>
-                <input
-                  matInput
-                  type="number"
-                  [(ngModel)]="settings()!.hourlyCreditsAmount"
-                  min="1"
-                />
-                <mat-hint>Automatische Gutschrift jede Stunde</mat-hint>
-              </mat-form-field>
+          </div>
+          <div class="nk-section">
+            <h3 class="nk-section__title">Sound-Abspielen</h3>
+            <div class="cs-grid">
+              <label class="nk-field"><span class="nk-label">Kosten pro Sound</span><span class="nk-input"><input class="nk-input__field cs-num" type="number" min="0" [(ngModel)]="s.costPerSoundPlay" aria-label="Kosten pro Sound" /><span class="cs-unit">N$</span></span><span class="nk-field__hint">N$ die pro Abspielen abgezogen werden</span></label>
+              <label class="nk-field"><span class="nk-label">Min. N$ zum Spielen</span><span class="nk-input"><input class="nk-input__field cs-num" type="number" min="0" [(ngModel)]="s.minCreditsToPlay" aria-label="Min. N$ zum Spielen" /><span class="cs-unit">N$</span></span><span class="nk-field__hint">Mindestguthaben um abspielen zu können</span></label>
+            </div>
+          </div>
+          <div class="nk-section">
+            <h3 class="nk-section__title">Stündliche Bonus-N$</h3>
+            <span class="cs-switch">
+              <button type="button" role="switch" [attr.aria-checked]="s.hourlyCreditsEnabled" [class]="s.hourlyCreditsEnabled ? 'nk-switch nk-switch--on' : 'nk-switch'" aria-label="Stündliche N$ aktiviert" (click)="s.hourlyCreditsEnabled = !s.hourlyCreditsEnabled"><span class="nk-switch__knob" aria-hidden="true"></span></button>
+              Stündliche N$ aktiviert
+            </span>
+            @if (s.hourlyCreditsEnabled) {
+              <div class="cs-grid">
+                <label class="nk-field"><span class="nk-label">N$ pro Stunde</span><span class="nk-input"><input class="nk-input__field cs-num" type="number" min="1" [(ngModel)]="s.hourlyCreditsAmount" aria-label="N$ pro Stunde" /><span class="cs-unit">N$</span></span><span class="nk-field__hint">Automatische Gutschrift jede Stunde</span></label>
+              </div>
             }
           </div>
-
-          <mat-divider></mat-divider>
-
-          <div class="settings-section">
-            <h3>
-              <mat-icon>trending_up</mat-icon>
-              Limits
-            </h3>
-            <mat-form-field appearance="outline">
-              <mat-label>Maximale N$ (User)</mat-label>
-              <input matInput type="number" [(ngModel)]="settings()!.maxCreditsUser" min="1" />
-              <mat-hint>Obergrenze für normale User</mat-hint>
-            </mat-form-field>
+          <div class="nk-section">
+            <h3 class="nk-section__title">Limits</h3>
+            <div class="cs-grid">
+              <label class="nk-field"><span class="nk-label">Maximale N$ (User)</span><span class="nk-input"><input class="nk-input__field cs-num" type="number" min="1" [(ngModel)]="s.maxCreditsUser" aria-label="Maximale N$ (User)" /><span class="cs-unit">N$</span></span><span class="nk-field__hint">Obergrenze für normale User</span></label>
+            </div>
           </div>
         </div>
-
-        <div class="dialog-actions">
-          <button mat-button (click)="dialogRef.close()">Abbrechen</button>
-          <button mat-flat-button color="primary" (click)="save()" [disabled]="saving()">
+        <footer class="nk-dialog__foot">
+          <button type="button" class="nk-key nk-key--ghost" (click)="dialogRef.close()">Abbrechen</button>
+          <button type="button" class="nk-key nk-key--accent" (click)="save()" [disabled]="saving()">
             @if (saving()) {
-              <mat-spinner diameter="20"></mat-spinner>
-            } @else {
-              <ng-container><mat-icon>save</mat-icon> Speichern</ng-container>
+              <span class="nk-spin" aria-hidden="true"></span>
             }
+            Speichern
           </button>
-        </div>
+        </footer>
       }
     </div>
   `,
+  styles: `
+    .cs {
+      width: 540px;
+      max-width: 100%;
+      max-height: 90vh;
+    }
+    .cs-ico {
+      color: var(--nk-iv);
+      filter: drop-shadow(0 0 4px rgb(255 226 176 / 0.6));
+    }
+    .cs-body {
+      gap: 16px;
+      overflow-y: auto;
+    }
+    .cs-state {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 18px 8px;
+      color: var(--nk-iv-2);
+      font: 500 13px var(--nk-font-mono);
+    }
+    .cs-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 16px;
+    }
+    .cs-num {
+      text-align: right;
+      font: 400 26px/1 var(--nk-font-lcd);
+      letter-spacing: 1px;
+    }
+    .cs-unit {
+      font: 600 11px var(--nk-font-mono);
+      color: var(--nk-iv-2);
+    }
+    .cs-switch {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font: 600 15px var(--nk-font-ui);
+      padding: 2px 0;
+    }
+    @media (max-width: 520px) {
+      .cs-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  `,
   changeDetection: ChangeDetectionStrategy.Eager,
-  styles: [
-    `
-      .dialog-container {
-        min-width: 450px;
-        max-width: 550px;
-      }
-
-      .dialog-header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 16px 24px;
-        background: linear-gradient(
-          135deg,
-          rgba(234, 179, 8, 0.15) 0%,
-          rgba(147, 51, 234, 0.1) 100%
-        );
-        border-bottom: 1px solid rgba(234, 179, 8, 0.3);
-      }
-
-      .header-coin {
-        width: 40px;
-        height: 40px;
-        filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
-      }
-
-      .section-coin {
-        width: 18px;
-        height: 18px;
-      }
-
-      .dialog-header h2 {
-        margin: 0;
-        font-size: 20px;
-        font-weight: 600;
-        color: white;
-      }
-
-      .loading-container {
-        display: flex;
-        justify-content: center;
-        padding: 48px;
-      }
-
-      .settings-content {
-        padding: 16px 24px;
-        max-height: 60vh;
-        overflow-y: auto;
-      }
-
-      .settings-section {
-        margin-bottom: 16px;
-      }
-
-      .settings-section h3 {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: rgba(255, 255, 255, 0.9);
-        font-size: 14px;
-        font-weight: 600;
-        margin: 0 0 12px 0;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-
-      .settings-section h3 mat-icon {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
-        color: #9333ea;
-      }
-
-      .settings-section mat-form-field {
-        width: 100%;
-        margin-bottom: 8px;
-      }
-
-      .toggle-row {
-        margin-bottom: 16px;
-      }
-
-      mat-divider {
-        margin: 16px 0;
-      }
-
-      .dialog-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-        padding: 16px 24px;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-      }
-
-      .dialog-actions button mat-icon {
-        margin-right: 4px;
-      }
-
-      .dialog-actions mat-spinner {
-        margin-right: 8px;
-      }
-    `,
-  ],
 })
 export class CreditSettingsDialogComponent implements OnInit {
   readonly dialogRef = inject(MatDialogRef<CreditSettingsDialogComponent>);

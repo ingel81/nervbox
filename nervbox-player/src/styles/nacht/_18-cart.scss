@@ -1,0 +1,21 @@
+/* ---------------------------------------------------------------------------
+   18 · STECKMODUL (Spielhalle): Griffrillen, Papieretikett, Kontaktleiste
+   --------------------------------------------------------------------------- */
+.nk-cart { --nk-cart-c: #3BA8A1; position: relative; display: flex; flex-direction: column; padding: 0 10px; border: 0; border-radius: 10px 10px 4px 4px; cursor: pointer; text-align: left; color: var(--nk-iv); font-family: var(--nk-font-ui);
+  background: var(--nk-grain), linear-gradient(160deg, #5E5647 0%, #4A443A 50%, #38332B 100%);
+  box-shadow: inset 0 2px 0 rgb(var(--nk-lamp-rgb) / .28), inset 0 -3px 0 rgb(0 0 0 / .4), 0 0 0 1px #0B0A08, 4px 8px 16px rgb(0 0 0 / .6); }
+.nk-cart:hover { transform: translateY(-4px); }
+.nk-cart__grip { height: 18px; flex-shrink: 0; margin: 0 14px; background: repeating-linear-gradient(90deg, rgb(0 0 0 / .45) 0 2px, rgb(var(--nk-lamp-rgb) / .14) 2px 3px, transparent 3px 7px); }
+.nk-cart__label { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 5px; padding: 0 10px 10px; border-radius: 4px; color: var(--nk-paper-ink);
+  background: linear-gradient(180deg, var(--nk-cart-c) 0 24px, var(--nk-paper) 24px); box-shadow: 0 1px 0 rgb(255 255 255 / .2), 0 0 0 1px rgb(0 0 0 / .45), inset 0 0 18px rgb(120 90 40 / .18); }
+.nk-cart__kind { height: 24px; display: flex; align-items: center; justify-content: space-between; font: 700 10.5px/1 var(--nk-font-ui); letter-spacing: 1.8px; color: #FFFFFF; text-shadow: 0 1px 1px rgb(0 0 0 / .55); }
+.nk-cart__title { font: 800 22px/1 var(--nk-font-ui); letter-spacing: .5px; margin-top: 6px; }
+.nk-cart__text { font: 400 13px/1.3 var(--nk-font-paper); color: var(--nk-paper-ink-2); }
+.nk-cart__pay { margin-top: auto; align-self: flex-start; padding: 2px 6px; border: 1.5px solid var(--nk-paper-ink); border-radius: 3px; font: 700 12px/1.2 var(--nk-font-mono); }
+.nk-cart__edge { height: 30px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 0 4px; }
+.nk-cart__pins { flex: 1; height: 9px; border-radius: 1px; opacity: .85; background: repeating-linear-gradient(90deg, #D9B860 0 6px, transparent 6px 9px); }
+.nk-cart--new { box-shadow: inset 0 2px 0 rgb(var(--nk-lamp-rgb) / .28), inset 0 -3px 0 rgb(0 0 0 / .4), 0 0 0 1px #0B0A08, 0 0 0 5px rgb(var(--nk-own-rgb) / .5), 0 0 26px rgb(var(--nk-own-rgb) / .3), 4px 8px 16px rgb(0 0 0 / .6); }
+.nk-cart--soon { cursor: default; filter: saturate(.3) brightness(.8); }
+.nk-cart--soon:hover { transform: none; }
+.nk-slot { height: 16px; flex-shrink: 0; border-radius: 3px; background: linear-gradient(180deg, #050403, #1A1712); box-shadow: inset 0 3px 5px rgb(0 0 0 / .95), 0 1px 0 rgb(var(--nk-lamp-rgb) / .16); }
+@media (prefers-reduced-motion: reduce) { .nk-cart:hover { transform: none; } }

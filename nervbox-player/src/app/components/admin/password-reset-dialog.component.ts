@@ -28,140 +28,53 @@ export interface PasswordResetDialogData {
     MatProgressSpinnerModule,
   ],
   template: `
-    <h2 mat-dialog-title>
-      <mat-icon>key</mat-icon>
-      Passwort zurücksetzen
-    </h2>
-
-    <mat-dialog-content>
-      <div class="user-header">
-        <mat-icon class="user-avatar">person</mat-icon>
-        <span class="username">{{ data.user.username }}</span>
-      </div>
-
-      <form class="password-form">
-        <mat-form-field appearance="outline">
-          <mat-label>Neues Passwort</mat-label>
-          <input
-            matInput
-            type="password"
-            [(ngModel)]="newPassword"
-            name="newPassword"
-            required
-            minlength="4"
-          />
-          <mat-hint>Mindestens 4 Zeichen</mat-hint>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Passwort bestätigen</mat-label>
-          <input
-            matInput
-            type="password"
-            [(ngModel)]="confirmPassword"
-            name="confirmPassword"
-            required
-          />
+    <div class="nk-dlg ad-sm">
+      <header class="nk-dialog__head">
+        <h2 class="nk-dialog__title">Passwort zurücksetzen</h2>
+        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close [disabled]="saving()">✕</button>
+      </header>
+      <div class="nk-dialog__body">
+        <span class="ad-sub">{{ data.user.username }}</span>
+        <label class="nk-field">
+          <span class="nk-label">Neues Passwort</span>
+          <span class="nk-input"><input class="nk-input__field" type="password" [(ngModel)]="newPassword" name="newPassword" autocomplete="new-password" aria-label="Neues Passwort" /></span>
+          <span class="nk-field__hint">Mindestens 4 Zeichen</span>
+        </label>
+        <label class="nk-field">
+          <span class="nk-label">Passwort bestätigen</span>
+          <span class="nk-input" [class.nk-input--error]="confirmPassword && newPassword !== confirmPassword">
+            <input class="nk-input__field" type="password" [(ngModel)]="confirmPassword" name="confirmPassword" autocomplete="new-password" aria-label="Passwort bestätigen" />
+          </span>
           @if (confirmPassword && newPassword !== confirmPassword) {
-            <mat-error>Passwörter stimmen nicht überein</mat-error>
+            <span class="nk-field__hint nk-field__hint--error">Passwörter stimmen nicht überein</span>
           }
-        </mat-form-field>
-
+        </label>
         @if (error()) {
-          <div class="error-message">
-            <mat-icon>error</mat-icon>
-            {{ error() }}
-          </div>
+          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert"><span class="nk-toast__text">{{ error() }}</span></div>
         }
-      </form>
-    </mat-dialog-content>
-
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close [disabled]="saving()">Abbrechen</button>
-      <button mat-raised-button color="warn" (click)="onSave()" [disabled]="!isValid() || saving()">
-        @if (saving()) {
-          <mat-spinner diameter="20"></mat-spinner>
-        } @else {
+      </div>
+      <footer class="nk-dialog__foot">
+        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close [disabled]="saving()">Abbrechen</button>
+        <button type="button" class="nk-key nk-key--accent" (click)="onSave()" [disabled]="!isValid() || saving()">
+          @if (saving()) {
+            <span class="nk-spin" aria-hidden="true"></span>
+          }
           Passwort setzen
-        }
-      </button>
-    </mat-dialog-actions>
+        </button>
+      </footer>
+    </div>
+  `,
+  styles: `
+    .ad-sm {
+      width: 380px;
+      max-width: 100%;
+    }
+    .ad-sub {
+      font: 500 12px var(--nk-font-mono);
+      color: var(--nk-iv-2);
+    }
   `,
   changeDetection: ChangeDetectionStrategy.Eager,
-  styles: `
-    h2[mat-dialog-title] {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #f97316;
-      margin: 0;
-      padding: 16px 24px;
-    }
-
-    h2 mat-icon {
-      font-size: 24px;
-      width: 24px;
-      height: 24px;
-    }
-
-    mat-dialog-content {
-      padding: 0 24px;
-      min-width: 350px;
-    }
-
-    .user-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      background: rgba(249, 115, 22, 0.1);
-      border-radius: 8px;
-      margin-bottom: 16px;
-    }
-
-    .user-avatar {
-      font-size: 32px;
-      width: 32px;
-      height: 32px;
-      color: #f97316;
-    }
-
-    .username {
-      font-weight: 600;
-      font-size: 16px;
-      color: rgba(255, 255, 255, 0.95);
-    }
-
-    .password-form {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .password-form mat-form-field {
-      width: 100%;
-    }
-
-    .error-message {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px;
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      border-radius: 8px;
-      color: #ef4444;
-      font-size: 13px;
-    }
-
-    mat-dialog-actions {
-      padding: 16px 24px;
-    }
-
-    mat-dialog-actions button mat-spinner {
-      display: inline-block;
-    }
-  `,
 })
 export class PasswordResetDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<PasswordResetDialogComponent>);

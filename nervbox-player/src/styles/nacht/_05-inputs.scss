@@ -1,0 +1,33 @@
+/* ---------------------------------------------------------------------------
+   5 · EINGABE: Feld, Auswahl (Drehknopf-Taste), Schalter, Reiter
+   --------------------------------------------------------------------------- */
+/* dunkler Schacht mit Lichtkante am Boden; .nk-input ist das <label>, __field das <input> */
+.nk-input { height: 40px; display: flex; align-items: center; gap: 7px; padding: 0 8px 0 10px; border-radius: var(--nk-r-md); color: var(--nk-iv-2); background: var(--nk-face-field); box-shadow: var(--nk-shadow-recess); }
+.nk-input:focus-within, .nk-input--focus { box-shadow: var(--nk-shadow-recess), 0 0 0 1.5px rgb(var(--nk-lamp-rgb) / .75), 0 0 12px rgb(var(--nk-lamp-rgb) / .2); }
+.nk-input--error { box-shadow: var(--nk-shadow-recess), 0 0 0 1.5px var(--nk-danger-lit), 0 0 12px rgb(var(--nk-danger-rgb) / .3); }
+.nk-input--sm { height: 28px; padding: 0 6px 0 8px; border-radius: 5px; }
+.nk-input__icon { flex-shrink: 0; }
+.nk-input__field { flex: 1; min-width: 0; width: 100%; border: 0; padding: 0; background: transparent; outline: none; font: 600 15px var(--nk-font-ui); letter-spacing: .5px; color: var(--nk-iv); }
+.nk-input--sm .nk-input__field { font-size: 13.5px; }
+.nk-input__field::placeholder { color: #CFC5AC; opacity: 1; }
+.nk-input__clear { width: 20px; height: 20px; flex-shrink: 0; padding: 0; border: 0; border-radius: 50%; cursor: pointer; display: grid; place-items: center; background: var(--nk-cap); color: var(--nk-iv); font: 700 10px/1 var(--nk-font-ui); box-shadow: inset 0 1px 0 rgb(var(--nk-lamp-rgb) / .3), 0 0 0 1px #070605; }
+.nk-input__clear[disabled] { opacity: .35; cursor: default; }
+.nk-field { display: flex; flex-direction: column; gap: 5px; }
+.nk-field__hint { font: 500 11px/1.3 var(--nk-font-mono); color: var(--nk-iv); }
+.nk-field__hint--error { color: var(--nk-danger-text); }
+/* Auswahl: Taste mit Drehknopf, öffnet .nk-menu */
+.nk-select { height: 38px; padding: 0 11px 2px 8px; display: inline-flex; align-items: center; gap: var(--nk-s-4); font: 700 var(--nk-fs-md)/1 var(--nk-font-ui); letter-spacing: .4px; }
+.nk-select--open { box-shadow: var(--nk-shadow-cap-down); }
+.nk-select__knob { position: relative; width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%; background: conic-gradient(from 200deg, #1F1C18, #5A5448, #151310, #3D382F, #1F1C18); box-shadow: 0 0 0 1px #070605, 1px 2px 3px rgb(0 0 0 / .75), inset 0 1px 0 rgb(var(--nk-lamp-rgb) / .3); }
+.nk-select__knob::after { content: ''; position: absolute; left: 10px; top: 2px; width: 2px; height: 7px; border-radius: 1px; background: var(--nk-iv); box-shadow: 0 0 4px rgb(var(--nk-lamp-rgb) / .8); transform-origin: 1px 9px; transform: rotate(var(--nk-knob-angle, -38deg)); }
+/* Schiebeschalter; an = Knopf rechts + grüner Lichtspalt */
+.nk-switch { position: relative; width: 66px; height: 30px; flex-shrink: 0; border: 0; border-radius: 15px; cursor: pointer; padding: 0 10px; text-align: right; font-size: 14px; line-height: 30px; color: var(--nk-iv); text-shadow: 0 0 6px rgb(var(--nk-lamp-rgb) / .6); background: linear-gradient(180deg, #080706, #1D1A16); box-shadow: inset 2px 3px 5px rgb(0 0 0 / .9), 1px 1px 0 rgb(var(--nk-lamp-rgb) / .18), -1px -1px 0 rgb(0 0 0 / .4); }
+.nk-switch__knob { position: absolute; left: 3px; top: 3px; width: 30px; height: 24px; border-radius: 12px; transition: left .12s ease;
+  background: repeating-linear-gradient(90deg, rgb(0 0 0 / 0) 0 9px, rgb(0 0 0 / .35) 9px 10px, rgb(var(--nk-lamp-rgb) / .25) 10px 11px, rgb(0 0 0 / 0) 11px 13px) 0 0 / 100% 100%, linear-gradient(160deg, #8C826C, #5B5447);
+  box-shadow: inset 0 1px 0 rgb(var(--nk-lamp-rgb) / .35), inset 0 -2px 0 rgb(0 0 0 / .3), 1px 2px 3px rgb(0 0 0 / .8); }
+.nk-switch--on, .nk-switch[aria-checked="true"] { text-align: left; color: #FFFFFF; box-shadow: inset 2px 3px 5px rgb(0 0 0 / .9), 0 0 0 1px rgb(var(--nk-own-rgb) / .6), 0 0 12px rgb(var(--nk-own-rgb) / .25); }
+.nk-switch--on .nk-switch__knob, .nk-switch[aria-checked="true"] .nk-switch__knob { left: 33px; }
+/* Reiter */
+.nk-tabs { display: flex; align-items: center; gap: var(--nk-s-4); }
+.nk-tabs__tab { height: 30px; padding: 0 7px 1px; display: inline-flex; align-items: center; gap: 5px; font: 700 var(--nk-fs-sm)/1 var(--nk-font-ui); letter-spacing: .6px; text-transform: uppercase; }
+.nk-tabs__tab--on { color: #FFFFFF; text-shadow: 0 0 7px rgb(var(--nk-lamp-rgb) / .85); background: linear-gradient(180deg, #2A2620, #3A352D); box-shadow: inset 0 2px 4px rgb(0 0 0 / .75), inset 0 -2.5px 0 var(--nk-iv), 0 0 0 1px rgb(var(--nk-lamp-rgb) / .45), var(--nk-shadow-well); }

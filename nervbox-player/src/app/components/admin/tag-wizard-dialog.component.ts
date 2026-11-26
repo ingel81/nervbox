@@ -20,6 +20,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { firstValueFrom } from 'rxjs';
 import { Sound, Tag } from '../../core/models';
 import { SoundService } from '../../core/services/sound.service';
+import { tagToneStyle } from '../../shared/tag-tone';
 
 @Component({
   selector: 'app-tag-wizard-dialog',
@@ -38,590 +39,210 @@ import { SoundService } from '../../core/services/sound.service';
     MatTooltipModule,
   ],
   template: `
-    <h2 mat-dialog-title>
-      <mat-icon>auto_fix_high</mat-icon>
-      Tag-Wizard
-    </h2>
-
-    <mat-dialog-content>
-      @if (loading()) {
-        <div class="loading-container">
-          <mat-spinner diameter="48"></mat-spinner>
-          <p>Sounds werden geladen...</p>
-        </div>
-      } @else if (filteredSounds().length === 0) {
-        <div class="empty-container">
-          <mat-icon class="empty-icon">check_circle</mat-icon>
-          <p>{{ showOnlyUntagged() ? 'Alle Sounds sind getaggt!' : 'Keine Sounds vorhanden.' }}</p>
-          @if (showOnlyUntagged()) {
-            <button mat-stroked-button (click)="showOnlyUntagged.set(false)">
-              Alle Sounds anzeigen
-            </button>
-          }
-        </div>
-      } @else {
-        <!-- Filter Toggle -->
-        <div class="filter-row">
-          <mat-slide-toggle
-            [checked]="showOnlyUntagged()"
-            (change)="onFilterChange($event.checked)"
-            color="primary"
-          >
-            Nur ungetaggte Sounds
-          </mat-slide-toggle>
-          <span class="sound-count">{{ filteredSounds().length }} Sounds</span>
-        </div>
-
-        <!-- Progress Bar -->
-        <div class="progress-section">
-          <div class="progress-text">
-            <span>{{ currentIndex() + 1 }} von {{ filteredSounds().length }}</span>
-            <span class="progress-percent">{{ progressPercent() }}%</span>
+    <div class="nk-dlg wz">
+      <header class="nk-dialog__head">
+        <mat-icon class="wz-ico" aria-hidden="true">auto_fix_high</mat-icon>
+        <h2 class="nk-dialog__title">Tag-Wizard</h2>
+        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close>✕</button>
+      </header>
+      <div class="nk-dialog__body wz-body">
+        @if (loading()) {
+          <div class="wz-state"><span class="nk-spin" aria-hidden="true"></span>Sounds werden geladen...</div>
+        } @else if (filteredSounds().length === 0) {
+          <div class="wz-state wz-state--col">
+            <span class="nk-empty__title">{{ showOnlyUntagged() ? 'Alle Sounds sind getaggt!' : 'Keine Sounds vorhanden.' }}</span>
+            @if (showOnlyUntagged()) {
+              <button type="button" class="nk-key" (click)="showOnlyUntagged.set(false)">Alle Sounds anzeigen</button>
+            }
           </div>
-          <mat-progress-bar mode="determinate" [value]="progressPercent()"></mat-progress-bar>
-        </div>
+        } @else {
+          <div class="wz-line">
+            <span class="wz-switch">
+              <button type="button" role="switch" [attr.aria-checked]="showOnlyUntagged()" [class]="showOnlyUntagged() ? 'nk-switch nk-switch--on' : 'nk-switch'" aria-label="Nur ungetaggte Sounds" (click)="onFilterChange(!showOnlyUntagged())"><span class="nk-switch__knob" aria-hidden="true"></span></button>
+              Nur ungetaggte Sounds
+            </span>
+            <span class="nk-counter">{{ filteredSounds().length }} SOUNDS</span>
+            <span class="wz-flex"></span>
+            <span class="nk-row__meta wz-pos">{{ currentIndex() + 1 }} von {{ filteredSounds().length }}</span>
+            <span class="nk-row__num">{{ progressPercent() }}%</span>
+          </div>
+          <span class="nk-progress nk-progress--lamp" role="progressbar" [attr.aria-valuenow]="progressPercent()"><span class="nk-progress__fill" [style.width.%]="progressPercent()"></span></span>
 
-        <!-- Current Sound Info -->
-        @if (currentSound(); as sound) {
-          <div class="sound-info">
-            <div class="sound-header">
-              <div class="sound-name">{{ sound.name }}</div>
-              <button
-                mat-icon-button
-                class="play-btn"
-                (click)="playCurrentSound()"
-                matTooltip="Sound abspielen"
-              >
-                <mat-icon>play_arrow</mat-icon>
-              </button>
-            </div>
-            <div class="sound-meta">
-              <span class="meta-item">
-                <mat-icon>schedule</mat-icon>
-                {{ formatDuration(sound.durationMs) }}
-              </span>
-              <span class="meta-item">
-                <mat-icon>audio_file</mat-icon>
-                {{ sound.fileName }}
+          @if (currentSound(); as sound) {
+            <div class="wz-card">
+              <button type="button" class="nk-key nk-key--round wz-play" aria-label="Sound abspielen" matTooltip="Sound abspielen" (click)="playCurrentSound()"><mat-icon>play_arrow</mat-icon></button>
+              <span class="wz-meta">
+                <span class="wz-name">{{ sound.name }}</span>
+                <span class="nk-row__meta">{{ formatDuration(sound.durationMs) }} · {{ sound.fileName }}</span>
               </span>
             </div>
-          </div>
 
-          <!-- Current Tags (Selected) -->
-          <div class="tags-section">
-            <div class="tags-label">
-              Aktuelle Tags
-              @if (currentTags().length > 0) {
-                <span class="tag-count">({{ currentTags().length }})</span>
-              }
-            </div>
-            <div class="tags-container current-tags">
-              @if (currentTags().length === 0) {
-                <span class="no-tags">Noch keine Tags vergeben</span>
-              }
-              @for (tag of currentTags(); track tag) {
-                <button
-                  class="tag-chip selected"
-                  [style.--tag-color]="getTagColor(tag)"
-                  (click)="toggleTag(tag)"
-                >
-                  <span class="tag-dot"></span>
-                  <span class="hash">#</span>{{ tag }}
-                  <mat-icon class="check-icon">check</mat-icon>
-                </button>
-              }
-            </div>
-          </div>
-
-          <!-- Available Tags -->
-          <div class="tags-section">
-            <div class="tags-label-row">
-              <span class="tags-label">Verfügbare Tags</span>
-              <div class="tag-search">
-                <mat-icon class="search-icon">search</mat-icon>
-                <input
-                  type="text"
-                  class="search-input"
-                  placeholder="Tags suchen..."
-                  [value]="tagSearchQuery()"
-                  (input)="tagSearchQuery.set($any($event.target).value)"
-                />
-                @if (tagSearchQuery()) {
-                  <button class="clear-btn" (click)="tagSearchQuery.set('')">
-                    <mat-icon>close</mat-icon>
+            <div class="nk-section">
+              <h3 class="nk-section__title">Aktuelle Tags @if (currentTags().length > 0) { <span class="nk-section__aside">({{ currentTags().length }})</span> }</h3>
+              <div class="wz-chips">
+                @if (currentTags().length === 0) {
+                  <span class="wz-none">Noch keine Tags vergeben</span>
+                }
+                @for (tag of currentTags(); track tag) {
+                  <button type="button" class="nk-tag nk-tag--selected" [style]="tone(tag)" aria-pressed="true" [attr.aria-label]="'#' + tag + ' entfernen'" (click)="toggleTag(tag)">
+                    <span class="nk-tag__lens" aria-hidden="true"></span>#{{ tag }} <span aria-hidden="true">✓</span>
                   </button>
                 }
               </div>
             </div>
-            <div class="tags-container available-tags">
-              @if (availableTagsFiltered().length === 0) {
-                <span class="no-tags">Keine Tags gefunden</span>
-              }
-              @for (tag of availableTagsFiltered(); track tag.name) {
-                <button
-                  class="tag-chip"
-                  [class.selected]="isTagSelected(tag.name)"
-                  [style.--tag-color]="tag.color"
-                  (click)="toggleTag(tag.name)"
-                >
-                  <span class="tag-dot"></span>
-                  <span class="hash">#</span>{{ tag.name }}
-                  @if (isTagSelected(tag.name)) {
-                    <mat-icon class="check-icon">check</mat-icon>
-                  }
-                </button>
-              }
+
+            <div class="nk-section">
+              <h3 class="nk-section__title">Verfügbare Tags</h3>
+              <label class="nk-input nk-input--sm wz-search">
+                <svg class="nk-input__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+                <input class="nk-input__field" placeholder="Tags suchen..." aria-label="Tags suchen" [value]="tagSearchQuery()" (input)="tagSearchQuery.set($any($event.target).value)" />
+                @if (tagSearchQuery()) {
+                  <button type="button" class="nk-input__clear" aria-label="Suche leeren" (click)="tagSearchQuery.set('')">✕</button>
+                }
+              </label>
+              <div class="wz-chips">
+                @if (availableTagsFiltered().length === 0) {
+                  <span class="wz-none">Keine Tags gefunden</span>
+                }
+                @for (tag of availableTagsFiltered(); track tag.name) {
+                  <button type="button" [class]="isTagSelected(tag.name) ? 'nk-tag nk-tag--selected' : 'nk-tag'" [style]="tone(tag.name)" [attr.aria-pressed]="isTagSelected(tag.name)" (click)="toggleTag(tag.name)">
+                    <span class="nk-tag__lens" aria-hidden="true"></span>#{{ tag.name }}
+                    @if (isTagSelected(tag.name)) {
+                      <span aria-hidden="true">✓</span>
+                    }
+                  </button>
+                }
+              </div>
             </div>
-          </div>
 
-          <!-- Quick Add Tag -->
-          <div class="add-tag-section">
-            <mat-form-field appearance="outline" class="tag-input">
-              <mat-label>Neuer Tag</mat-label>
-              <input
-                matInput
-                [(ngModel)]="newTagInput"
-                (keydown.enter)="createAndAddTag()"
-                placeholder="Tag eingeben und Enter drücken"
-              />
-            </mat-form-field>
-            <button
-              mat-icon-button
-              class="add-btn"
-              (click)="createAndAddTag()"
-              [disabled]="!newTagInput.trim()"
-              matTooltip="Tag hinzufügen"
-            >
-              <mat-icon>add</mat-icon>
-            </button>
-          </div>
+            <div class="nk-section">
+              <h3 class="nk-section__title">Neuer Tag</h3>
+              <div class="wz-line">
+                <label class="nk-input wz-grow"><input class="nk-input__field" [(ngModel)]="newTagInput" (keydown.enter)="createAndAddTag()" placeholder="Tag eingeben und Enter drücken" aria-label="Neuer Tag" /></label>
+                <button type="button" class="nk-key nk-key--icon" aria-label="Tag hinzufügen" matTooltip="Tag hinzufügen" [disabled]="!newTagInput.trim()" (click)="createAndAddTag()"><mat-icon>add</mat-icon></button>
+              </div>
+            </div>
+          }
         }
-      }
-    </mat-dialog-content>
-
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Schließen</button>
-      @if (filteredSounds().length > 0) {
-        <button
-          mat-stroked-button
-          (click)="goPrevious()"
-          [disabled]="currentIndex() === 0 || saving()"
-        >
-          <mat-icon>chevron_left</mat-icon>
-          Zurück
-        </button>
-        <button
-          mat-stroked-button
-          (click)="skip()"
-          [disabled]="currentIndex() >= filteredSounds().length - 1"
-          matTooltip="Ohne Speichern weiter"
-        >
-          Überspringen
-        </button>
-        @if (saving()) {
-          <button mat-raised-button color="primary" disabled>
-            <mat-spinner diameter="20"></mat-spinner>
-          </button>
-        } @else if (isLastSound()) {
-          <button mat-raised-button color="primary" (click)="goNext()">
-            Fertig
-            <mat-icon>check</mat-icon>
-          </button>
-        } @else {
-          <button mat-raised-button color="primary" (click)="goNext()">
-            Weiter
-            <mat-icon>chevron_right</mat-icon>
+      </div>
+      <footer class="nk-dialog__foot wz-foot">
+        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close>Schließen</button>
+        <span class="wz-flex"></span>
+        @if (filteredSounds().length > 0) {
+          <button type="button" class="nk-key" [disabled]="currentIndex() === 0 || saving()" (click)="goPrevious()">‹ Zurück</button>
+          <button type="button" class="nk-key" matTooltip="Ohne Speichern weiter" [disabled]="currentIndex() >= filteredSounds().length - 1" (click)="skip()">Überspringen</button>
+          <button type="button" class="nk-key nk-key--accent" [disabled]="saving()" (click)="goNext()">
+            @if (saving()) {
+              <span class="nk-spin" aria-hidden="true"></span>
+            } @else if (isLastSound()) {
+              Fertig ✓
+            } @else {
+              Weiter ›
+            }
           </button>
         }
-      }
-    </mat-dialog-actions>
+      </footer>
+    </div>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
-    h2[mat-dialog-title] {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #9333ea;
-      margin: 0;
-      padding: 16px 24px;
+    .wz {
+      width: 720px;
+      max-width: 100%;
+      max-height: 92vh;
     }
-
-    h2 mat-icon {
-      font-size: 24px;
-      width: 24px;
-      height: 24px;
+    .wz-ico {
+      color: var(--nk-iv);
+      filter: drop-shadow(0 0 4px rgb(255 226 176 / 0.6));
     }
-
-    mat-dialog-content {
-      padding: 0 24px;
-      min-width: 700px;
-      min-height: 400px;
-      max-height: 70vh;
+    .wz-body {
+      gap: 14px;
       overflow-y: auto;
     }
-
-    .loading-container,
-    .empty-container {
+    .wz-state {
       display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 24px 8px;
+      color: var(--nk-iv-2);
+      font: 500 13px var(--nk-font-mono);
+    }
+    .wz-state--col {
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      padding: 48px 0;
-      color: rgba(255, 255, 255, 0.7);
+      align-items: flex-start;
     }
-
-    .empty-icon {
-      font-size: 64px;
-      width: 64px;
-      height: 64px;
-      color: #22c55e;
-    }
-
-    .filter-row {
+    .wz-line {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-      padding: 12px 16px;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 8px;
+      gap: 14px;
+      padding: 3px;
     }
-
-    .sound-count {
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.5);
-    }
-
-    .progress-section {
-      margin-bottom: 20px;
-    }
-
-    .progress-text {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.6);
-      margin-bottom: 6px;
-    }
-
-    .progress-percent {
-      color: #9333ea;
-      font-weight: 600;
-    }
-
-    .sound-info {
-      background: linear-gradient(
-        135deg,
-        rgba(147, 51, 234, 0.1) 0%,
-        rgba(236, 72, 153, 0.05) 100%
-      );
-      border: 1px solid rgba(147, 51, 234, 0.3);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 20px;
-    }
-
-    .sound-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-
-    .sound-name {
-      font-size: 18px;
-      font-weight: 600;
-      color: white;
-    }
-
-    .play-btn {
-      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%) !important;
-      width: 40px !important;
-      height: 40px !important;
-    }
-
-    .play-btn mat-icon {
-      color: white;
-    }
-
-    .sound-meta {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .meta-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.5);
-    }
-
-    .meta-item mat-icon {
-      font-size: 14px;
-      width: 14px;
-      height: 14px;
-    }
-
-    .tags-section {
-      margin-bottom: 16px;
-    }
-
-    .tags-label-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      gap: 12px;
-    }
-
-    .tags-label {
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.5);
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .tag-search {
-      display: flex;
-      align-items: center;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(147, 51, 234, 0.3);
-      border-radius: 6px;
-      padding: 4px 8px;
+    .wz-flex {
       flex: 1;
-      max-width: 280px;
-      transition: all 0.2s ease;
     }
-
-    .tag-search:focus-within {
-      border-color: rgba(147, 51, 234, 0.6);
-      box-shadow: 0 0 8px rgba(147, 51, 234, 0.2);
-    }
-
-    .tag-search .search-icon {
-      color: rgba(255, 255, 255, 0.4);
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-      margin-right: 6px;
-    }
-
-    .tag-search .search-input {
+    .wz-grow {
       flex: 1;
-      background: transparent;
-      border: none;
-      outline: none;
-      color: white;
-      font-size: 12px;
       min-width: 0;
     }
-
-    .tag-search .search-input::placeholder {
-      color: rgba(255, 255, 255, 0.3);
-    }
-
-    .tag-search .clear-btn {
-      background: none;
-      border: none;
-      padding: 0;
-      cursor: pointer;
+    .wz-switch {
       display: flex;
       align-items: center;
-      justify-content: center;
-      width: 16px;
-      height: 16px;
+      gap: 12px;
+      font: 600 15px var(--nk-font-ui);
     }
-
-    .tag-search .clear-btn mat-icon {
-      font-size: 14px;
-      width: 14px;
-      height: 14px;
-      color: rgba(255, 255, 255, 0.4);
+    .wz-pos {
+      color: var(--nk-iv);
     }
-
-    .tag-search .clear-btn:hover mat-icon {
-      color: #ec4899;
+    .wz-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 18px;
+      border-radius: 10px;
+      background: var(--nk-face-glare), var(--nk-face-glass);
+      box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 226 176 / 0.3), 0 0 20px rgb(255 226 176 / 0.1);
     }
-
-    .tag-count {
-      color: #9333ea;
+    .wz-play {
+      background: radial-gradient(circle at 50% 58%, #96f7b9 0%, #4be585 48%, #1f8e4c 100%);
+      color: #0b1712;
     }
-
-    .tags-container {
+    .wz-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+    .wz-name {
+      font: 800 36px/1 var(--nk-font-ui);
+      letter-spacing: 0.5px;
+      color: #ffffff;
+      text-shadow: 0 0 14px rgb(255 226 176 / 0.5);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .wz-chips {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      min-height: 40px;
-      padding: 8px;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 8px;
+      gap: 12px;
+      padding: 3px;
     }
-
-    .current-tags {
-      border: 1px dashed rgba(147, 51, 234, 0.3);
+    .wz-chips .nk-tag {
+      height: 26px;
+      font-size: 13.5px;
     }
-
-    .available-tags {
-      max-height: 220px;
-      overflow-y: auto;
+    .wz-none {
+      font: 500 12px var(--nk-font-mono);
+      color: var(--nk-iv-2);
     }
-
-    .no-tags {
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.3);
-      font-style: italic;
+    .wz-search {
+      width: 260px;
+      margin: 2px 3px;
     }
-
-    .tag-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      background: rgba(var(--tag-color-rgb, 147, 51, 234), 0.15);
-      border: 1px solid rgba(var(--tag-color-rgb, 147, 51, 234), 0.3);
-      border-radius: 16px;
-      padding: 6px 12px;
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.9);
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .tag-chip:hover {
-      background: rgba(var(--tag-color-rgb, 147, 51, 234), 0.25);
-      border-color: rgba(var(--tag-color-rgb, 147, 51, 234), 0.5);
-      transform: scale(1.02);
-    }
-
-    .tag-chip.selected {
-      background: var(--tag-color, #9333ea);
-      border-color: var(--tag-color, #9333ea);
-      color: white;
-    }
-
-    .tag-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--tag-color, #9333ea);
-      flex-shrink: 0;
-    }
-
-    .tag-chip.selected .tag-dot {
-      background: white;
-    }
-
-    .hash {
-      opacity: 0.6;
-    }
-
-    .check-icon {
-      font-size: 14px;
-      width: 14px;
-      height: 14px;
-      margin-left: 2px;
-    }
-
-    .add-tag-section {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 16px;
-    }
-
-    .tag-input {
-      flex: 1;
-    }
-
-    .add-btn {
-      background: rgba(147, 51, 234, 0.2) !important;
-      border: 1px solid rgba(147, 51, 234, 0.4) !important;
-    }
-
-    .add-btn:hover:not([disabled]) {
-      background: rgba(147, 51, 234, 0.3) !important;
-    }
-
-    .add-btn mat-icon {
-      color: #9333ea;
-    }
-
-    mat-dialog-actions {
-      padding: 16px 24px;
-      gap: 8px;
-    }
-
-    mat-dialog-actions button[mat-raised-button] {
-      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%) !important;
-      border: none !important;
-    }
-
-    mat-dialog-actions button[mat-stroked-button] {
-      border-color: rgba(147, 51, 234, 0.5) !important;
-      color: rgba(255, 255, 255, 0.8);
-    }
-
-    mat-dialog-actions button mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
-
-    /* Progress Bar Styling */
-    ::ng-deep .mat-mdc-progress-bar {
-      height: 6px !important;
-      border-radius: 3px;
-    }
-
-    ::ng-deep .mat-mdc-progress-bar .mdc-linear-progress__buffer-bar {
-      background: rgba(147, 51, 234, 0.2) !important;
-    }
-
-    ::ng-deep .mat-mdc-progress-bar .mdc-linear-progress__bar-inner {
-      border-color: #9333ea !important;
-    }
-
-    /* Slide Toggle Styling */
-    ::ng-deep .mat-mdc-slide-toggle .mdc-switch__icon {
-      display: none;
-    }
-
-    ::ng-deep .mat-mdc-slide-toggle .mdc-switch__handle {
-      background-color: rgba(255, 255, 255, 0.9) !important;
-    }
-
-    ::ng-deep .mat-mdc-slide-toggle.mat-mdc-slide-toggle-checked .mdc-switch__track {
-      background-color: rgba(147, 51, 234, 0.5) !important;
-    }
-
-    /* Form Field Styling */
-    ::ng-deep .mat-mdc-form-field-subscript-wrapper {
-      display: none;
-    }
-
-    /* Scrollbar */
-    .available-tags::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .available-tags::-webkit-scrollbar-track {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 3px;
-    }
-
-    .available-tags::-webkit-scrollbar-thumb {
-      background: rgba(147, 51, 234, 0.4);
-      border-radius: 3px;
-    }
-
-    .available-tags::-webkit-scrollbar-thumb:hover {
-      background: rgba(147, 51, 234, 0.6);
+    .wz-foot {
+      gap: 14px;
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class TagWizardDialogComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<TagWizardDialogComponent>);
@@ -749,6 +370,10 @@ export class TagWizardDialogComponent implements OnInit {
 
   isTagSelected(tagName: string): boolean {
     return this.currentTags().includes(tagName);
+  }
+
+  tone(tagName: string): string {
+    return tagToneStyle(this.getTagColor(tagName));
   }
 
   getTagColor(tagName: string): string {

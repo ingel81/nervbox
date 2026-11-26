@@ -11,7 +11,7 @@ import { CommonModule } from '@angular/common';
 import { MatDialog } from '@angular/material/dialog';
 import { UserCacheService } from '../../../core/services/user-cache.service';
 
-type AvatarSize = 'small' | 'medium' | 'large';
+type AvatarSize = 'xs' | 'small' | 'medium' | 'large';
 
 @Component({
   selector: 'app-user-avatar',
@@ -20,6 +20,7 @@ type AvatarSize = 'small' | 'medium' | 'large';
   template: `
     <div
       class="avatar-container"
+      [class.xs]="size() === 'xs'"
       [class.small]="size() === 'small'"
       [class.medium]="size() === 'medium'"
       [class.large]="size() === 'large'"
@@ -55,10 +56,17 @@ type AvatarSize = 'small' | 'medium' | 'large';
 
     .avatar-container.clickable:hover {
       transform: scale(1.1);
-      box-shadow: 0 2px 8px rgba(147, 51, 234, 0.3);
+      box-shadow: 0 0 0 1.5px var(--nk-iv), 0 0 10px rgb(var(--nk-lamp-rgb) / 0.5);
     }
 
     /* Sizes */
+    .avatar-container.xs {
+      width: 17px;
+      min-width: 17px;
+      height: 17px;
+      min-height: 17px;
+    }
+
     .avatar-container.small {
       width: 24px;
       min-width: 24px;
@@ -92,11 +100,16 @@ type AvatarSize = 'small' | 'medium' | 'large';
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
-      color: white;
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 600;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      background: radial-gradient(circle at 50% 58%, #5A7189, #43566B 55%, #283545);
+      color: #FFFFFF;
+      font-family: var(--nk-font-ui);
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      text-shadow: 0 0 6px rgb(255 226 176 / 0.5);
+    }
+
+    .xs .avatar-initials {
+      font-size: 9px;
     }
 
     .small .avatar-initials {
@@ -206,7 +219,7 @@ export class UserAvatarComponent implements OnInit {
     this.dialog.open(UserProfileDialogComponent, {
       data: { userId: id },
       panelClass: 'dark-dialog',
-      maxWidth: '600px',
+      maxWidth: '95vw',
     });
   }
 }

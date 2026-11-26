@@ -42,592 +42,216 @@ type ChatTab = 'chat' | 'activity';
     UserAvatarComponent,
   ],
   template: `
-    <div class="chat-sidebar">
-      <div class="chat-header">
-        <div class="tabs">
+    <aside class="nk-printer chat" aria-label="Chat">
+      <div class="nk-printer__bar">
+        <div class="nk-tabs" role="tablist">
           <button
-            class="tab"
-            [class.active]="activeTab() === 'chat'"
+            type="button"
+            role="tab"
+            [class]="activeTab() === 'chat' ? 'nk-tabs__tab nk-tabs__tab--on' : 'nk-tabs__tab'"
+            [attr.aria-selected]="activeTab() === 'chat'"
             (click)="setActiveTab('chat')"
           >
-            <mat-icon>chat</mat-icon>
-            <span>Chat</span>
+            Chat
             @if (unreadChatCount() > 0 && activeTab() !== 'chat') {
-              <span class="badge">{{ unreadChatCount() > 99 ? '99+' : unreadChatCount() }}</span>
+              <span class="nk-badge nk-badge--sm" [attr.aria-label]="unreadChatCount() + ' ungelesen'">{{ unreadChatCount() > 99 ? '99+' : unreadChatCount() }}</span>
             }
           </button>
           <button
-            class="tab"
-            [class.active]="activeTab() === 'activity'"
+            type="button"
+            role="tab"
+            [class]="activeTab() === 'activity' ? 'nk-tabs__tab nk-tabs__tab--on' : 'nk-tabs__tab'"
+            [attr.aria-selected]="activeTab() === 'activity'"
             (click)="setActiveTab('activity')"
           >
-            <mat-icon>notifications</mat-icon>
-            <span>Aktivität</span>
+            Aktivität
             @if (unreadActivityCount() > 0 && activeTab() !== 'activity') {
-              <span class="badge">{{
-                unreadActivityCount() > 99 ? '99+' : unreadActivityCount()
-              }}</span>
+              <span class="nk-badge nk-badge--sm" [attr.aria-label]="unreadActivityCount() + ' ungelesen'">{{ unreadActivityCount() > 99 ? '99+' : unreadActivityCount() }}</span>
             }
           </button>
         </div>
-        <div class="connection-status" [class.connected]="signalR.chatConnected()"></div>
+        <span class="nk-printer__status" [title]="signalR.chatConnected() ? 'Chat verbunden' : 'Chat getrennt'">
+          <span [class]="signalR.chatConnected() ? 'nk-led nk-led--dot nk-led--own' : 'nk-led nk-led--dot nk-led--danger nk-led--blink'" aria-hidden="true"></span>
+          <span class="nk-label">{{ signalR.chatConnected() ? 'Verbunden' : 'Getrennt' }}</span>
+        </span>
       </div>
 
-      <div class="chat-content">
-        @if (activeTab() === 'chat') {
-          @if (showGifPicker()) {
-            <app-gif-picker
-              (gifSelected)="onGifSelected($event)"
-              (close)="showGifPicker.set(false)"
-            />
-          }
-
-          @if (loading()) {
-            <div class="loading">
-              <mat-spinner diameter="24"></mat-spinner>
+      <div class="nk-printer__feed">
+        @if (activeTab() === 'chat' && showGifPicker()) {
+          <app-gif-picker class="chat-gifpicker" (gifSelected)="onGifSelected($event)" (close)="showGifPicker.set(false)" />
+        }
+        @if (loading()) {
+          <div class="nk-printer__paper chat-paper chat-loading">
+            <span class="nk-printer__head">*** DRUCKER WÄRMT AUF ***</span>
+          </div>
+        } @else if (activeTab() === 'chat') {
+          <div class="nk-printer__paper chat-paper">
+            <div class="chat-scroll" #messagesContainer>
+            <span class="nk-printer__head">*** NERVBOX · CHAT-DRUCKER ***</span>
+            @if (hasMoreChatMessages()) {
+              <button type="button" class="nk-printer__older" (click)="loadOlderMessages()" [disabled]="loadingOlder()">
+                {{ loadingOlder() ? '… lädt' : '▲ Ältere Nachrichten' }}
+              </button>
+            }
+            @for (msg of chatMessages(); track msg.id || $index) {
+              <div [class]="msg.userId === auth.currentUser()?.id ? 'nk-printer__msg nk-printer__msg--own' : 'nk-printer__msg'">
+                <span class="nk-printer__meta">
+                  <app-user-avatar class="chat-av" [userId]="msg.userId" size="xs" />
+                  <span class="nk-printer__user">{{ msg.userId === auth.currentUser()?.id ? 'Du' : msg.username }}</span>
+                  <span class="nk-printer__time">{{ formatTime(msg.createdAt) }}</span>
+                </span>
+                @if (msg.messageType === 'gif' && msg.gifUrl) {
+                  <span class="nk-printer__gif chat-gif">
+                    <img [src]="msg.gifUrl" alt="GIF" loading="lazy" />
+                    <span class="nk-printer__gif-tag">GIF</span>
+                  </span>
+                } @else {
+                  <span class="nk-printer__text">{{ msg.message }}</span>
+                }
+              </div>
+            }
+            @if (!chatMessages().length) {
+              <span class="nk-printer__text chat-empty">Noch keine Chat-Nachrichten</span>
+            }
             </div>
-          } @else {
-            <div class="messages" #messagesContainer>
-              @if (hasMoreChatMessages()) {
-                <button
-                  class="load-older-btn"
-                  (click)="loadOlderMessages()"
-                  [disabled]="loadingOlder()"
-                >
-                  @if (loadingOlder()) {
-                    <mat-spinner diameter="16"></mat-spinner>
-                  } @else {
-                    <mat-icon>expand_less</mat-icon>
-                    Ältere Nachrichten
-                  }
-                </button>
-              }
-              @for (msg of chatMessages(); track msg.id || $index) {
-                <div class="message-row" [class.own]="msg.userId === auth.currentUser()?.id">
-                  @if (msg.userId !== auth.currentUser()?.id) {
-                    <app-user-avatar [userId]="msg.userId" size="small" class="message-avatar" />
-                  }
-                  <div
-                    class="message"
-                    [class.own]="msg.userId === auth.currentUser()?.id"
-                    [class.gif-message]="msg.messageType === 'gif'"
-                  >
-                    @if (msg.userId !== auth.currentUser()?.id) {
-                      <span class="username">{{ msg.username }}</span>
-                    }
-                    @if (msg.messageType === 'gif' && msg.gifUrl) {
-                      <img class="gif-content" [src]="msg.gifUrl" alt="GIF" loading="lazy" />
-                    } @else {
-                      <span class="text">{{ msg.message }}</span>
-                    }
-                    <span class="time">{{ formatTime(msg.createdAt) }}</span>
-                  </div>
-                  @if (msg.userId === auth.currentUser()?.id) {
-                    <app-user-avatar [userId]="msg.userId" size="small" class="message-avatar" />
-                  }
-                </div>
-              }
-              @if (!chatMessages().length) {
-                <div class="empty">Noch keine Chat-Nachrichten</div>
-              }
-            </div>
-          }
-
-          @if (signalR.rateLimitMessage()) {
-            <div class="rate-limit-warning">
-              <mat-icon>warning</mat-icon>
-              <span>{{ signalR.rateLimitMessage() }}</span>
-            </div>
-          }
-
-          @if (auth.isLoggedIn()) {
-            <div class="input-wrapper">
-              <form class="input-area" (ngSubmit)="sendMessage()">
-                <button
-                  mat-icon-button
-                  type="button"
-                  class="gif-btn"
-                  (click)="toggleGifPicker()"
-                  [class.active]="showGifPicker()"
-                >
-                  <mat-icon>gif_box</mat-icon>
-                </button>
-                <input
-                  #messageInput
-                  type="text"
-                  [(ngModel)]="newMessage"
-                  name="message"
-                  placeholder="Nachricht..."
-                  [disabled]="sending()"
-                  autocomplete="off"
-                />
-                <button mat-icon-button type="submit" [disabled]="!newMessage.trim() || sending()">
-                  <mat-icon>send</mat-icon>
-                </button>
-              </form>
-            </div>
-          } @else {
-            <div class="login-hint">
-              <mat-icon>login</mat-icon>
-              <span>Einloggen zum Chatten</span>
-            </div>
-          }
+          </div>
         } @else {
-          <!-- Activity Tab -->
-          @if (loading()) {
-            <div class="loading">
-              <mat-spinner diameter="24"></mat-spinner>
+          <div class="nk-printer__paper chat-paper">
+            <div class="chat-scroll" #activityContainer>
+            <span class="nk-printer__head">*** NERVBOX · AKTIVITÄT ***</span>
+            @if (hasMoreActivityMessages()) {
+              <button type="button" class="nk-printer__older" (click)="loadOlderMessages()" [disabled]="loadingOlder()">
+                {{ loadingOlder() ? '… lädt' : '▲ Ältere Mitteilungen' }}
+              </button>
+            }
+            @for (msg of activityMessages(); track msg.id || $index) {
+              <div class="nk-printer__msg">
+                <span class="nk-printer__meta">
+                  <mat-icon class="chat-act-icon">{{ getActivityIcon(msg.message) }}</mat-icon>
+                  <span class="nk-printer__time">{{ formatTime(msg.createdAt) }}</span>
+                </span>
+                <span class="nk-printer__text">{{ msg.message }}</span>
+              </div>
+            }
+            @if (!activityMessages().length) {
+              <span class="nk-printer__text chat-empty">Noch keine Aktivitäten</span>
+            }
             </div>
-          } @else {
-            <div class="messages activity-feed" #activityContainer>
-              @if (hasMoreActivityMessages()) {
-                <button
-                  class="load-older-btn"
-                  (click)="loadOlderMessages()"
-                  [disabled]="loadingOlder()"
-                >
-                  @if (loadingOlder()) {
-                    <mat-spinner diameter="16"></mat-spinner>
-                  } @else {
-                    <mat-icon>expand_less</mat-icon>
-                    Ältere Mitteilungen
-                  }
-                </button>
-              }
-              @for (msg of activityMessages(); track msg.id || $index) {
-                <div class="activity-item">
-                  <div class="activity-icon">
-                    <mat-icon>{{ getActivityIcon(msg.message) }}</mat-icon>
-                  </div>
-                  <div class="activity-content">
-                    <span class="activity-text">{{ msg.message }}</span>
-                    <span class="activity-time">{{ formatTime(msg.createdAt) }}</span>
-                  </div>
-                </div>
-              }
-              @if (!activityMessages().length) {
-                <div class="empty">Noch keine Aktivitäten</div>
-              }
-            </div>
-          }
+          </div>
         }
       </div>
-    </div>
+      <div class="nk-printer__slot" aria-hidden="true"></div>
+
+      @if (activeTab() === 'chat') {
+        @if (signalR.rateLimitMessage()) {
+          <div class="nk-printer__warn" role="alert">
+            <span class="nk-led nk-led--dot nk-led--warn" aria-hidden="true"></span>
+            <span>{{ signalR.rateLimitMessage() }}</span>
+          </div>
+        }
+        @if (auth.isLoggedIn()) {
+          <form class="nk-printer__input" (ngSubmit)="sendMessage()">
+            <button
+              type="button"
+              [class]="showGifPicker() ? 'nk-key nk-key--sm nk-key--on' : 'nk-key nk-key--sm'"
+              aria-label="GIF suchen"
+              [attr.aria-pressed]="showGifPicker()"
+              (click)="toggleGifPicker()"
+            >GIF</button>
+            <label class="nk-input chat-input">
+              <input
+                #messageInput
+                class="nk-input__field"
+                type="text"
+                name="message"
+                aria-label="Nachricht"
+                placeholder="Nachricht …"
+                autocomplete="off"
+                [(ngModel)]="newMessage"
+                [disabled]="sending()"
+              />
+            </label>
+            <button type="submit" class="nk-key nk-key--sm nk-key--icon" aria-label="Senden" [disabled]="!newMessage.trim() || sending()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l16-8-6 16-3-7-7-1z"></path></svg>
+            </button>
+          </form>
+        } @else {
+          <div class="nk-printer__hint">Einloggen zum Chatten</div>
+        }
+      }
+    </aside>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
-    .chat-sidebar {
-      height: 100%;
-      background: #0f0f12;
-      border-left: 1px solid rgba(147, 51, 234, 0.3);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-
-    .chat-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px;
-      background: linear-gradient(135deg, rgba(147, 51, 234, 0.2) 0%, rgba(236, 72, 153, 0.1) 100%);
-      border-bottom: 1px solid rgba(147, 51, 234, 0.3);
-    }
-
-    .tabs {
-      display: flex;
-      flex: 1;
-      gap: 4px;
-    }
-
-    .tab {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      background: transparent;
-      border: none;
-      border-radius: 8px;
-      color: rgba(255, 255, 255, 0.5);
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      position: relative;
-    }
-
-    .tab mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-    }
-
-    .tab:hover {
-      background: rgba(147, 51, 234, 0.15);
-      color: rgba(255, 255, 255, 0.8);
-    }
-
-    .tab.active {
-      background: rgba(147, 51, 234, 0.25);
-      color: #9333ea;
-    }
-
-    .tab.active mat-icon {
-      color: #9333ea;
-    }
-
-    .badge {
-      background: #ec4899;
-      color: white;
-      font-size: 10px;
-      font-weight: 600;
-      padding: 2px 6px;
-      border-radius: 10px;
-      min-width: 18px;
-      text-align: center;
-    }
-
-    .connection-status {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #ef4444;
-    }
-
-    .connection-status.connected {
-      background: #22c55e;
-      box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
-    }
-
-    .collapse-icon {
-      color: rgba(255, 255, 255, 0.5);
-      font-size: 20px;
-    }
-
-    .chat-content {
-      flex: 1;
+    :host {
       display: flex;
       flex-direction: column;
       min-height: 0;
-      overflow: hidden;
-      position: relative;
+      flex-shrink: 0;
     }
-
-    .loading,
-    .empty {
+    .chat {
       flex: 1;
+      min-height: 0;
+      margin-bottom: 2px;
+    }
+    .chat-scroll {
+      flex: 1;
+      min-height: 0;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      color: rgba(255, 255, 255, 0.4);
-      font-size: 13px;
-    }
-
-    .messages {
-      flex: 1;
+      flex-direction: column;
+      gap: var(--nk-s-4);
       overflow-y: auto;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      overflow-x: hidden;
+      margin-right: -6px;
+      padding-right: 6px;
+      scrollbar-width: thin;
+      scrollbar-color: rgb(31 27 22 / 0.4) transparent;
     }
-
-    .message-row {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-    }
-
-    .message-row.own {
-      justify-content: flex-end;
-    }
-
-    .message-avatar {
+    .chat-scroll .nk-printer__msg,
+    .chat-scroll .nk-printer__head {
       flex-shrink: 0;
-      margin-top: 2px;
     }
-
-    .load-older-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 8px 12px;
-      background: rgba(147, 51, 234, 0.1);
-      border: 1px solid rgba(147, 51, 234, 0.3);
-      border-radius: 8px;
-      color: #9333ea;
-      font-size: 12px;
-      cursor: pointer;
-      margin-bottom: 8px;
-    }
-
-    .load-older-btn:hover:not(:disabled) {
-      background: rgba(147, 51, 234, 0.2);
-    }
-
-    .load-older-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .load-older-btn mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-    }
-
-    .message {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      padding: 8px 12px;
-      background: rgba(30, 30, 35, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 12px 12px 12px 4px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-      flex: 1;
-      min-width: 0;
-      max-width: calc(100% - 40px);
-    }
-
-    .message.own {
-      background: rgba(147, 51, 234, 0.12);
-      border-color: rgba(147, 51, 234, 0.15);
-      border-radius: 12px 12px 4px 12px;
-      flex: unset;
-    }
-
-    .username {
-      font-size: 11px;
-      font-weight: 600;
-      color: #9333ea;
-    }
-
-    .message.own .username {
-      color: #ec4899;
-      align-self: flex-end;
-    }
-
-    .message.own .time {
-      align-self: flex-start;
-    }
-
-    .text {
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.9);
-      word-break: break-word;
-    }
-
-    .time {
-      font-size: 10px;
-      color: rgba(255, 255, 255, 0.3);
-      align-self: flex-end;
-    }
-
-    .input-area {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(0, 0, 0, 0.3);
-    }
-
-    .input-area input {
-      flex: 1;
-      min-width: 0;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(147, 51, 234, 0.3);
-      border-radius: 20px;
-      padding: 8px 12px;
-      color: white;
-      font-size: 13px;
-      outline: none;
-    }
-
-    .input-area input:focus {
-      border-color: rgba(147, 51, 234, 0.6);
-    }
-
-    .input-area input::placeholder {
-      color: rgba(255, 255, 255, 0.3);
-    }
-
-    .input-area button {
-      flex-shrink: 0;
-      width: 36px;
-      height: 36px;
-      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
+    .chat-loading {
       justify-content: center;
     }
-
-    .input-area button mat-icon {
-      color: white;
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-    }
-
-    .input-area button:disabled {
-      opacity: 0.4;
-    }
-
-    .input-wrapper {
-      position: relative;
-    }
-
-    .gif-btn {
+    .chat-av {
       flex-shrink: 0;
-      width: 36px;
-      height: 36px;
-      background: rgba(147, 51, 234, 0.15);
-      border-radius: 50%;
     }
-
-    .gif-btn mat-icon {
-      color: #9333ea;
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
+    .chat-gif {
+      background: var(--nk-paper-ink);
     }
-
-    .gif-btn.active,
-    .gif-btn:hover {
-      background: rgba(147, 51, 234, 0.3);
-    }
-
-    .gif-btn.active mat-icon,
-    .gif-btn:hover mat-icon {
-      color: #ec4899;
-    }
-
-    .gif-message {
-      padding: 4px !important;
-    }
-
-    .gif-content {
-      max-width: 100%;
-      max-height: 20vh;
-      object-fit: contain;
-      border-radius: 6px;
+    .chat-gif img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
       display: block;
+      filter: grayscale(1) sepia(0.35) contrast(1.15);
+      transition: filter 0.2s ease;
     }
-
-    .login-hint {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 16px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      color: rgba(255, 255, 255, 0.4);
-      font-size: 12px;
+    .chat-gif:hover img {
+      filter: none;
     }
-
-    .rate-limit-warning {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      background: rgba(239, 68, 68, 0.15);
-      border-left: 3px solid #ef4444;
-      color: #ef4444;
-      font-size: 12px;
-      animation: fadeIn 0.2s ease;
-    }
-
-    .rate-limit-warning mat-icon {
-      font-size: 16px;
+    .chat-act-icon {
       width: 16px;
       height: 16px;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(-4px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .login-hint mat-icon {
       font-size: 16px;
-      width: 16px;
-      height: 16px;
     }
-
-    /* Activity Feed Styles */
-    .activity-feed {
-      gap: 4px;
+    .chat-empty {
+      margin: auto 0;
+      text-align: center;
+      color: var(--nk-paper-ink-2);
     }
-
-    .activity-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      padding: 10px 12px;
-      background: rgba(30, 30, 35, 0.6);
-      border-radius: 8px;
-      border-left: 3px solid rgba(147, 51, 234, 0.5);
-      transition: background 0.2s ease;
-    }
-
-    .activity-item:hover {
-      background: rgba(30, 30, 35, 0.9);
-    }
-
-    .activity-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: rgba(147, 51, 234, 0.15);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .activity-icon mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-      color: #9333ea;
-    }
-
-    .activity-content {
+    .chat-input {
       flex: 1;
       min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+      height: 38px;
     }
-
-    .activity-text {
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.85);
-      line-height: 1.4;
-      word-break: break-word;
-    }
-
-    .activity-time {
-      font-size: 10px;
-      color: rgba(255, 255, 255, 0.35);
-    }
-
-    @media (max-width: 768px) {
-      .chat-sidebar {
-        display: none;
-      }
+    .chat-gifpicker {
+      position: absolute;
+      inset: 0 0 0 0;
+      z-index: 5;
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked {
   readonly signalR = inject(SignalRService);

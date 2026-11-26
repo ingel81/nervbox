@@ -19,35 +19,21 @@ import { AvatarService } from '../../core/services/avatar.service';
     ImageCropperComponent,
   ],
   template: `
-    <div class="avatar-dialog">
-      <h2 mat-dialog-title>
-        <mat-icon>account_circle</mat-icon>
-        Avatar bearbeiten
-      </h2>
-
-      <mat-dialog-content>
+    <div class="nk-dlg av">
+      <header class="nk-dialog__head">
+        <h2 class="nk-dialog__title">Avatar bearbeiten</h2>
+        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close>✕</button>
+      </header>
+      <div class="nk-dialog__body">
         @if (!imageFile()) {
-          <!-- File Selection -->
-          <div
-            class="drop-zone"
-            (click)="fileInput.click()"
-            (dragover)="onDragOver($event)"
-            (drop)="onDrop($event)"
-          >
-            <mat-icon class="upload-icon">cloud_upload</mat-icon>
-            <p>Bild hierher ziehen oder klicken zum Auswählen</p>
-            <span class="hint">JPG, PNG, GIF oder WebP (max. 5MB)</span>
+          <div class="nk-drop av-drop" role="button" tabindex="0" (click)="fileInput.click()" (keydown.enter)="fileInput.click()" (dragover)="onDragOver($event)" (drop)="onDrop($event)">
+            <mat-icon class="av-up" aria-hidden="true">add_photo_alternate</mat-icon>
+            <span class="nk-drop__title">Bild hierher ziehen oder klicken zum Auswählen</span>
+            <span class="nk-drop__hint">JPG, PNG, GIF oder WebP (max. 5MB)</span>
           </div>
-          <input
-            #fileInput
-            type="file"
-            hidden
-            accept="image/jpeg,image/png,image/gif,image/webp"
-            (change)="onFileSelected($event)"
-          />
+          <input #fileInput type="file" hidden accept="image/jpeg,image/png,image/gif,image/webp" (change)="onFileSelected($event)" />
         } @else {
-          <!-- Image Cropper -->
-          <div class="cropper-container">
+          <div class="av-crop">
             <image-cropper
               [imageFile]="imageFile()"
               [maintainAspectRatio]="true"
@@ -61,196 +47,88 @@ import { AvatarService } from '../../core/services/avatar.service';
               (loadImageFailed)="onLoadImageFailed()"
             />
           </div>
-
           @if (croppedImage()) {
-            <div class="preview-section">
-              <span class="preview-label">Vorschau:</span>
-              <img [src]="croppedImage()" class="preview-image" alt="Preview" />
+            <div class="av-prev">
+              <span class="nk-label">Vorschau:</span>
+              <img [src]="croppedImage()" class="av-prev__img av-prev__img--lg" alt="Vorschau groß" />
+              <img [src]="croppedImage()" class="av-prev__img av-prev__img--md" alt="Vorschau mittel" />
+              <img [src]="croppedImage()" class="av-prev__img av-prev__img--sm" alt="Vorschau klein" />
             </div>
           }
         }
-
         @if (error()) {
-          <div class="error-message">
-            <mat-icon>error</mat-icon>
-            {{ error() }}
-          </div>
+          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert"><span class="nk-toast__text">{{ error() }}</span></div>
         }
-      </mat-dialog-content>
-
-      <mat-dialog-actions align="end">
+      </div>
+      <footer class="nk-dialog__foot av-foot">
         @if (imageFile()) {
-          <button mat-button (click)="resetImage()">
-            <mat-icon>arrow_back</mat-icon>
-            Anderes Bild
-          </button>
+          <button type="button" class="nk-key nk-key--sm" (click)="resetImage()">Anderes Bild</button>
         }
-        <button mat-button mat-dialog-close>Abbrechen</button>
-        <button
-          mat-flat-button
-          color="primary"
-          [disabled]="!croppedBlob() || uploading()"
-          (click)="uploadAvatar()"
-        >
+        <span class="av-flex"></span>
+        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close>Abbrechen</button>
+        <button type="button" class="nk-key nk-key--accent" [disabled]="!croppedBlob() || uploading()" (click)="uploadAvatar()">
           @if (uploading()) {
-            <mat-spinner diameter="20"></mat-spinner>
-          } @else {
-            <ng-container>
-              <mat-icon>save</mat-icon>
-              Speichern
-            </ng-container>
+            <span class="nk-spin" aria-hidden="true"></span>
           }
+          Speichern
         </button>
-      </mat-dialog-actions>
+      </footer>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
-    .avatar-dialog {
-      min-width: 400px;
-      max-width: 500px;
+    .av {
+      width: 440px;
+      max-width: 100%;
     }
-
-    h2[mat-dialog-title] {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      color: #9333ea;
-      margin: 0;
-      padding: 16px 24px;
-      border-bottom: 1px solid rgba(147, 51, 234, 0.2);
+    .av-drop {
+      padding: 30px 16px;
     }
-
-    h2[mat-dialog-title] mat-icon {
-      font-size: 28px;
-      width: 28px;
-      height: 28px;
+    .av-up {
+      width: 34px;
+      height: 34px;
+      font-size: 34px;
+      filter: drop-shadow(0 0 5px rgb(255 226 176 / 0.6));
     }
-
-    mat-dialog-content {
-      padding: 24px !important;
-      min-height: 300px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .drop-zone {
-      width: 100%;
-      height: 200px;
-      border: 2px dashed rgba(147, 51, 234, 0.4);
-      border-radius: 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      background: rgba(147, 51, 234, 0.05);
-    }
-
-    .drop-zone:hover {
-      border-color: #9333ea;
-      background: rgba(147, 51, 234, 0.1);
-    }
-
-    .upload-icon {
-      font-size: 48px;
-      width: 48px;
-      height: 48px;
-      color: rgba(147, 51, 234, 0.6);
-      margin-bottom: 12px;
-    }
-
-    .drop-zone p {
-      color: rgba(255, 255, 255, 0.8);
-      margin: 0;
-    }
-
-    .drop-zone .hint {
-      color: rgba(255, 255, 255, 0.5);
-      font-size: 12px;
-      margin-top: 8px;
-    }
-
-    .cropper-container {
-      width: 100%;
-      max-height: 350px;
-      display: flex;
-      justify-content: center;
-    }
-
-    .cropper-container ::ng-deep image-cropper {
-      max-height: 350px;
-    }
-
-    .cropper-container ::ng-deep .ngx-ic-cropper {
-      border-radius: 50% !important;
-    }
-
-    .preview-section {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-top: 16px;
-      padding: 12px;
-      background: rgba(147, 51, 234, 0.1);
+    .av-crop {
       border-radius: 8px;
+      overflow: hidden;
+      background: #0d0c0a;
+      box-shadow: inset 1px 2px 6px rgb(0 0 0 / 0.8), 0 0 0 1px rgb(0 0 0 / 0.6), 1px 1px 0 1px rgb(255 226 176 / 0.14);
+      max-height: 320px;
     }
-
-    .preview-label {
-      color: rgba(255, 255, 255, 0.7);
-      font-size: 14px;
+    .av-crop image-cropper {
+      --cropper-outline-color: rgb(8 6 5 / 0.62);
+      --cropper-overlay-color: #0d0c0a;
     }
-
-    .preview-image {
+    .av-prev {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .av-prev__img {
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px #0b0a08, 0 0 10px rgb(0 0 0 / 0.6);
+    }
+    .av-prev__img--lg {
       width: 64px;
       height: 64px;
-      border-radius: 50%;
-      border: 2px solid #9333ea;
-      object-fit: cover;
     }
-
-    .error-message {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #ef4444;
-      margin-top: 16px;
-      padding: 12px;
-      background: rgba(239, 68, 68, 0.1);
-      border-radius: 8px;
-      width: 100%;
+    .av-prev__img--md {
+      width: 34px;
+      height: 34px;
     }
-
-    mat-dialog-actions {
-      padding: 16px 24px;
-      border-top: 1px solid rgba(147, 51, 234, 0.2);
-      gap: 8px;
+    .av-prev__img--sm {
+      width: 20px;
+      height: 20px;
     }
-
-    mat-dialog-actions button {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .av-foot {
+      gap: 14px;
     }
-
-    mat-dialog-actions button[color='primary'] {
-      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
-    }
-
-    mat-dialog-actions button[color='primary']:disabled {
-      opacity: 0.5;
-    }
-
-    mat-spinner {
-      display: inline-block;
-    }
-
-    ::ng-deep .mat-mdc-progress-spinner circle {
-      stroke: white !important;
+    .av-flex {
+      flex: 1;
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class AvatarUploadDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<AvatarUploadDialogComponent>);
