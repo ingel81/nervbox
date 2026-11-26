@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -40,10 +41,10 @@ namespace NervboxDeamon.Services
       using (var scope = ServiceProvider.CreateScope())
       {
         var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
-        user = db.Users.SingleOrDefault(x => x.Username == username && x.PasswordHash == GetPasswordHash(password));
+        user = db.Users.SingleOrDefault(x => x.Username == username);
 
-        // return null if user not found
-        if (user == null)
+        // return null if user not found or password wrong
+        if (user == null || !VerifyPassword(user, password, out var needsRehash))
           return null;
 
         // Check if user is active
@@ -53,6 +54,12 @@ namespace NervboxDeamon.Services
         // System users cannot login
         if (user.Role == "system")
           return null;
+
+        // Upgrade legacy (unsalted SHA-256) or outdated hashes transparently on successful login
+        if (needsRehash)
+        {
+          user.PasswordHash = HashPassword(password);
+        }
 
         // Update last login time
         user.LastLoginAt = DateTime.UtcNow;
@@ -111,7 +118,7 @@ namespace NervboxDeamon.Services
           Username = model.Username,
           FirstName = model.Firstname,
           LastName = model.Lastname,
-          PasswordHash = GetPasswordHash(model.Password),
+          PasswordHash = HashPassword(model.Password),
           Role = "user",
           IpAddress = ip,
           Credits = initialCredits
@@ -187,7 +194,7 @@ namespace NervboxDeamon.Services
               Username = userShould.Username,
               FirstName = userShould.FirstName,
               LastName = userShould.LastName,
-              PasswordHash = GetPasswordHash(userShould.PasswordHash),
+              PasswordHash = HashPassword(userShould.PasswordHash),
               Role = userShould.Role
             });
 
@@ -223,13 +230,13 @@ namespace NervboxDeamon.Services
           return false;
         }
 
-        if (!user.PasswordHash.Equals(GetPasswordHash(model.OldPassword)))
+        if (!VerifyPassword(user, model.OldPassword, out _))
         {
           error = "Wrong password";
           return false;
         }
 
-        user.PasswordHash = GetPasswordHash(model.NewPassword1);
+        user.PasswordHash = HashPassword(model.NewPassword1);
         db.SaveChanges();
         return true;
       }
@@ -247,16 +254,57 @@ namespace NervboxDeamon.Services
       }
     }
 
-    private static string GetPasswordHash(string text)
+    // PBKDF2 with per-password salt (ASP.NET Core Identity format).
+    private static readonly PasswordHasher<User> Hasher = new PasswordHasher<User>();
+
+    private static string HashPassword(string password)
     {
-      // SHA512 is disposable by inheritance.
-      using (var sha256 = SHA256.Create())
+      return Hasher.HashPassword(null, password);
+    }
+
+    /// <summary>
+    /// Verifies a password against the stored hash. Accepts the current PasswordHasher format
+    /// and the legacy unsalted SHA-256 hex format; needsRehash is true for legacy/outdated hashes.
+    /// </summary>
+    private static bool VerifyPassword(User user, string password, out bool needsRehash)
+    {
+      needsRehash = false;
+      var stored = user?.PasswordHash;
+      if (string.IsNullOrEmpty(stored) || password == null)
+        return false;
+
+      if (IsLegacySha256Hash(stored))
       {
-        // Send a sample text to hash.
-        var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(text));
-        // Get the hashed string.
-        return BitConverter.ToString(hashedBytes).Replace("-", "").ToLower();
+        var candidate = Encoding.ASCII.GetBytes(LegacySha256(password));
+        var ok = CryptographicOperations.FixedTimeEquals(candidate, Encoding.ASCII.GetBytes(stored.ToLowerInvariant()));
+        needsRehash = ok;
+        return ok;
       }
+
+      PasswordVerificationResult result;
+      try
+      {
+        result = Hasher.VerifyHashedPassword(user, stored, password);
+      }
+      catch (FormatException)
+      {
+        // Not a valid hash (e.g. random placeholder) -> unusable password
+        return false;
+      }
+
+      needsRehash = result == PasswordVerificationResult.SuccessRehashNeeded;
+      return result != PasswordVerificationResult.Failed;
+    }
+
+    private static bool IsLegacySha256Hash(string hash)
+    {
+      return hash.Length == 64 && hash.All(Uri.IsHexDigit);
+    }
+
+    private static string LegacySha256(string text)
+    {
+      var hashedBytes = SHA256.HashData(Encoding.UTF8.GetBytes(text));
+      return Convert.ToHexString(hashedBytes).ToLowerInvariant();
     }
 
     #region Admin Methods
@@ -311,7 +359,7 @@ namespace NervboxDeamon.Services
           Username = model.Username,
           FirstName = model.FirstName,
           LastName = model.LastName,
-          PasswordHash = GetPasswordHash(model.Password),
+          PasswordHash = HashPassword(model.Password),
           Role = model.Role ?? "user",
           IsActive = true
         };
@@ -383,7 +431,7 @@ namespace NervboxDeamon.Services
           return false;
         }
 
-        user.PasswordHash = GetPasswordHash(newPassword);
+        user.PasswordHash = HashPassword(newPassword);
         db.SaveChanges();
         return true;
       }
