@@ -25,3 +25,8 @@
 .nk-counter { height: 24px; padding: 0 9px; margin: 3px; display: inline-grid; place-items: center; flex-shrink: 0; border-radius: var(--nk-r-sm); font: 400 var(--nk-fs-lcd-sm)/24px var(--nk-font-lcd); letter-spacing: 1px; white-space: nowrap; color: var(--nk-lcd-ink);
   background: radial-gradient(ellipse 22px 20px at 0% 50%, rgb(var(--nk-lcd-bleed-rgb) / .7), rgb(var(--nk-lcd-bleed-rgb) / 0) 100%), var(--nk-face-lcd);
   box-shadow: inset 0 0 6px rgb(46 62 14 / .45), 0 0 0 3px #0B0A08, 1.5px 1.5px 0 3px rgb(var(--nk-lamp-rgb) / .18), 0 0 14px 3px rgb(var(--nk-lcd-glow-rgb) / .22); }
+/* Touch: Schekel-/Holz-Zellen mit größerer Trefferfläche (durch das LCD-Glas begrenzt) */
+@media (pointer: coarse) {
+  .nk-lcd__cell { position: relative; }
+  .nk-lcd__cell::after { content: ''; position: absolute; inset: -5px -8px; }
+}

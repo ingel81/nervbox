@@ -87,3 +87,22 @@
 .nk-pad--playing-own .nk-pad__progress, .nk-pad--playing-other .nk-pad__progress { display: block; }
 .nk-pad__progress-fill { display: block; width: 0; height: 100%; background: repeating-linear-gradient(90deg, rgb(10 22 14 / .92) 0 6px, transparent 6px 8px); }
 .nk-pad--xl .nk-pad__progress { left: 16px; right: 12px; bottom: 7px; height: 4px; }
+/* Touch: unsichtbar vergrößerte Trefferflächen (::after, Optik unverändert). Das Pad ist overflow:hidden –
+   Flächen enden am Padrand; Votes/⋮ teilen sich die rechte Spalte vertikal ohne Überlappung. */
+@media (pointer: coarse) {
+  .nk-pad__vote, .nk-pad__heart, .nk-pad__more { position: relative; }
+  .nk-pad__vote::after, .nk-pad__heart::after, .nk-pad__more::after { content: ''; position: absolute; }
+  .nk-pad__votes .nk-pad__vote:first-child::after { inset: -7px -8px -7px -18px; }       /* ▲ bis Mitte der Punktzahl */
+  .nk-pad__votes .nk-pad__vote:last-child::after { inset: -7px -8px -3px -18px; }        /* ▼ bis knapp über ⋮ */
+  .nk-pad__heart::after { inset: -8px -22px -11px -9px; }
+  .nk-pad__more::after { inset: 0 -6px -8px -20px; }
+  .nk-pad--xl .nk-pad__votes .nk-pad__vote:first-child::after { inset: -14px -12px -10px -10px; }
+  .nk-pad--xl .nk-pad__votes .nk-pad__vote:last-child::after { inset: -10px -12px -14px -10px; }
+  .nk-pad--xl .nk-pad__heart::after { inset: -11px -11px -10px -16px; }
+  .nk-pad--xl .nk-pad__more::after { inset: -12px -11px -10px -16px; }
+}
+/* Meta-Zeile auf schmalen Pads: etwas kleiner, damit „0:01 · 618×“ immer passt */
+@media (max-width: 768px) {
+  .nk-pad__meta { font-size: 9px; letter-spacing: -.1px; }
+  .nk-pad--xl .nk-pad__meta { font-size: 11px; letter-spacing: 0; }
+}

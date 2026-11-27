@@ -102,7 +102,11 @@ type ChatTab = 'chat' | 'activity';
                 </span>
                 @if (msg.messageType === 'gif' && msg.gifUrl) {
                   <span class="nk-printer__gif chat-gif">
-                    <img [src]="msg.gifUrl" alt="GIF" loading="lazy" />
+                    @if (brokenGifs().has(msg.gifUrl)) {
+                      <span class="chat-gif-gone">GIF nicht mehr verfügbar</span>
+                    } @else {
+                      <img [src]="msg.gifUrl" alt="GIF" loading="lazy" (error)="onGifError(msg.gifUrl)" />
+                    }
                     <span class="nk-printer__gif-tag">GIF</span>
                   </span>
                 } @else {
@@ -227,6 +231,19 @@ type ChatTab = 'chat' | 'activity';
       filter: grayscale(1) sepia(0.35) contrast(1.15);
       transition: filter 0.2s ease;
     }
+    .chat-gif-gone {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      padding: 0 10px 14px;
+      text-align: center;
+      color: var(--nk-paper);
+      font: 700 10px/1.3 var(--nk-font-paper);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      opacity: 0.75;
+    }
     .chat-gif:hover img {
       filter: none;
     }
@@ -267,6 +284,8 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
   readonly loadingOlder = signal(false);
   readonly sending = signal(false);
   readonly showGifPicker = signal(false);
+  /** GIF URLs that failed to load (expired Giphy links) -> placeholder instead of a broken image */
+  readonly brokenGifs = signal<ReadonlySet<string>>(new Set());
   readonly hasMoreChat = signal(false);
   readonly hasMoreActivity = signal(false);
   readonly activeTab = signal<ChatTab>('chat');
@@ -433,6 +452,10 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
 
   toggleGifPicker(): void {
     this.showGifPicker.update((v) => !v);
+  }
+
+  onGifError(url: string): void {
+    this.brokenGifs.update(set => new Set(set).add(url));
   }
 
   async onGifSelected(gifUrl: string): Promise<void> {

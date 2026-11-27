@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -35,13 +35,27 @@ namespace NervboxDeamon.Controllers
                 _creditService.TryGrantHourlyCredits(UserId);
                 var updatedCredits = _creditService.GetUserCredits(UserId);
 
+                // Details for the wallet tooltip: last hourly grant and today's movements
+                var user = DbContext.Users.Find(UserId);
+                var sinceMidnightUtc = DateTime.Today.ToUniversalTime();
+                var todayAmounts = DbContext.CreditTransactions
+                    .Where(t => t.UserId == UserId && t.CreatedAt >= sinceMidnightUtc)
+                    .Select(t => t.Amount)
+                    .ToList();
+
                 return Ok(new
                 {
                     Credits = updatedCredits,
                     CostPerPlay = settings.CostPerSoundPlay,
                     MaxCredits = settings.MaxCreditsUser,
                     HourlyCreditsEnabled = settings.HourlyCreditsEnabled,
-                    HourlyCreditsAmount = settings.HourlyCreditsAmount
+                    HourlyCreditsAmount = settings.HourlyCreditsAmount,
+                    LastCreditGrantAt = user?.LastCreditGrantAt.HasValue == true
+                        ? DateTime.SpecifyKind(user.LastCreditGrantAt.Value, DateTimeKind.Utc)
+                        : (DateTime?)null,
+                    IsAdmin = user?.Role == "admin",
+                    TodayEarned = todayAmounts.Where(a => a > 0).Sum(),
+                    TodaySpent = -todayAmounts.Where(a => a < 0).Sum()
                 });
             }
             catch (Exception ex)

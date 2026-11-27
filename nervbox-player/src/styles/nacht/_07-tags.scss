@@ -41,3 +41,9 @@
 .nk-quickkey--empty { color: var(--nk-iv-2); text-shadow: none; background: rgb(0 0 0 / .25); box-shadow: var(--nk-shadow-recess); }
 .nk-quickkey--empty .nk-quickkey__num { background: transparent; color: var(--nk-iv-2); text-shadow: none; box-shadow: inset 0 0 0 1px rgb(217 207 182 / .5); }
 .nk-quickkey--empty .nk-quickkey__name { font-weight: 600; }
+/* Touch: Tag-Tasten und ✕ mit Treffer ≥ 40 px (Schiene wird 40 px hoch) */
+@media (pointer: coarse) {
+  .nk-tag, .nk-tag__remove { position: relative; }
+  .nk-tag::after { content: ''; position: absolute; inset: -6px 0; }
+  .nk-tag__remove::after { content: ''; position: absolute; inset: -6px -12px -6px -8px; }
+}

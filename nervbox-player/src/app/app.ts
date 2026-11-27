@@ -302,6 +302,12 @@ export class App implements OnInit {
   );
 
   constructor() {
+    // Auswahlmodus gibt es nur auf Desktop: beim Wechsel auf Mobilbreite ausschalten
+    effect(() => {
+      if (this.isMobile() && this.selectionService.selectionMode()) {
+        this.selectionService.toggleSelectionMode();
+      }
+    });
     // Load favorites, votes, and avatar when user logs in
     effect(() => {
       if (this.authService.isLoggedIn()) {

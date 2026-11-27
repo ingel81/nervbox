@@ -83,10 +83,10 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
                       <span matTooltip="IP-Adresse">{{ user.ipAddress || 'Keine IP' }}</span> ·
                       <span matTooltip="Credits">{{ user.credits }} N$</span>
                     </span>
-                    <span class="nk-row__meta">
-                      Erstellt: {{ formatDate(user.createdAt) }}
+                    <span class="nk-row__meta um-dates">
+                      <span>Erstellt: {{ formatDate(user.createdAt) }}</span>
                       @if (user.lastLoginAt) {
-                        · Letzter Login: {{ formatDate(user.lastLoginAt) }}
+                        <span>· Letzter Login: {{ formatDate(user.lastLoginAt) }}</span>
                       }
                     </span>
                   </span>
@@ -171,6 +171,16 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
       align-items: center;
       gap: 8px;
       min-width: 0;
+    }
+    /* Dates wrap as whole parts instead of being cut off (narrow phones) */
+    .um-dates {
+      white-space: normal;
+      display: flex;
+      flex-wrap: wrap;
+      column-gap: 0.35em;
+    }
+    .um-dates > span {
+      white-space: nowrap;
     }
     .um-full {
       color: var(--nk-iv);

@@ -224,7 +224,6 @@ export class MobileBarComponent {
     const I = this.I;
     const nervbox: MenuItem[] = [
       { action: 'stats', label: 'Statistiken', icon: I.stats },
-      { action: 'selection', label: 'Auswahlmodus', icon: I.select },
       { action: 'mixer', label: 'Mixer', icon: I.mixer },
     ];
     const account: MenuItem[] = this.auth.isLoggedIn()

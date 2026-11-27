@@ -8,6 +8,7 @@ import {
   viewChild,
   OnInit,
   effect,
+  afterNextRender,
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -24,7 +25,7 @@ import { tagToneStyle } from '../../shared/tag-tone';
   imports: [FormsModule, MatTooltipModule, MatAutocompleteModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <nav class="nk-rail tag-rail" aria-label="Tags">
+    <nav #rail class="nk-rail tag-rail" [class.tag-rail--more]="moreRight()" aria-label="Tags" (scroll)="updateFade()">
       @if (pinnedTags().length) {
         <span class="nk-label">Angepinnt</span>
       }
@@ -139,8 +140,13 @@ import { tagToneStyle } from '../../shared/tag-tone';
     }
     @media (max-width: 768px) {
       .tag-rail {
-        height: 38px;
+        height: 40px;
         padding: 0 8px;
+      }
+      /* Weicher Rand rechts: zeigt, dass die Leiste weiter scrollt (weg am Ende) */
+      .tag-rail--more {
+        -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+        mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
       }
       .tag-rail > .nk-label,
       .tag-spacer,
@@ -169,7 +175,26 @@ export class TagFilterComponent implements OnInit {
 
   readonly searchQuery = signal('');
 
+  private readonly rail = viewChild<ElementRef<HTMLElement>>('rail');
+  /** Leiste scrollt noch nach rechts weiter (steuert den Fade-Rand) */
+  readonly moreRight = signal(false);
+
+  updateFade(): void {
+    const el = this.rail()?.nativeElement;
+    this.moreRight.set(!!el && el.scrollWidth - el.clientWidth - el.scrollLeft > 4);
+  }
+
   constructor() {
+    // Fade-Zustand nach Render / bei Größen- und Tag-Änderungen neu bestimmen
+    afterNextRender(() => {
+      const el = this.rail()?.nativeElement;
+      if (el) new ResizeObserver(() => this.updateFade()).observe(el);
+      this.updateFade();
+    });
+    effect(() => {
+      this.tags(); this.pinnedTags(); this._visibleTags();
+      setTimeout(() => this.updateFade());
+    });
     // Persist selected tags to localStorage whenever they change
     effect(() => {
       const tags = this._selectedTags();

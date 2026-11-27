@@ -159,7 +159,9 @@ const KNOB_ANGLE: Record<SortOption, number> = {
             <button
               type="button"
               class="nk-lcd__cell credit-display"
-              matTooltip="Shekel Funktionen"
+              [matTooltip]="creditService.walletTooltip()"
+              matTooltipClass="nk-tip-multiline"
+              (mouseenter)="creditService.refreshIfStale()"
               [attr.aria-label]="'Schekel-Funktionen öffnen, Kontostand ' + creditService.creditsFormatted() + ' N$'"
               (click)="openShekelPopover($event)"
             >
@@ -375,6 +377,11 @@ const KNOB_ANGLE: Record<SortOption, number> = {
     .deck-search {
       width: 196px;
     }
+    /* Feld füllt die volle Höhe: ganze Fläche ist Eingabe, Text mit Luft */
+    .deck-search .nk-input__field {
+      align-self: stretch;
+      height: auto;
+    }
     .deck-sort {
       margin: 1px 2px;
       min-width: 150px;
@@ -436,7 +443,7 @@ const KNOB_ANGLE: Record<SortOption, number> = {
         font-size: 20px;
       }
       .deck-search {
-        width: 160px;
+        width: 180px;
       }
     }
     @media (max-width: 1500px) {

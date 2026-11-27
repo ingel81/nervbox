@@ -10,6 +10,10 @@ export interface CreditInfo {
   maxCredits: number;
   hourlyCreditsEnabled: boolean;
   hourlyCreditsAmount: number;
+  lastCreditGrantAt?: string | null;
+  isAdmin?: boolean;
+  todayEarned?: number;
+  todaySpent?: number;
 }
 
 export interface CreditSettings {
@@ -125,6 +129,12 @@ export class CreditService {
   readonly hourlyCreditsEnabled = signal<boolean>(true);
   readonly hourlyCreditsAmount = signal<number>(5);
   readonly isLoading = signal<boolean>(false);
+  readonly lastCreditGrantAt = signal<Date | null>(null);
+  readonly isAdmin = signal<boolean>(false);
+  readonly todayEarned = signal<number>(0);
+  readonly todaySpent = signal<number>(0);
+  /** Minute clock for the "next payout in" countdown (tooltip only) */
+  private readonly now = signal(Date.now());
   readonly lastError = signal<string | null>(null);
 
   // Computed
@@ -142,7 +152,41 @@ export class CreditService {
     return 'Shekel Konto';
   });
 
+  /** Multi-line wallet tooltip: exact balance, income, today's movements, plays left. */
+  readonly walletTooltip = computed(() => {
+    const fmt = (n: number) => n.toLocaleString('de-DE');
+    const credits = this.credits();
+    const cost = this.costPerPlay();
+    const lines = [`Kontostand: ${fmt(credits)} N$`];
+
+    if (this.hourlyCreditsEnabled()) {
+      const capped = !this.isAdmin() && credits >= this.maxCredits();
+      if (capped) {
+        lines.push(`Zuwachs: +${fmt(this.hourlyCreditsAmount())} N$/h · pausiert (Limit ${fmt(this.maxCredits())} N$)`);
+      } else {
+        const last = this.lastCreditGrantAt();
+        let next = '';
+        if (last) {
+          const mins = Math.ceil((last.getTime() + 3600_000 - this.now()) / 60_000);
+          next = mins > 0 ? ` · nächste in ${mins} min` : ' · nächste gleich';
+        }
+        lines.push(`Zuwachs: +${fmt(this.hourlyCreditsAmount())} N$/h${next}`);
+      }
+    } else {
+      lines.push('Zuwachs: keiner');
+    }
+
+    lines.push(`Heute: +${fmt(this.todayEarned())} / −${fmt(this.todaySpent())} N$`);
+    if (cost > 0) {
+      lines.push(`Reicht für ${fmt(Math.floor(credits / cost))} Sounds (${fmt(cost)} N$/Sound)`);
+    }
+    lines.push('Klicken für Schekel-Funktionen');
+    return lines.join('\n');
+  });
+
   constructor() {
+    setInterval(() => this.now.set(Date.now()), 30_000);
+
     // Listen for SignalR credit updates
     effect(() => {
       const update = this.signalR.creditUpdates();
@@ -161,8 +205,16 @@ export class CreditService {
     });
   }
 
+  private lastLoadAt = 0;
+
+  /** Reload balance details (tooltip hover) at most every 30 s. */
+  refreshIfStale(): void {
+    if (Date.now() - this.lastLoadAt > 30_000) this.loadCredits();
+  }
+
   loadCredits(): void {
     if (!this.auth.isLoggedIn()) return;
+    this.lastLoadAt = Date.now();
 
     this.isLoading.set(true);
     this.api.get<CreditInfo>('/credit').subscribe({
@@ -172,6 +224,10 @@ export class CreditService {
         this.maxCredits.set(info.maxCredits);
         this.hourlyCreditsEnabled.set(info.hourlyCreditsEnabled);
         this.hourlyCreditsAmount.set(info.hourlyCreditsAmount);
+        this.lastCreditGrantAt.set(info.lastCreditGrantAt ? new Date(info.lastCreditGrantAt) : null);
+        this.isAdmin.set(!!info.isAdmin);
+        this.todayEarned.set(info.todayEarned ?? 0);
+        this.todaySpent.set(info.todaySpent ?? 0);
         this.isLoading.set(false);
       },
       error: (err) => {

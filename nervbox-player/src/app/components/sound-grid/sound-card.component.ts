@@ -12,6 +12,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { Sound } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
+import { CreditService } from '../../core/services/credit.service';
 import { ConfigService } from '../../core/services/config.service';
 import { FavoritesService } from '../../core/services/favorites.service';
 import { AchievementService } from '../../core/services/achievement.service';
@@ -47,17 +48,17 @@ const NEW_MS = 7 * 24 * 60 * 60 * 1000;
       [class]="padClass()"
       [style]="padStyle()"
       (pointerdown)="onPointerDown($event)"
-      (click)="handleClick()"
+      (click)="onPadClick($event)"
       (keydown.enter)="onPadKey($event)"
       (keydown.space)="onPadKey($event)"
     >
       <div class="nk-pad__top">
         <span class="nk-pad__check" aria-hidden="true">✓</span>
-        <div class="nk-pad__text">
+        <div class="nk-pad__text" [matTooltip]="padTooltip()" matTooltipClass="nk-tip-multiline" matTooltipShowDelay="600">
           @if (rank()) {
             <span class="nk-pad__rank">#{{ rank() }} · MEISTGESPIELT</span>
           }
-          <span class="nk-pad__name" [matTooltip]="sound().name" matTooltipShowDelay="600">{{ sound().name }}</span>
+          <span class="nk-pad__name">{{ sound().name }}</span>
           <span class="nk-pad__meta">{{ meta() }}</span>
         </div>
         <div class="nk-pad__votes">
@@ -191,6 +192,7 @@ const NEW_MS = 7 * 24 * 60 * 60 * 1000;
 })
 export class SoundCardComponent {
   readonly auth = inject(AuthService);
+  private readonly creditService = inject(CreditService);
   readonly configService = inject(ConfigService);
   private readonly favoritesService = inject(FavoritesService);
   private readonly achievementService = inject(AchievementService);
@@ -238,10 +240,27 @@ export class SoundCardComponent {
     return !isNaN(t) && Date.now() - t < NEW_MS;
   });
 
+  /** ≥1000 kompakt mit deutschem Komma: 1234 → „1,2k“, 12000 → „12k“ */
+  private formatPlays(n: number): string {
+    if (n < 1000) return String(n);
+    const k = Math.floor(n / 100) / 10;
+    return (k >= 100 || Number.isInteger(k) ? String(Math.round(k)) : k.toFixed(1).replace('.', ',')) + 'k';
+  }
+
+  /** Name + price (+ hint when the wallet is too low) */
+  readonly padTooltip = computed(() => {
+    const cost = this.creditService.costPerPlay();
+    const lines = [this.sound().name, cost > 0 ? `Kostet ${cost.toLocaleString('de-DE')} N$ pro Abspielen` : 'Kostenlos'];
+    if (this.auth.isLoggedIn() && cost > 0 && this.creditService.credits() < cost) {
+      lines.push('Zu wenig Schekel');
+    }
+    return lines.join('\n');
+  });
+
   readonly meta = computed(() => {
     const s = this.sound();
     const dur = this.formatDuration(s.durationMs);
-    const plays = s.playCount ? ` · ${s.playCount}×` : '';
+    const plays = s.playCount ? ` · ${this.formatPlays(s.playCount)}×` : '';
     const st = this.playState();
     if (st?.own) return `${dur} · läuft · du`;
     if (st?.other) {
@@ -305,17 +324,29 @@ export class SoundCardComponent {
   onPointerDown(event: PointerEvent): void {
     if (event.pointerType !== 'mouse' || event.button !== 0) return;
     const target = event.target as Element | null;
-    if (target?.closest('button, a, [role="menuitem"], app-user-avatar')) return;
+    if (target?.closest('button, a, [role="menuitem"], .avatar-container.clickable')) return;
     this.firedOnPointerDownAt = 0;
     this.handleClick();
     this.firedOnPointerDownAt = Date.now();
   }
 
-  handleClick(): void {
-    if (this.firedOnPointerDownAt && Date.now() - this.firedOnPointerDownAt < 1500) {
+  /**
+   * Mouse clicks are ignored: the mouse already fired on pointerdown. This must not depend on
+   * component state, because the card can be re-created between press and release (e.g. when the
+   * sound ends), which made the release play the sound a second time.
+   */
+  onPadClick(event: MouseEvent): void {
+    const pointerType = (event as PointerEvent).pointerType;
+    if (pointerType === 'mouse') return;
+    // Browsers without PointerEvent clicks: fall back to the time guard
+    if (pointerType === undefined && this.firedOnPointerDownAt && Date.now() - this.firedOnPointerDownAt < 1500) {
       this.firedOnPointerDownAt = 0;
       return;
     }
+    this.handleClick();
+  }
+
+  handleClick(): void {
     if (!this.sound().enabled) return;
     if (this.selectionMode()) {
       this.selectionToggle.emit(this.sound());
