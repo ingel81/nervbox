@@ -11,7 +11,6 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -33,6 +32,9 @@ import { CreditService } from '../../../../core/services/credit.service';
 import { ApiService } from '../../../../core/services/api.service';
 import { GameExitConfirmComponent } from '../../game-exit-confirm.component';
 import { fitCanvas } from '../../game-shared';
+import { GameFrameComponent, GameStat } from '../../game-frame.component';
+import { GameOverlayComponent } from '../../game-overlay.component';
+import { GAME_INFO } from '../../game-info';
 
 @Component({
   selector: 'app-sandwichmaster-game',
@@ -40,29 +42,25 @@ import { fitCanvas } from '../../game-shared';
   imports: [
     CommonModule,
     MatDialogModule,
-    MatButtonModule,
     MatIconModule,
     MatTabsModule,
     MatTooltipModule,
     GameExitConfirmComponent,
+    GameFrameComponent,
+    GameOverlayComponent,
   ],
   template: `
-    <div class="sandwichmaster-container" #root>
-      <!-- Header -->
-      <div class="game-header">
-        <div class="header-left">
-          <span class="game-emoji">🥪</span>
-          <span class="game-title">SANDWICHMASTER</span>
-        </div>
-        <div class="balance-display">
-          <img src="icons/nervbox-coin.svg" alt="" class="coin-icon" />
-          <span class="balance">{{ creditService.creditsFormatted() }} N$</span>
-        </div>
-        <button mat-icon-button class="close-btn" (click)="exitGame()">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-
+    <app-game-frame
+      #root
+      [title]="info.title"
+      [icon]="info.icon"
+      [accent]="info.accent"
+      [year]="info.year"
+      [stats]="stats()"
+      [fill]="true"
+      hint="Zutaten antippen = kaufen · Antippen in der Liste = entfernen · ESC = Beenden?"
+      (closed)="exitGame()"
+    >
       <div class="game-content">
         <!-- Ingredients Selection Panel -->
         <div class="ingredients-panel">
@@ -228,128 +226,50 @@ import { fitCanvas } from '../../game-shared';
 
       <!-- Finished Overlay -->
       @if (gameState() === 'finished') {
-        <div class="overlay finished-overlay">
-          <div class="overlay-content">
-            <span class="celebration-emoji">🎉</span>
-            <h2>Sandwich fertig!</h2>
-            <div class="final-stats">
-              <div class="final-stat">
-                <span class="final-label">Zutaten</span>
-                <span class="final-value">{{ selectedIngredients().length }}</span>
-              </div>
-              <div class="final-stat">
-                <span class="final-label">Kosten</span>
-                <span class="final-value">{{ totalCost() }} N$</span>
-              </div>
-              @if (multiplier() > 1) {
-                <div class="final-stat multiplier">
-                  <span class="final-label">Multiplikator</span>
-                  <span class="final-value">x{{ multiplier() }}</span>
-                </div>
-              }
-              <div class="final-stat points">
-                <span class="final-label">PUNKTE</span>
-                <span class="final-value big">{{ finalScore() }}</span>
-              </div>
+        <app-game-overlay class="nk-go--solid" tone="win" kicker="Bestellung fertig" icon="celebration" title="Sandwich fertig!">
+          <div class="final-stats">
+            <div class="final-stat">
+              <span class="final-label">Zutaten</span>
+              <span class="final-value">{{ selectedIngredients().length }}</span>
             </div>
-            <div class="overlay-actions">
-              <button class="overlay-btn primary" (click)="newSandwich()">
-                <mat-icon>add</mat-icon>
-                Neues Sandwich
-              </button>
-              <button class="overlay-btn secondary" (click)="exitGame()">
-                <mat-icon>exit_to_app</mat-icon>
-                Beenden
-              </button>
+            <div class="final-stat">
+              <span class="final-label">Kosten</span>
+              <span class="final-value">{{ totalCost() }} N$</span>
             </div>
+            @if (multiplier() > 1) {
+              <div class="final-stat multiplier">
+                <span class="final-label">Multiplikator</span>
+                <span class="final-value">x{{ multiplier() }}</span>
+              </div>
+            }
           </div>
-        </div>
+          <span class="nk-counter nk-go__score">PUNKTE {{ finalScore() }}</span>
+          <div goActions>
+            <button type="button" class="nk-key nk-key--accent nk-key--lg" (click)="newSandwich()">
+              <mat-icon>add</mat-icon>Neues Sandwich
+            </button>
+            <button type="button" class="nk-key nk-key--ghost" (click)="exitGame()">
+              <mat-icon>exit_to_app</mat-icon>Beenden
+            </button>
+          </div>
+        </app-game-overlay>
       }
 
       <app-game-exit-confirm [hint]="exitHint()" (exit)="exitGame()" />
-    </div>
+    </app-game-frame>
   `,
   changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
-    .sandwichmaster-container {
-      display: flex;
-      flex-direction: column;
-      background: linear-gradient(180deg, #0f0f0f 0%, #1a1a1a 100%);
-      border-radius: 12px;
-      overflow: hidden;
-      max-height: 95dvh;
-      position: relative;
-    }
-
-    /* Header */
-    .game-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      background: linear-gradient(135deg, rgba(34, 197, 94, 0.3) 0%, rgba(234, 179, 8, 0.2) 100%);
-      border-bottom: 2px solid rgba(34, 197, 94, 0.5);
-    }
-
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .game-emoji {
-      font-size: 28px;
-      filter: drop-shadow(0 0 10px rgba(234, 179, 8, 0.5));
-    }
-
-    .game-title {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 20px;
-      font-weight: 700;
-      background: linear-gradient(135deg, #22c55e 0%, #eab308 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: 2px;
-    }
-
-    .balance-display {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 20px;
-      border: 1px solid rgba(34, 197, 94, 0.3);
-    }
-
-    .coin-icon {
-      width: 20px;
-      height: 20px;
-    }
-
-    .balance {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
-      font-weight: 600;
-      color: #86efac;
-    }
-
-    .close-btn {
-      color: rgba(255, 255, 255, 0.7);
-    }
-
-    .close-btn:hover {
-      color: #ef4444;
-    }
-
     /* Game Content */
     .game-content {
+      flex: 1 1 0;
+      min-height: 0;
       display: flex;
       gap: 16px;
       padding: 16px;
-      height: calc(95dvh - 70px);
       overflow: hidden;
+      border-radius: 5px;
+      background: linear-gradient(180deg, #0f0f0f 0%, #1a1a1a 100%);
     }
 
     /* Ingredients Panel */
@@ -755,67 +675,10 @@ import { fitCanvas } from '../../game-shared';
       cursor: not-allowed;
     }
 
-    /* Overlay */
-    .overlay {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(10, 10, 10, 0.95);
-      backdrop-filter: blur(10px);
-      z-index: 100;
-    }
-
-    .overlay-content {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 20px;
-      padding: 40px;
-      background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(75, 229, 133, 0.1) 100%);
-      border: 2px solid rgba(34, 197, 94, 0.3);
-      border-radius: 20px;
-      animation: overlay-pop 0.3s ease-out;
-    }
-
-    @keyframes overlay-pop {
-      from {
-        transform: scale(0.9);
-        opacity: 0;
-      }
-      to {
-        transform: scale(1);
-        opacity: 1;
-      }
-    }
-
-    .celebration-emoji {
-      font-size: 64px;
-      animation: celebration-bounce 1s ease-in-out infinite;
-    }
-
-    @keyframes celebration-bounce {
-      0%,
-      100% {
-        transform: translateY(0);
-      }
-      50% {
-        transform: translateY(-10px);
-      }
-    }
-
-    .overlay-content h2 {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 28px;
-      font-weight: 700;
-      color: #22c55e;
-      margin: 0;
-    }
-
+    /* Ergebnis auf der Overlay-Karte (Karte selbst kommt aus app-game-overlay) */
     .final-stats {
       display: flex;
-      gap: 24px;
+      gap: 18px;
       flex-wrap: wrap;
       justify-content: center;
     }
@@ -828,120 +691,36 @@ import { fitCanvas } from '../../game-shared';
     }
 
     .final-label {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.5);
+      font: 600 10px/1 var(--nk-font-mono);
+      color: var(--nk-iv-2);
       text-transform: uppercase;
       letter-spacing: 1px;
     }
 
     .final-value {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 24px;
-      font-weight: 700;
-      color: #ffffff;
+      font: 400 26px/1 var(--nk-font-lcd);
+      color: var(--nk-iv);
+      text-shadow: 0 0 6px rgb(var(--nk-lamp-rgb) / 0.5);
     }
 
     .final-stat.multiplier .final-value {
-      color: #ef4444;
-    }
-
-    .final-stat.points .final-value {
-      color: #22c55e;
-    }
-
-    .final-value.big {
-      font-size: 36px;
-      text-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
-    }
-
-    .overlay-actions {
-      display: flex;
-      gap: 12px;
-      margin-top: 10px;
-    }
-
-    .overlay-btn {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 24px;
-      border: none;
-      border-radius: 10px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .overlay-btn.primary {
-      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-      color: white;
-    }
-
-    .overlay-btn.primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 20px rgba(34, 197, 94, 0.4);
-    }
-
-    .overlay-btn.secondary {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: rgba(255, 255, 255, 0.8);
-    }
-
-    .overlay-btn.secondary:hover {
-      background: rgba(255, 255, 255, 0.15);
+      color: var(--nk-danger-text);
     }
 
     /* Niedrige Fenster (Querformat am Handy): Kopf schmaler, Sandwich-Panel scrollt */
     @media (max-height: 500px) {
-      .game-header {
-        padding: 4px 12px;
-      }
       .game-content {
         padding: 8px 12px;
         gap: 12px;
-        height: calc(95dvh - 48px);
       }
       .sandwich-panel {
         overflow-y: auto;
         gap: 8px;
       }
-      .overlay-content {
-        padding: 12px 20px;
-      }
-      .celebration-emoji {
-        display: none;
-      }
     }
 
     /* Responsive */
     @media (max-width: 700px) {
-      .game-header {
-        padding: 8px 10px;
-        gap: 6px;
-      }
-
-      .game-title {
-        font-size: 14px;
-        letter-spacing: 1px;
-      }
-
-      .game-emoji {
-        font-size: 22px;
-      }
-
-      .balance-display {
-        padding: 4px 8px;
-        white-space: nowrap;
-      }
-
-      .balance {
-        font-size: 12px;
-      }
-
       .ingredients-panel,
       .sandwich-panel {
         flex: none;
@@ -949,8 +728,6 @@ import { fitCanvas } from '../../game-shared';
 
       .game-content {
         flex-direction: column;
-        height: auto;
-        max-height: calc(95dvh - 70px);
         overflow-y: auto;
       }
 
@@ -970,19 +747,15 @@ import { fitCanvas } from '../../game-shared';
       }
 
       .final-stats {
-        flex-direction: column;
         gap: 12px;
-      }
-
-      .overlay-actions {
-        flex-direction: column;
       }
     }
   `,
 })
 export class SandwichmasterGameComponent implements AfterViewInit, OnDestroy {
   @ViewChild('gameCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('root', { static: true }) rootRef!: ElementRef<HTMLElement>;
+  @ViewChild('root', { static: true }) frame!: GameFrameComponent;
+  readonly info = GAME_INFO.sandwich;
   private stopFit?: () => void;
 
   readonly creditService = inject(CreditService);
@@ -1018,6 +791,11 @@ export class SandwichmasterGameComponent implements AfterViewInit, OnDestroy {
 
   readonly finalScore = computed(() => Math.floor(this.totalCost() * this.multiplier()));
 
+  readonly stats = computed<GameStat[]>(() => [
+    { label: 'GUTHABEN N$', value: this.creditService.creditsFormatted() },
+    { label: 'PUNKTE', value: this.finalScore() },
+  ]);
+
   private engine!: SandwichmasterEngine;
   private animationId = 0;
 
@@ -1035,7 +813,7 @@ export class SandwichmasterGameComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    const root = this.rootRef.nativeElement;
+    const root = this.frame.root;
     this.stopFit = fitCanvas(
       () => this.canvasRef?.nativeElement,
       this.canvasWidth,

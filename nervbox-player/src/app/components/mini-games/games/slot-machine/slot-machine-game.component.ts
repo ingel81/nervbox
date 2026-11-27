@@ -14,10 +14,11 @@ import { CommonModule } from '@angular/common';
 import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSliderModule } from '@angular/material/slider';
 import { CreditService } from '../../../../core/services/credit.service';
 import { GameExitConfirmComponent } from '../../game-exit-confirm.component';
 import { fitCanvas } from '../../game-shared';
+import { GameFrameComponent, GameStat } from '../../game-frame.component';
+import { GAME_INFO } from '../../game-info';
 
 interface SlotSymbol {
   name: string;
@@ -46,8 +47,8 @@ interface Particle {
     MatDialogModule,
     MatButtonModule,
     MatIconModule,
-    MatSliderModule,
     GameExitConfirmComponent,
+    GameFrameComponent,
   ],
   templateUrl: './slot-machine-game.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -58,7 +59,8 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
   readonly creditService = inject(CreditService);
 
   @ViewChild('gameCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('root', { static: true }) rootRef!: ElementRef<HTMLElement>;
+  @ViewChild('root', { static: true }) frame!: GameFrameComponent;
+  readonly info = GAME_INFO.slot;
   private stopFit?: () => void;
   private ctx!: CanvasRenderingContext2D;
   private animationFrame: number = 0;
@@ -103,6 +105,11 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
   // Particles
   private particles: Particle[] = [];
 
+  readonly stats = computed<GameStat[]>(() => [
+    { label: 'GUTHABEN N$', value: this.displayedBalance() },
+    { label: 'EINSATZ N$', value: this.betAmount() },
+  ]);
+
   readonly canSpin = computed(
     () => !this.isSpinning() && this.betAmount() <= this.creditService.credits(),
   );
@@ -129,10 +136,10 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
     canvas.height = 240;
     this.ctx = canvas.getContext('2d')!;
 
-    const root = this.rootRef.nativeElement;
+    const root = this.frame.root;
     const q = (sel: string) => root.querySelector<HTMLElement>(sel);
     this.stopFit = fitCanvas(() => canvas, 480, 240, root, {
-      widthEl: () => root,
+      widthEl: () => q('.slot-machine-container'),
       // Seitliche Steuerung im Querformat (niedrig & breit) nimmt Breite weg
       reserveW: () =>
         window.innerHeight <= 500 && window.innerWidth >= 600

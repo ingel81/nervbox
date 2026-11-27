@@ -1,17 +1,8 @@
-.slot-root {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  max-height: 95dvh;
-  min-height: 0;
-}
-
+// Spiel-UI im eigenen Neon-Look; Gehaeuse (Kopf, Fuss, Schliessen) kommt aus app-game-frame
 .slot-machine-container {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
+  border-radius: 5px;
   background: linear-gradient(180deg, #1a0033 0%, #0d001a 100%);
   color: #fff;
   padding: 24px 32px;
@@ -19,48 +10,6 @@
 
 .neon-text {
   text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
-}
-
-// Header
-.game-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.game-title {
-  font-size: 1.4rem;
-  font-weight: 900;
-  letter-spacing: 3px;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  .title-icon {
-    font-size: 1.6rem;
-    width: 1.6rem;
-    height: 1.6rem;
-  }
-}
-
-.close-btn {
-  width: 36px !important;
-  height: 36px !important;
-  min-width: 36px !important;
-  padding: 0 !important;
-  background: transparent !important;
-  border: 2px solid #ff0066 !important;
-  border-radius: 50% !important;
-  color: #ff0066 !important;
-
-  mat-icon {
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
-    line-height: 20px;
-  }
 }
 
 // Main Layout - horizontal 3-column
@@ -373,10 +322,6 @@ canvas {
     padding: 12px;
   }
 
-  .game-header {
-    margin-bottom: 10px;
-  }
-
   .controls-section {
     width: 100%;
     gap: 10px;
@@ -416,10 +361,6 @@ canvas {
 @media (max-height: 500px) and (min-width: 600px) {
   .slot-machine-container {
     padding: 6px 12px;
-  }
-
-  .game-header {
-    margin-bottom: 4px;
   }
 
   .main-content {

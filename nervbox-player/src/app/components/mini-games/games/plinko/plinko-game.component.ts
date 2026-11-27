@@ -12,7 +12,6 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -23,6 +22,8 @@ import { CreditService } from '../../../../core/services/credit.service';
 import { ApiService } from '../../../../core/services/api.service';
 import { GameExitConfirmComponent } from '../../game-exit-confirm.component';
 import { fitCanvas } from '../../game-shared';
+import { GameFrameComponent, GameStat } from '../../game-frame.component';
+import { GAME_INFO } from '../../game-info';
 
 @Component({
   selector: 'app-plinko-game',
@@ -31,29 +32,23 @@ import { fitCanvas } from '../../game-shared';
     CommonModule,
     FormsModule,
     MatDialogModule,
-    MatButtonModule,
     MatIconModule,
     MatFormFieldModule,
     MatInputModule,
     GameExitConfirmComponent,
+    GameFrameComponent,
   ],
   template: `
-    <div class="plinko-container" #root>
-      <!-- Header -->
-      <div class="game-header">
-        <div class="header-left">
-          <mat-icon class="game-icon">casino</mat-icon>
-          <span class="game-title">PLINKO</span>
-        </div>
-        <div class="balance-display">
-          <img src="icons/nervbox-coin.svg" alt="" class="coin-icon" />
-          <span class="balance">{{ creditService.creditsFormatted() }} N$</span>
-        </div>
-        <button mat-icon-button class="close-btn" (click)="exitGame()">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-
+    <app-game-frame
+      #root
+      [title]="info.title"
+      [icon]="info.icon"
+      [accent]="info.accent"
+      [year]="info.year"
+      [stats]="stats()"
+      hint="ESC = Beenden?"
+      (closed)="exitGame()"
+    >
       <div class="game-content">
         <!-- Settings Panel (links) -->
         <div class="settings-panel">
@@ -159,88 +154,17 @@ import { fitCanvas } from '../../game-shared';
         (resumed)="resumeLoop()"
         (exit)="exitGame()"
       />
-    </div>
+    </app-game-frame>
   `,
   changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
-    .plinko-container {
-      display: flex;
-      flex-direction: column;
-      background: linear-gradient(180deg, #0f0f0f 0%, #1a1a1a 100%);
-      border-radius: 12px;
-      overflow: hidden;
-      max-height: 95dvh;
-      position: relative;
-    }
-
-    .game-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      background: linear-gradient(135deg, rgba(75, 229, 133, 0.3) 0%, rgba(111, 203, 255, 0.2) 100%);
-      border-bottom: 2px solid rgba(75, 229, 133, 0.5);
-    }
-
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .game-icon {
-      color: #2F7FB0;
-      font-size: 28px;
-      width: 28px;
-      height: 28px;
-      filter: drop-shadow(0 0 10px rgba(111, 203, 255, 0.5));
-    }
-
-    .game-title {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 20px;
-      font-weight: 700;
-      background: linear-gradient(135deg, #1F8E4C 0%, #2F7FB0 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: 2px;
-    }
-
-    .balance-display {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 20px;
-      border: 1px solid rgba(75, 229, 133, 0.3);
-    }
-
-    .coin-icon {
-      width: 20px;
-      height: 20px;
-    }
-
-    .balance {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
-      font-weight: 600;
-      color: #f0abfc;
-    }
-
-    .close-btn {
-      color: rgba(255, 255, 255, 0.7);
-    }
-
-    .close-btn:hover {
-      color: #ef4444;
-    }
-
+    /* Spiel-UI im eigenen Look; Gehaeuse kommt aus app-game-frame */
     .game-content {
       display: flex;
       gap: 16px;
       padding: 16px;
+      border-radius: 5px;
+      background: linear-gradient(180deg, #0f0f0f 0%, #1a1a1a 100%);
     }
 
     /* Settings Panel */
@@ -525,9 +449,6 @@ import { fitCanvas } from '../../game-shared';
 
     /* Responsive */
     @media (max-height: 500px) {
-      .game-header {
-        padding: 4px 12px;
-      }
       .game-content {
         padding: 8px;
         gap: 8px;
@@ -587,7 +508,8 @@ import { fitCanvas } from '../../game-shared';
 })
 export class PlinkoGameComponent implements AfterViewInit, OnDestroy {
   @ViewChild('gameCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('root', { static: true }) rootRef!: ElementRef<HTMLElement>;
+  @ViewChild('root', { static: true }) frame!: GameFrameComponent;
+  readonly info = GAME_INFO.plinko;
   private stopFit?: () => void;
 
   readonly creditService = inject(CreditService);
@@ -633,6 +555,11 @@ export class PlinkoGameComponent implements AfterViewInit, OnDestroy {
     );
   });
 
+  readonly stats = computed<GameStat[]>(() => [
+    { label: 'GUTHABEN N$', value: this.creditService.creditsFormatted() },
+    { label: 'LETZTER WURF', value: this.lastMultiplier() === null ? '--' : this.lastMultiplier() + 'x' },
+  ]);
+
   private engine!: PlinkoEngine;
   private animationId = 0;
 
@@ -648,7 +575,7 @@ export class PlinkoGameComponent implements AfterViewInit, OnDestroy {
       () => this.canvasRef?.nativeElement,
       this.canvasWidth,
       this.canvasHeight,
-      this.rootRef.nativeElement,
+      this.frame.root,
     );
     // Set up sound URLs
     this.loseSoundUrl = this.api.getFullUrl(`/sound/${this.LOSE_SOUND_HASH}/file`);

@@ -1,32 +1,16 @@
-<div class="kayberg-container" #root>
-  <!-- Game Header -->
-  <div class="game-header">
-    <div class="header-left">
-      <div class="score-display">
-        <mat-icon>stars</mat-icon>
-        <span class="score-value">{{ score() }}</span>
-      </div>
-      <div class="level-display">
-        <span class="level-label">LVL</span>
-        <span class="level-value">{{ level() }}</span>
-      </div>
-      <div class="wave-progress">
-        <mat-icon>catching_pokemon</mat-icon>
-        <span>{{ waveProgress() }}</span>
-      </div>
-    </div>
-
-    <div class="lives-display">
-      @for (life of livesArray(); track $index) {
-        <mat-icon class="heart">favorite</mat-icon>
-      }
-    </div>
-
-    <button mat-icon-button class="close-btn" (click)="confirmExit()">
-      <mat-icon>close</mat-icon>
-    </button>
-  </div>
-
+<app-game-frame
+  #root
+  [title]="info.title"
+  [icon]="info.icon"
+  [accent]="info.accent"
+  [year]="info.year"
+  [stats]="stats()"
+  [pausable]="true"
+  [pauseDisabled]="gameState() !== 'playing'"
+  hint="ESC = Beenden? | Klicken zum Steuern"
+  (pause)="togglePause()"
+  (closed)="confirmExit()"
+>
   <!-- Game Canvas -->
   <div class="canvas-container">
     <canvas
@@ -44,84 +28,66 @@
       </div>
     }
 
-    <!-- Ready Overlay -->
     @if (gameState() === 'ready') {
-      <div class="overlay start-overlay" (click)="startGame()">
-        <mat-icon class="overlay-icon bird-icon">flight</mat-icon>
-        <h3>KAYBERG HUNTER</h3>
-        <p class="level-info">Level {{ level() }}</p>
-        <div class="instructions">
-          <p><strong>Steuerung:</strong></p>
-          <p>Maus - Blickrichtung</p>
-          <p>WASD - Bewegung</p>
-          <p>Leertaste - Sturzflug-Attacke</p>
+      <app-game-overlay
+        tone="start"
+        [kicker]="'Modul · ' + info.title"
+        [year]="info.year"
+        [icon]="info.icon"
+        [title]="info.title"
+        [clickable]="true"
+        (click)="startGame()"
+      >
+        <p class="nk-go__text">Level {{ level() }} · Fange {{ preyRequired() }} Beutetiere!</p>
+        <div class="nk-go__list nk-go__hint">
+          <span>Maus = Blickrichtung · WASD = Bewegung</span>
+          <span>Leertaste = Sturzflug-Attacke</span>
         </div>
-        <button mat-raised-button color="primary" class="start-btn">
-          <mat-icon>play_arrow</mat-icon>
-          Jagd starten
-        </button>
-        <p class="controls-hint">Fange {{ preyRequired() }} Beutetiere!</p>
-      </div>
+        <div goActions>
+          <button type="button" class="nk-key nk-key--accent nk-key--lg">
+            <mat-icon>play_arrow</mat-icon>Jagd starten
+          </button>
+        </div>
+      </app-game-overlay>
     }
 
-    <!-- Paused Overlay -->
     @if (gameState() === 'paused') {
-      <div class="overlay pause-overlay">
-        <mat-icon class="overlay-icon">pause_circle</mat-icon>
-        <h3>Pausiert</h3>
-        <div class="overlay-actions">
-          <button mat-raised-button color="primary" (click)="resumeGame()">
-            <mat-icon>play_arrow</mat-icon>
-            Weiterspielen
+      <app-game-overlay tone="pause" kicker="Pause" icon="pause" title="Pausiert">
+        <div goActions>
+          <button type="button" class="nk-key nk-key--accent nk-key--lg" (click)="resumeGame()">
+            <mat-icon>play_arrow</mat-icon>Weiterspielen
           </button>
-          <button mat-stroked-button (click)="exitGame()">Beenden</button>
+          <button type="button" class="nk-key nk-key--ghost" (click)="exitGame()">Beenden</button>
         </div>
-      </div>
+      </app-game-overlay>
     }
 
-    <!-- Game Over Overlay -->
     @if (gameState() === 'gameover') {
-      <div class="overlay gameover-overlay">
-        <mat-icon class="overlay-icon dead">sentiment_very_dissatisfied</mat-icon>
-        <h3>Game Over!</h3>
-        <p class="final-score">Score: {{ score() }}</p>
-        <p class="final-level">Erreicht: Level {{ level() }}</p>
-        <div class="overlay-actions">
-          <button mat-raised-button color="primary" (click)="restartGame()">
-            <mat-icon>replay</mat-icon>
-            Nochmal spielen
+      <app-game-overlay tone="over" kicker="Game Over" icon="sentiment_very_dissatisfied" title="Game Over!">
+        <span class="nk-counter nk-go__score">SCORE {{ score() }}</span>
+        <p class="nk-go__text">Erreicht: Level {{ level() }}</p>
+        <div goActions>
+          <button type="button" class="nk-key nk-key--accent nk-key--lg" (click)="restartGame()">
+            <mat-icon>replay</mat-icon>Nochmal spielen
           </button>
-          <button mat-stroked-button (click)="exitGame()">Beenden</button>
+          <button type="button" class="nk-key nk-key--ghost" (click)="exitGame()">Beenden</button>
         </div>
-      </div>
+      </app-game-overlay>
     }
 
-    <!-- Level Complete Overlay -->
     @if (gameState() === 'won') {
-      <div class="overlay win-overlay">
-        <mat-icon class="overlay-icon win">emoji_events</mat-icon>
-        <h3>Level geschafft!</h3>
-        <p class="final-score">Score: {{ score() }}</p>
+      <app-game-overlay tone="win" [kicker]="'Level ' + level()" icon="emoji_events" title="Level geschafft!">
+        <span class="nk-counter nk-go__score">SCORE {{ score() }}</span>
         @if (levelReward() > 0) {
-          <p class="reward-display">+{{ levelReward() }} N$</p>
+          <p class="nk-go__reward">+{{ levelReward() }} N$</p>
         }
-        <div class="overlay-actions">
-          <button mat-raised-button color="primary" (click)="nextLevel()">
-            <mat-icon>arrow_forward</mat-icon>
-            Level {{ level() + 1 }}
+        <div goActions>
+          <button type="button" class="nk-key nk-key--accent nk-key--lg" (click)="nextLevel()">
+            <mat-icon>arrow_forward</mat-icon>Level {{ level() + 1 }}
           </button>
         </div>
-      </div>
+      </app-game-overlay>
     }
-  </div>
-
-  <!-- Game Footer -->
-  <div class="game-footer">
-    <button mat-button (click)="togglePause()" [disabled]="gameState() !== 'playing'">
-      <mat-icon>pause</mat-icon>
-      Pause
-    </button>
-    <span class="footer-hint">ESC = Beenden? | Klicken zum Steuern</span>
   </div>
 
   <app-game-exit-confirm
@@ -130,4 +96,4 @@
     (resumed)="onExitResumed()"
     (exit)="exitGame()"
   />
-</div>
+</app-game-frame>

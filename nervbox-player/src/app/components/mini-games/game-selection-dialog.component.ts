@@ -4,6 +4,7 @@ import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../core/services/auth.service';
+import { GAME_INFO } from './game-info';
 
 @Component({
   selector: 'app-game-selection-dialog',
@@ -40,8 +41,15 @@ import { AuthService } from '../../core/services/auth.service';
                     @if (c.text) {
                       <span class="nk-cart__text">{{ c.text }}</span>
                     }
-                    @if (c.pay) {
-                      <span class="nk-cart__pay">{{ c.pay }}</span>
+                    @if (c.pay || c.year) {
+                      <span class="gs-meta">
+                        @if (c.pay) {
+                          <span class="nk-cart__pay">{{ c.pay }}</span>
+                        }
+                        @if (c.year) {
+                          <span class="gs-year" [attr.aria-label]="'Baujahr ' + c.year">© {{ c.year }}</span>
+                        }
+                      </span>
                     }
                   </span>
                   <span class="nk-cart__edge" aria-hidden="true"><span class="nk-cart__pins"></span></span>
@@ -115,6 +123,26 @@ import { AuthService } from '../../core/services/auth.service';
       height: 48px;
       font-size: 48px;
     }
+    .gs-meta {
+      margin-top: auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 4px 6px;
+    }
+    .gs-meta .nk-cart__pay {
+      margin-top: 0;
+      white-space: nowrap;
+    }
+    .gs-year {
+      flex-shrink: 0;
+      margin-left: auto;
+      font: 700 11px/1.2 var(--nk-font-mono);
+      letter-spacing: 0.5px;
+      color: var(--nk-paper-ink-2);
+      white-space: nowrap;
+    }
     .gs-rail {
       height: 26px;
       margin: 0 -6px;
@@ -146,7 +174,7 @@ import { AuthService } from '../../core/services/auth.service';
         padding: 0;
       }
       .nk-cart {
-        height: 250px;
+        height: 276px;
       }
     }
   `,
@@ -155,16 +183,16 @@ import { AuthService } from '../../core/services/auth.service';
 export class GameSelectionDialogComponent {
   /** Steckmodule 1:1 wie die bisherigen Spielkarten (Badge, Titel, Untertitel, Auszahlung) */
   readonly carts = [
-    { key: 'arkanoid', kind: 'SPIELEN', title: 'ARKANOID', text: 'Zerstöre alle Blöcke!', pay: 'N$ pro Level', color: '#4E7BA6', icon: 'sports_tennis' },
-    { key: 'hotdog', kind: 'SPIELEN', title: 'HOTDOG KATAPULT', text: 'Stopfe die Mäuler!', pay: '1 N$/Treffer', color: '#B8702A', icon: 'lunch_dining' },
-    { key: 'plinko', kind: 'CASINO', title: 'PLINKO', text: 'Drop & Win!', pay: '0.2x - 50x', color: '#93271F', icon: 'scatter_plot' },
-    { key: 'slot', kind: 'CASINO', title: 'SLOT MACHINE', text: 'Pull the lever!', pay: '1x - 100x', color: '#7E6212', icon: 'casino' },
-    { key: 'kayberg', kind: 'MODUL 05', title: 'KAYBERG HUNTER', text: 'Jage als Greifvogel!', pay: 'N$ pro Level', color: '#22635F', icon: 'flight' },
-    { key: 'weinfest', kind: 'MODUL 06', title: 'WEINFEST SHOOTER', text: 'Schieß die Flaschen ab!', pay: '+3/-2 N$', color: '#7A2E4A', icon: 'wine_bar' },
-    { key: 'sandwich', kind: 'NEU', title: 'SANDWICHMASTER', text: 'Baue das ultimative Sandwich!', pay: 'Punkte sammeln', color: '#5E7426', icon: 'bakery_dining', isNew: true },
-    { key: '', kind: 'COMING SOON', title: 'Mary Haze – The Game', text: '', pay: '', color: '#5A5346', icon: 'local_florist', soon: true },
-    { key: '', kind: 'COMING SOON', title: 'Fehlersuche mit Paddi', text: '', pay: '', color: '#5A5346', icon: 'search', soon: true },
-    { key: '', kind: 'COMING SOON', title: 'Mixe das perfekte Spezi', text: '', pay: '', color: '#5A5346', icon: 'local_bar', soon: true },
+    { key: 'arkanoid', kind: 'SPIELEN', title: 'ARKANOID', text: 'Zerstöre alle Blöcke!', pay: 'N$ pro Level', color: '#4E7BA6', icon: 'sports_tennis', year: GAME_INFO.arkanoid.year },
+    { key: 'hotdog', kind: 'SPIELEN', title: 'HOTDOG KATAPULT', text: 'Stopfe die Mäuler!', pay: '1 N$/Treffer', color: '#B8702A', icon: 'lunch_dining', year: GAME_INFO.hotdog.year },
+    { key: 'plinko', kind: 'CASINO', title: 'PLINKO', text: 'Drop & Win!', pay: '0.2x - 50x', color: '#93271F', icon: 'scatter_plot', year: GAME_INFO.plinko.year },
+    { key: 'slot', kind: 'CASINO', title: 'SLOT MACHINE', text: 'Pull the lever!', pay: '1x - 100x', color: '#7E6212', icon: 'casino', year: GAME_INFO.slot.year },
+    { key: 'kayberg', kind: 'MODUL 05', title: 'KAYBERG HUNTER', text: 'Jage als Greifvogel!', pay: 'N$ pro Level', color: '#22635F', icon: 'flight', year: GAME_INFO.kayberg.year },
+    { key: 'weinfest', kind: 'MODUL 06', title: 'WEINFEST SHOOTER', text: 'Schieß die Flaschen ab!', pay: '+3/-2 N$', color: '#7A2E4A', icon: 'wine_bar', year: GAME_INFO.weinfest.year },
+    { key: 'sandwich', kind: 'NEU', title: 'SANDWICHMASTER', text: 'Baue das ultimative Sandwich!', pay: 'Punkte sammeln', color: '#5E7426', icon: 'bakery_dining', year: GAME_INFO.sandwich.year, isNew: true },
+    { key: '', kind: 'COMING SOON', title: 'Mary Haze – The Game', text: '', pay: '', color: '#5A5346', icon: 'local_florist', soon: true, year: 0 },
+    { key: '', kind: 'COMING SOON', title: 'Fehlersuche mit Paddi', text: '', pay: '', color: '#5A5346', icon: 'search', soon: true, year: 0 },
+    { key: '', kind: 'COMING SOON', title: 'Mixe das perfekte Spezi', text: '', pay: '', color: '#5A5346', icon: 'local_bar', soon: true, year: 0 },
   ];
   readonly shelves = [
     { label: 'SCHACHT A · SPIELEN & CASINO', carts: this.carts.slice(0, 5) },

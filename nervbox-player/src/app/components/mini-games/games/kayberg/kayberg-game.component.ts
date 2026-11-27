@@ -12,25 +12,28 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { KaybergEngine } from './engine/kayberg-engine';
 import { GameState } from './kayberg.types';
 import { CreditService } from '../../../../core/services/credit.service';
 import { GameExitConfirmComponent } from '../../game-exit-confirm.component';
 import { fitCanvas } from '../../game-shared';
+import { GameFrameComponent, GameStat } from '../../game-frame.component';
+import { GameOverlayComponent } from '../../game-overlay.component';
+import { GAME_INFO } from '../../game-info';
 
 @Component({
   selector: 'app-kayberg-game',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule, GameExitConfirmComponent],
+  imports: [CommonModule, MatDialogModule, MatIconModule, GameExitConfirmComponent, GameFrameComponent, GameOverlayComponent],
   templateUrl: './kayberg-game.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./kayberg-game.component.scss'],
 })
 export class KaybergGameComponent implements AfterViewInit, OnDestroy {
   @ViewChild('gameCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('root', { static: true }) rootRef!: ElementRef<HTMLElement>;
+  @ViewChild('root', { static: true }) frame!: GameFrameComponent;
+  readonly info = GAME_INFO.kayberg;
   private stopFit?: () => void;
   @ViewChild(GameExitConfirmComponent) exitConfirm?: GameExitConfirmComponent;
 
@@ -45,8 +48,13 @@ export class KaybergGameComponent implements AfterViewInit, OnDestroy {
   readonly preyCaught = signal(0);
   readonly preyRequired = signal(5);
 
-  readonly livesArray = computed(() => Array(this.lives()).fill(0));
   readonly waveProgress = computed(() => `${this.preyCaught()}/${this.preyRequired()}`);
+  readonly stats = computed<GameStat[]>(() => [
+    { label: 'SCORE', value: this.score() },
+    { label: 'LEVEL', value: this.level() },
+    { label: 'BEUTE', value: this.waveProgress() },
+    { label: 'LEBEN', pips: this.lives(), pipsMax: 3, pipIcon: 'favorite' },
+  ]);
 
   readonly canvasWidth = 900;
   readonly canvasHeight = 600;
@@ -111,7 +119,7 @@ export class KaybergGameComponent implements AfterViewInit, OnDestroy {
       () => this.canvasRef?.nativeElement,
       this.canvasWidth,
       this.canvasHeight,
-      this.rootRef.nativeElement,
+      this.frame.root,
     );
 
     // Create engine

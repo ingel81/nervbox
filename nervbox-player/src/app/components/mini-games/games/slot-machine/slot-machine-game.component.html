@@ -1,16 +1,14 @@
-<div class="slot-root">
-<div class="slot-machine-container" #root>
-  <!-- Header -->
-  <div class="game-header">
-    <h1 class="game-title neon-text">
-      <mat-icon class="title-icon">casino</mat-icon>
-      N$ FORTUNE
-    </h1>
-    <button mat-icon-button class="close-btn" (click)="exitGame()">
-      <mat-icon>close</mat-icon>
-    </button>
-  </div>
-
+<app-game-frame
+  #root
+  [title]="info.title"
+  [icon]="info.icon"
+  [accent]="info.accent"
+  [year]="info.year"
+  [stats]="stats()"
+  hint="ESC = Beenden?"
+  (closed)="exitGame()"
+>
+<div class="slot-machine-container">
   <!-- Main Content -->
   <div class="main-content">
     <!-- Left: Slot Machine -->
@@ -94,4 +92,4 @@
     [hint]="exitHint()"
     (exit)="exitGame()"
   />
-</div>
+</app-game-frame>
