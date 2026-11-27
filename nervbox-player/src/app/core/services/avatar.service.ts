@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
+import { UserCacheService } from './user-cache.service';
 import { environment } from '../../../environments/environment';
 
 export interface AvatarUploadResponse {
@@ -17,6 +18,7 @@ export interface AvatarUrlResponse {
 })
 export class AvatarService {
   private readonly api = inject(ApiService);
+  private readonly userCache = inject(UserCacheService);
 
   // Signal to track the current user's avatar URL with cache busting
   readonly currentUserAvatarUrl = signal<string | null>(null);
@@ -33,6 +35,7 @@ export class AvatarService {
         if (response.success && response.avatarUrl) {
           // Add cache buster to force refresh
           this.currentUserAvatarUrl.set(`${environment.apiUrl}${response.avatarUrl}?t=${Date.now()}`);
+          this.userCache.reloadUsers().subscribe();
         }
       })
     );
@@ -45,6 +48,7 @@ export class AvatarService {
     return this.api.delete<{ success: boolean }>('/users/avatar').pipe(
       tap(() => {
         this.currentUserAvatarUrl.set(null);
+        this.userCache.reloadUsers().subscribe();
       })
     );
   }

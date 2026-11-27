@@ -10,6 +10,8 @@ export interface CachedUser {
   lastName?: string;
   role: string;
   isActive: boolean;
+  /** Set when the user uploaded an avatar; changes on every upload (used as cache version). */
+  avatarFileName?: string;
 }
 
 @Injectable({
@@ -49,10 +51,13 @@ export class UserCacheService {
   }
 
   /**
-   * Get avatar URL for a user (always returns URL, may 404 if no avatar)
+   * Get avatar URL for a user, or null if the user has no avatar (or is not loaded yet).
+   * The file name is used as version, so the browser may cache the image forever.
    */
-  getAvatarUrl(userId: number): string {
-    return `${environment.apiUrl}/users/${userId}/avatar`;
+  getAvatarUrl(userId: number): string | null {
+    const file = this.getUser(userId)?.avatarFileName;
+    if (!file) return null;
+    return `${environment.apiUrl}/users/${userId}/avatar?v=${encodeURIComponent(file)}`;
   }
 
   /**

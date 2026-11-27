@@ -159,7 +159,7 @@ export class UserAvatarComponent implements OnInit {
     // Otherwise lookup by userId
     const id = this.userId();
     if (id) {
-      return `${this.userCache.getAvatarUrl(id)}?t=${Date.now()}`;
+      return this.userCache.getAvatarUrl(id);
     }
 
     return null;

@@ -230,8 +230,10 @@ namespace NervboxDeamon.Controllers
             if (avatar == null)
                 return NotFound();
 
-            // Set cache headers for 1 hour
-            Response.Headers.Append("Cache-Control", "public, max-age=3600");
+            // Versioned URL (?v=<file name>, changes on upload) can be cached forever
+            Response.Headers.Append("Cache-Control", Request.Query.ContainsKey("v")
+                ? "public, max-age=31536000, immutable"
+                : "public, max-age=3600");
 
             return File(avatar.Value.data, avatar.Value.contentType);
         }
