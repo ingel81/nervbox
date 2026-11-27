@@ -226,7 +226,7 @@ interface UserProfile {
       }
     }
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UserProfileDialogComponent implements OnInit {
   readonly dialogRef = inject(MatDialogRef<UserProfileDialogComponent>);

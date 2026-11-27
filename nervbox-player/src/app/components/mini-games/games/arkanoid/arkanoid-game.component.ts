@@ -37,7 +37,7 @@ import { GAME_INFO } from '../../game-info';
       [pausable]="true"
       [pauseDisabled]="gameState() !== 'playing'"
       hint="ESC = Beenden?"
-      (pause)="togglePause()"
+      (pauseToggle)="togglePause()"
       (closed)="confirmExit()"
     >
       <!-- Game Canvas -->
@@ -118,7 +118,7 @@ import { GAME_INFO } from '../../game-info';
       />
     </app-game-frame>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     /* Spielfeld: eigener Look des Spiels (schwarz), Rahmen/Overlays kommen aus app-game-frame / app-game-overlay */
     .canvas-container {

@@ -55,7 +55,7 @@ interface GiphyResponse {
             <button type="button" class="nk-input__clear" aria-label="Suche leeren" (click)="clearSearch()">✕</button>
           }
         </label>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="GIF-Suche schließen" (click)="close.emit()">✕</button>
+        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="GIF-Suche schließen" (click)="closed.emit()">✕</button>
       </div>
       <div class="gp-grid" #gifGrid (scroll)="onScroll($event)">
         @if (loading() && gifs().length === 0) {
@@ -164,7 +164,7 @@ interface GiphyResponse {
       opacity: 0.8;
     }
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GifPickerComponent implements OnInit {
   private readonly api = inject(ApiService);
@@ -173,7 +173,7 @@ export class GifPickerComponent implements OnInit {
   @ViewChild('gifGrid') gifGrid!: ElementRef<HTMLDivElement>;
 
   readonly gifSelected = output<string>();
-  readonly close = output<void>();
+  readonly closed = output<void>();
 
   readonly gifs = signal<GiphyGif[]>([]);
   readonly loading = signal(false);

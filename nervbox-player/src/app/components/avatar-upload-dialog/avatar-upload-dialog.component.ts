@@ -128,7 +128,7 @@ import { AvatarService } from '../../core/services/avatar.service';
       flex: 1;
     }
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AvatarUploadDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<AvatarUploadDialogComponent>);

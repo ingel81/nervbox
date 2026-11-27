@@ -40,7 +40,7 @@ export interface GameStat {
   selector: 'app-game-frame',
   standalone: true,
   imports: [MatIconModule],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'nk-gf',
     '[class.nk-gf--fill]': 'fill()',
@@ -92,7 +92,7 @@ export interface GameStat {
 
       <footer class="nk-gf__foot">
         @if (pausable()) {
-          <button type="button" class="nk-key nk-key--sm" [disabled]="pauseDisabled()" (click)="pause.emit()">
+          <button type="button" class="nk-key nk-key--sm" [disabled]="pauseDisabled()" (click)="pauseToggle.emit()">
             <mat-icon>pause</mat-icon>Pause
           </button>
         }
@@ -121,7 +121,7 @@ export class GameFrameComponent {
   readonly fill = input(false);
 
   readonly closed = output<void>();
-  readonly pause = output<void>();
+  readonly pauseToggle = output<void>();
 
   @ViewChild('scroll', { static: true }) private scrollRef!: ElementRef<HTMLElement>;
 

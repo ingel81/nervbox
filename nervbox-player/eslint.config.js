@@ -35,6 +35,8 @@ module.exports = tseslint.config(
       "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/no-explicit-any": "warn",
+      // `promise.catch(() => {})` (e.g. audio.play()) is an intentional fire-and-forget idiom
+      "@typescript-eslint/no-empty-function": ["error", { allow: ["arrowFunctions"] }],
       "prefer-const": "error",
       "@angular-eslint/no-empty-lifecycle-method": "error",
       "@angular-eslint/use-lifecycle-interface": "error",

@@ -35,7 +35,7 @@ type AvatarSize = 'xs' | 'small' | 'medium' | 'large';
       }
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .avatar-container {
       border-radius: 50%;

@@ -1,11 +1,11 @@
 import { WaveConfig, getWaveConfig } from '../../kayberg.types';
 
 export class WaveManager {
-  private currentLevel: number = 1;
+  private currentLevel = 1;
   private currentConfig: WaveConfig;
 
-  private preyCaught: number = 0;
-  private score: number = 0;
+  private preyCaught = 0;
+  private score = 0;
 
   // Callbacks
   onWaveComplete?: () => void;

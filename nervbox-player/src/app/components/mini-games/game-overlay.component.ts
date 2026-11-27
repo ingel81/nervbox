@@ -19,7 +19,7 @@ import { MatIconModule } from '@angular/material/icon';
   selector: 'app-game-overlay',
   standalone: true,
   imports: [MatIconModule],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'nk-go',
     '[class.nk-go--click]': 'clickable()',

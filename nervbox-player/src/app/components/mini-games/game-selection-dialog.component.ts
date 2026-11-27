@@ -178,7 +178,7 @@ import { GAME_INFO } from './game-info';
       }
     }
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GameSelectionDialogComponent {
   /** Steckmodule 1:1 wie die bisherigen Spielkarten (Badge, Titel, Untertitel, Auszahlung) */

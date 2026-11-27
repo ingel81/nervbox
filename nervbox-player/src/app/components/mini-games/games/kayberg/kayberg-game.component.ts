@@ -27,7 +27,7 @@ import { GAME_INFO } from '../../game-info';
   standalone: true,
   imports: [CommonModule, MatDialogModule, MatIconModule, GameExitConfirmComponent, GameFrameComponent, GameOverlayComponent],
   templateUrl: './kayberg-game.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./kayberg-game.component.scss'],
 })
 export class KaybergGameComponent implements AfterViewInit, OnDestroy {

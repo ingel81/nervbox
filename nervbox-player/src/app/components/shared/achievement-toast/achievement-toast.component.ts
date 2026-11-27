@@ -59,7 +59,7 @@ import { AchievementService } from '../../../core/services/achievement.service';
       flex-shrink: 0;
     }
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AchievementToastComponent {
   private readonly achievementService = inject(AchievementService);

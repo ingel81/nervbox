@@ -225,7 +225,7 @@ interface FileUploadItem {
       font: 500 13px var(--nk-font-mono);
     }
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SoundUploadDialogComponent {
   readonly uploadService = inject(UploadService);

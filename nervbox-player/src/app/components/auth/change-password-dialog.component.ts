@@ -71,7 +71,7 @@ import { ApiService } from '../../core/services/api.service';
       max-width: 100%;
     }
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChangePasswordDialogComponent {
   private readonly api = inject(ApiService);

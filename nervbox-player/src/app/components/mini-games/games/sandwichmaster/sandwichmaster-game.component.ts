@@ -19,7 +19,6 @@ import { SandwichmasterEngine } from './sandwichmaster-engine';
 import {
   GameState,
   Ingredient,
-  IngredientCategory,
   SelectedIngredient,
 } from './sandwichmaster.types';
 import {
@@ -258,7 +257,7 @@ import { GAME_INFO } from '../../game-info';
       <app-game-exit-confirm [hint]="exitHint()" (exit)="exitGame()" />
     </app-game-frame>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     /* Game Content */
     .game-content {

@@ -98,7 +98,7 @@ import { AuthService } from '../../core/services/auth.service';
       align-items: center;
     }
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RegisterDialogComponent {
   private readonly authService = inject(AuthService);

@@ -8,13 +8,13 @@ export class PreyEntity {
 
   type: PreyType;
   config: PreyConfig;
-  isAlive: boolean = true;
+  isAlive = true;
 
   private baseHeight: number;
   private wanderAngle: number = Math.random() * Math.PI * 2;
-  private wanderTimer: number = 0;
-  private isFleeing: boolean = false;
-  private fleeTimer: number = 0;
+  private wanderTimer = 0;
+  private isFleeing = false;
+  private fleeTimer = 0;
 
   private getTerrainHeight: (x: number, z: number) => number;
 
@@ -535,7 +535,7 @@ export class PreyEntity {
     }
 
     // Calculate movement direction
-    let moveAngle = this.wanderAngle;
+    const moveAngle = this.wanderAngle;
     let speed = this.config.speed * 0.5;
 
     if (this.isFleeing) {

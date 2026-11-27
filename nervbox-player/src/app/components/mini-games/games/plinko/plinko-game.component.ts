@@ -54,9 +54,10 @@ import { GAME_INFO } from '../../game-info';
         <div class="settings-panel">
           <!-- Bet Amount -->
           <div class="setting-group">
-            <label class="setting-label">EINSATZ</label>
+            <label class="setting-label" for="plinko-bet">EINSATZ</label>
             <div class="bet-input-wrapper">
               <input
+                id="plinko-bet"
                 type="number"
                 class="bet-input"
                 [(ngModel)]="betAmountInput"
@@ -130,7 +131,7 @@ import { GAME_INFO } from '../../game-info';
           <!-- History -->
           @if (history().length > 0) {
             <div class="history">
-              <label class="setting-label">LETZTE WÜRFE</label>
+              <span class="setting-label">LETZTE WÜRFE</span>
               <div class="history-items">
                 @for (item of history(); track $index) {
                   <span class="history-item" [style.color]="item.color">
@@ -156,7 +157,7 @@ import { GAME_INFO } from '../../game-info';
       />
     </app-game-frame>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     /* Spiel-UI im eigenen Look; Gehaeuse kommt aus app-game-frame */
     .game-content {

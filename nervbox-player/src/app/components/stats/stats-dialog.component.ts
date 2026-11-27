@@ -109,7 +109,7 @@ import { TopSound, TopUser } from '../../core/models';
       }
     }
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StatsDialogComponent implements OnInit {
   private readonly soundService = inject(SoundService);

@@ -87,7 +87,7 @@ import { AuthService } from '../../core/services/auth.service';
       font: 500 15px var(--nk-font-ui);
     }
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginDialogComponent {
   private readonly authService = inject(AuthService);

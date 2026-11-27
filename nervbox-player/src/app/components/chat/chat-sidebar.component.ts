@@ -2,7 +2,6 @@ import {
   Component,
   inject,
   OnInit,
-  OnDestroy,
   signal,
   computed,
   ElementRef,
@@ -78,7 +77,7 @@ type ChatTab = 'chat' | 'activity';
 
       <div class="nk-printer__feed">
         @if (activeTab() === 'chat' && showGifPicker()) {
-          <app-gif-picker class="chat-gifpicker" (gifSelected)="onGifSelected($event)" (close)="showGifPicker.set(false)" />
+          <app-gif-picker class="chat-gifpicker" (gifSelected)="onGifSelected($event)" (closed)="showGifPicker.set(false)" />
         }
         @if (loading()) {
           <div class="nk-printer__paper chat-paper chat-loading">
@@ -175,7 +174,7 @@ type ChatTab = 'chat' | 'activity';
                 [disabled]="sending()"
               />
             </label>
-            <button type="submit" class="nk-key nk-key--sm nk-key--icon" aria-label="Senden" [disabled]="!newMessage.trim() || sending()">
+            <button type="submit" class="nk-key nk-key--sm nk-key--icon" aria-label="Senden" [disabled]="!newMessage().trim() || sending()">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l16-8-6 16-3-7-7-1z"></path></svg>
             </button>
           </form>
@@ -268,9 +267,9 @@ type ChatTab = 'chat' | 'activity';
       z-index: 5;
     }
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked {
+export class ChatSidebarComponent implements OnInit, AfterViewChecked {
   readonly signalR = inject(SignalRService);
   readonly auth = inject(AuthService);
   private readonly api = inject(ApiService);
@@ -289,7 +288,7 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
   readonly hasMoreChat = signal(false);
   readonly hasMoreActivity = signal(false);
   readonly activeTab = signal<ChatTab>('chat');
-  newMessage = '';
+  readonly newMessage = signal('');
 
   // Filtered messages - chat only (text + gif, not system notifications)
   readonly chatMessages = computed(() => {
@@ -368,10 +367,6 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
     }
   }
 
-  ngOnDestroy(): void {
-    // Don't disconnect - other components might use it
-  }
-
   private loadMessages(): void {
     this.api
       .get<{
@@ -429,12 +424,13 @@ export class ChatSidebarComponent implements OnInit, OnDestroy, AfterViewChecked
   }
 
   async sendMessage(): Promise<void> {
-    if (!this.newMessage.trim() || this.sending()) return;
+    const text = this.newMessage().trim();
+    if (!text || this.sending()) return;
 
     this.sending.set(true);
     try {
-      await this.signalR.sendChatMessage(this.newMessage.trim());
-      this.newMessage = '';
+      await this.signalR.sendChatMessage(text);
+      this.newMessage.set('');
       this.shouldScrollToBottom = true;
     } catch {
       // Error handling in service

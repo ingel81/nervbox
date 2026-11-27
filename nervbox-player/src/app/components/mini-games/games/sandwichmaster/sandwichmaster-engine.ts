@@ -7,7 +7,7 @@ export class SandwichmasterEngine {
   private height: number;
   private particleSystem: ParticleSystem;
   private layers: SandwichLayer[] = [];
-  private emitters: Map<string, ParticleEmitter> = new Map();
+  private emitters = new Map<string, ParticleEmitter>();
 
   // Sandwich rendering config
   private readonly SANDWICH_BASE_Y: number;
@@ -190,7 +190,7 @@ export class SandwichmasterEngine {
     }
   }
 
-  private drawLayer(layer: SandwichLayer, index: number): void {
+  private drawLayer(layer: SandwichLayer, _index: number): void {
     const x = this.SANDWICH_CENTER_X - layer.width / 2;
     const y = layer.y;
     const isEpic = layer.ingredient.category === 'epic';

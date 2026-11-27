@@ -123,7 +123,7 @@ const SPRITES = {
       />
     </app-game-frame>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     /* Spielfeld: eigener Look des Spiels; Gehaeuse/Overlays kommen aus app-game-frame / app-game-overlay */
     .canvas-container {
@@ -886,7 +886,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
 
     let x = this.slingshot.pullPos.x;
     let y = this.slingshot.pullPos.y;
-    let velocityX = vx;
+    const velocityX = vx;
     let velocityY = vy;
 
     // Draw trajectory dots - weniger Punkte = schwieriger zu zielen
@@ -926,7 +926,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
     const power = Math.sqrt(dx * dx + dy * dy) * 0.15;
     const angle = Math.atan2(dy, dx);
 
-    let vx = Math.cos(angle) * power;
+    const vx = Math.cos(angle) * power;
     let vy = Math.sin(angle) * power;
     const gravity = 0.3;
 
@@ -967,9 +967,8 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
       // Early exit wenn bereits ein Hit verarbeitet wird
       if (!this.isFlying) return;
 
-      let hitThisFrame = false;
       for (const target of this.targets) {
-        if (target.hit || hitThisFrame) continue;
+        if (target.hit) continue;
 
         const targetPos = target.obj['pos'] as Vec2;
         const dist = Math.sqrt(Math.pow(x - targetPos.x, 2) + Math.pow(y - targetPos.y, 2));
@@ -981,7 +980,6 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
           // SOFORT stoppen um doppelte Hits zu verhindern
           this.isFlying = false;
           target.hit = true;
-          hitThisFrame = true; // Hotdog kann nur EINE Person treffen
           this.roundTargetsHit++;
           this.score.update((s) => s + target.points);
 

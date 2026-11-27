@@ -51,7 +51,7 @@ interface Particle {
     GameFrameComponent,
   ],
   templateUrl: './slot-machine-game.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./slot-machine-game.component.scss'],
 })
 export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -63,7 +63,7 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
   readonly info = GAME_INFO.slot;
   private stopFit?: () => void;
   private ctx!: CanvasRenderingContext2D;
-  private animationFrame: number = 0;
+  private animationFrame = 0;
 
   // Symbols (indices must match backend: 0-6 original + 7=hotdog)
   readonly symbols: SlotSymbol[] = [

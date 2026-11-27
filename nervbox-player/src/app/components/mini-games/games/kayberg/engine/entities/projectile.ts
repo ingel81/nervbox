@@ -4,14 +4,14 @@ export class ProjectileEntity {
   mesh: THREE.Group;
   position: THREE.Vector3;
   velocity: THREE.Vector3;
-  isActive: boolean = true;
-  damage: number = 1;
+  isActive = true;
+  damage = 1;
 
-  private lifetime: number = 5000; // ms
-  private age: number = 0;
+  private lifetime = 5000; // ms
+  private age = 0;
   private trail: THREE.Points;
 
-  constructor(position: THREE.Vector3, direction: THREE.Vector3, speed: number = 40) {
+  constructor(position: THREE.Vector3, direction: THREE.Vector3, speed = 40) {
     this.position = position.clone();
     this.velocity = direction.normalize().multiplyScalar(speed);
 

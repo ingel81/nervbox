@@ -8,7 +8,7 @@
   [pausable]="true"
   [pauseDisabled]="gameState() !== 'playing'"
   hint="ESC = Beenden? | Klicken zum Steuern"
-  (pause)="togglePause()"
+  (pauseToggle)="togglePause()"
   (closed)="confirmExit()"
 >
   <!-- Game Canvas -->

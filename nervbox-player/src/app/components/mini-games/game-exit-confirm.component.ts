@@ -17,7 +17,7 @@ import {
 @Component({
   selector: 'app-game-exit-confirm',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (isOpen()) {
       <div class="gx-backdrop" (click)="resume()">

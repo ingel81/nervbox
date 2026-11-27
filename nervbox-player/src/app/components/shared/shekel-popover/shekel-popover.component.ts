@@ -72,13 +72,13 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
             </label>
             <div class="sk-quick">
               @for (a of transferQuick; track a) {
-                <button type="button" [class]="transferAmount === a ? 'nk-key nk-key--sm nk-key--pressed' : 'nk-key nk-key--sm'" [disabled]="creditService.credits() < a" (click)="setTransferAmount(a)">{{ a }}</button>
+                <button type="button" [class]="transferAmount() === a ? 'nk-key nk-key--sm nk-key--pressed' : 'nk-key nk-key--sm'" [disabled]="creditService.credits() < a" (click)="setTransferAmount(a)">{{ a }}</button>
               }
             </div>
             <button
               type="button"
               class="nk-key nk-key--accent nk-key--lg sk-go"
-              [disabled]="isTransferring() || !selectedUserId || transferAmount <= 0 || transferAmount > creditService.credits()"
+              [disabled]="isTransferring() || !selectedUserId() || transferAmount() <= 0 || transferAmount() > creditService.credits()"
               (click)="transfer()"
             >
               @if (isTransferring()) {
@@ -107,14 +107,14 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
           </label>
           <div class="sk-quick">
             @for (a of gambleQuick; track a) {
-              <button type="button" [class]="gambleAmount === a ? 'nk-key nk-key--sm nk-key--pressed' : 'nk-key nk-key--sm'" [disabled]="creditService.credits() < a" (click)="setGambleAmount(a)">{{ a }}</button>
+              <button type="button" [class]="gambleAmount() === a ? 'nk-key nk-key--sm nk-key--pressed' : 'nk-key nk-key--sm'" [disabled]="creditService.credits() < a" (click)="setGambleAmount(a)">{{ a }}</button>
             }
             <button type="button" class="nk-key nk-key--sm sk-allin" (click)="setGambleAmount(creditService.credits())">ALL IN!</button>
           </div>
           <button
             type="button"
             class="nk-key nk-key--danger nk-key--lg sk-go"
-            [disabled]="isGambling() || gambleAmount <= 0 || gambleAmount > creditService.credits()"
+            [disabled]="isGambling() || gambleAmount() <= 0 || gambleAmount() > creditService.credits()"
             (click)="gamble()"
           >
             @if (isGambling()) {
@@ -218,7 +218,7 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
       font-size: 18px;
     }
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ShekelPopoverComponent implements OnInit {
   readonly creditService = inject(CreditService);
@@ -230,13 +230,13 @@ export class ShekelPopoverComponent implements OnInit {
   readonly gambleQuick = [10, 25, 50, 100];
 
   // Gambling state
-  gambleAmount = 10;
+  readonly gambleAmount = signal(10);
   readonly isGambling = signal(false);
   readonly gambleResult = signal<{ won: boolean; message: string } | null>(null);
 
   // Transfer state
-  selectedUserId: number | null = null;
-  transferAmount = 5;
+  readonly selectedUserId = signal<number | null>(null);
+  readonly transferAmount = signal(5);
   readonly isTransferring = signal(false);
   readonly isLoadingUsers = signal(false);
   readonly users = signal<TransferableUser[]>([]);
@@ -251,11 +251,11 @@ export class ShekelPopoverComponent implements OnInit {
   }
 
   setGambleAmount(amount: number): void {
-    this.gambleAmount = amount;
+    this.gambleAmount.set(amount);
   }
 
   setTransferAmount(amount: number): void {
-    this.transferAmount = amount;
+    this.transferAmount.set(amount);
   }
 
   loadUsers(): void {
@@ -273,14 +273,14 @@ export class ShekelPopoverComponent implements OnInit {
   }
 
   gamble(): void {
-    if (this.gambleAmount <= 0 || this.gambleAmount > this.creditService.credits()) {
+    if (this.gambleAmount() <= 0 || this.gambleAmount() > this.creditService.credits()) {
       return;
     }
 
     this.isGambling.set(true);
     this.gambleResult.set(null);
 
-    this.creditService.gamble(this.gambleAmount).subscribe({
+    this.creditService.gamble(this.gambleAmount()).subscribe({
       next: (response) => {
         this.gambleResult.set({
           won: response.won,
@@ -299,18 +299,16 @@ export class ShekelPopoverComponent implements OnInit {
   }
 
   transfer(): void {
-    if (
-      !this.selectedUserId ||
-      this.transferAmount <= 0 ||
-      this.transferAmount > this.creditService.credits()
-    ) {
+    const recipientId = this.selectedUserId();
+    const amount = this.transferAmount();
+    if (!recipientId || amount <= 0 || amount > this.creditService.credits()) {
       return;
     }
 
     this.isTransferring.set(true);
     this.transferResult.set(null);
 
-    this.creditService.transfer(this.selectedUserId, this.transferAmount).subscribe({
+    this.creditService.transfer(recipientId, amount).subscribe({
       next: (response) => {
         this.transferResult.set({
           success: response.success,
@@ -319,8 +317,8 @@ export class ShekelPopoverComponent implements OnInit {
         this.isTransferring.set(false);
         // Reset form on success
         if (response.success) {
-          this.selectedUserId = null;
-          this.transferAmount = 5;
+          this.selectedUserId.set(null);
+          this.transferAmount.set(5);
         }
       },
       error: (err) => {

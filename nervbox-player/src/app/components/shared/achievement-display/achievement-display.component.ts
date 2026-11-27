@@ -131,7 +131,7 @@ import {
       font-size: 24px;
     }
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AchievementDisplayComponent implements OnInit, OnChanges {
   @Input() userId!: number;

@@ -7,8 +7,8 @@ export class HunterEntity {
   position: THREE.Vector3;
   velocity: THREE.Vector3;
 
-  canShoot: boolean = true;
-  lastShotTime: number = 0;
+  canShoot = true;
+  lastShotTime = 0;
   fireRate: number; // ms between shots
   targetPosition: THREE.Vector3;
 

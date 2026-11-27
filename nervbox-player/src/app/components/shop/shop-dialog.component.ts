@@ -147,7 +147,7 @@ interface ShopItem {
       }
     }
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ShopDialogComponent {
   readonly creditService = inject(CreditService);

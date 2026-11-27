@@ -12,24 +12,24 @@ export class PlayerBirdEntity {
   position: THREE.Vector3;
   velocity: THREE.Vector3;
 
-  lives: number = 3;
-  isInvincible: boolean = false;
-  isDiving: boolean = false;
+  lives = 3;
+  isInvincible = false;
+  isDiving = false;
 
   // Rotation
-  pitch: number = 0; // nose up/down
-  yaw: number = 0; // left/right
-  roll: number = 0; // banking
+  pitch = 0; // nose up/down
+  yaw = 0; // left/right
+  roll = 0; // banking
 
   // Animation
-  private wingAngle: number = 0;
+  private wingAngle = 0;
   private leftWing!: THREE.Mesh;
   private rightWing!: THREE.Mesh;
-  private invincibilityTimer: number = 0;
+  private invincibilityTimer = 0;
 
   // Movement
-  private targetPitch: number = 0;
-  private targetYaw: number = 0;
+  private targetPitch = 0;
+  private targetYaw = 0;
   private speed: number = PLAYER_SPEED;
 
   constructor() {
