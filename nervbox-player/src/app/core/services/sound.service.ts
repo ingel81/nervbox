@@ -4,6 +4,7 @@ import { ApiService } from './api.service';
 import { Sound, SoundUpdateRequest, Tag, TopSound, TopUser } from '../models';
 import { CreditService } from './credit.service';
 import { ConfigService } from './config.service';
+import { LoudnessService } from './loudness.service';
 
 interface PlaySoundResponse {
   creditsRemaining: number;
@@ -16,6 +17,7 @@ export class SoundService {
   private readonly api = inject(ApiService);
   private readonly creditService = inject(CreditService);
   private readonly configService = inject(ConfigService);
+  private readonly loudness = inject(LoudnessService);
 
   // State
   readonly sounds = signal<Sound[]>([]);
@@ -63,6 +65,7 @@ export class SoundService {
    */
   playInBrowser(hash: string): void {
     const audio = new Audio(this.api.getFullUrl(`/sound/${hash}/file`));
+    audio.volume = this.loudness.gain(hash);
     audio.play().catch(err => console.warn('Browser audio playback failed:', err));
   }
 
@@ -79,6 +82,7 @@ export class SoundService {
    */
   preloadForBrowser(hash: string): HTMLAudioElement {
     const audio = new Audio(this.api.getFullUrl(`/sound/${hash}/file`));
+    audio.volume = this.loudness.gain(hash);
     audio.preload = 'auto';
     audio.load();
     return audio;

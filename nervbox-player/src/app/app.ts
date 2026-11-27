@@ -28,6 +28,7 @@ import { ChannelStripComponent } from './components/channels/channel-strip.compo
 import { MobileBarComponent, MobileAction, MobileView } from './components/mobile/mobile-bar.component';
 import { NowPlayingService } from './core/services/now-playing.service';
 import { SoundService } from './core/services/sound.service';
+import { LoudnessService } from './core/services/loudness.service';
 import { AuthService } from './core/services/auth.service';
 import { SignalRService } from './core/services/signalr.service';
 import { SelectionService } from './core/services/selection.service';
@@ -256,6 +257,7 @@ import { Sound } from './core/models';
 })
 export class App implements OnInit {
   readonly soundService = inject(SoundService);
+  private readonly loudness = inject(LoudnessService);
   readonly authService = inject(AuthService);
   readonly selectionService = inject(SelectionService);
   readonly welcomeTour = inject(WelcomeTourService);
@@ -469,6 +471,7 @@ export class App implements OnInit {
       case 'admin-wizard': void this.onAdminMenuAction('tag-wizard'); return;
       case 'admin-credits': void this.onAdminMenuAction('credits'); return;
       case 'admin-tts': void this.onAdminMenuAction('tts'); return;
+      case 'admin-loudness': this.loudness.configure(!this.loudness.enabled()).subscribe(); return;
       case 'kill-all': void this.onKillAll(); return;
     }
   }

@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, computed, inject, input, output, signal } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { AuthService } from '../../core/services/auth.service';
+import { LoudnessService } from '../../core/services/loudness.service';
 import { NowPlayingService, CHANNEL_COUNT } from '../../core/services/now-playing.service';
 import { ShopDialogComponent } from '../shop/shop-dialog.component';
 
@@ -21,6 +22,7 @@ export type MobileAction =
   | 'admin-wizard'
   | 'admin-credits'
   | 'admin-tts'
+  | 'admin-loudness'
   | 'kill-all';
 
 interface MenuItem {
@@ -191,6 +193,7 @@ export class MobileBarComponent {
   readonly auth = inject(AuthService);
   readonly nowPlaying = inject(NowPlayingService);
   private readonly dialog = inject(MatDialog);
+  private readonly loudness = inject(LoudnessService);
 
   readonly view = input<MobileView>('sounds');
   readonly viewChange = output<MobileView>();
@@ -251,6 +254,7 @@ export class MobileBarComponent {
           { action: 'admin-wizard', label: 'Tag-Wizard', icon: I.wand },
           { action: 'admin-credits', label: 'Shekel-Einstellungen', icon: I.coins },
           { action: 'admin-tts', label: 'Sprachausgabe (Test)', icon: I.voice },
+          { action: 'admin-loudness', label: `Lautstärke angleichen: ${this.loudness.enabled() ? 'an' : 'aus'}`, icon: I.voice },
           { action: 'kill-all', label: 'Alle Sounds stoppen', icon: I.stop, danger: true },
         ],
       });

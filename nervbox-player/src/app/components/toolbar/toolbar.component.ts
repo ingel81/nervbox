@@ -8,6 +8,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { AuthService } from '../../core/services/auth.service';
 import { FavoritesService } from '../../core/services/favorites.service';
 import { CreditService } from '../../core/services/credit.service';
+import { LoudnessService } from '../../core/services/loudness.service';
 import { AvatarService } from '../../core/services/avatar.service';
 import { AchievementService } from '../../core/services/achievement.service';
 import { InventoryService } from '../../core/services/inventory.service';
@@ -316,6 +317,7 @@ const KNOB_ANGLE: Record<SortOption, number> = {
             <button mat-menu-item (click)="adminMenuAction.emit('tag-wizard')"><mat-icon>auto_fix_high</mat-icon><span>Tag-Wizard</span></button>
             <button mat-menu-item (click)="adminMenuAction.emit('credits')"><mat-icon>savings</mat-icon><span>Shekel-Einstellungen</span></button>
             <button mat-menu-item (click)="adminMenuAction.emit('tts')"><mat-icon>record_voice_over</mat-icon><span>Sprachausgabe (Test)</span></button>
+            <button mat-menu-item (click)="toggleLoudness()" [attr.aria-pressed]="loudness.enabled()"><mat-icon>equalizer</mat-icon><span>Lautstärke angleichen: {{ loudness.enabled() ? 'an' : 'aus' }}</span></button>
             <mat-divider></mat-divider>
             <button mat-menu-item class="nk-menu-danger" (click)="killAllClick.emit()"><mat-icon>stop_circle</mat-icon><span>Alle Sounds stoppen</span></button>
           </mat-menu>
@@ -573,6 +575,7 @@ export class ToolbarComponent {
   readonly auth = inject(AuthService);
   readonly favorites = inject(FavoritesService);
   readonly creditService = inject(CreditService);
+  readonly loudness = inject(LoudnessService);
   readonly avatarService = inject(AvatarService);
   readonly inventoryService = inject(InventoryService);
   private readonly dialog = inject(MatDialog);
@@ -692,5 +695,10 @@ export class ToolbarComponent {
       maxWidth: '95vw',
       panelClass: 'dark-dialog',
     });
+  }
+
+  /** Admin: switch playback loudness normalization (Pi + browsers) on/off */
+  toggleLoudness(): void {
+    this.loudness.configure(!this.loudness.enabled()).subscribe();
   }
 }

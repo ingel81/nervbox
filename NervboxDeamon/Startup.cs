@@ -141,6 +141,7 @@ namespace NervboxDeamon
       services.AddSingleton<ISshService, SSHService>();
       services.AddSingleton<ISystemService, SystemService>();
       services.AddSingleton<ISoundService, SoundService>();
+      services.AddSingleton<ILoudnessService, LoudnessService>();
       services.AddSingleton<IGiphyService, GiphyService>();
       services.AddSingleton<ICreditService, CreditService>();
       services.AddSingleton<IAchievementService, AchievementService>();

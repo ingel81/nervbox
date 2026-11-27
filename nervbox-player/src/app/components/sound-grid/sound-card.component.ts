@@ -21,6 +21,7 @@ import { VoteService } from '../../core/services/vote.service';
 import { PadPlayState } from '../../core/services/now-playing.service';
 import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component';
 import { tagToneStyle } from '../../shared/tag-tone';
+import { LoudnessService } from '../../core/services/loudness.service';
 
 export type PadVariant = 'normal' | 'wide' | 'xl';
 
@@ -198,6 +199,7 @@ export class SoundCardComponent {
   private readonly achievementService = inject(AchievementService);
   private readonly api = inject(ApiService);
   private readonly voteService = inject(VoteService);
+  private readonly loudness = inject(LoudnessService);
 
   readonly sound = input.required<Sound>();
   readonly tagColors = input<Record<string, string>>({});
@@ -372,7 +374,7 @@ export class SoundCardComponent {
   playInBrowser(): void {
     const url = this.api.getFullUrl(`/sound/${this.sound().hash}/file`);
     const audio = new Audio(url);
-    audio.volume = 0.7;
+    audio.volume = 0.7 * this.loudness.gain(this.sound().hash);
     audio.play().catch(err => console.warn('Browser audio playback failed:', err));
   }
 

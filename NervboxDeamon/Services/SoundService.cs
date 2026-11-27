@@ -88,6 +88,7 @@ namespace NervboxDeamon.Services
     private IWebHostEnvironment Environment { get; }
     private ICreditService CreditService { get; set; }
     private IAchievementService AchievementService { get; set; }
+    private ILoudnessService Loudness { get; set; }
 
     //member
     public ConcurrentDictionary<int, User> UserLookup { private set; get; } = new ConcurrentDictionary<int, User>();
@@ -171,6 +172,7 @@ namespace NervboxDeamon.Services
     {
       if (!keepRunning) return;
       keepRunning = false;
+      Loudness?.Stop();
       stopSignal.Set();
       LoggingThread?.Join(TimeSpan.FromSeconds(5));
     }
@@ -182,6 +184,7 @@ namespace NervboxDeamon.Services
       // Get CreditService from DI (can't inject in constructor due to circular dependency)
       CreditService = serviceProvider.GetRequiredService<ICreditService>();
       AchievementService = serviceProvider.GetRequiredService<IAchievementService>();
+      Loudness = serviceProvider.GetRequiredService<ILoudnessService>();
 
       var appSettingsSection = Configuration.GetSection("AppSettings");
       appSettings = appSettingsSection.Get<AppSettings>();
@@ -330,6 +333,9 @@ namespace NervboxDeamon.Services
         // Load all enabled sounds
         this.Sounds = db.Sounds.Where(s => s.Enabled).ToDictionary(s => s.Hash, s => s);
       }
+
+      // Measure playback loudness of new sounds in the background (files are only read)
+      Loudness.Start(SoundDirectory.FullName, this.Sounds.Values.Select(s => (s.Hash, s.FileName)));
     }
 
 
@@ -389,13 +395,13 @@ namespace NervboxDeamon.Services
           {
             path = SoundDirectoryDebugPlay;
           }
-          this.SshService.SendCmd($"mpg123 -q --no-control {path}/{sound.FileName.Replace("!", "\\!").Replace(" ", "\\ ")} &");
+          this.SshService.SendCmd($"mpg123 -q --no-control -f {Mpg123Scale(sound.Hash)} {path}/{sound.FileName.Replace("!", "\\!").Replace(" ", "\\ ")} &");
         }
         else
         {
           // Lokal abspielen
           var localPath = Path.Combine(SoundDirectory.FullName, sound.FileName);
-          PlayLocal(localPath);
+          PlayLocal(localPath, Loudness.GetGain(sound.Hash));
         }
 
         var usage = new SoundUsage()
@@ -456,7 +462,10 @@ namespace NervboxDeamon.Services
       return true;
     }
 
-    private void PlayLocal(string filePath)
+    /// <summary>mpg123 output scale (32768 = unchanged) for the sound's normalization gain</summary>
+    private int Mpg123Scale(string hash) => (int)Math.Round(32768 * (Loudness?.GetGain(hash) ?? 1.0));
+
+    private void PlayLocal(string filePath, double gain = 1.0)
     {
       try
       {
@@ -467,7 +476,7 @@ namespace NervboxDeamon.Services
         }
         var args = player switch
         {
-          "mpg123" => $"-q \"{filePath}\"",
+          "mpg123" => gain < 1.0 ? $"-q -f {(int)Math.Round(32768 * gain)} \"{filePath}\"" : $"-q \"{filePath}\"",
           "ffplay" => $"-nodisp -autoexit -loglevel quiet \"{filePath}\"",
           "cvlc" => $"--play-and-exit --quiet \"{filePath}\"",
           "aplay" => $"-q \"{filePath}\"",
