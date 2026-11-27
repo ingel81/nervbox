@@ -1,0 +1,13 @@
+[Unit]
+Description=Nervbox TTS (Piper)
+After=network.target
+
+[Service]
+User=user
+ExecStart=/opt/piper/venv/bin/python /opt/piper/tts_server.py
+Restart=on-failure
+Nice=5
+MemoryMax=1500M
+
+[Install]
+WantedBy=multi-user.target

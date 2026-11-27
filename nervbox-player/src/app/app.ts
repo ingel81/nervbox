@@ -468,6 +468,7 @@ export class App implements OnInit {
       case 'admin-tags': void this.onAdminMenuAction('tags'); return;
       case 'admin-wizard': void this.onAdminMenuAction('tag-wizard'); return;
       case 'admin-credits': void this.onAdminMenuAction('credits'); return;
+      case 'admin-tts': void this.onAdminMenuAction('tts'); return;
       case 'kill-all': void this.onKillAll(); return;
     }
   }
@@ -512,8 +513,13 @@ export class App implements OnInit {
     });
   }
 
-  async onAdminMenuAction(action: 'users' | 'tags' | 'tag-wizard' | 'credits'): Promise<void> {
+  async onAdminMenuAction(action: 'users' | 'tags' | 'tag-wizard' | 'credits' | 'tts'): Promise<void> {
     switch (action) {
+      case 'tts': {
+        const { TtsTestDialogComponent } = await import('./components/admin/tts-test-dialog.component');
+        this.dialog.open(TtsTestDialogComponent, { maxWidth: '95vw', panelClass: 'dark-dialog' });
+        break;
+      }
       case 'users': {
         const { UserManagementDialogComponent } =
           await import('./components/admin/user-management-dialog.component');

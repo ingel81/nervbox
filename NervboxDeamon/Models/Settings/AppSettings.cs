@@ -39,6 +39,11 @@ namespace NervboxDeamon.Models.Settings
     /// </summary>
     public PlaybackMode PlaybackMode { get; set; } = PlaybackMode.Local;
 
+    /// <summary>
+    /// Base URL of the local Piper TTS service (pi-setup/tts). Empty = TTS disabled.
+    /// </summary>
+    public string TtsUrl { get; set; } = "http://127.0.0.1:5002";
+
     public SSHSettings SSH { get; set; }
     public CameraSettings Camera1 { get; set; }
   }

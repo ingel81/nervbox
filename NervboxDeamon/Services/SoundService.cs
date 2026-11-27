@@ -38,6 +38,8 @@ namespace NervboxDeamon.Services
     void Shutdown();
     PlaySoundResult PlaySound(string soundId, int userId);
     void KillAll();
+    /// <summary>Play an arbitrary audio file on the server speakers (Local mode only).</summary>
+    bool PlayFile(string filePath);
     void AddSoundToCache(Sound sound);
     void UpdateSoundEnabledStatus(string hash, bool enabled);
     void RemoveSoundFromCache(string hash);
@@ -447,16 +449,28 @@ namespace NervboxDeamon.Services
       return PlaySoundResult.Ok(creditsRemaining);
     }
 
+    public bool PlayFile(string filePath)
+    {
+      if (appSettings.PlaybackMode != PlaybackMode.Local || appSettings.SSH?.Enabled == true) return false;
+      PlayLocal(filePath);
+      return true;
+    }
+
     private void PlayLocal(string filePath)
     {
       try
       {
         var player = appSettings.LocalPlayer ?? "mpg123";
+        if (filePath.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) && player == "mpg123")
+        {
+          player = "aplay"; // mpg123 cannot decode WAV
+        }
         var args = player switch
         {
           "mpg123" => $"-q \"{filePath}\"",
           "ffplay" => $"-nodisp -autoexit -loglevel quiet \"{filePath}\"",
           "cvlc" => $"--play-and-exit --quiet \"{filePath}\"",
+          "aplay" => $"-q \"{filePath}\"",
           _ => $"-q \"{filePath}\""
         };
 

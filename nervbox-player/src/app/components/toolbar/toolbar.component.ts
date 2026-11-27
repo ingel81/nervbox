@@ -315,6 +315,7 @@ const KNOB_ANGLE: Record<SortOption, number> = {
             <button mat-menu-item (click)="adminMenuAction.emit('tags')"><mat-icon>label</mat-icon><span>Tag-Verwaltung</span></button>
             <button mat-menu-item (click)="adminMenuAction.emit('tag-wizard')"><mat-icon>auto_fix_high</mat-icon><span>Tag-Wizard</span></button>
             <button mat-menu-item (click)="adminMenuAction.emit('credits')"><mat-icon>savings</mat-icon><span>Shekel-Einstellungen</span></button>
+            <button mat-menu-item (click)="adminMenuAction.emit('tts')"><mat-icon>record_voice_over</mat-icon><span>Sprachausgabe (Test)</span></button>
             <mat-divider></mat-divider>
             <button mat-menu-item class="nk-menu-danger" (click)="killAllClick.emit()"><mat-icon>stop_circle</mat-icon><span>Alle Sounds stoppen</span></button>
           </mat-menu>
@@ -623,7 +624,7 @@ export class ToolbarComponent {
   readonly sortChange = output<SortOption>();
   readonly favoritesFilterToggle = output<void>();
   readonly killAllClick = output<void>();
-  readonly adminMenuAction = output<'users' | 'tags' | 'tag-wizard' | 'credits'>();
+  readonly adminMenuAction = output<'users' | 'tags' | 'tag-wizard' | 'credits' | 'tts'>();
   readonly statsClick = output<void>();
   readonly chatClick = output<void>();
   readonly loginClick = output<void>();

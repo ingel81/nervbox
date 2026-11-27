@@ -20,6 +20,7 @@ export type MobileAction =
   | 'admin-tags'
   | 'admin-wizard'
   | 'admin-credits'
+  | 'admin-tts'
   | 'kill-all';
 
 interface MenuItem {
@@ -218,6 +219,7 @@ export class MobileBarComponent {
     wand: 'M4 20L16 8M14 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z',
     coins: 'M5 8a7 3 0 1014 0 7 3 0 10-14 0zM5 8v8c0 1.7 3 3 7 3s7-1.3 7-3V8',
     stop: 'M6 6h12v12H6z',
+    voice: 'M9 9a3 3 0 106 0V5a3 3 0 10-6 0zM5 10a7 7 0 0014 0M12 17v4M8 21h8',
   };
 
   readonly groups = computed(() => {
@@ -248,6 +250,7 @@ export class MobileBarComponent {
           { action: 'admin-tags', label: 'Tag-Verwaltung', icon: I.tag },
           { action: 'admin-wizard', label: 'Tag-Wizard', icon: I.wand },
           { action: 'admin-credits', label: 'Shekel-Einstellungen', icon: I.coins },
+          { action: 'admin-tts', label: 'Sprachausgabe (Test)', icon: I.voice },
           { action: 'kill-all', label: 'Alle Sounds stoppen', icon: I.stop, danger: true },
         ],
       });
