@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs>
+<radialGradient id="bg" cx="50%" cy="42%" r="75%"><stop offset="0" stop-color="#2C2A25"/><stop offset="1" stop-color="#12110E"/></radialGradient>
+<linearGradient id="side" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3E382F"/><stop offset="1" stop-color="#26221C"/></linearGradient>
+<linearGradient id="top" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7A705E"/><stop offset="1" stop-color="#554D40"/></linearGradient>
+<radialGradient id="lit" cx="50%" cy="50%" r="55%"><stop offset="0" stop-color="#6EF0A0" stop-opacity=".55"/><stop offset=".6" stop-color="#6EF0A0" stop-opacity=".16"/><stop offset="1" stop-color="#6EF0A0" stop-opacity="0"/></radialGradient>
+<filter id="blur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="14"/></filter>
+</defs>
+<rect width="512" height="512" rx="112" fill="url(#bg)"/>
+<rect x="98" y="96" width="316" height="324" rx="54" fill="#050504"/>
+<rect x="116" y="128" width="280" height="272" rx="40" fill="url(#side)"/>
+<rect x="116" y="112" width="280" height="262" rx="40" fill="url(#top)"/>
+<rect x="117.500" y="113.500" width="277" height="259" rx="38.500" fill="none" stroke="#B4A88C" stroke-opacity=".45" stroke-width="3"/>
+<rect x="116" y="112" width="280" height="262" rx="40" fill="url(#lit)"/>
+<path d="M186 330V172h34l72 98V172h34v158h-34l-72-98v98z" fill="#6EF0A0" filter="url(#blur)" opacity=".9" transform="translate(0 -4)"/>
+<path d="M186 330V172h34l72 98V172h34v158h-34l-72-98v98z" fill="#8CF5B6" transform="translate(0 -4)"/>
+</svg>
