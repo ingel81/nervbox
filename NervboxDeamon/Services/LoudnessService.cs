@@ -22,6 +22,8 @@ namespace NervboxDeamon.Services
     double TargetDb { get; }
     /// <summary>Start measuring missing sounds in the background (Local mode with mpg123 only).</summary>
     void Start(string soundDirectory, IEnumerable<(string Hash, string FileName)> sounds);
+    /// <summary>Measure one newly added sound in the background.</summary>
+    void Add(string hash, string fileName);
     /// <summary>Linear gain (0..1] for a sound; 1 when disabled or unknown.</summary>
     double GetGain(string hash);
     /// <summary>All gains below 1 (others are implicitly 1).</summary>
@@ -73,6 +75,8 @@ namespace NervboxDeamon.Services
     private volatile bool _measuring;
     private int _total;
     private Thread _worker;
+    private string _soundDirectory;
+    private bool _canMeasure;
 
     public LoudnessService(ILogger<LoudnessService> logger)
     {
@@ -84,6 +88,8 @@ namespace NervboxDeamon.Services
 
     public void Start(string soundDirectory, IEnumerable<(string Hash, string FileName)> sounds)
     {
+      _soundDirectory = soundDirectory;
+      _canMeasure = HasMpg123();
       var dir = new DirectoryInfo(soundDirectory);
       _storePath = Path.Combine(dir.Parent?.FullName ?? dir.FullName, "loudness.json");
       Load();
@@ -92,7 +98,7 @@ namespace NervboxDeamon.Services
       _total = list.Count;
       var missing = list.Where(s => !_entries.ContainsKey(s.Hash)).ToList();
       if (missing.Count == 0) return;
-      if (!HasMpg123())
+      if (!_canMeasure)
       {
         _logger.LogInformation("Loudness: mpg123 not available, {Count} sounds stay unmeasured", missing.Count);
         return;
@@ -108,6 +114,13 @@ namespace NervboxDeamon.Services
     }
 
     public void Stop() => _stop = true;
+
+    public void Add(string hash, string fileName)
+    {
+      if (!_canMeasure || hash == null || _entries.ContainsKey(hash)) return;
+      _total++;
+      System.Threading.Tasks.Task.Run(() => Measure(_soundDirectory, new List<(string, string)> { (hash, fileName) }));
+    }
 
     public double GetGain(string hash)
     {

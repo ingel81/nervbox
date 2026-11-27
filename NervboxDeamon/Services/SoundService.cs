@@ -549,6 +549,7 @@ namespace NervboxDeamon.Services
       {
         this.Sounds[sound.Hash] = sound;
         Logger.LogInformation($"Added sound to cache: {sound.Name} ({sound.Hash})");
+        Loudness?.Add(sound.Hash, sound.FileName);
       }
     }
 
