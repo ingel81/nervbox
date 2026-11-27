@@ -31,6 +31,8 @@ import {
 } from './ingredients';
 import { CreditService } from '../../../../core/services/credit.service';
 import { ApiService } from '../../../../core/services/api.service';
+import { GameExitConfirmComponent } from '../../game-exit-confirm.component';
+import { fitCanvas } from '../../game-shared';
 
 @Component({
   selector: 'app-sandwichmaster-game',
@@ -42,9 +44,10 @@ import { ApiService } from '../../../../core/services/api.service';
     MatIconModule,
     MatTabsModule,
     MatTooltipModule,
+    GameExitConfirmComponent,
   ],
   template: `
-    <div class="sandwichmaster-container">
+    <div class="sandwichmaster-container" #root>
       <!-- Header -->
       <div class="game-header">
         <div class="header-left">
@@ -262,6 +265,8 @@ import { ApiService } from '../../../../core/services/api.service';
           </div>
         </div>
       }
+
+      <app-game-exit-confirm [hint]="exitHint()" (exit)="exitGame()" />
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -272,7 +277,7 @@ import { ApiService } from '../../../../core/services/api.service';
       background: linear-gradient(180deg, #0f0f0f 0%, #1a1a1a 100%);
       border-radius: 12px;
       overflow: hidden;
-      max-height: 95vh;
+      max-height: 95dvh;
       position: relative;
     }
 
@@ -343,7 +348,7 @@ import { ApiService } from '../../../../core/services/api.service';
       display: flex;
       gap: 16px;
       padding: 16px;
-      height: calc(95vh - 80px);
+      height: calc(95dvh - 70px);
       overflow: hidden;
     }
 
@@ -559,6 +564,7 @@ import { ApiService } from '../../../../core/services/api.service';
 
     .canvas-container {
       flex-shrink: 0;
+      align-self: center;
       background: rgba(0, 0, 0, 0.3);
       border-radius: 12px;
       overflow: hidden;
@@ -567,6 +573,8 @@ import { ApiService } from '../../../../core/services/api.service';
 
     canvas {
       display: block;
+      width: var(--fit-w, auto) !important;
+      height: var(--fit-h, auto) !important;
     }
 
     .ingredients-list {
@@ -887,12 +895,62 @@ import { ApiService } from '../../../../core/services/api.service';
       background: rgba(255, 255, 255, 0.15);
     }
 
+    /* Niedrige Fenster (Querformat am Handy): Kopf schmaler, Sandwich-Panel scrollt */
+    @media (max-height: 500px) {
+      .game-header {
+        padding: 4px 12px;
+      }
+      .game-content {
+        padding: 8px 12px;
+        gap: 12px;
+        height: calc(95dvh - 48px);
+      }
+      .sandwich-panel {
+        overflow-y: auto;
+        gap: 8px;
+      }
+      .overlay-content {
+        padding: 12px 20px;
+      }
+      .celebration-emoji {
+        display: none;
+      }
+    }
+
     /* Responsive */
     @media (max-width: 700px) {
+      .game-header {
+        padding: 8px 10px;
+        gap: 6px;
+      }
+
+      .game-title {
+        font-size: 14px;
+        letter-spacing: 1px;
+      }
+
+      .game-emoji {
+        font-size: 22px;
+      }
+
+      .balance-display {
+        padding: 4px 8px;
+        white-space: nowrap;
+      }
+
+      .balance {
+        font-size: 12px;
+      }
+
+      .ingredients-panel,
+      .sandwich-panel {
+        flex: none;
+      }
+
       .game-content {
         flex-direction: column;
         height: auto;
-        max-height: calc(95vh - 80px);
+        max-height: calc(95dvh - 70px);
         overflow-y: auto;
       }
 
@@ -924,6 +982,8 @@ import { ApiService } from '../../../../core/services/api.service';
 })
 export class SandwichmasterGameComponent implements AfterViewInit, OnDestroy {
   @ViewChild('gameCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('root', { static: true }) rootRef!: ElementRef<HTMLElement>;
+  private stopFit?: () => void;
 
   readonly creditService = inject(CreditService);
   private readonly dialogRef = inject(MatDialogRef<SandwichmasterGameComponent>);
@@ -965,7 +1025,36 @@ export class SandwichmasterGameComponent implements AfterViewInit, OnDestroy {
   private plopSoundUrl = '';
   private epicSoundUrl = '';
 
+  /** Hinweis in der Beenden-Abfrage: Zutaten werden sofort bezahlt und nicht erstattet. */
+  exitHint(): string {
+    const n = this.selectedIngredients().length;
+    if (this.gameState() === 'shopping' && n > 0) {
+      return `Dein angefangenes Sandwich (${n} ${n === 1 ? 'Zutat' : 'Zutaten'}, ${this.totalCost()} N$) geht verloren. Die Zutaten sind schon bezahlt und werden nicht erstattet.`;
+    }
+    return '';
+  }
+
   ngAfterViewInit(): void {
+    const root = this.rootRef.nativeElement;
+    this.stopFit = fitCanvas(
+      () => this.canvasRef?.nativeElement,
+      this.canvasWidth,
+      this.canvasHeight,
+      root,
+      {
+        widthEl: () => root.querySelector<HTMLElement>('.sandwich-panel'),
+        minScale: 0.55,
+        // Spalten-Layout (Handy hochkant): Canvas nur ca. 38% der Hoehe, Rest scrollt
+        maxScale: () => (window.innerWidth <= 700 ? (window.innerHeight * 0.38) / this.canvasHeight : 1),
+        // Liste/Stats/Buttons unter dem Canvas duerfen scrollen (Spalten- und Querformat-Layout)
+        excludeH: () => {
+          if (window.innerWidth > 700 && window.innerHeight > 500) return 0;
+          return Array.from(
+            root.querySelectorAll<HTMLElement>('.ingredients-list, .stats-panel, .actions-panel'),
+          ).reduce((sum, el) => sum + el.offsetHeight + 12, 0);
+        },
+      },
+    );
     // Setup sound URLs (using existing sounds or Web Audio)
     this.plopSoundUrl = this.api.getFullUrl('/sound/bf97cffb5a032e8f9ba56fad0db0c1a3/file');
     this.epicSoundUrl = this.api.getFullUrl('/sound/9677d3038caf410d784f6dd86de887e8/file');
@@ -979,6 +1068,7 @@ export class SandwichmasterGameComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.stopFit?.();
     this.stopRenderLoop();
   }
 

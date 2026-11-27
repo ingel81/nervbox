@@ -1,6 +1,17 @@
+.slot-root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-height: 95dvh;
+  min-height: 0;
+}
+
 .slot-machine-container {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   background: linear-gradient(180deg, #1a0033 0%, #0d001a 100%);
   color: #fff;
   padding: 24px 32px;
@@ -61,6 +72,7 @@
 
 // Slot Section (left)
 .slot-section {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -78,8 +90,8 @@
 
 canvas {
   display: block;
-  width: 480px;
-  height: 240px;
+  width: var(--fit-w, 480px) !important;
+  height: var(--fit-h, 240px) !important;
 }
 
 // Overlays
@@ -352,5 +364,84 @@ canvas {
   .bet-card {
     min-width: 160px;
     flex: none;
+  }
+}
+
+// Schmale Handys: engere Abstaende, kleinere Karten
+@media (max-width: 850px) {
+  .slot-machine-container {
+    padding: 12px;
+  }
+
+  .game-header {
+    margin-bottom: 10px;
+  }
+
+  .controls-section {
+    width: 100%;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  .balance-card,
+  .bet-card {
+    min-width: 0;
+    flex: 1;
+    padding: 10px;
+  }
+
+  .card-label {
+    margin-bottom: 6px;
+  }
+
+  .card-value {
+    font-size: 1.15rem;
+  }
+
+  .bet-row {
+    gap: 6px;
+  }
+
+  .bet-value {
+    min-width: 0;
+    font-size: 1.1rem;
+  }
+
+  .spin-btn {
+    padding: 10px 36px !important;
+  }
+}
+
+// Niedrige Fenster (Querformat am Handy): Walzen links, Steuerung rechts, Paytable entfaellt
+@media (max-height: 500px) and (min-width: 600px) {
+  .slot-machine-container {
+    padding: 6px 12px;
+  }
+
+  .game-header {
+    margin-bottom: 4px;
+  }
+
+  .main-content {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .slot-section {
+    gap: 8px;
+  }
+
+  .controls-section {
+    flex-direction: column;
+    width: 180px;
+  }
+
+  .paytable-section {
+    display: none;
+  }
+
+  .spin-btn {
+    padding: 6px 32px !important;
   }
 }

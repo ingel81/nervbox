@@ -21,6 +21,8 @@ import { PlinkoEngine } from './plinko-engine';
 import { PlinkoGameState } from './plinko.types';
 import { CreditService } from '../../../../core/services/credit.service';
 import { ApiService } from '../../../../core/services/api.service';
+import { GameExitConfirmComponent } from '../../game-exit-confirm.component';
+import { fitCanvas } from '../../game-shared';
 
 @Component({
   selector: 'app-plinko-game',
@@ -33,9 +35,10 @@ import { ApiService } from '../../../../core/services/api.service';
     MatIconModule,
     MatFormFieldModule,
     MatInputModule,
+    GameExitConfirmComponent,
   ],
   template: `
-    <div class="plinko-container">
+    <div class="plinko-container" #root>
       <!-- Header -->
       <div class="game-header">
         <div class="header-left">
@@ -149,6 +152,13 @@ import { ApiService } from '../../../../core/services/api.service';
           <canvas #gameCanvas [width]="canvasWidth" [height]="canvasHeight"></canvas>
         </div>
       </div>
+
+      <app-game-exit-confirm
+        [hint]="exitHint()"
+        (opened)="stopGameLoop()"
+        (resumed)="resumeLoop()"
+        (exit)="exitGame()"
+      />
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -159,7 +169,8 @@ import { ApiService } from '../../../../core/services/api.service';
       background: linear-gradient(180deg, #0f0f0f 0%, #1a1a1a 100%);
       border-radius: 12px;
       overflow: hidden;
-      max-height: 95vh;
+      max-height: 95dvh;
+      position: relative;
     }
 
     .game-header {
@@ -496,6 +507,7 @@ import { ApiService } from '../../../../core/services/api.service';
     /* Canvas Container */
     .canvas-container {
       flex: 1;
+      min-width: 0;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -505,10 +517,43 @@ import { ApiService } from '../../../../core/services/api.service';
     }
 
     canvas {
+      display: block;
       border-radius: 4px;
+      width: var(--fit-w, auto) !important;
+      height: var(--fit-h, auto) !important;
     }
 
     /* Responsive */
+    @media (max-height: 500px) {
+      .game-header {
+        padding: 4px 12px;
+      }
+      .game-content {
+        padding: 8px;
+        gap: 8px;
+        overflow-y: auto;
+      }
+      .settings-panel {
+        gap: 8px;
+        min-width: 150px;
+      }
+      .drop-btn {
+        padding: 8px 12px;
+      }
+      .last-result {
+        padding: 6px;
+      }
+      .result-multiplier {
+        font-size: 20px;
+      }
+      .history {
+        display: none;
+      }
+      .canvas-container {
+        padding: 4px;
+      }
+    }
+
     @media (max-width: 600px) {
       .game-content {
         flex-direction: column;
@@ -542,6 +587,8 @@ import { ApiService } from '../../../../core/services/api.service';
 })
 export class PlinkoGameComponent implements AfterViewInit, OnDestroy {
   @ViewChild('gameCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('root', { static: true }) rootRef!: ElementRef<HTMLElement>;
+  private stopFit?: () => void;
 
   readonly creditService = inject(CreditService);
   private readonly dialogRef = inject(MatDialogRef<PlinkoGameComponent>);
@@ -589,7 +636,20 @@ export class PlinkoGameComponent implements AfterViewInit, OnDestroy {
   private engine!: PlinkoEngine;
   private animationId = 0;
 
+  /** Hinweis in der Beenden-Abfrage: Plinko bucht den Einsatz erst beim Landen der Kugel. */
+  exitHint(): string {
+    return this.isDropping()
+      ? 'Die Kugel fällt noch. Wenn du jetzt beendest, wird dieser Wurf nicht gewertet: kein Einsatzabzug, kein Gewinn.'
+      : 'Es läuft kein Wurf, es geht nichts verloren.';
+  }
+
   ngAfterViewInit(): void {
+    this.stopFit = fitCanvas(
+      () => this.canvasRef?.nativeElement,
+      this.canvasWidth,
+      this.canvasHeight,
+      this.rootRef.nativeElement,
+    );
     // Set up sound URLs
     this.loseSoundUrl = this.api.getFullUrl(`/sound/${this.LOSE_SOUND_HASH}/file`);
     this.winSoundUrl = this.api.getFullUrl(`/sound/${this.WIN_SOUND_HASH}/file`);
@@ -603,6 +663,7 @@ export class PlinkoGameComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.stopFit?.();
     this.stopGameLoop();
   }
 
@@ -683,7 +744,11 @@ export class PlinkoGameComponent implements AfterViewInit, OnDestroy {
     loop();
   }
 
-  private stopGameLoop(): void {
+  resumeLoop(): void {
+    if (this.isDropping() && !this.animationId) this.startGameLoop();
+  }
+
+  stopGameLoop(): void {
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
       this.animationId = 0;

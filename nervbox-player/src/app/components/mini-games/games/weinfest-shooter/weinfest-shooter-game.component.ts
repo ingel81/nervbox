@@ -16,13 +16,15 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { WeinfestShooterEngine, GameState } from './weinfest-shooter-engine';
 import { CreditService } from '../../../../core/services/credit.service';
+import { GameExitConfirmComponent } from '../../game-exit-confirm.component';
+import { fitCanvas } from '../../game-shared';
 
 @Component({
   selector: 'app-weinfest-shooter-game',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule],
+  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule, GameExitConfirmComponent],
   template: `
-    <div class="weinfest-container">
+    <div class="weinfest-container" #root>
       <!-- Game Header -->
       <div class="game-header">
         <div class="header-left">
@@ -122,8 +124,15 @@ import { CreditService } from '../../../../core/services/credit.service';
           <mat-icon>savings</mat-icon>
           Auscashen
         </button>
-        <span class="footer-hint">ESC = Pause</span>
+        <span class="footer-hint">ESC = Beenden?</span>
       </div>
+
+      <app-game-exit-confirm
+        [hint]="exitHint()"
+        (opened)="onExitOpened()"
+        (resumed)="onExitResumed()"
+        (exit)="cashOut()"
+      />
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -135,6 +144,8 @@ import { CreditService } from '../../../../core/services/credit.service';
       border-radius: 12px;
       overflow: hidden;
       user-select: none;
+      position: relative;
+      max-height: 95dvh;
     }
 
     /* Game Header */
@@ -260,8 +271,8 @@ import { CreditService } from '../../../../core/services/credit.service';
     .game-canvas {
       display: block;
       cursor: none;
-      max-width: 100%;
-      height: auto;
+      width: var(--fit-w, auto) !important;
+      height: var(--fit-h, auto) !important;
     }
 
     /* Overlays */
@@ -452,6 +463,43 @@ import { CreditService } from '../../../../core/services/credit.service';
       color: rgba(255, 255, 255, 0.3);
     }
 
+
+    /* Niedrige Fenster (Querformat am Handy): Overlays kompakter */
+    @media (max-height: 500px), (max-width: 600px) {
+      .overlay {
+        padding: 10px 16px !important;
+        max-width: 92% !important;
+        max-height: 94%;
+        overflow-y: auto;
+      }
+      .overlay-icon,
+      .overlay-emoji,
+      .wine-emoji,
+      .overlay-icon-container,
+      .logo-sprite,
+      .instructions,
+      .controls-hint,
+      .game-desc {
+        display: none !important;
+      }
+      .overlay h3 {
+        font-size: 18px;
+        margin: 0 0 6px;
+      }
+      .overlay p {
+        margin: 4px 0;
+      }
+    }
+
+    @media (max-height: 500px) {
+      .game-header {
+        padding: 4px 12px;
+      }
+      .game-footer {
+        display: none;
+      }
+    }
+
     /* Responsive */
     @media (max-width: 600px) {
       .overlay {
@@ -490,6 +538,8 @@ import { CreditService } from '../../../../core/services/credit.service';
 })
 export class WeinfestShooterGameComponent implements AfterViewInit, OnDestroy {
   @ViewChild('gameCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('root', { static: true }) rootRef!: ElementRef<HTMLElement>;
+  private stopFit?: () => void;
 
   private readonly dialogRef = inject(MatDialogRef<WeinfestShooterGameComponent>);
   private readonly creditService = inject(CreditService);
@@ -517,17 +567,41 @@ export class WeinfestShooterGameComponent implements AfterViewInit, OnDestroy {
 
   @HostListener('window:keydown', ['$event'])
   handleKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      if (this.gameState() === 'playing') {
-        this.togglePause();
-      } else if (this.gameState() === 'paused') {
-        this.resumeGame();
-      }
+    // Escape wird von der Beenden-Abfrage (app-game-exit-confirm) behandelt
+    if (event.key === 'Escape') event.preventDefault();
+  }
+
+  exitHint(): string {
+    const b = this.balance();
+    if (this.gameState() === 'gameover') return '';
+    const txt = (b >= 0 ? '+' : '') + b + ' N$';
+    return `"Beenden" rechnet deinen aktuellen Stand sofort ab: ${txt} (Treffer ${this.hits()}, Fehlschüsse ${this.misses()}).`;
+  }
+
+  private pausedByConfirm = false;
+
+  onExitOpened(): void {
+    if (this.gameState() === 'playing') {
+      this.pausedByConfirm = true;
+      this.stopGameLoop();
+    }
+  }
+
+  onExitResumed(): void {
+    if (this.pausedByConfirm && this.gameState() === 'playing') {
+      this.pausedByConfirm = false;
+      this.lastFrameTime = performance.now();
+      this.startGameLoop();
     }
   }
 
   ngAfterViewInit(): void {
+    this.stopFit = fitCanvas(
+      () => this.canvasRef?.nativeElement,
+      this.canvasWidth,
+      this.canvasHeight,
+      this.rootRef.nativeElement,
+    );
     // Start background music
     this.bgMusic = new Audio('assets/sounds/boehmischer-traum.mp3');
     this.bgMusic.loop = true;
@@ -673,6 +747,7 @@ export class WeinfestShooterGameComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.stopFit?.();
     this.stopGameLoop();
     // Stop background music
     if (this.bgMusic) {

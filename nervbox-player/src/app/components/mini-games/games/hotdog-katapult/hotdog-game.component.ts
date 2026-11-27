@@ -15,6 +15,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { CreditService } from '../../../../core/services/credit.service';
 import { ApiService } from '../../../../core/services/api.service';
+import { GameExitConfirmComponent } from '../../game-exit-confirm.component';
+import { fitCanvas } from '../../game-shared';
 import kaplay, { KAPLAYCtx, GameObj, Vec2 } from 'kaplay';
 
 type GameState = 'loading' | 'ready' | 'aiming' | 'flying' | 'roundover' | 'gameover';
@@ -43,9 +45,9 @@ const SPRITES = {
 @Component({
   selector: 'app-hotdog-game',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule],
+  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule, GameExitConfirmComponent],
   template: `
-    <div class="hotdog-container">
+    <div class="hotdog-container" #root>
       <!-- Game Header -->
       <div class="game-header">
         <div class="header-left">
@@ -135,6 +137,13 @@ const SPRITES = {
       <div class="game-footer">
         <span class="footer-hint">🌭 Katapultiere die Hotdogs in die Mäuler!</span>
       </div>
+
+      <app-game-exit-confirm
+        [hint]="exitHint()"
+        (opened)="onExitOpened()"
+        (resumed)="onExitResumed()"
+        (exit)="exitGame()"
+      />
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -146,7 +155,8 @@ const SPRITES = {
       border-radius: 12px;
       overflow: hidden;
       user-select: none;
-      min-width: 1100px;
+      position: relative;
+      max-height: 95dvh;
     }
 
     .game-header {
@@ -232,8 +242,8 @@ const SPRITES = {
 
     .game-canvas {
       display: block;
-      max-width: 100%;
-      height: auto;
+      width: var(--fit-w, auto) !important;
+      height: var(--fit-h, auto) !important;
     }
 
     .overlay {
@@ -395,6 +405,39 @@ const SPRITES = {
       color: rgba(255, 255, 255, 0.5);
     }
 
+
+    /* Niedrige Fenster (Querformat am Handy): Overlays kompakter */
+    @media (max-height: 500px), (max-width: 600px) {
+      .overlay {
+        padding: 10px 16px !important;
+        max-width: 92% !important;
+        max-height: 94%;
+        overflow-y: auto;
+      }
+      .overlay-icon,
+      .overlay-emoji,
+      .logo-sprite,
+      .controls-hint {
+        display: none !important;
+      }
+      .overlay h3 {
+        font-size: 18px;
+        margin: 0 0 6px;
+      }
+      .overlay p {
+        margin: 4px 0;
+      }
+    }
+
+    @media (max-height: 500px) {
+      .game-header {
+        padding: 4px 12px;
+      }
+      .game-footer {
+        display: none;
+      }
+    }
+
     @media (max-width: 600px) {
       .overlay {
         padding: 24px 32px;
@@ -426,6 +469,9 @@ const SPRITES = {
 })
 export class HotdogGameComponent implements AfterViewInit, OnDestroy {
   @ViewChild('gameCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('root', { static: true }) rootRef!: ElementRef<HTMLElement>;
+  private stopFit?: () => void;
+  private paused = false;
 
   private readonly dialogRef = inject(MatDialogRef<HotdogGameComponent>);
   private readonly creditService = inject(CreditService);
@@ -469,6 +515,29 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
     // Reset destroyed flag for new dialog instance
     this.destroyed = false;
     this.initKaplay();
+    this.stopFit = fitCanvas(
+      () => this.canvasRef?.nativeElement,
+      this.canvasWidth,
+      this.canvasHeight,
+      this.rootRef.nativeElement,
+    );
+  }
+
+  exitHint(): string {
+    const st = this.gameState();
+    if (st === 'gameover' || st === 'loading') return '';
+    const sc = this.score();
+    return sc > 0
+      ? `Die Belohnung (1 N$ pro Treffer, aktuell ${sc} N$) wird erst am Spielende ausgezahlt. Beendest du jetzt, verfällt sie.`
+      : 'Die Belohnung wird erst am Spielende ausgezahlt. Beendest du jetzt, verfällt sie.';
+  }
+
+  onExitOpened(): void {
+    this.paused = true;
+  }
+
+  onExitResumed(): void {
+    this.paused = false;
   }
 
   private async initKaplay(): Promise<void> {
@@ -952,7 +1021,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
 
   @HostListener('mousedown', ['$event'])
   onMouseDown(event: MouseEvent): void {
-    if (this.gameState() !== 'aiming' || this.isFlying || !this.k) return;
+    if (this.paused || this.gameState() !== 'aiming' || this.isFlying || !this.k) return;
 
     const rect = this.canvasRef.nativeElement.getBoundingClientRect();
     const x = (event.clientX - rect.left) * (this.canvasWidth / rect.width);
@@ -1009,6 +1078,8 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
 
   @HostListener('touchstart', ['$event'])
   onTouchStart(event: TouchEvent): void {
+    // Nur Touches auf dem Spielfeld behandeln (Buttons/Abfrage muessen klickbar bleiben)
+    if (this.paused || !(event.target instanceof HTMLCanvasElement)) return;
     event.preventDefault();
     if (this.gameState() !== 'aiming' || this.isFlying || !this.k) return;
 
@@ -1030,7 +1101,8 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
 
   @HostListener('touchmove', ['$event'])
   onTouchMove(event: TouchEvent): void {
-    event.preventDefault();
+    if (this.paused) return;
+    if (event.target instanceof HTMLCanvasElement) event.preventDefault();
     if (!this.slingshot.pulling || this.isFlying || !this.k) return;
 
     const touch = event.touches[0];
@@ -1179,6 +1251,10 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
     // Animation loop
     const animate = () => {
       if (!this.isFlying || this.destroyed || !this.k) return;
+      if (this.paused) {
+        requestAnimationFrame(animate);
+        return;
+      }
 
       x += vx;
       y += vy;
@@ -1435,6 +1511,7 @@ export class HotdogGameComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.stopFit?.();
     this.destroyed = true;
     this.isFlying = false;
 

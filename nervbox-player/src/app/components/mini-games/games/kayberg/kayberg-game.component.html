@@ -1,4 +1,4 @@
-<div class="kayberg-container">
+<div class="kayberg-container" #root>
   <!-- Game Header -->
   <div class="game-header">
     <div class="header-left">
@@ -121,6 +121,13 @@
       <mat-icon>pause</mat-icon>
       Pause
     </button>
-    <span class="footer-hint">ESC = Pause | Klicken zum Steuern</span>
+    <span class="footer-hint">ESC = Beenden? | Klicken zum Steuern</span>
   </div>
+
+  <app-game-exit-confirm
+    [hint]="exitHint()"
+    (opened)="onExitOpened()"
+    (resumed)="onExitResumed()"
+    (exit)="exitGame()"
+  />
 </div>

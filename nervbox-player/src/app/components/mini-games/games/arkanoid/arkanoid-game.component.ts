@@ -17,13 +17,15 @@ import { MatIconModule } from '@angular/material/icon';
 import { ArkanoidEngine, GameState } from './arkanoid-engine';
 import { ApiService } from '../../../../core/services/api.service';
 import { CreditService } from '../../../../core/services/credit.service';
+import { GameExitConfirmComponent } from '../../game-exit-confirm.component';
+import { fitCanvas } from '../../game-shared';
 
 @Component({
   selector: 'app-arkanoid-game',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule],
+  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule, GameExitConfirmComponent],
   template: `
-    <div class="arkanoid-container">
+    <div class="arkanoid-container" #root>
       <!-- Game Header -->
       <div class="game-header">
         <div class="header-left">
@@ -130,8 +132,15 @@ import { CreditService } from '../../../../core/services/credit.service';
           <mat-icon>pause</mat-icon>
           Pause
         </button>
-        <span class="footer-hint">ESC = Pause</span>
+        <span class="footer-hint">ESC = Beenden?</span>
       </div>
+
+      <app-game-exit-confirm
+        [hint]="exitHint()"
+        (opened)="onExitOpened()"
+        (resumed)="onExitResumed()"
+        (exit)="exitGame()"
+      />
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -143,6 +152,8 @@ import { CreditService } from '../../../../core/services/credit.service';
       border-radius: 12px;
       overflow: hidden;
       user-select: none;
+      position: relative;
+      max-height: 95dvh;
     }
 
     /* Game Header */
@@ -234,8 +245,8 @@ import { CreditService } from '../../../../core/services/credit.service';
     .game-canvas {
       display: block;
       cursor: none;
-      max-width: 100%;
-      height: auto;
+      width: var(--fit-w, auto) !important;
+      height: var(--fit-h, auto) !important;
     }
 
     /* Overlays */
@@ -406,6 +417,43 @@ import { CreditService } from '../../../../core/services/credit.service';
       color: rgba(255, 255, 255, 0.3);
     }
 
+
+    /* Niedrige Fenster (Querformat am Handy): Overlays kompakter */
+    @media (max-height: 500px), (max-width: 600px) {
+      .overlay {
+        padding: 10px 16px !important;
+        max-width: 92% !important;
+        max-height: 94%;
+        overflow-y: auto;
+      }
+      .overlay-icon,
+      .overlay-emoji,
+      .wine-emoji,
+      .overlay-icon-container,
+      .logo-sprite,
+      .instructions,
+      .controls-hint,
+      .game-desc {
+        display: none !important;
+      }
+      .overlay h3 {
+        font-size: 18px;
+        margin: 0 0 6px;
+      }
+      .overlay p {
+        margin: 4px 0;
+      }
+    }
+
+    @media (max-height: 500px) {
+      .game-header {
+        padding: 4px 12px;
+      }
+      .game-footer {
+        display: none;
+      }
+    }
+
     /* Responsive */
     @media (max-width: 600px) {
       .overlay {
@@ -446,6 +494,8 @@ import { CreditService } from '../../../../core/services/credit.service';
 })
 export class ArkanoidGameComponent implements AfterViewInit, OnDestroy {
   @ViewChild('gameCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('root', { static: true }) rootRef!: ElementRef<HTMLElement>;
+  private stopFit?: () => void;
 
   private readonly dialogRef = inject(MatDialogRef<ArkanoidGameComponent>);
   private readonly api = inject(ApiService);
@@ -473,16 +523,8 @@ export class ArkanoidGameComponent implements AfterViewInit, OnDestroy {
 
   @HostListener('window:keydown', ['$event'])
   handleKeydown(event: KeyboardEvent): void {
-    // Escape für Pause
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      if (this.gameState() === 'playing') {
-        this.togglePause();
-      } else if (this.gameState() === 'paused') {
-        this.resumeGame();
-      }
-      return;
-    }
+    // Escape wird von der Beenden-Abfrage (app-game-exit-confirm) behandelt
+    if (event.key === 'Escape') return;
 
     // Space/Enter zum Starten
     if ((event.key === ' ' || event.key === 'Enter') && this.gameState() === 'ready') {
@@ -559,7 +601,37 @@ export class ArkanoidGameComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  exitHint(): string {
+    const st = this.gameState();
+    if (st === 'playing' || st === 'paused' || st === 'ready') {
+      return 'Der laufende Level ist noch nicht geschafft: sein Fortschritt geht verloren. Belohnung gibt es nur für abgeschlossene Level.';
+    }
+    return '';
+  }
+
+  private pausedByConfirm = false;
+
+  onExitOpened(): void {
+    if (this.gameState() === 'playing') {
+      this.pausedByConfirm = true;
+      this.stopGameLoop();
+    }
+  }
+
+  onExitResumed(): void {
+    if (this.pausedByConfirm && this.gameState() === 'playing') {
+      this.pausedByConfirm = false;
+      this.startGameLoop();
+    }
+  }
+
   ngAfterViewInit(): void {
+    this.stopFit = fitCanvas(
+      () => this.canvasRef?.nativeElement,
+      this.canvasWidth,
+      this.canvasHeight,
+      this.rootRef.nativeElement,
+    );
     // Set up brick sound URL
     this.brickSoundUrl = this.api.getFullUrl(`/sound/${this.BRICK_SOUND_HASH}/file`);
 
@@ -668,6 +740,7 @@ export class ArkanoidGameComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.stopFit?.();
     this.stopGameLoop();
   }
 }

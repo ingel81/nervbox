@@ -196,7 +196,7 @@ export class GameSelectionDialogComponent {
       width: '95vw',
       maxWidth: '800px',
       height: 'auto',
-      maxHeight: '95vh',
+      maxHeight: '95dvh',
       panelClass: ['dark-dialog', 'game-dialog'],
       disableClose: true,
     });
@@ -206,10 +206,10 @@ export class GameSelectionDialogComponent {
     this.dialogRef.close();
     const { HotdogGameComponent } = await import('./games/hotdog-katapult/hotdog-game.component');
     this.dialog.open(HotdogGameComponent, {
-      width: 'auto',
-      maxWidth: '95vw',
+      width: '95vw',
+      maxWidth: '1140px',
       height: 'auto',
-      maxHeight: '95vh',
+      maxHeight: '95dvh',
       panelClass: ['dark-dialog', 'game-dialog'],
       disableClose: true,
     });
@@ -222,7 +222,7 @@ export class GameSelectionDialogComponent {
       width: '95vw',
       maxWidth: '900px',
       height: 'auto',
-      maxHeight: '95vh',
+      maxHeight: '95dvh',
       panelClass: ['dark-dialog', 'game-dialog'],
       disableClose: true,
     });
@@ -234,6 +234,7 @@ export class GameSelectionDialogComponent {
     this.dialog.open(SlotMachineGameComponent, {
       width: '950px',
       maxWidth: '95vw',
+      maxHeight: '95dvh',
       panelClass: ['dark-dialog', 'game-dialog'],
       disableClose: true,
     });
@@ -246,7 +247,7 @@ export class GameSelectionDialogComponent {
       width: '95vw',
       maxWidth: '950px',
       height: 'auto',
-      maxHeight: '95vh',
+      maxHeight: '95dvh',
       panelClass: ['dark-dialog', 'game-dialog'],
       disableClose: true,
     });
@@ -259,7 +260,7 @@ export class GameSelectionDialogComponent {
       width: '95vw',
       maxWidth: '900px',
       height: 'auto',
-      maxHeight: '95vh',
+      maxHeight: '95dvh',
       panelClass: ['dark-dialog', 'game-dialog'],
       disableClose: true,
     });
@@ -272,7 +273,7 @@ export class GameSelectionDialogComponent {
       width: '95vw',
       maxWidth: '850px',
       height: 'auto',
-      maxHeight: '95vh',
+      maxHeight: '95dvh',
       panelClass: ['dark-dialog', 'game-dialog'],
       disableClose: true,
     });

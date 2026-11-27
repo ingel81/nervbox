@@ -5,6 +5,8 @@
   border-radius: 12px;
   overflow: hidden;
   user-select: none;
+  position: relative;
+  max-height: 95dvh;
 }
 
 /* Game Header */
@@ -116,8 +118,8 @@
 .game-canvas {
   display: block;
   cursor: crosshair;
-  max-width: 100%;
-  height: auto;
+  width: var(--fit-w, auto) !important;
+  height: var(--fit-h, auto) !important;
 }
 
 /* Crosshair */
@@ -377,5 +379,42 @@
 
   .instructions {
     font-size: 12px;
+  }
+}
+
+
+/* Niedrige Fenster / schmale Handys: Overlays kompakter */
+@media (max-height: 500px), (max-width: 600px) {
+  .overlay {
+    padding: 10px 16px !important;
+    max-width: 92% !important;
+    max-height: 94%;
+    overflow-y: auto;
+  }
+
+  .overlay-icon,
+  .overlay-emoji,
+  .instructions,
+  .controls-hint {
+    display: none !important;
+  }
+
+  .overlay h3 {
+    font-size: 18px;
+    margin: 0 0 6px;
+  }
+
+  .overlay p {
+    margin: 4px 0;
+  }
+}
+
+@media (max-height: 500px) {
+  .game-header {
+    padding: 4px 12px;
+  }
+
+  .game-footer {
+    display: none;
   }
 }

@@ -17,17 +17,22 @@ import { MatIconModule } from '@angular/material/icon';
 import { KaybergEngine } from './engine/kayberg-engine';
 import { GameState } from './kayberg.types';
 import { CreditService } from '../../../../core/services/credit.service';
+import { GameExitConfirmComponent } from '../../game-exit-confirm.component';
+import { fitCanvas } from '../../game-shared';
 
 @Component({
   selector: 'app-kayberg-game',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule],
+  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule, GameExitConfirmComponent],
   templateUrl: './kayberg-game.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./kayberg-game.component.scss'],
 })
 export class KaybergGameComponent implements AfterViewInit, OnDestroy {
   @ViewChild('gameCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('root', { static: true }) rootRef!: ElementRef<HTMLElement>;
+  private stopFit?: () => void;
+  @ViewChild(GameExitConfirmComponent) exitConfirm?: GameExitConfirmComponent;
 
   private readonly dialogRef = inject(MatDialogRef<KaybergGameComponent>);
   private readonly creditService = inject(CreditService);
@@ -50,18 +55,12 @@ export class KaybergGameComponent implements AfterViewInit, OnDestroy {
   private animationId = 0;
   private lastTime = 0;
   private isPointerLocked = false;
+  private closing = false;
 
   @HostListener('window:keydown', ['$event'])
   handleKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      if (this.gameState() === 'playing') {
-        this.togglePause();
-      } else if (this.gameState() === 'paused') {
-        this.resumeGame();
-      }
-      return;
-    }
+    // Escape wird von der Beenden-Abfrage (app-game-exit-confirm) behandelt
+    if (event.key === 'Escape') return;
 
     if ((event.key === ' ' || event.key === 'Enter') && this.gameState() === 'ready') {
       event.preventDefault();
@@ -79,8 +78,41 @@ export class KaybergGameComponent implements AfterViewInit, OnDestroy {
     this.engine?.onKeyUp(event.key);
   }
 
+  exitHint(): string {
+    const st = this.gameState();
+    if (st === 'playing' || st === 'paused' || st === 'ready') {
+      return 'Der laufende Level ist noch nicht geschafft: sein Fortschritt geht verloren. Belohnung gibt es nur für abgeschlossene Level.';
+    }
+    return '';
+  }
+
+  private pausedByConfirm = false;
+
+  onExitOpened(): void {
+    if (this.gameState() === 'playing') {
+      this.pausedByConfirm = true;
+      this.engine.pause();
+      this.stopGameLoop();
+    }
+  }
+
+  onExitResumed(): void {
+    if (this.pausedByConfirm && this.gameState() === 'playing') {
+      this.pausedByConfirm = false;
+      this.engine.resume();
+      this.startGameLoop();
+      this.canvasRef.nativeElement.requestPointerLock();
+    }
+  }
+
   ngAfterViewInit(): void {
     const canvas = this.canvasRef.nativeElement;
+    this.stopFit = fitCanvas(
+      () => this.canvasRef?.nativeElement,
+      this.canvasWidth,
+      this.canvasHeight,
+      this.rootRef.nativeElement,
+    );
 
     // Create engine
     this.engine = new KaybergEngine(canvas, this.canvasWidth, this.canvasHeight);
@@ -126,8 +158,13 @@ export class KaybergGameComponent implements AfterViewInit, OnDestroy {
     });
 
     document.addEventListener('pointerlockchange', () => {
+      const wasLocked = this.isPointerLocked;
       this.isPointerLocked = document.pointerLockElement === canvas;
       this.engine?.setPointerLocked(this.isPointerLocked);
+      // Escape beendet den Pointer-Lock, ohne dass ein keydown ankommt -> Beenden-Abfrage zeigen
+      if (wasLocked && !this.isPointerLocked && !this.closing && this.gameState() === 'playing') {
+        this.exitConfirm?.open();
+      }
     });
 
     document.addEventListener('mousemove', (e) => {
@@ -215,16 +252,20 @@ export class KaybergGameComponent implements AfterViewInit, OnDestroy {
   }
 
   confirmExit(): void {
+    this.closing = true;
     this.stopGameLoop();
     this.dialogRef.close({ score: this.score(), level: this.level() });
   }
 
   exitGame(): void {
+    this.closing = true;
     this.stopGameLoop();
     this.dialogRef.close({ score: this.score(), level: this.level() });
   }
 
   ngOnDestroy(): void {
+    this.closing = true;
+    this.stopFit?.();
     this.stopGameLoop();
     this.engine?.dispose();
   }

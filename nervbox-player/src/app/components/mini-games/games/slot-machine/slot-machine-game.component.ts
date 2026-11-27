@@ -16,6 +16,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSliderModule } from '@angular/material/slider';
 import { CreditService } from '../../../../core/services/credit.service';
+import { GameExitConfirmComponent } from '../../game-exit-confirm.component';
+import { fitCanvas } from '../../game-shared';
 
 interface SlotSymbol {
   name: string;
@@ -39,7 +41,14 @@ interface Particle {
 @Component({
   selector: 'app-slot-machine-game',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule, MatSliderModule],
+  imports: [
+    CommonModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatIconModule,
+    MatSliderModule,
+    GameExitConfirmComponent,
+  ],
   templateUrl: './slot-machine-game.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./slot-machine-game.component.scss'],
@@ -49,6 +58,8 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
   readonly creditService = inject(CreditService);
 
   @ViewChild('gameCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('root', { static: true }) rootRef!: ElementRef<HTMLElement>;
+  private stopFit?: () => void;
   private ctx!: CanvasRenderingContext2D;
   private animationFrame: number = 0;
 
@@ -118,11 +129,28 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
     canvas.height = 240;
     this.ctx = canvas.getContext('2d')!;
 
+    const root = this.rootRef.nativeElement;
+    const q = (sel: string) => root.querySelector<HTMLElement>(sel);
+    this.stopFit = fitCanvas(() => canvas, 480, 240, root, {
+      widthEl: () => root,
+      // Seitliche Steuerung im Querformat (niedrig & breit) nimmt Breite weg
+      reserveW: () =>
+        window.innerHeight <= 500 && window.innerWidth >= 600
+          ? (q('.controls-section')?.offsetWidth ?? 0) + 12
+          : 0,
+      // Paytable scrollt unterhalb (Spalten-Layout) bzw. entfaellt (Querformat)
+      excludeH: () => {
+        const p = q('.paytable-section');
+        return p && p.offsetParent ? p.offsetHeight + 20 : 0;
+      },
+    });
+
     // Start render loop
     this.render();
   }
 
   ngOnDestroy(): void {
+    this.stopFit?.();
     if (this.animationFrame) {
       cancelAnimationFrame(this.animationFrame);
     }
@@ -545,6 +573,13 @@ export class SlotMachineGameComponent implements OnInit, AfterViewInit, OnDestro
     this.ctx.lineWidth = 3;
     this.ctx.strokeRect(5, 5, 470, 230);
     this.ctx.shadowBlur = 0;
+  }
+
+  /** Hinweis in der Beenden-Abfrage: der Einsatz wird beim Drehen serverseitig gebucht. */
+  exitHint(): string {
+    return this.isSpinning()
+      ? `Der Dreh läuft bereits: der Einsatz (${this.betAmount()} N$) ist schon abgebucht, ein Gewinn wird dir trotzdem gutgeschrieben.`
+      : 'Es läuft kein Dreh, es geht nichts verloren.';
   }
 
   exitGame(): void {
