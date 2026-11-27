@@ -1,8 +1,9 @@
-using System;
+﻿using System;
 using System.IO;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Events;
 
@@ -59,6 +60,10 @@ namespace NervboxDeamon
                    outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}",
                    theme: Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme.Code);
           })
+          // systemd gives us 5 s (TimeoutStopSec). Open SignalR/long-polling connections would make
+          // Kestrel wait for the default 30 s, so cap graceful shutdown well below that.
+          .ConfigureServices(services =>
+              services.Configure<HostOptions>(o => o.ShutdownTimeout = TimeSpan.FromSeconds(3)))
           .ConfigureWebHostDefaults(webBuilder =>
           {
             webBuilder
