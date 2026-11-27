@@ -117,6 +117,21 @@ namespace NervboxDeamon
           ValidateIssuer = false,
           ValidateAudience = false
         };
+        // WebSockets/SSE cannot send an Authorization header: SignalR passes the JWT as
+        // ?access_token=... Without this the hub upgrade was anonymous -> 403 after an
+        // authenticated negotiate, and the chat fell back to long polling.
+        x.Events = new JwtBearerEvents
+        {
+          OnMessageReceived = context =>
+          {
+            var accessToken = context.Request.Query["access_token"];
+            if (!string.IsNullOrEmpty(accessToken) && context.HttpContext.Request.Path.StartsWithSegments("/ws"))
+            {
+              context.Token = accessToken;
+            }
+            return System.Threading.Tasks.Task.CompletedTask;
+          }
+        };
       });
 
       // configure DI for application services
