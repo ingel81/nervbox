@@ -1,6 +1,6 @@
 import { Component, inject, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatDialogModule, MatDialogRef, MatDialog } from '@angular/material/dialog';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../core/services/auth.service';
@@ -183,14 +183,12 @@ export class GameSelectionDialogComponent {
     }
   }
 
-  private readonly dialogRef = inject(MatDialogRef<GameSelectionDialogComponent>);
   private readonly dialog = inject(MatDialog);
   private readonly auth = inject(AuthService);
 
   readonly isAdmin = computed(() => this.auth.currentUser()?.role === 'admin');
 
   async startArkanoid(): Promise<void> {
-    this.dialogRef.close();
     const { ArkanoidGameComponent } = await import('./games/arkanoid/arkanoid-game.component');
     this.dialog.open(ArkanoidGameComponent, {
       width: '95vw',
@@ -203,7 +201,6 @@ export class GameSelectionDialogComponent {
   }
 
   async startHotdog(): Promise<void> {
-    this.dialogRef.close();
     const { HotdogGameComponent } = await import('./games/hotdog-katapult/hotdog-game.component');
     this.dialog.open(HotdogGameComponent, {
       width: '95vw',
@@ -216,7 +213,6 @@ export class GameSelectionDialogComponent {
   }
 
   async startPlinko(): Promise<void> {
-    this.dialogRef.close();
     const { PlinkoGameComponent } = await import('./games/plinko/plinko-game.component');
     this.dialog.open(PlinkoGameComponent, {
       width: '95vw',
@@ -229,7 +225,6 @@ export class GameSelectionDialogComponent {
   }
 
   async startSlotMachine(): Promise<void> {
-    this.dialogRef.close();
     const { SlotMachineGameComponent } = await import('./games/slot-machine/slot-machine-game.component');
     this.dialog.open(SlotMachineGameComponent, {
       width: '950px',
@@ -241,7 +236,6 @@ export class GameSelectionDialogComponent {
   }
 
   async startKayberg(): Promise<void> {
-    this.dialogRef.close();
     const { KaybergGameComponent } = await import('./games/kayberg/kayberg-game.component');
     this.dialog.open(KaybergGameComponent, {
       width: '95vw',
@@ -254,7 +248,6 @@ export class GameSelectionDialogComponent {
   }
 
   async startWeinfestShooter(): Promise<void> {
-    this.dialogRef.close();
     const { WeinfestShooterGameComponent } = await import('./games/weinfest-shooter/weinfest-shooter-game.component');
     this.dialog.open(WeinfestShooterGameComponent, {
       width: '95vw',
@@ -267,7 +260,6 @@ export class GameSelectionDialogComponent {
   }
 
   async startSandwichmaster(): Promise<void> {
-    this.dialogRef.close();
     const { SandwichmasterGameComponent } = await import('./games/sandwichmaster/sandwichmaster-game.component');
     this.dialog.open(SandwichmasterGameComponent, {
       width: '95vw',
