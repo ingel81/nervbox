@@ -35,6 +35,7 @@ namespace NervboxDeamon.Services
   public interface ISoundService
   {
     void Init();
+    void Shutdown();
     PlaySoundResult PlaySound(string soundId, int userId);
     void KillAll();
     void AddSoundToCache(Sound sound);
@@ -74,7 +75,7 @@ namespace NervboxDeamon.Services
     }
   }
 
-  public class SoundService : ISoundService
+  public class SoundService : ISoundService, IDisposable
   {
     //injected
     private readonly ILogger<ISoundService> Logger;
@@ -94,7 +95,8 @@ namespace NervboxDeamon.Services
     private AppSettings appSettings { get; set; }
     private ConcurrentQueue<SoundUsage> Usages { get; set; } = new ConcurrentQueue<SoundUsage>();
     private Thread LoggingThread = null;
-    private bool keepRunning = true;
+    private volatile bool keepRunning = true;
+    private readonly ManualResetEventSlim stopSignal = new ManualResetEventSlim(false);
 
     public SoundService(
       IServiceProvider serviceProvider,
@@ -116,30 +118,59 @@ namespace NervboxDeamon.Services
       {
         while (keepRunning)
         {
-          if (!Usages.IsEmpty)
-          {
-            List<SoundUsage> tempsForSave = new List<SoundUsage>();
-            while (!Usages.IsEmpty)
-            {
-              if (Usages.TryDequeue(out SoundUsage item))
-              {
-                tempsForSave.Add(item);
-              }
-            }
-
-            using (var scope = serviceProvider.CreateScope())
-            {
-              var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
-              db.SoundUsages.AddRange(tempsForSave);
-              db.SaveChanges();
-            }
-          }
-
-          Thread.Sleep(10000);
+          FlushUsages();
+          // wait 10 s or until shutdown is signalled
+          stopSignal.Wait(10000);
         }
-      });
+        FlushUsages();
+      })
+      {
+        IsBackground = true,
+        Name = "SoundUsageLogger"
+      };
 
       LoggingThread.Start();
+    }
+
+    private void FlushUsages()
+    {
+      if (Usages.IsEmpty) return;
+      try
+      {
+        var tempsForSave = new List<SoundUsage>();
+        while (Usages.TryDequeue(out SoundUsage item))
+        {
+          tempsForSave.Add(item);
+        }
+
+        using (var scope = serviceProvider.CreateScope())
+        {
+          var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+          db.SoundUsages.AddRange(tempsForSave);
+          db.SaveChanges();
+        }
+      }
+      catch (Exception ex)
+      {
+        Logger.LogError(ex, "Failed to save sound usages");
+      }
+    }
+
+    /// <summary>
+    /// Called by the DI container on shutdown: stop the logger thread and persist pending usages.
+    /// </summary>
+    public void Dispose() => Shutdown();
+
+    /// <summary>
+    /// Stop the logger thread and persist pending usages. Idempotent; called on ApplicationStopping
+    /// (while the DB is still available) and again by the DI container.
+    /// </summary>
+    public void Shutdown()
+    {
+      if (!keepRunning) return;
+      keepRunning = false;
+      stopSignal.Set();
+      LoggingThread?.Join(TimeSpan.FromSeconds(5));
     }
 
     public void Init()
@@ -170,15 +201,40 @@ namespace NervboxDeamon.Services
       var soundFiles = SoundDirectory.GetFiles();
       List<dynamic> found = new List<dynamic>();
 
+      // Known files (same name + same size) reuse hash/duration from the DB instead of re-reading
+      // all ~280 MB on every start. Only new or changed files are hashed.
+      Dictionary<string, Sound> known;
+      using (var scope = serviceProvider.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
+        known = db.Sounds.AsEnumerable()
+          .Where(x => x.FileName != null)
+          .GroupBy(x => x.FileName)
+          .ToDictionary(g => g.Key, g => g.First());
+      }
+      int hashed = 0;
+
       foreach (FileInfo fi in soundFiles)
       {
         string fileName = fi.Name;
         string name = Path.GetFileNameWithoutExtension(fi.Name);
-        string hash = SoundHelper.GetFileHash(fi.FullName);
-        int durationMs = SoundHelper.GetDurationMs(fi.FullName);
+        string hash;
+        int durationMs;
+        if (known.TryGetValue(fileName, out var k) && k.SizeBytes == fi.Length && !string.IsNullOrEmpty(k.Hash))
+        {
+          hash = k.Hash;
+          durationMs = k.DurationMs > 0 ? k.DurationMs : SoundHelper.GetDurationMs(fi.FullName);
+        }
+        else
+        {
+          hash = SoundHelper.GetFileHash(fi.FullName);
+          durationMs = SoundHelper.GetDurationMs(fi.FullName);
+          hashed++;
+        }
 
         found.Add(new { Name = name, FileName = fileName, Hash = hash, SizeBytes = fi.Length, DurationMs = durationMs });
       }
+      Logger.LogInformation("Sound scan: {Total} files, {Hashed} hashed (new/changed)", soundFiles.Length, hashed);
 
       using (var scope = serviceProvider.CreateScope())
       {
@@ -406,15 +462,18 @@ namespace NervboxDeamon.Services
 
         Logger.LogDebug($"Playing locally with {player}: {filePath}");
 
-        Process.Start(new ProcessStartInfo
+        // No redirection (nobody reads the pipes); wait for exit so the child is reaped (no zombies).
+        var proc = Process.Start(new ProcessStartInfo
         {
           FileName = player,
           Arguments = args,
           UseShellExecute = false,
-          CreateNoWindow = true,
-          RedirectStandardOutput = true,
-          RedirectStandardError = true
+          CreateNoWindow = true
         });
+        if (proc != null)
+        {
+          _ = proc.WaitForExitAsync().ContinueWith(_ => proc.Dispose());
+        }
       }
       catch (Exception ex)
       {
@@ -445,13 +504,14 @@ namespace NervboxDeamon.Services
       {
         try
         {
-          Process.Start(new ProcessStartInfo
+          using var pkill = Process.Start(new ProcessStartInfo
           {
             FileName = "pkill",
             Arguments = $"-f {player}",
             UseShellExecute = false,
             CreateNoWindow = true
           });
+          pkill?.WaitForExit(2000);
         }
         catch
         {

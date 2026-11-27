@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
@@ -173,7 +173,9 @@ namespace NervboxDeamon.Controllers
           contentType = "audio/ogg";
         }
 
-        return PhysicalFile(filePath, contentType, sound.FileName);
+        // Content is addressed by its MD5 hash -> safe to cache; range requests for Safari/seeking
+        Response.Headers.CacheControl = "public, max-age=604800";
+        return PhysicalFile(filePath, contentType, sound.FileName, enableRangeProcessing: true);
       }
       catch (Exception ex)
       {

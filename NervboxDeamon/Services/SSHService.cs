@@ -75,7 +75,8 @@ namespace NervboxDeamon.Services
         {
           Thread.Sleep(500);
         }
-      });
+      })
+      { IsBackground = true, Name = "SshKeepAlive" };
 
       sshThread.Start();
     }

@@ -1,4 +1,5 @@
-using System;
+﻿using System;
+using System.Linq;
 using System.IO;
 using System.Text;
 using System.Net.Http;
@@ -20,6 +21,11 @@ using Newtonsoft.Json.Converters;
 using NervboxDeamon.Services.Interfaces;
 using Microsoft.AspNetCore.HttpOverrides;
 using Yarp.ReverseProxy.Forwarder;
+using Microsoft.AspNetCore.ResponseCompression;
+using Serilog;
+using Microsoft.AspNetCore.StaticFiles;
+using System.IO.Compression;
+using System.Text.RegularExpressions;
 
 #nullable enable
 
@@ -137,6 +143,17 @@ namespace NervboxDeamon
         options.HttpsPort = 443; // Externer Port (nftables leitet 443 → 8443)
       });
 
+      // Compress text responses (bundles, JSON). Fastest level: the Pi's CPU matters more than a few kB.
+      services.AddResponseCompression(options =>
+      {
+        options.EnableForHttps = true;
+        options.Providers.Add<BrotliCompressionProvider>();
+        options.Providers.Add<GzipCompressionProvider>();
+        options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[] { "image/svg+xml", "application/manifest+json" });
+      });
+      services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
+      services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
+
       // Add HTTP Forwarder for dev proxy
       services.AddHttpForwarder();
     }
@@ -151,6 +168,22 @@ namespace NervboxDeamon
       {
         ForwardedHeaders = ForwardedHeaders.All
       });
+
+      // One log line per API call (static files, sound/avatar downloads and websockets only at Debug).
+      app.UseSerilogRequestLogging(options =>
+      {
+        options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} -> {StatusCode} in {Elapsed:0} ms";
+        options.GetLevel = (ctx, elapsed, ex) =>
+        {
+          if (ex != null || ctx.Response.StatusCode >= 500) return Serilog.Events.LogEventLevel.Error;
+          var path = ctx.Request.Path.Value ?? "";
+          var isApi = path.StartsWith("/api", StringComparison.OrdinalIgnoreCase);
+          var isFile = path.EndsWith("/file", StringComparison.OrdinalIgnoreCase) || path.EndsWith("/avatar", StringComparison.OrdinalIgnoreCase);
+          return isApi && !isFile ? Serilog.Events.LogEventLevel.Information : Serilog.Events.LogEventLevel.Debug;
+        };
+      });
+
+      app.UseResponseCompression();
 
       // Apply database migrations
       try
@@ -274,9 +307,10 @@ namespace NervboxDeamon
             context => context.Request.Path.Value != null && context.Request.Path.Value.StartsWith("/mixer"),
             appInner =>
             {
-              appInner.UseStaticFiles();
+              appInner.UseStaticFiles(CachedStaticFiles());
               appInner.Run(async (context) =>
               {
+                context.Response.Headers.CacheControl = "no-cache";
                 var mixerIndexPath = Path.Combine(env.WebRootPath, "mixer", "index.html");
                 if (File.Exists(mixerIndexPath))
                 {
@@ -298,10 +332,11 @@ namespace NervboxDeamon
                        !context.Request.Path.Value.StartsWith("/mixer"),
             appInner =>
             {
-              appInner.UseStaticFiles();
+              appInner.UseStaticFiles(CachedStaticFiles());
               appInner.UseDefaultFiles();
               appInner.Run(async (context) =>
               {
+                context.Response.Headers.CacheControl = "no-cache";
                 context.Response.ContentType = "text/html";
                 await context.Response.SendFileAsync(Path.Combine(env.WebRootPath, "index.html"));
               });
@@ -323,6 +358,8 @@ namespace NervboxDeamon
       // configure/start ISoundService
       var soundService = app.ApplicationServices.GetRequiredService<ISoundService>();
       soundService.Init();
+      app.ApplicationServices.GetRequiredService<Microsoft.Extensions.Hosting.IHostApplicationLifetime>()
+        .ApplicationStopping.Register(soundService.Shutdown);
 
       // configure/start ICreditService
       var creditService = app.ApplicationServices.GetRequiredService<ICreditService>();
@@ -333,11 +370,40 @@ namespace NervboxDeamon
       achievementService.Init();
     }
 
+    // Angular bundles carry a content hash in their name (main-AEFIV4SO.js) -> cache forever.
+    private static readonly Regex HashedAsset = new Regex(@"-[A-Z0-9]{8}\.(js|css|mjs)$", RegexOptions.Compiled);
+
+    private static readonly string[] NeverCache = { "index.html", "ngsw.json", "ngsw-worker.js", "safety-worker.js", "worker-basic.min.js", "manifest.webmanifest" };
+
+    private static StaticFileOptions CachedStaticFiles()
+    {
+      var contentTypes = new FileExtensionContentTypeProvider();
+      contentTypes.Mappings[".webmanifest"] = "application/manifest+json";
+      return new StaticFileOptions
+      {
+        ContentTypeProvider = contentTypes,
+        OnPrepareResponse = ctx =>
+        {
+          var name = ctx.File.Name;
+          string cacheControl;
+          if (NeverCache.Contains(name, StringComparer.OrdinalIgnoreCase))
+            cacheControl = "no-cache";
+          else if (HashedAsset.IsMatch(name))
+            cacheControl = "public, max-age=31536000, immutable";
+          else
+            cacheControl = "public, max-age=86400";
+          ctx.Context.Response.Headers.CacheControl = cacheControl;
+        }
+      };
+    }
+
     private static void UpdateDatabase(IApplicationBuilder app)
     {
       using var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope();
       var context = serviceScope.ServiceProvider.GetRequiredService<NervboxDBContext>();
       context.Database.Migrate();
+      // WAL: readers no longer block the writer (credits, chat, usages). Persistent in the DB file.
+      context.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
     }
 
     private static void CheckUsers(IApplicationBuilder app)
