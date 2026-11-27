@@ -46,6 +46,7 @@ const NEW_MS = 7 * 24 * 60 * 60 * 1000;
       [attr.aria-disabled]="!sound().enabled"
       [class]="padClass()"
       [style]="padStyle()"
+      (pointerdown)="onPointerDown($event)"
       (click)="handleClick()"
       (keydown.enter)="onPadKey($event)"
       (keydown.space)="onPadKey($event)"
@@ -294,7 +295,27 @@ export class SoundCardComponent {
     this.handleClick();
   }
 
+  /** Time of the last mouse press that triggered the pad; the click that follows it is ignored. */
+  private firedOnPointerDownAt = 0;
+
+  /**
+   * Mouse: trigger immediately on press (feels like a real pad). Touch/pen keep tap-on-release,
+   * otherwise every scroll gesture over the grid would fire sounds.
+   */
+  onPointerDown(event: PointerEvent): void {
+    if (event.pointerType !== 'mouse' || event.button !== 0) return;
+    const target = event.target as Element | null;
+    if (target?.closest('button, a, [role="menuitem"], app-user-avatar')) return;
+    this.firedOnPointerDownAt = 0;
+    this.handleClick();
+    this.firedOnPointerDownAt = Date.now();
+  }
+
   handleClick(): void {
+    if (this.firedOnPointerDownAt && Date.now() - this.firedOnPointerDownAt < 1500) {
+      this.firedOnPointerDownAt = 0;
+      return;
+    }
     if (!this.sound().enabled) return;
     if (this.selectionMode()) {
       this.selectionToggle.emit(this.sound());
