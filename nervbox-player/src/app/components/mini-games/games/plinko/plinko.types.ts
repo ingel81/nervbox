@@ -31,22 +31,19 @@ export interface PlinkoSlot {
 // High-Style Verteilung: Ränder = hohe Multiplikatoren, Mitte = niedrige
 // Deutlich reduziert für mehr Verluste und härteres Gameplay
 export const MULTIPLIERS: number[] = [
-  20, 10, 5, 2, 0.8, 0.5, 0.3, 0.2, 0.1,
-  0.2, 0.3, 0.5, 0.8, 2, 5, 10, 20
+  20, 10, 5, 2, 0.8, 0.5, 0.3, 0.2, 0.1, 0.2, 0.3, 0.5, 0.8, 2, 5, 10, 20,
 ];
 
 // Alle gültigen Multiplikatoren für Backend-Validierung
-export const VALID_MULTIPLIERS = [
-  0.1, 0.2, 0.3, 0.5, 0.8, 2, 5, 10, 20
-];
+export const VALID_MULTIPLIERS = [0.1, 0.2, 0.3, 0.5, 0.8, 2, 5, 10, 20];
 
 // Slot-Farben basierend auf Multiplikator
 export function getSlotColor(multiplier: number): string {
-  if (multiplier >= 100) return '#ef4444';  // Rot (extrem)
-  if (multiplier >= 10) return '#f97316';   // Orange
-  if (multiplier >= 2) return '#eab308';    // Gelb
-  if (multiplier >= 1) return '#22c55e';    // Grün
-  return '#9333ea';                          // Lila (Verlust)
+  if (multiplier >= 100) return '#ef4444'; // Rot (extrem)
+  if (multiplier >= 10) return '#f97316'; // Orange
+  if (multiplier >= 2) return '#eab308'; // Gelb
+  if (multiplier >= 1) return '#22c55e'; // Grün
+  return '#9333ea'; // Lila (Verlust)
 }
 
 // Slot-Hintergrundfarbe (transparent)

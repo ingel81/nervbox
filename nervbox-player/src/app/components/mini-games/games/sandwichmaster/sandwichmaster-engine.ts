@@ -33,7 +33,8 @@ export class SandwichmasterEngine {
   }
 
   addIngredient(ingredient: Ingredient): void {
-    const layerY = this.SANDWICH_BASE_Y - this.PLATE_HEIGHT - this.layers.length * this.LAYER_HEIGHT;
+    const layerY =
+      this.SANDWICH_BASE_Y - this.PLATE_HEIGHT - this.layers.length * this.LAYER_HEIGHT;
 
     const layer: SandwichLayer = {
       ingredient,
@@ -49,21 +50,20 @@ export class SandwichmasterEngine {
       const emitter = this.particleSystem.createEmitter(
         this.SANDWICH_CENTER_X,
         layerY,
-        ingredient.particleEffect
+        ingredient.particleEffect,
       );
       this.emitters.set(ingredient.id, emitter);
     }
   }
 
   removeIngredient(ingredientId: string): void {
-    const index = this.layers.findIndex(l => l.ingredient.id === ingredientId);
+    const index = this.layers.findIndex((l) => l.ingredient.id === ingredientId);
     if (index !== -1) {
       this.layers.splice(index, 1);
 
       // Recalculate layer positions
       for (let i = 0; i < this.layers.length; i++) {
-        this.layers[i].y =
-          this.SANDWICH_BASE_Y - this.PLATE_HEIGHT - i * this.LAYER_HEIGHT;
+        this.layers[i].y = this.SANDWICH_BASE_Y - this.PLATE_HEIGHT - i * this.LAYER_HEIGHT;
       }
     }
 
@@ -78,7 +78,7 @@ export class SandwichmasterEngine {
   update(): void {
     // Update particle positions for emitters based on layer positions
     for (const [ingredientId, emitter] of this.emitters) {
-      const layer = this.layers.find(l => l.ingredient.id === ingredientId);
+      const layer = this.layers.find((l) => l.ingredient.id === ingredientId);
       if (layer) {
         emitter.x = this.SANDWICH_CENTER_X;
         emitter.y = layer.y;
@@ -149,7 +149,7 @@ export class SandwichmasterEngine {
       15,
       0,
       0,
-      Math.PI * 2
+      Math.PI * 2,
     );
     this.ctx.fill();
 
@@ -158,7 +158,7 @@ export class SandwichmasterEngine {
       this.SANDWICH_CENTER_X - plateWidth / 2,
       plateY - 10,
       this.SANDWICH_CENTER_X + plateWidth / 2,
-      plateY + 10
+      plateY + 10,
     );
     plateGradient.addColorStop(0, '#f5f5f5');
     plateGradient.addColorStop(0.5, '#ffffff');
@@ -173,7 +173,7 @@ export class SandwichmasterEngine {
       this.PLATE_HEIGHT,
       0,
       0,
-      Math.PI * 2
+      Math.PI * 2,
     );
     this.ctx.fill();
 
@@ -212,7 +212,7 @@ export class SandwichmasterEngine {
       x + layer.width,
       y + layer.height,
       x + layer.width - radius,
-      y + layer.height
+      y + layer.height,
     );
     this.ctx.lineTo(x + radius, y + layer.height);
     this.ctx.quadraticCurveTo(x, y + layer.height, x, y + layer.height - radius);
@@ -240,11 +240,7 @@ export class SandwichmasterEngine {
     this.ctx.font = '16px sans-serif';
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
-    this.ctx.fillText(
-      layer.ingredient.emoji,
-      this.SANDWICH_CENTER_X,
-      y + layer.height / 2
-    );
+    this.ctx.fillText(layer.ingredient.emoji, this.SANDWICH_CENTER_X, y + layer.height / 2);
 
     // Epic badge
     if (isEpic) {
@@ -272,11 +268,7 @@ export class SandwichmasterEngine {
     this.ctx.font = '16px JetBrains Mono, monospace';
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
-    this.ctx.fillText(
-      'Wähle Zutaten aus!',
-      this.SANDWICH_CENTER_X,
-      this.SANDWICH_BASE_Y - 100
-    );
+    this.ctx.fillText('Wähle Zutaten aus!', this.SANDWICH_CENTER_X, this.SANDWICH_BASE_Y - 100);
 
     // Arrow pointing down
     this.ctx.beginPath();

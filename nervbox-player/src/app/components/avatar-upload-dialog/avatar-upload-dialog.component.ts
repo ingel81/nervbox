@@ -22,16 +22,37 @@ import { AvatarService } from '../../core/services/avatar.service';
     <div class="nk-dlg av">
       <header class="nk-dialog__head">
         <h2 class="nk-dialog__title">Avatar bearbeiten</h2>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close>✕</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon"
+          aria-label="Schließen"
+          mat-dialog-close
+        >
+          ✕
+        </button>
       </header>
       <div class="nk-dialog__body">
         @if (!imageFile()) {
-          <div class="nk-drop av-drop" role="button" tabindex="0" (click)="fileInput.click()" (keydown.enter)="fileInput.click()" (dragover)="onDragOver($event)" (drop)="onDrop($event)">
+          <div
+            class="nk-drop av-drop"
+            role="button"
+            tabindex="0"
+            (click)="fileInput.click()"
+            (keydown.enter)="fileInput.click()"
+            (dragover)="onDragOver($event)"
+            (drop)="onDrop($event)"
+          >
             <mat-icon class="av-up" aria-hidden="true">add_photo_alternate</mat-icon>
             <span class="nk-drop__title">Bild hierher ziehen oder klicken zum Auswählen</span>
             <span class="nk-drop__hint">JPG, PNG, GIF oder WebP (max. 5MB)</span>
           </div>
-          <input #fileInput type="file" hidden accept="image/jpeg,image/png,image/gif,image/webp" (change)="onFileSelected($event)" />
+          <input
+            #fileInput
+            type="file"
+            hidden
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            (change)="onFileSelected($event)"
+          />
         } @else {
           <div class="av-crop">
             <image-cropper
@@ -50,23 +71,44 @@ import { AvatarService } from '../../core/services/avatar.service';
           @if (croppedImage()) {
             <div class="av-prev">
               <span class="nk-label">Vorschau:</span>
-              <img [src]="croppedImage()" class="av-prev__img av-prev__img--lg" alt="Vorschau groß" />
-              <img [src]="croppedImage()" class="av-prev__img av-prev__img--md" alt="Vorschau mittel" />
-              <img [src]="croppedImage()" class="av-prev__img av-prev__img--sm" alt="Vorschau klein" />
+              <img
+                [src]="croppedImage()"
+                class="av-prev__img av-prev__img--lg"
+                alt="Vorschau groß"
+              />
+              <img
+                [src]="croppedImage()"
+                class="av-prev__img av-prev__img--md"
+                alt="Vorschau mittel"
+              />
+              <img
+                [src]="croppedImage()"
+                class="av-prev__img av-prev__img--sm"
+                alt="Vorschau klein"
+              />
             </div>
           }
         }
         @if (error()) {
-          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert"><span class="nk-toast__text">{{ error() }}</span></div>
+          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert">
+            <span class="nk-toast__text">{{ error() }}</span>
+          </div>
         }
       </div>
       <footer class="nk-dialog__foot av-foot">
         @if (imageFile()) {
-          <button type="button" class="nk-key nk-key--sm" (click)="resetImage()">Anderes Bild</button>
+          <button type="button" class="nk-key nk-key--sm" (click)="resetImage()">
+            Anderes Bild
+          </button>
         }
         <span class="av-flex"></span>
         <button type="button" class="nk-key nk-key--ghost" mat-dialog-close>Abbrechen</button>
-        <button type="button" class="nk-key nk-key--accent" [disabled]="!croppedBlob() || uploading()" (click)="uploadAvatar()">
+        <button
+          type="button"
+          class="nk-key nk-key--accent"
+          [disabled]="!croppedBlob() || uploading()"
+          (click)="uploadAvatar()"
+        >
           @if (uploading()) {
             <span class="nk-spin" aria-hidden="true"></span>
           }
@@ -93,7 +135,10 @@ import { AvatarService } from '../../core/services/avatar.service';
       border-radius: 8px;
       overflow: hidden;
       background: #0d0c0a;
-      box-shadow: inset 1px 2px 6px rgb(0 0 0 / 0.8), 0 0 0 1px rgb(0 0 0 / 0.6), 1px 1px 0 1px rgb(255 226 176 / 0.14);
+      box-shadow:
+        inset 1px 2px 6px rgb(0 0 0 / 0.8),
+        0 0 0 1px rgb(0 0 0 / 0.6),
+        1px 1px 0 1px rgb(255 226 176 / 0.14);
       max-height: 320px;
     }
     .av-crop image-cropper {
@@ -107,7 +152,9 @@ import { AvatarService } from '../../core/services/avatar.service';
     }
     .av-prev__img {
       border-radius: 50%;
-      box-shadow: 0 0 0 2px #0b0a08, 0 0 10px rgb(0 0 0 / 0.6);
+      box-shadow:
+        0 0 0 2px #0b0a08,
+        0 0 10px rgb(0 0 0 / 0.6);
     }
     .av-prev__img--lg {
       width: 64px;

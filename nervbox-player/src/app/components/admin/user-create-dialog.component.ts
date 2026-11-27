@@ -28,45 +28,123 @@ import { UserService } from '../../core/services/user.service';
     <div class="nk-dlg ad-sm">
       <header class="nk-dialog__head">
         <h2 class="nk-dialog__title">Neuer User</h2>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close [disabled]="saving()">✕</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon"
+          aria-label="Schließen"
+          mat-dialog-close
+          [disabled]="saving()"
+        >
+          ✕
+        </button>
       </header>
       <div class="nk-dialog__body">
         <label class="nk-field">
           <span class="nk-label">Username</span>
-          <span class="nk-input" [class.nk-input--error]="usernameInput.invalid && usernameInput.touched">
-            <input class="nk-input__field" [(ngModel)]="username" #usernameInput="ngModel" name="username" required minlength="3" autocomplete="off" aria-label="Username" />
+          <span
+            class="nk-input"
+            [class.nk-input--error]="usernameInput.invalid && usernameInput.touched"
+          >
+            <input
+              class="nk-input__field"
+              [(ngModel)]="username"
+              #usernameInput="ngModel"
+              name="username"
+              required
+              minlength="3"
+              autocomplete="off"
+              aria-label="Username"
+            />
           </span>
           @if (usernameInput.invalid && usernameInput.touched) {
-            <span class="nk-field__hint nk-field__hint--error">Username muss mindestens 3 Zeichen haben</span>
+            <span class="nk-field__hint nk-field__hint--error"
+              >Username muss mindestens 3 Zeichen haben</span
+            >
           }
         </label>
         <label class="nk-field">
           <span class="nk-label">Passwort</span>
-          <span class="nk-input" [class.nk-input--error]="passwordInput.invalid && passwordInput.touched">
-            <input class="nk-input__field" type="password" [(ngModel)]="password" #passwordInput="ngModel" name="password" required minlength="4" autocomplete="new-password" aria-label="Passwort" />
+          <span
+            class="nk-input"
+            [class.nk-input--error]="passwordInput.invalid && passwordInput.touched"
+          >
+            <input
+              class="nk-input__field"
+              type="password"
+              [(ngModel)]="password"
+              #passwordInput="ngModel"
+              name="password"
+              required
+              minlength="4"
+              autocomplete="new-password"
+              aria-label="Passwort"
+            />
           </span>
           @if (passwordInput.invalid && passwordInput.touched) {
-            <span class="nk-field__hint nk-field__hint--error">Passwort muss mindestens 4 Zeichen haben</span>
+            <span class="nk-field__hint nk-field__hint--error"
+              >Passwort muss mindestens 4 Zeichen haben</span
+            >
           }
         </label>
         <div class="nk-field-row">
-          <label class="nk-field"><span class="nk-label">Vorname</span><span class="nk-input"><input class="nk-input__field" [(ngModel)]="firstName" name="firstName" aria-label="Vorname" /></span></label>
-          <label class="nk-field"><span class="nk-label">Nachname</span><span class="nk-input"><input class="nk-input__field" [(ngModel)]="lastName" name="lastName" aria-label="Nachname" /></span></label>
+          <label class="nk-field"
+            ><span class="nk-label">Vorname</span
+            ><span class="nk-input"
+              ><input
+                class="nk-input__field"
+                [(ngModel)]="firstName"
+                name="firstName"
+                aria-label="Vorname" /></span
+          ></label>
+          <label class="nk-field"
+            ><span class="nk-label">Nachname</span
+            ><span class="nk-input"
+              ><input
+                class="nk-input__field"
+                [(ngModel)]="lastName"
+                name="lastName"
+                aria-label="Nachname" /></span
+          ></label>
         </div>
         <div class="nk-field">
           <span class="nk-label">Rolle</span>
           <div class="ad-seg" role="radiogroup" aria-label="Rolle">
-            <button type="button" role="radio" [attr.aria-checked]="role === 'user'" [class]="role === 'user' ? 'nk-key nk-key--sm nk-key--on' : 'nk-key nk-key--sm'" (click)="role = 'user'">User</button>
-            <button type="button" role="radio" [attr.aria-checked]="role === 'admin'" [class]="role === 'admin' ? 'nk-key nk-key--sm nk-key--on' : 'nk-key nk-key--sm'" (click)="role = 'admin'">Admin</button>
+            <button
+              type="button"
+              role="radio"
+              [attr.aria-checked]="role === 'user'"
+              [class]="role === 'user' ? 'nk-key nk-key--sm nk-key--on' : 'nk-key nk-key--sm'"
+              (click)="role = 'user'"
+            >
+              User
+            </button>
+            <button
+              type="button"
+              role="radio"
+              [attr.aria-checked]="role === 'admin'"
+              [class]="role === 'admin' ? 'nk-key nk-key--sm nk-key--on' : 'nk-key nk-key--sm'"
+              (click)="role = 'admin'"
+            >
+              Admin
+            </button>
           </div>
         </div>
         @if (error()) {
-          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert"><span class="nk-toast__text">{{ error() }}</span></div>
+          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert">
+            <span class="nk-toast__text">{{ error() }}</span>
+          </div>
         }
       </div>
       <footer class="nk-dialog__foot">
-        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close [disabled]="saving()">Abbrechen</button>
-        <button type="button" class="nk-key nk-key--accent" (click)="onSave()" [disabled]="!username || !password || password.length < 4 || saving()">
+        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close [disabled]="saving()">
+          Abbrechen
+        </button>
+        <button
+          type="button"
+          class="nk-key nk-key--accent"
+          (click)="onSave()"
+          [disabled]="!username || !password || password.length < 4 || saving()"
+        >
           @if (saving()) {
             <span class="nk-spin" aria-hidden="true"></span>
           }

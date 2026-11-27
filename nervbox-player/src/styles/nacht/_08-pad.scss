@@ -4,105 +4,501 @@
    Kinder werden über Zustands-Modifier ein-/ausgeblendet (kein Extra-Markup).
    Inline je Pad nur: Rasterplatz, --nk-lamp-f, --nk-beat, Fortschrittsbreite.
    --------------------------------------------------------------------------- */
-.nk-pad { position: relative; overflow: hidden; min-width: 0; min-height: 0; display: flex; flex-direction: column; cursor: pointer; user-select: none; touch-action: manipulation;
-  border-radius: var(--nk-r-lg); padding: 7px 7px 9px 9px; font-family: var(--nk-font-ui); color: var(--nk-key-ink); text-shadow: var(--nk-key-emboss);
-  background: radial-gradient(rgb(0 0 0 / .07) .7px, transparent 1px) 0 0 / 3px 3px,
-    linear-gradient(150deg, rgb(255 236 200 / calc(var(--nk-key-sheen) * var(--nk-lamp-f))) 0%, rgb(255 236 200 / 0) 40%),
-    radial-gradient(ellipse 75% 90% at 50% 56%, var(--nk-key-hot) 0%, var(--nk-key-mid) 58%, var(--nk-key-edge) 100%);
-  box-shadow: var(--nk-pad-ring, 0 0 0 0 transparent),
-    inset 0 1.5px 0 rgb(255 238 205 / calc(var(--nk-key-hl-a) + var(--nk-key-hl-b) * var(--nk-lamp-f))), inset 1.5px 0 0 rgb(255 238 205 / calc(.06 + .2 * var(--nk-lamp-f))),
-    inset 0 -3px 0 rgb(0 0 0 / .26), inset -2px 0 0 rgb(0 0 0 / .14),
-    0 0 0 1px rgb(var(--nk-key-glow) / var(--nk-pad-rim, .75)), var(--nk-shadow-seat), 0 0 var(--nk-pad-halo, 10px 3px) rgb(var(--nk-key-glow) / var(--nk-pad-halo-a, .2));
-  transition: transform .08s ease, filter .12s ease; }
+.nk-pad {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  border-radius: var(--nk-r-lg);
+  padding: 7px 7px 9px 9px;
+  font-family: var(--nk-font-ui);
+  color: var(--nk-key-ink);
+  text-shadow: var(--nk-key-emboss);
+  background:
+    radial-gradient(rgb(0 0 0 / 0.07) 0.7px, transparent 1px) 0 0 / 3px 3px,
+    linear-gradient(
+      150deg,
+      rgb(255 236 200 / calc(var(--nk-key-sheen) * var(--nk-lamp-f))) 0%,
+      rgb(255 236 200 / 0) 40%
+    ),
+    radial-gradient(
+      ellipse 75% 90% at 50% 56%,
+      var(--nk-key-hot) 0%,
+      var(--nk-key-mid) 58%,
+      var(--nk-key-edge) 100%
+    );
+  box-shadow:
+    var(--nk-pad-ring, 0 0 0 0 transparent),
+    inset 0 1.5px 0
+      rgb(255 238 205 / calc(var(--nk-key-hl-a) + var(--nk-key-hl-b) * var(--nk-lamp-f))),
+    inset 1.5px 0 0 rgb(255 238 205 / calc(0.06 + 0.2 * var(--nk-lamp-f))),
+    inset 0 -3px 0 rgb(0 0 0 / 0.26),
+    inset -2px 0 0 rgb(0 0 0 / 0.14),
+    0 0 0 1px rgb(var(--nk-key-glow) / var(--nk-pad-rim, 0.75)),
+    var(--nk-shadow-seat),
+    0 0 var(--nk-pad-halo, 10px 3px) rgb(var(--nk-key-glow) / var(--nk-pad-halo-a, 0.2));
+  transition:
+    transform 0.08s ease,
+    filter 0.12s ease;
+}
 /* Größen */
-.nk-pad--xl { border-radius: var(--nk-r-xl); padding: 14px 12px 16px 16px; }
+.nk-pad--xl {
+  border-radius: var(--nk-r-xl);
+  padding: 14px 12px 16px 16px;
+}
 /* Hover: Lichtspalt heller, Taste hebt sich; blendet „Im Browser anhören“ ein */
-.nk-pad:hover, .nk-pad--hover { --nk-pad-ring: inset 0 0 0 1.5px rgb(255 255 255 / .85); --nk-pad-rim: 1; --nk-pad-halo: 13px 4px; --nk-pad-halo-a: .45; transform: translateY(-1px); filter: brightness(1.1); }
-.nk-pad:active { transform: translateY(1px); }
+.nk-pad:hover,
+.nk-pad--hover {
+  --nk-pad-ring: inset 0 0 0 1.5px rgb(255 255 255 / 0.85);
+  --nk-pad-rim: 1;
+  --nk-pad-halo: 13px 4px;
+  --nk-pad-halo-a: 0.45;
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+.nk-pad:active {
+  transform: translateY(1px);
+}
 /* läuft: eigener Sound grün, fremder eisblau – weißglühender Rand, farbig angestrahlter Schacht */
-.nk-pad--playing-own { --nk-key-hot: var(--nk-own-hot); --nk-key-mid: var(--nk-own-mid); --nk-key-edge: var(--nk-own-edge); --nk-key-glow: var(--nk-own-rgb); --nk-pad-lit: var(--nk-own); --nk-pad-gap: var(--nk-own-deep); }
-.nk-pad--playing-other { --nk-key-hot: var(--nk-other-hot); --nk-key-mid: var(--nk-other-mid); --nk-key-edge: var(--nk-other-edge); --nk-key-glow: var(--nk-other-rgb); --nk-pad-lit: var(--nk-other); --nk-pad-gap: var(--nk-other-deep); }
-.nk-pad--playing-own, .nk-pad--playing-other { --nk-key-ink: var(--nk-ink); --nk-key-line: rgb(20 17 13 / .65); --nk-key-emboss: 0 1px 0 rgb(255 255 255 / .22); --nk-key-sheen: .2;
-  box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / .8), inset 0 0 16px rgb(255 255 255 / .45), inset 0 -2px 0 rgb(0 0 0 / .1), 0 0 0 1.5px var(--nk-pad-lit), 0 0 0 4px var(--nk-pad-gap), 0 0 0 5px rgb(var(--nk-key-glow) / .6), 0 0 12px 4px rgb(var(--nk-key-glow) / .5);
-  animation: nk-lit var(--nk-beat) ease-in-out infinite; }
+.nk-pad--playing-own {
+  --nk-key-hot: var(--nk-own-hot);
+  --nk-key-mid: var(--nk-own-mid);
+  --nk-key-edge: var(--nk-own-edge);
+  --nk-key-glow: var(--nk-own-rgb);
+  --nk-pad-lit: var(--nk-own);
+  --nk-pad-gap: var(--nk-own-deep);
+}
+.nk-pad--playing-other {
+  --nk-key-hot: var(--nk-other-hot);
+  --nk-key-mid: var(--nk-other-mid);
+  --nk-key-edge: var(--nk-other-edge);
+  --nk-key-glow: var(--nk-other-rgb);
+  --nk-pad-lit: var(--nk-other);
+  --nk-pad-gap: var(--nk-other-deep);
+}
+.nk-pad--playing-own,
+.nk-pad--playing-other {
+  --nk-key-ink: var(--nk-ink);
+  --nk-key-line: rgb(20 17 13 / 0.65);
+  --nk-key-emboss: 0 1px 0 rgb(255 255 255 / 0.22);
+  --nk-key-sheen: 0.2;
+  box-shadow:
+    inset 0 0 0 1.5px rgb(255 255 255 / 0.8),
+    inset 0 0 16px rgb(255 255 255 / 0.45),
+    inset 0 -2px 0 rgb(0 0 0 / 0.1),
+    0 0 0 1.5px var(--nk-pad-lit),
+    0 0 0 4px var(--nk-pad-gap),
+    0 0 0 5px rgb(var(--nk-key-glow) / 0.6),
+    0 0 12px 4px rgb(var(--nk-key-glow) / 0.5);
+  animation: nk-lit var(--nk-beat) ease-in-out infinite;
+}
 /* deaktiviert: Hinterleuchtung aus, nur Lampenreflex auf dunklem Gummi */
-.nk-pad--disabled { --nk-key-hot: var(--nk-tone-off-hot); --nk-key-mid: var(--nk-tone-off); --nk-key-edge: var(--nk-tone-off-edge); --nk-key-ink: var(--nk-tone-off-ink); --nk-key-line: rgb(207 199 180 / .6); --nk-key-emboss: none; --nk-key-sheen: .08; cursor: not-allowed;
-  box-shadow: inset 0 1.5px 0 rgb(255 238 205 / calc(.06 + .2 * var(--nk-lamp-f))), inset 0 -3px 0 rgb(0 0 0 / .3), var(--nk-shadow-seat); }
-.nk-pad--disabled:hover { transform: none; filter: none; }
+.nk-pad--disabled {
+  --nk-key-hot: var(--nk-tone-off-hot);
+  --nk-key-mid: var(--nk-tone-off);
+  --nk-key-edge: var(--nk-tone-off-edge);
+  --nk-key-ink: var(--nk-tone-off-ink);
+  --nk-key-line: rgb(207 199 180 / 0.6);
+  --nk-key-emboss: none;
+  --nk-key-sheen: 0.08;
+  cursor: not-allowed;
+  box-shadow:
+    inset 0 1.5px 0 rgb(255 238 205 / calc(0.06 + 0.2 * var(--nk-lamp-f))),
+    inset 0 -3px 0 rgb(0 0 0 / 0.3),
+    var(--nk-shadow-seat);
+}
+.nk-pad--disabled:hover {
+  transform: none;
+  filter: none;
+}
 /* Auswahlmodus: Kästchen statt Votes/Herz; gewählt = lampenweißer Ring */
-.nk-pad--selectable { filter: saturate(.8) brightness(.88); }
-.nk-pad--selected { filter: brightness(1.08); box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / .9), inset 0 -3px 0 rgb(0 0 0 / .26), 0 0 0 2px var(--nk-iv), 0 0 0 4.5px var(--nk-well), 0 0 14px 5px rgb(var(--nk-lamp-rgb) / .5); }
+.nk-pad--selectable {
+  filter: saturate(0.8) brightness(0.88);
+}
+.nk-pad--selected {
+  filter: brightness(1.08);
+  box-shadow:
+    inset 0 0 0 1.5px rgb(255 255 255 / 0.9),
+    inset 0 -3px 0 rgb(0 0 0 / 0.26),
+    0 0 0 2px var(--nk-iv),
+    0 0 0 4.5px var(--nk-well),
+    0 0 14px 5px rgb(var(--nk-lamp-rgb) / 0.5);
+}
 /* Kopf: Rang, Name, Meta + Vote-Spalte */
-.nk-pad__top { display: flex; align-items: flex-start; gap: 6px; min-width: 0; }
-.nk-pad__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.nk-pad__rank { display: none; font: 600 10px/1 var(--nk-font-mono); letter-spacing: 1.5px; margin-bottom: 4px; white-space: nowrap; }
-.nk-pad--xl .nk-pad__rank { display: block; }
-.nk-pad__name { font: 700 var(--nk-fs-lg)/1.15 var(--nk-font-ui); letter-spacing: .2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.nk-pad--wide .nk-pad__name { font-size: var(--nk-fs-xl); line-height: 1.1; }
-.nk-pad--xl .nk-pad__name { font-weight: 800; font-size: var(--nk-fs-2xl); line-height: 1; letter-spacing: .5px; }
-.nk-pad__meta { font: 500 10px/1.2 var(--nk-font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.nk-pad--xl .nk-pad__meta { font-size: 12px; }
-.nk-pad__votes { width: 16px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 1px; }
-.nk-pad__vote { width: 14px; height: 11px; padding: 0; border: 0; border-radius: 3px; cursor: pointer; display: grid; place-items: center; background: transparent; color: inherit; font-size: 9px; line-height: 1; text-shadow: inherit; opacity: .7; }
-.nk-pad__vote--on { opacity: 1; background: var(--nk-key-ink); color: var(--nk-key-mid); text-shadow: none; }   /* eigener Vote: invers gedruckt */
-.nk-pad__score { font: 600 10.5px/1.1 var(--nk-font-mono); }
-.nk-pad--xl .nk-pad__votes { width: 22px; gap: 4px; }
-.nk-pad--xl .nk-pad__vote { width: 20px; height: 16px; font-size: 13px; }
-.nk-pad--xl .nk-pad__score { font-size: 14px; }
-.nk-pad__check { display: none; width: 16px; height: 16px; flex-shrink: 0; border-radius: var(--nk-r-sm); place-items: center; background: #0E0C0A; color: transparent; font: 800 12px/1 var(--nk-font-ui); text-shadow: none; box-shadow: inset 0 1px 2px rgb(0 0 0 / .9), 0 0 0 1px rgb(255 255 255 / .45); }
-.nk-pad--selectable .nk-pad__check { display: grid; }
-.nk-pad--selected .nk-pad__check { background: var(--nk-iv); color: var(--nk-ink); box-shadow: 0 0 0 1px #FFFFFF, 0 0 8px 2px rgb(var(--nk-lamp-rgb) / .8); }
-.nk-pad--selectable .nk-pad__votes, .nk-pad--selectable .nk-pad__heart, .nk-pad--guest .nk-pad__heart { display: none; }
-.nk-pad--guest .nk-pad__vote { opacity: .35; cursor: not-allowed; }
+.nk-pad__top {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+.nk-pad__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.nk-pad__rank {
+  display: none;
+  font: 600 10px/1 var(--nk-font-mono);
+  letter-spacing: 1.5px;
+  margin-bottom: 4px;
+  white-space: nowrap;
+}
+.nk-pad--xl .nk-pad__rank {
+  display: block;
+}
+.nk-pad__name {
+  font: 700 var(--nk-fs-lg)/1.15 var(--nk-font-ui);
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nk-pad--wide .nk-pad__name {
+  font-size: var(--nk-fs-xl);
+  line-height: 1.1;
+}
+.nk-pad--xl .nk-pad__name {
+  font-weight: 800;
+  font-size: var(--nk-fs-2xl);
+  line-height: 1;
+  letter-spacing: 0.5px;
+}
+.nk-pad__meta {
+  font: 500 10px/1.2 var(--nk-font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nk-pad--xl .nk-pad__meta {
+  font-size: 12px;
+}
+.nk-pad__votes {
+  width: 16px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.nk-pad__vote {
+  width: 14px;
+  height: 11px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: inherit;
+  font-size: 9px;
+  line-height: 1;
+  text-shadow: inherit;
+  opacity: 0.7;
+}
+.nk-pad__vote--on {
+  opacity: 1;
+  background: var(--nk-key-ink);
+  color: var(--nk-key-mid);
+  text-shadow: none;
+} /* eigener Vote: invers gedruckt */
+.nk-pad__score {
+  font: 600 10.5px/1.1 var(--nk-font-mono);
+}
+.nk-pad--xl .nk-pad__votes {
+  width: 22px;
+  gap: 4px;
+}
+.nk-pad--xl .nk-pad__vote {
+  width: 20px;
+  height: 16px;
+  font-size: 13px;
+}
+.nk-pad--xl .nk-pad__score {
+  font-size: 14px;
+}
+.nk-pad__check {
+  display: none;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: var(--nk-r-sm);
+  place-items: center;
+  background: #0e0c0a;
+  color: transparent;
+  font: 800 12px/1 var(--nk-font-ui);
+  text-shadow: none;
+  box-shadow:
+    inset 0 1px 2px rgb(0 0 0 / 0.9),
+    0 0 0 1px rgb(255 255 255 / 0.45);
+}
+.nk-pad--selectable .nk-pad__check {
+  display: grid;
+}
+.nk-pad--selected .nk-pad__check {
+  background: var(--nk-iv);
+  color: var(--nk-ink);
+  box-shadow:
+    0 0 0 1px #ffffff,
+    0 0 8px 2px rgb(var(--nk-lamp-rgb) / 0.8);
+}
+.nk-pad--selectable .nk-pad__votes,
+.nk-pad--selectable .nk-pad__heart,
+.nk-pad--guest .nk-pad__heart {
+  display: none;
+}
+.nk-pad--guest .nk-pad__vote {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
 /* Fuß: Herz, Tag-Chips, NEU, Spieler/Autor, ×N; rechts Platz für ⋮ */
-.nk-pad__foot { display: flex; align-items: center; gap: 5px; margin-top: auto; min-width: 0; min-height: 17px; padding-right: 15px; }
-.nk-pad--xl .nk-pad__foot { min-height: 24px; padding-right: 22px; }
-.nk-pad__heart { flex-shrink: 0; padding: 0; border: 0; background: transparent; cursor: pointer; font-size: 13px; line-height: 1; color: inherit; text-shadow: inherit; opacity: .7; }
-.nk-pad__heart--on { opacity: 1; }
-.nk-pad--xl .nk-pad__heart { font-size: 19px; }
-.nk-pad__tags { flex: 0 1 auto; min-width: 0; display: flex; gap: 3px; overflow: hidden; }
-.nk-pad--xl .nk-chip { height: 18px; padding: 0 6px; font-size: 11px; line-height: 16px; }
-.nk-pad__new { display: none; flex-shrink: 0; padding: 0 5px; border-radius: 7px; background: var(--nk-danger); color: #FFFFFF; font: 800 10px/14px var(--nk-font-ui); letter-spacing: 1px; transform: rotate(-7deg); text-shadow: none; box-shadow: 1px 1px 2px rgb(0 0 0 / .5); }
-.nk-pad--new .nk-pad__new { display: inline-block; }
-.nk-pad__spacer { flex: 1; }
-.nk-pad__player { box-shadow: 0 0 0 1.5px rgb(255 255 255 / .9), 0 1px 3px rgb(0 0 0 / .4); }   /* spielt gerade */
-.nk-pad__author { box-shadow: 0 0 0 1px rgb(255 255 255 / .55); }                               /* hat hochgeladen */
-.nk-pad--xl .nk-avatar { width: 24px; height: 24px; font-size: 11px; }
-.nk-pad__multi { flex-shrink: 0; height: 15px; padding: 0 6px; border-radius: 10px; display: inline-grid; place-items: center; background: var(--nk-other-deep); color: #CDEBFF; font: 700 10px/1 var(--nk-font-mono); text-shadow: none; box-shadow: 0 0 0 1px rgb(255 255 255 / .6); }
-.nk-pad--xl .nk-pad__multi { height: 20px; font-size: 12px; }
+.nk-pad__foot {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: auto;
+  min-width: 0;
+  min-height: 17px;
+  padding-right: 15px;
+}
+.nk-pad--xl .nk-pad__foot {
+  min-height: 24px;
+  padding-right: 22px;
+}
+.nk-pad__heart {
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  color: inherit;
+  text-shadow: inherit;
+  opacity: 0.7;
+}
+.nk-pad__heart--on {
+  opacity: 1;
+}
+.nk-pad--xl .nk-pad__heart {
+  font-size: 19px;
+}
+.nk-pad__tags {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  gap: 3px;
+  overflow: hidden;
+}
+.nk-pad--xl .nk-chip {
+  height: 18px;
+  padding: 0 6px;
+  font-size: 11px;
+  line-height: 16px;
+}
+.nk-pad__new {
+  display: none;
+  flex-shrink: 0;
+  padding: 0 5px;
+  border-radius: 7px;
+  background: var(--nk-danger);
+  color: #ffffff;
+  font: 800 10px/14px var(--nk-font-ui);
+  letter-spacing: 1px;
+  transform: rotate(-7deg);
+  text-shadow: none;
+  box-shadow: 1px 1px 2px rgb(0 0 0 / 0.5);
+}
+.nk-pad--new .nk-pad__new {
+  display: inline-block;
+}
+.nk-pad__spacer {
+  flex: 1;
+}
+.nk-pad__player {
+  box-shadow:
+    0 0 0 1.5px rgb(255 255 255 / 0.9),
+    0 1px 3px rgb(0 0 0 / 0.4);
+} /* spielt gerade */
+.nk-pad__author {
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.55);
+} /* hat hochgeladen */
+.nk-pad--xl .nk-avatar {
+  width: 24px;
+  height: 24px;
+  font-size: 11px;
+}
+.nk-pad__multi {
+  flex-shrink: 0;
+  height: 15px;
+  padding: 0 6px;
+  border-radius: 10px;
+  display: inline-grid;
+  place-items: center;
+  background: var(--nk-other-deep);
+  color: #cdebff;
+  font: 700 10px/1 var(--nk-font-mono);
+  text-shadow: none;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.6);
+}
+.nk-pad--xl .nk-pad__multi {
+  height: 20px;
+  font-size: 12px;
+}
 /* Aktionen unten rechts: ⋮ immer, Kopfhörer („Im Browser anhören“) nur bei Hover */
-.nk-pad__actions { position: absolute; right: 6px; bottom: 8px; display: flex; align-items: center; gap: 4px; }
-.nk-pad--xl .nk-pad__actions { right: 11px; bottom: 16px; }
-.nk-pad__more, .nk-pad__listen { width: 13px; height: 18px; padding: 0; border: 0; border-radius: 5px; cursor: pointer; place-items: center; background: transparent; color: inherit; font: 800 14px/1 var(--nk-font-ui); text-shadow: inherit; }
-.nk-pad__more { display: grid; }
-.nk-pad__listen { display: none; }
-.nk-pad:hover .nk-pad__listen, .nk-pad--hover .nk-pad__listen { display: grid; }
-.nk-pad:hover .nk-pad__more, .nk-pad--hover .nk-pad__more, .nk-pad:hover .nk-pad__listen, .nk-pad--hover .nk-pad__listen { width: 23px; height: 21px; background: var(--nk-ink); color: var(--nk-iv); text-shadow: none; box-shadow: inset 0 1px 0 rgb(255 255 255 / .18), 0 1px 2px rgb(0 0 0 / .6); }
+.nk-pad__actions {
+  position: absolute;
+  right: 6px;
+  bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.nk-pad--xl .nk-pad__actions {
+  right: 11px;
+  bottom: 16px;
+}
+.nk-pad__more,
+.nk-pad__listen {
+  width: 13px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+  place-items: center;
+  background: transparent;
+  color: inherit;
+  font: 800 14px/1 var(--nk-font-ui);
+  text-shadow: inherit;
+}
+.nk-pad__more {
+  display: grid;
+}
+.nk-pad__listen {
+  display: none;
+}
+.nk-pad:hover .nk-pad__listen,
+.nk-pad--hover .nk-pad__listen {
+  display: grid;
+}
+.nk-pad:hover .nk-pad__more,
+.nk-pad--hover .nk-pad__more,
+.nk-pad:hover .nk-pad__listen,
+.nk-pad--hover .nk-pad__listen {
+  width: 23px;
+  height: 21px;
+  background: var(--nk-ink);
+  color: var(--nk-iv);
+  text-shadow: none;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    0 1px 2px rgb(0 0 0 / 0.6);
+}
 /* Klebeband „DEAKTIVIERT“ */
-.nk-pad__tape { display: none; position: absolute; right: 24px; bottom: 9px; padding: 0 8px 0 6px; background: var(--nk-tape); color: var(--nk-ink); font: 700 10px/15px var(--nk-font-ui); letter-spacing: 1px; white-space: nowrap; transform: rotate(-5deg); text-shadow: none; box-shadow: 1px 1px 3px rgb(0 0 0 / .6); }
-.nk-pad--disabled .nk-pad__tape { display: block; }
-.nk-pad--disabled .nk-pad__tags, .nk-pad--disabled .nk-pad__heart { visibility: hidden; }
+.nk-pad__tape {
+  display: none;
+  position: absolute;
+  right: 24px;
+  bottom: 9px;
+  padding: 0 8px 0 6px;
+  background: var(--nk-tape);
+  color: var(--nk-ink);
+  font: 700 10px/15px var(--nk-font-ui);
+  letter-spacing: 1px;
+  white-space: nowrap;
+  transform: rotate(-5deg);
+  text-shadow: none;
+  box-shadow: 1px 1px 3px rgb(0 0 0 / 0.6);
+}
+.nk-pad--disabled .nk-pad__tape {
+  display: block;
+}
+.nk-pad--disabled .nk-pad__tags,
+.nk-pad--disabled .nk-pad__heart {
+  visibility: hidden;
+}
 /* Fortschritt des laufenden Sounds: Segmentkette am unteren Rand, Breite inline am __progress-fill */
-.nk-pad__progress { display: none; position: absolute; left: 9px; right: 7px; bottom: 3px; height: 3px; overflow: hidden; background: repeating-linear-gradient(90deg, rgb(10 22 14 / .22) 0 6px, transparent 6px 8px); }
-.nk-pad--playing-own .nk-pad__progress, .nk-pad--playing-other .nk-pad__progress { display: block; }
-.nk-pad__progress-fill { display: block; width: 0; height: 100%; background: repeating-linear-gradient(90deg, rgb(10 22 14 / .92) 0 6px, transparent 6px 8px); }
-.nk-pad--xl .nk-pad__progress { left: 16px; right: 12px; bottom: 7px; height: 4px; }
+.nk-pad__progress {
+  display: none;
+  position: absolute;
+  left: 9px;
+  right: 7px;
+  bottom: 3px;
+  height: 3px;
+  overflow: hidden;
+  background: repeating-linear-gradient(90deg, rgb(10 22 14 / 0.22) 0 6px, transparent 6px 8px);
+}
+.nk-pad--playing-own .nk-pad__progress,
+.nk-pad--playing-other .nk-pad__progress {
+  display: block;
+}
+.nk-pad__progress-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: repeating-linear-gradient(90deg, rgb(10 22 14 / 0.92) 0 6px, transparent 6px 8px);
+}
+.nk-pad--xl .nk-pad__progress {
+  left: 16px;
+  right: 12px;
+  bottom: 7px;
+  height: 4px;
+}
 /* Touch: unsichtbar vergrößerte Trefferflächen (::after, Optik unverändert). Das Pad ist overflow:hidden –
    Flächen enden am Padrand; Votes/⋮ teilen sich die rechte Spalte vertikal ohne Überlappung. */
 @media (pointer: coarse) {
-  .nk-pad__vote, .nk-pad__heart, .nk-pad__more { position: relative; }
-  .nk-pad__vote::after, .nk-pad__heart::after, .nk-pad__more::after { content: ''; position: absolute; }
-  .nk-pad__votes .nk-pad__vote:first-child::after { inset: -7px -8px -7px -18px; }       /* ▲ bis Mitte der Punktzahl */
-  .nk-pad__votes .nk-pad__vote:last-child::after { inset: -7px -8px -3px -18px; }        /* ▼ bis knapp über ⋮ */
-  .nk-pad__heart::after { inset: -8px -22px -11px -9px; }
-  .nk-pad__more::after { inset: 0 -6px -8px -20px; }
-  .nk-pad--xl .nk-pad__votes .nk-pad__vote:first-child::after { inset: -14px -12px -10px -10px; }
-  .nk-pad--xl .nk-pad__votes .nk-pad__vote:last-child::after { inset: -10px -12px -14px -10px; }
-  .nk-pad--xl .nk-pad__heart::after { inset: -11px -11px -10px -16px; }
-  .nk-pad--xl .nk-pad__more::after { inset: -12px -11px -10px -16px; }
+  .nk-pad__vote,
+  .nk-pad__heart,
+  .nk-pad__more {
+    position: relative;
+  }
+  .nk-pad__vote::after,
+  .nk-pad__heart::after,
+  .nk-pad__more::after {
+    content: '';
+    position: absolute;
+  }
+  .nk-pad__votes .nk-pad__vote:first-child::after {
+    inset: -7px -8px -7px -18px;
+  } /* ▲ bis Mitte der Punktzahl */
+  .nk-pad__votes .nk-pad__vote:last-child::after {
+    inset: -7px -8px -3px -18px;
+  } /* ▼ bis knapp über ⋮ */
+  .nk-pad__heart::after {
+    inset: -8px -22px -11px -9px;
+  }
+  .nk-pad__more::after {
+    inset: 0 -6px -8px -20px;
+  }
+  .nk-pad--xl .nk-pad__votes .nk-pad__vote:first-child::after {
+    inset: -14px -12px -10px -10px;
+  }
+  .nk-pad--xl .nk-pad__votes .nk-pad__vote:last-child::after {
+    inset: -10px -12px -14px -10px;
+  }
+  .nk-pad--xl .nk-pad__heart::after {
+    inset: -11px -11px -10px -16px;
+  }
+  .nk-pad--xl .nk-pad__more::after {
+    inset: -12px -11px -10px -16px;
+  }
 }
 /* Meta-Zeile auf schmalen Pads: etwas kleiner, damit „0:01 · 618×“ immer passt */
 @media (max-width: 768px) {
-  .nk-pad__meta { font-size: 9px; letter-spacing: -.1px; }
-  .nk-pad--xl .nk-pad__meta { font-size: 11px; letter-spacing: 0; }
+  .nk-pad__meta {
+    font-size: 9px;
+    letter-spacing: -0.1px;
+  }
+  .nk-pad--xl .nk-pad__meta {
+    font-size: 11px;
+    letter-spacing: 0;
+  }
 }

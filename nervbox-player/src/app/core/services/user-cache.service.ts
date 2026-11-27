@@ -85,9 +85,9 @@ export class UserCacheService {
 
     return this.api.get<CachedUser[]>('/users').pipe(
       tap({
-        next: users => {
+        next: (users) => {
           const map = new Map<number, CachedUser>();
-          users.forEach(user => map.set(user.id, user));
+          users.forEach((user) => map.set(user.id, user));
           this.usersMap.set(map);
           this.loaded.set(true);
           this.loading.set(false);
@@ -95,7 +95,7 @@ export class UserCacheService {
         error: () => {
           this.loading.set(false);
         },
-      })
+      }),
     );
   }
 
@@ -121,7 +121,7 @@ export class UserCacheService {
     const current = this.usersMap().get(user.id);
     if (current) {
       const updated = { ...current, ...user };
-      this.usersMap.update(map => {
+      this.usersMap.update((map) => {
         const newMap = new Map(map);
         newMap.set(user.id, updated);
         return newMap;

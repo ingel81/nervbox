@@ -8,16 +8,20 @@ const cache = new Map<string, string>();
 
 function parse(hex: string): [number, number, number] {
   let h = (hex || FALLBACK).trim().replace('#', '');
-  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  if (h.length === 3)
+    h = h
+      .split('')
+      .map((c) => c + c)
+      .join('');
   if (!/^[0-9a-fA-F]{6}$/.test(h)) h = FALLBACK.slice(1);
   return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
 }
 
 function mix([r, g, b]: number[], [r2, g2, b2]: number[], t: number): number[] {
-  return [r + (r2 - r) * t, g + (g2 - g) * t, b + (b2 - b) * t].map(v => Math.round(v));
+  return [r + (r2 - r) * t, g + (g2 - g) * t, b + (b2 - b) * t].map((v) => Math.round(v));
 }
 
-const hex = (c: number[]) => '#' + c.map(v => v.toString(16).padStart(2, '0')).join('');
+const hex = (c: number[]) => '#' + c.map((v) => v.toString(16).padStart(2, '0')).join('');
 
 function luminance([r, g, b]: number[]): number {
   const f = (v: number) => {
@@ -48,7 +52,7 @@ const NEUTRAL_LIGHT = '#AA9D7C'; // voice-putty
 const NEUTRAL_DARK = '#443E37'; // alarm-dunkel
 
 function toRubber(rgb: [number, number, number]): [number, number, number] {
-  const [r, g, b] = rgb.map(v => v / 255);
+  const [r, g, b] = rgb.map((v) => v / 255);
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   const l = (max + min) / 2;

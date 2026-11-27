@@ -53,7 +53,11 @@ type ChatTab = 'chat' | 'activity';
           >
             Chat
             @if (unreadChatCount() > 0 && activeTab() !== 'chat') {
-              <span class="nk-badge nk-badge--sm" [attr.aria-label]="unreadChatCount() + ' ungelesen'">{{ unreadChatCount() > 99 ? '99+' : unreadChatCount() }}</span>
+              <span
+                class="nk-badge nk-badge--sm"
+                [attr.aria-label]="unreadChatCount() + ' ungelesen'"
+                >{{ unreadChatCount() > 99 ? '99+' : unreadChatCount() }}</span
+              >
             }
           </button>
           <button
@@ -65,19 +69,37 @@ type ChatTab = 'chat' | 'activity';
           >
             Aktivität
             @if (unreadActivityCount() > 0 && activeTab() !== 'activity') {
-              <span class="nk-badge nk-badge--sm" [attr.aria-label]="unreadActivityCount() + ' ungelesen'">{{ unreadActivityCount() > 99 ? '99+' : unreadActivityCount() }}</span>
+              <span
+                class="nk-badge nk-badge--sm"
+                [attr.aria-label]="unreadActivityCount() + ' ungelesen'"
+                >{{ unreadActivityCount() > 99 ? '99+' : unreadActivityCount() }}</span
+              >
             }
           </button>
         </div>
-        <span class="nk-printer__status" [title]="signalR.chatConnected() ? 'Chat verbunden' : 'Chat getrennt'">
-          <span [class]="signalR.chatConnected() ? 'nk-led nk-led--dot nk-led--own' : 'nk-led nk-led--dot nk-led--danger nk-led--blink'" aria-hidden="true"></span>
+        <span
+          class="nk-printer__status"
+          [title]="signalR.chatConnected() ? 'Chat verbunden' : 'Chat getrennt'"
+        >
+          <span
+            [class]="
+              signalR.chatConnected()
+                ? 'nk-led nk-led--dot nk-led--own'
+                : 'nk-led nk-led--dot nk-led--danger nk-led--blink'
+            "
+            aria-hidden="true"
+          ></span>
           <span class="nk-label">{{ signalR.chatConnected() ? 'Verbunden' : 'Getrennt' }}</span>
         </span>
       </div>
 
       <div class="nk-printer__feed">
         @if (activeTab() === 'chat' && showGifPicker()) {
-          <app-gif-picker class="chat-gifpicker" (gifSelected)="onGifSelected($event)" (closed)="showGifPicker.set(false)" />
+          <app-gif-picker
+            class="chat-gifpicker"
+            (gifSelected)="onGifSelected($event)"
+            (closed)="showGifPicker.set(false)"
+          />
         }
         @if (loading()) {
           <div class="nk-printer__paper chat-paper chat-loading">
@@ -86,59 +108,82 @@ type ChatTab = 'chat' | 'activity';
         } @else if (activeTab() === 'chat') {
           <div class="nk-printer__paper chat-paper">
             <div class="chat-scroll" #messagesContainer>
-            <span class="nk-printer__head">*** NERVBOX · CHAT-DRUCKER ***</span>
-            @if (hasMoreChatMessages()) {
-              <button type="button" class="nk-printer__older" (click)="loadOlderMessages()" [disabled]="loadingOlder()">
-                {{ loadingOlder() ? '… lädt' : '▲ Ältere Nachrichten' }}
-              </button>
-            }
-            @for (msg of chatMessages(); track msg.id || $index) {
-              <div [class]="msg.userId === auth.currentUser()?.id ? 'nk-printer__msg nk-printer__msg--own' : 'nk-printer__msg'">
-                <span class="nk-printer__meta">
-                  <app-user-avatar class="chat-av" [userId]="msg.userId" size="xs" />
-                  <span class="nk-printer__user">{{ msg.userId === auth.currentUser()?.id ? 'Du' : msg.username }}</span>
-                  <span class="nk-printer__time">{{ formatTime(msg.createdAt) }}</span>
-                </span>
-                @if (msg.messageType === 'gif' && msg.gifUrl) {
-                  <span class="nk-printer__gif chat-gif">
-                    @if (brokenGifs().has(msg.gifUrl)) {
-                      <span class="chat-gif-gone">GIF nicht mehr verfügbar</span>
-                    } @else {
-                      <img [src]="msg.gifUrl" alt="GIF" loading="lazy" (error)="onGifError(msg.gifUrl)" />
-                    }
-                    <span class="nk-printer__gif-tag">GIF</span>
+              <span class="nk-printer__head">*** NERVBOX · CHAT-DRUCKER ***</span>
+              @if (hasMoreChatMessages()) {
+                <button
+                  type="button"
+                  class="nk-printer__older"
+                  (click)="loadOlderMessages()"
+                  [disabled]="loadingOlder()"
+                >
+                  {{ loadingOlder() ? '… lädt' : '▲ Ältere Nachrichten' }}
+                </button>
+              }
+              @for (msg of chatMessages(); track msg.id || $index) {
+                <div
+                  [class]="
+                    msg.userId === auth.currentUser()?.id
+                      ? 'nk-printer__msg nk-printer__msg--own'
+                      : 'nk-printer__msg'
+                  "
+                >
+                  <span class="nk-printer__meta">
+                    <app-user-avatar class="chat-av" [userId]="msg.userId" size="xs" />
+                    <span class="nk-printer__user">{{
+                      msg.userId === auth.currentUser()?.id ? 'Du' : msg.username
+                    }}</span>
+                    <span class="nk-printer__time">{{ formatTime(msg.createdAt) }}</span>
                   </span>
-                } @else {
-                  <span class="nk-printer__text">{{ msg.message }}</span>
-                }
-              </div>
-            }
-            @if (!chatMessages().length) {
-              <span class="nk-printer__text chat-empty">Noch keine Chat-Nachrichten</span>
-            }
+                  @if (msg.messageType === 'gif' && msg.gifUrl) {
+                    <span class="nk-printer__gif chat-gif">
+                      @if (brokenGifs().has(msg.gifUrl)) {
+                        <span class="chat-gif-gone">GIF nicht mehr verfügbar</span>
+                      } @else {
+                        <img
+                          [src]="msg.gifUrl"
+                          alt="GIF"
+                          loading="lazy"
+                          (error)="onGifError(msg.gifUrl)"
+                        />
+                      }
+                      <span class="nk-printer__gif-tag">GIF</span>
+                    </span>
+                  } @else {
+                    <span class="nk-printer__text">{{ msg.message }}</span>
+                  }
+                </div>
+              }
+              @if (!chatMessages().length) {
+                <span class="nk-printer__text chat-empty">Noch keine Chat-Nachrichten</span>
+              }
             </div>
           </div>
         } @else {
           <div class="nk-printer__paper chat-paper">
             <div class="chat-scroll" #activityContainer>
-            <span class="nk-printer__head">*** NERVBOX · AKTIVITÄT ***</span>
-            @if (hasMoreActivityMessages()) {
-              <button type="button" class="nk-printer__older" (click)="loadOlderMessages()" [disabled]="loadingOlder()">
-                {{ loadingOlder() ? '… lädt' : '▲ Ältere Mitteilungen' }}
-              </button>
-            }
-            @for (msg of activityMessages(); track msg.id || $index) {
-              <div class="nk-printer__msg">
-                <span class="nk-printer__meta">
-                  <mat-icon class="chat-act-icon">{{ getActivityIcon(msg.message) }}</mat-icon>
-                  <span class="nk-printer__time">{{ formatTime(msg.createdAt) }}</span>
-                </span>
-                <span class="nk-printer__text">{{ msg.message }}</span>
-              </div>
-            }
-            @if (!activityMessages().length) {
-              <span class="nk-printer__text chat-empty">Noch keine Aktivitäten</span>
-            }
+              <span class="nk-printer__head">*** NERVBOX · AKTIVITÄT ***</span>
+              @if (hasMoreActivityMessages()) {
+                <button
+                  type="button"
+                  class="nk-printer__older"
+                  (click)="loadOlderMessages()"
+                  [disabled]="loadingOlder()"
+                >
+                  {{ loadingOlder() ? '… lädt' : '▲ Ältere Mitteilungen' }}
+                </button>
+              }
+              @for (msg of activityMessages(); track msg.id || $index) {
+                <div class="nk-printer__msg">
+                  <span class="nk-printer__meta">
+                    <mat-icon class="chat-act-icon">{{ getActivityIcon(msg.message) }}</mat-icon>
+                    <span class="nk-printer__time">{{ formatTime(msg.createdAt) }}</span>
+                  </span>
+                  <span class="nk-printer__text">{{ msg.message }}</span>
+                </div>
+              }
+              @if (!activityMessages().length) {
+                <span class="nk-printer__text chat-empty">Noch keine Aktivitäten</span>
+              }
             </div>
           </div>
         }
@@ -160,7 +205,9 @@ type ChatTab = 'chat' | 'activity';
               aria-label="GIF suchen"
               [attr.aria-pressed]="showGifPicker()"
               (click)="toggleGifPicker()"
-            >GIF</button>
+            >
+              GIF
+            </button>
             <label class="nk-input chat-input">
               <input
                 #messageInput
@@ -174,8 +221,24 @@ type ChatTab = 'chat' | 'activity';
                 [disabled]="sending()"
               />
             </label>
-            <button type="submit" class="nk-key nk-key--sm nk-key--icon" aria-label="Senden" [disabled]="!newMessage().trim() || sending()">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l16-8-6 16-3-7-7-1z"></path></svg>
+            <button
+              type="submit"
+              class="nk-key nk-key--sm nk-key--icon"
+              aria-label="Senden"
+              [disabled]="!newMessage().trim() || sending()"
+            >
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M4 12l16-8-6 16-3-7-7-1z"></path>
+              </svg>
             </button>
           </form>
         } @else {
@@ -451,7 +514,7 @@ export class ChatSidebarComponent implements OnInit, AfterViewChecked {
   }
 
   onGifError(url: string): void {
-    this.brokenGifs.update(set => new Set(set).add(url));
+    this.brokenGifs.update((set) => new Set(set).add(url));
   }
 
   async onGifSelected(gifUrl: string): Promise<void> {

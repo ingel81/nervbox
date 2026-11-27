@@ -25,7 +25,13 @@ import { tagToneStyle } from '../../shared/tag-tone';
   imports: [FormsModule, MatTooltipModule, MatAutocompleteModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <nav #rail class="nk-rail tag-rail" [class.tag-rail--more]="moreRight()" aria-label="Tags" (scroll)="updateFade()">
+    <nav
+      #rail
+      class="nk-rail tag-rail"
+      [class.tag-rail--more]="moreRight()"
+      aria-label="Tags"
+      (scroll)="updateFade()"
+    >
       @if (pinnedTags().length) {
         <span class="nk-label">Angepinnt</span>
       }
@@ -38,7 +44,16 @@ import { tagToneStyle } from '../../shared/tag-tone';
             [attr.aria-pressed]="isSelected(tag)"
             (click)="toggleTag(tag)"
           >
-            <svg class="nk-tag__pin" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-label="angepinnt"><path d="M16 3l5 5-4 1-4 4 1 5-2 2-4-4-5 5-1-1 5-5-4-4 2-2 5 1 4-4z"></path></svg>
+            <svg
+              class="nk-tag__pin"
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-label="angepinnt"
+            >
+              <path d="M16 3l5 5-4 1-4 4 1 5-2 2-4-4-5 5-1-1 5-5-4-4 2-2 5 1 4-4z"></path>
+            </svg>
             <span class="nk-tag__lens" aria-hidden="true"></span>
             <span>#{{ tag }}</span>
             @if (tagCounts()[tag]) {
@@ -72,12 +87,29 @@ import { tagToneStyle } from '../../shared/tag-tone';
             [attr.aria-label]="'#' + tag + ' aus der Leiste entfernen'"
             [matTooltip]="'#' + tag + ' entfernen'"
             (click)="removeVisibleTag(tag, $event)"
-          >✕</button>
+          >
+            ✕
+          </button>
         </span>
       }
 
-      <label class="nk-input nk-input--sm tag-search" #searchOrigin="matAutocompleteOrigin" matAutocompleteOrigin>
-        <svg class="nk-input__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+      <label
+        class="nk-input nk-input--sm tag-search"
+        #searchOrigin="matAutocompleteOrigin"
+        matAutocompleteOrigin
+      >
+        <svg
+          class="nk-input__icon"
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14M5 12h14"></path>
+        </svg>
         <input
           #searchInput
           class="nk-input__field"
@@ -90,12 +122,21 @@ import { tagToneStyle } from '../../shared/tag-tone';
           [matAutocompleteConnectedTo]="searchOrigin"
         />
         @if (searchQuery()) {
-          <button type="button" class="nk-input__clear" aria-label="Tag-Suche leeren" (click)="clearSearch($event)">✕</button>
+          <button
+            type="button"
+            class="nk-input__clear"
+            aria-label="Tag-Suche leeren"
+            (click)="clearSearch($event)"
+          >
+            ✕
+          </button>
         }
         <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onTagSelected($event)">
           @for (tag of filteredTags(); track tag) {
             <mat-option [value]="tag">
-              <span class="tag-opt" [style]="tone(tag)"><span class="nk-tag__lens" aria-hidden="true"></span>#{{ tag }}</span>
+              <span class="tag-opt" [style]="tone(tag)"
+                ><span class="nk-tag__lens" aria-hidden="true"></span>#{{ tag }}</span
+              >
             </mat-option>
           }
           @if (filteredTags().length === 0 && searchQuery()) {
@@ -192,7 +233,9 @@ export class TagFilterComponent implements OnInit {
       this.updateFade();
     });
     effect(() => {
-      this.tags(); this.pinnedTags(); this._visibleTags();
+      this.tags();
+      this.pinnedTags();
+      this._visibleTags();
       setTimeout(() => this.updateFade());
     });
     // Persist selected tags to localStorage whenever they change

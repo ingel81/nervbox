@@ -25,7 +25,14 @@ import { GAME_INFO } from '../../game-info';
 @Component({
   selector: 'app-kayberg-game',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatIconModule, GameExitConfirmComponent, GameFrameComponent, GameOverlayComponent],
+  imports: [
+    CommonModule,
+    MatDialogModule,
+    MatIconModule,
+    GameExitConfirmComponent,
+    GameFrameComponent,
+    GameOverlayComponent,
+  ],
   templateUrl: './kayberg-game.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./kayberg-game.component.scss'],

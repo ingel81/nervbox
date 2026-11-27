@@ -25,7 +25,7 @@ export class InventoryService {
   private readonly auth = inject(AuthService);
 
   // Inventory state
-  readonly wood = signal<number>(10);  // Default 10 wood
+  readonly wood = signal<number>(10); // Default 10 wood
   readonly woodPrice = signal<number>(25000);
   readonly isLoading = signal<boolean>(false);
 
@@ -35,7 +35,7 @@ export class InventoryService {
       if (this.auth.isLoggedIn()) {
         this.loadInventory();
       } else {
-        this.wood.set(10);  // Reset to default when logged out
+        this.wood.set(10); // Reset to default when logged out
       }
     });
   }
@@ -58,15 +58,17 @@ export class InventoryService {
   }
 
   purchaseWood(quantity: number): Observable<PurchaseResponse> {
-    return this.api.post<PurchaseResponse>('/shop/purchase', {
-      itemType: 'wood',
-      quantity: quantity,
-    }).pipe(
-      tap(response => {
-        if (response.success) {
-          this.wood.set(response.newWoodBalance);
-        }
+    return this.api
+      .post<PurchaseResponse>('/shop/purchase', {
+        itemType: 'wood',
+        quantity: quantity,
       })
-    );
+      .pipe(
+        tap((response) => {
+          if (response.success) {
+            this.wood.set(response.newWoodBalance);
+          }
+        }),
+      );
   }
 }

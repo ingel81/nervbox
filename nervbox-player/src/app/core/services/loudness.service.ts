@@ -35,7 +35,7 @@ export class LoudnessService {
 
   reload(): void {
     this.api.get<LoudnessGains>('/loudness').subscribe({
-      next: r => {
+      next: (r) => {
         this.enabled.set(r.enabled);
         this.gains.set(r.gains ?? {});
       },
@@ -55,6 +55,8 @@ export class LoudnessService {
   }
 
   configure(enabled: boolean, targetDb?: number): Observable<LoudnessStatus> {
-    return this.api.put<LoudnessStatus>('/loudness', { enabled, targetDb }).pipe(tap(() => this.reload()));
+    return this.api
+      .put<LoudnessStatus>('/loudness', { enabled, targetDb })
+      .pipe(tap(() => this.reload()));
   }
 }

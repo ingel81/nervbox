@@ -34,7 +34,9 @@ export class WelcomeTourService {
 
   private getAdminStorageKey(): string {
     const username = this.auth.currentUser()?.username;
-    return username ? `${this.ADMIN_STORAGE_KEY_PREFIX}-${username}` : this.ADMIN_STORAGE_KEY_PREFIX;
+    return username
+      ? `${this.ADMIN_STORAGE_KEY_PREFIX}-${username}`
+      : this.ADMIN_STORAGE_KEY_PREFIX;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,7 +54,12 @@ export class WelcomeTourService {
   readonly shouldShowUserTour = computed(() => {
     // Tour nur für eingeloggte User - sonst fehlen UI-Elemente
     // Auf Mobile nicht anzeigen - Tooltips werden von Dialogen verdeckt
-    return this.auth.isLoggedIn() && !this.userTourCompleted() && !this.userTourActive() && !this.isMobile();
+    return (
+      this.auth.isLoggedIn() &&
+      !this.userTourCompleted() &&
+      !this.userTourActive() &&
+      !this.isMobile()
+    );
   });
 
   readonly shouldShowAdminTour = computed(() => {
@@ -82,11 +89,7 @@ export class WelcomeTourService {
     // Watch for admin login to trigger admin tour (only if user tour already completed)
     effect(() => {
       const user = this.auth.currentUser();
-      if (
-        user?.role === 'admin' &&
-        this.userTourCompleted() &&
-        this.shouldShowAdminTour()
-      ) {
+      if (user?.role === 'admin' && this.userTourCompleted() && this.shouldShowAdminTour()) {
         // Delay to ensure UI is ready
         setTimeout(() => this.startAdminTour(), 500);
       }
@@ -133,7 +136,7 @@ export class WelcomeTourService {
   // ============ HELPER: MENU CONTROL ============
 
   private openMenu(selector: string): Promise<void> {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       const trigger = document.querySelector(selector) as HTMLElement;
       if (trigger) {
         trigger.click();
@@ -154,7 +157,7 @@ export class WelcomeTourService {
   }
 
   private openShekelDialog(tabIndex = 0): Promise<void> {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       // Close any existing dialog first
       if (this.shekelDialogRef) {
         this.shekelDialogRef.close();
@@ -242,7 +245,7 @@ export class WelcomeTourService {
       attachTo: { element: '.logo', on: 'bottom' },
       canClickTarget: false,
       cancelIcon: { enabled: false },
-      buttons: [{ text: 'Los geht\'s!', action: () => this.tour?.next() }],
+      buttons: [{ text: "Los geht's!", action: () => this.tour?.next() }],
     });
 
     // Step 2: Search
@@ -424,7 +427,7 @@ export class WelcomeTourService {
       attachTo: { element: '.logo', on: 'bottom' },
       buttons: [
         { text: 'Zurück', action: () => this.tour?.back(), secondary: true },
-        { text: 'Let\'s go!', action: () => this.tour?.complete() },
+        { text: "Let's go!", action: () => this.tour?.complete() },
       ],
       beforeShowPromise: () => {
         this.closeAllMenus();

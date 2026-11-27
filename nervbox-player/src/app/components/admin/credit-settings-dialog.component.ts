@@ -33,48 +33,139 @@ import { CreditService, CreditSettings } from '../../core/services/credit.servic
       <header class="nk-dialog__head">
         <mat-icon class="cs-ico" aria-hidden="true">savings</mat-icon>
         <h2 class="nk-dialog__title">Shekel-Einstellungen</h2>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" (click)="dialogRef.close()">✕</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon"
+          aria-label="Schließen"
+          (click)="dialogRef.close()"
+        >
+          ✕
+        </button>
       </header>
       @if (loading()) {
-        <div class="nk-dialog__body"><div class="cs-state"><span class="nk-spin" aria-hidden="true"></span>lädt …</div></div>
+        <div class="nk-dialog__body">
+          <div class="cs-state"><span class="nk-spin" aria-hidden="true"></span>lädt …</div>
+        </div>
       } @else if (settings(); as s) {
         <div class="nk-dialog__body cs-body">
           <div class="nk-section">
             <h3 class="nk-section__title">Start-N$</h3>
             <div class="cs-grid">
-              <label class="nk-field"><span class="nk-label">N$ für neue User</span><span class="nk-input"><input class="nk-input__field cs-num" type="number" min="0" [(ngModel)]="s.initialCreditsUser" aria-label="N$ für neue User" /><span class="cs-unit">N$</span></span><span class="nk-field__hint">Initiale N$ bei Registrierung</span></label>
-              <label class="nk-field"><span class="nk-label">N$ für Admins</span><span class="nk-input"><input class="nk-input__field cs-num" type="number" min="0" [(ngModel)]="s.initialCreditsAdmin" aria-label="N$ für Admins" /><span class="cs-unit">N$</span></span><span class="nk-field__hint">Admins haben quasi unbegrenzte N$</span></label>
+              <label class="nk-field"
+                ><span class="nk-label">N$ für neue User</span
+                ><span class="nk-input"
+                  ><input
+                    class="nk-input__field cs-num"
+                    type="number"
+                    min="0"
+                    [(ngModel)]="s.initialCreditsUser"
+                    aria-label="N$ für neue User"
+                  /><span class="cs-unit">N$</span></span
+                ><span class="nk-field__hint">Initiale N$ bei Registrierung</span></label
+              >
+              <label class="nk-field"
+                ><span class="nk-label">N$ für Admins</span
+                ><span class="nk-input"
+                  ><input
+                    class="nk-input__field cs-num"
+                    type="number"
+                    min="0"
+                    [(ngModel)]="s.initialCreditsAdmin"
+                    aria-label="N$ für Admins"
+                  /><span class="cs-unit">N$</span></span
+                ><span class="nk-field__hint">Admins haben quasi unbegrenzte N$</span></label
+              >
             </div>
           </div>
           <div class="nk-section">
             <h3 class="nk-section__title">Sound-Abspielen</h3>
             <div class="cs-grid">
-              <label class="nk-field"><span class="nk-label">Kosten pro Sound</span><span class="nk-input"><input class="nk-input__field cs-num" type="number" min="0" [(ngModel)]="s.costPerSoundPlay" aria-label="Kosten pro Sound" /><span class="cs-unit">N$</span></span><span class="nk-field__hint">N$ die pro Abspielen abgezogen werden</span></label>
-              <label class="nk-field"><span class="nk-label">Min. N$ zum Spielen</span><span class="nk-input"><input class="nk-input__field cs-num" type="number" min="0" [(ngModel)]="s.minCreditsToPlay" aria-label="Min. N$ zum Spielen" /><span class="cs-unit">N$</span></span><span class="nk-field__hint">Mindestguthaben um abspielen zu können</span></label>
+              <label class="nk-field"
+                ><span class="nk-label">Kosten pro Sound</span
+                ><span class="nk-input"
+                  ><input
+                    class="nk-input__field cs-num"
+                    type="number"
+                    min="0"
+                    [(ngModel)]="s.costPerSoundPlay"
+                    aria-label="Kosten pro Sound"
+                  /><span class="cs-unit">N$</span></span
+                ><span class="nk-field__hint">N$ die pro Abspielen abgezogen werden</span></label
+              >
+              <label class="nk-field"
+                ><span class="nk-label">Min. N$ zum Spielen</span
+                ><span class="nk-input"
+                  ><input
+                    class="nk-input__field cs-num"
+                    type="number"
+                    min="0"
+                    [(ngModel)]="s.minCreditsToPlay"
+                    aria-label="Min. N$ zum Spielen"
+                  /><span class="cs-unit">N$</span></span
+                ><span class="nk-field__hint">Mindestguthaben um abspielen zu können</span></label
+              >
             </div>
           </div>
           <div class="nk-section">
             <h3 class="nk-section__title">Stündliche Bonus-N$</h3>
             <span class="cs-switch">
-              <button type="button" role="switch" [attr.aria-checked]="s.hourlyCreditsEnabled" [class]="s.hourlyCreditsEnabled ? 'nk-switch nk-switch--on' : 'nk-switch'" aria-label="Stündliche N$ aktiviert" (click)="s.hourlyCreditsEnabled = !s.hourlyCreditsEnabled"><span class="nk-switch__knob" aria-hidden="true"></span></button>
+              <button
+                type="button"
+                role="switch"
+                [attr.aria-checked]="s.hourlyCreditsEnabled"
+                [class]="s.hourlyCreditsEnabled ? 'nk-switch nk-switch--on' : 'nk-switch'"
+                aria-label="Stündliche N$ aktiviert"
+                (click)="s.hourlyCreditsEnabled = !s.hourlyCreditsEnabled"
+              >
+                <span class="nk-switch__knob" aria-hidden="true"></span>
+              </button>
               Stündliche N$ aktiviert
             </span>
             @if (s.hourlyCreditsEnabled) {
               <div class="cs-grid">
-                <label class="nk-field"><span class="nk-label">N$ pro Stunde</span><span class="nk-input"><input class="nk-input__field cs-num" type="number" min="1" [(ngModel)]="s.hourlyCreditsAmount" aria-label="N$ pro Stunde" /><span class="cs-unit">N$</span></span><span class="nk-field__hint">Automatische Gutschrift jede Stunde</span></label>
+                <label class="nk-field"
+                  ><span class="nk-label">N$ pro Stunde</span
+                  ><span class="nk-input"
+                    ><input
+                      class="nk-input__field cs-num"
+                      type="number"
+                      min="1"
+                      [(ngModel)]="s.hourlyCreditsAmount"
+                      aria-label="N$ pro Stunde"
+                    /><span class="cs-unit">N$</span></span
+                  ><span class="nk-field__hint">Automatische Gutschrift jede Stunde</span></label
+                >
               </div>
             }
           </div>
           <div class="nk-section">
             <h3 class="nk-section__title">Limits</h3>
             <div class="cs-grid">
-              <label class="nk-field"><span class="nk-label">Maximale N$ (User)</span><span class="nk-input"><input class="nk-input__field cs-num" type="number" min="1" [(ngModel)]="s.maxCreditsUser" aria-label="Maximale N$ (User)" /><span class="cs-unit">N$</span></span><span class="nk-field__hint">Obergrenze für normale User</span></label>
+              <label class="nk-field"
+                ><span class="nk-label">Maximale N$ (User)</span
+                ><span class="nk-input"
+                  ><input
+                    class="nk-input__field cs-num"
+                    type="number"
+                    min="1"
+                    [(ngModel)]="s.maxCreditsUser"
+                    aria-label="Maximale N$ (User)"
+                  /><span class="cs-unit">N$</span></span
+                ><span class="nk-field__hint">Obergrenze für normale User</span></label
+              >
             </div>
           </div>
         </div>
         <footer class="nk-dialog__foot">
-          <button type="button" class="nk-key nk-key--ghost" (click)="dialogRef.close()">Abbrechen</button>
-          <button type="button" class="nk-key nk-key--accent" (click)="save()" [disabled]="saving()">
+          <button type="button" class="nk-key nk-key--ghost" (click)="dialogRef.close()">
+            Abbrechen
+          </button>
+          <button
+            type="button"
+            class="nk-key nk-key--accent"
+            (click)="save()"
+            [disabled]="saving()"
+          >
             @if (saving()) {
               <span class="nk-spin" aria-hidden="true"></span>
             }

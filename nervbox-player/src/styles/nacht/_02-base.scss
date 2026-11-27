@@ -1,8 +1,27 @@
 /* ---------------------------------------------------------------------------
    2 · BASIS & HILFSKLASSEN
    --------------------------------------------------------------------------- */
-[class^="nk-"], [class*=" nk-"] { box-sizing: border-box; }
-.nk-hidden { display: none !important; }
-.nk-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+[class^='nk-'],
+[class*=' nk-'] {
+  box-sizing: border-box;
+}
+.nk-hidden {
+  display: none !important;
+}
+.nk-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 /* hinterleuchtete Siebdruck-Beschriftung */
-.nk-label { font: 600 var(--nk-fs-label) var(--nk-font-ui); letter-spacing: var(--nk-ls-label); color: var(--nk-iv); white-space: nowrap; text-transform: uppercase; text-shadow: var(--nk-glow-text); }
+.nk-label {
+  font: 600 var(--nk-fs-label) var(--nk-font-ui);
+  letter-spacing: var(--nk-ls-label);
+  color: var(--nk-iv);
+  white-space: nowrap;
+  text-transform: uppercase;
+  text-shadow: var(--nk-glow-text);
+}

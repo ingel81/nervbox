@@ -25,7 +25,11 @@ import { ChatSidebarComponent } from './components/chat/chat-sidebar.component';
 import { SoundUploadDialogComponent } from './components/sound-upload-dialog/sound-upload-dialog.component';
 import { AchievementToastComponent } from './components/shared/achievement-toast/achievement-toast.component';
 import { ChannelStripComponent } from './components/channels/channel-strip.component';
-import { MobileBarComponent, MobileAction, MobileView } from './components/mobile/mobile-bar.component';
+import {
+  MobileBarComponent,
+  MobileAction,
+  MobileView,
+} from './components/mobile/mobile-bar.component';
 import { NowPlayingService } from './core/services/now-playing.service';
 import { SoundService } from './core/services/sound.service';
 import { LoudnessService } from './core/services/loudness.service';
@@ -123,7 +127,9 @@ import { Sound } from './core/models';
                   <div class="nk-empty app-state__box" role="alert">
                     <span class="nk-led nk-led--danger nk-led--blink" aria-hidden="true"></span>
                     <span class="nk-empty__title">{{ soundService.error() }}</span>
-                    <button type="button" class="nk-key" (click)="loadSounds()">Erneut versuchen</button>
+                    <button type="button" class="nk-key" (click)="loadSounds()">
+                      Erneut versuchen
+                    </button>
                   </div>
                 </div>
               } @else {
@@ -163,7 +169,12 @@ import { Sound } from './core/models';
           </div>
 
           @if (isMobile()) {
-            <app-mobile-bar [view]="mobileView()" (viewChange)="mobileView.set($event)" (action)="onMobileAction($event)" (again)="onPlayAgain()" />
+            <app-mobile-bar
+              [view]="mobileView()"
+              (viewChange)="mobileView.set($event)"
+              (action)="onMobileAction($event)"
+              (again)="onPlayAgain()"
+            />
           } @else {
             <app-channel-strip class="app-strip" (again)="onPlayAgain()" (killAll)="onKillAll()" />
           }
@@ -227,11 +238,21 @@ import { Sound } from './core/models';
       width: 3px;
       height: 54px;
       border-radius: 2px;
-      background: repeating-linear-gradient(180deg, rgb(0 0 0 / 0.55) 0 2px, rgb(var(--nk-lamp-rgb) / 0.16) 2px 3px, transparent 3px 5px);
+      background: repeating-linear-gradient(
+        180deg,
+        rgb(0 0 0 / 0.55) 0 2px,
+        rgb(var(--nk-lamp-rgb) / 0.16) 2px 3px,
+        transparent 3px 5px
+      );
     }
 
     .app-grip:hover .app-grip__handle {
-      background: repeating-linear-gradient(180deg, rgb(0 0 0 / 0.6) 0 2px, rgb(var(--nk-lamp-rgb) / 0.5) 2px 3px, transparent 3px 5px);
+      background: repeating-linear-gradient(
+        180deg,
+        rgb(0 0 0 / 0.6) 0 2px,
+        rgb(var(--nk-lamp-rgb) / 0.5) 2px 3px,
+        transparent 3px 5px
+      );
     }
 
     .app-chat-mobile {
@@ -367,7 +388,7 @@ export class App implements OnInit {
   });
 
   ngOnInit(): void {
-    this.mobileQuery.addEventListener('change', e => this.isMobile.set(e.matches));
+    this.mobileQuery.addEventListener('change', (e) => this.isMobile.set(e.matches));
     // Load config first (playback mode etc.)
     this.configService.loadConfig().subscribe();
 
@@ -453,26 +474,58 @@ export class App implements OnInit {
 
   onMobileAction(action: MobileAction): void {
     switch (action) {
-      case 'stats': void this.onStatsClick(); return;
-      case 'selection': void this.selectionService.toggleSelectionMode(); return;
+      case 'stats':
+        void this.onStatsClick();
+        return;
+      case 'selection':
+        void this.selectionService.toggleSelectionMode();
+        return;
       case 'mixer':
         this.achievementService.markMixerVisited().subscribe();
         window.location.href = '/mixer';
         return;
-      case 'profile': void this.onProfileClick(); return;
-      case 'avatar': void this.onChangeAvatarClick(); return;
-      case 'upload': void this.onUploadClick(); return;
-      case 'password': void this.onChangePasswordClick(); return;
-      case 'tour': void this.welcomeTour.restartTour(); return;
-      case 'logout': void this.authService.logout(); return;
-      case 'login': void this.onLoginClick(); return;
-      case 'admin-users': void this.onAdminMenuAction('users'); return;
-      case 'admin-tags': void this.onAdminMenuAction('tags'); return;
-      case 'admin-wizard': void this.onAdminMenuAction('tag-wizard'); return;
-      case 'admin-credits': void this.onAdminMenuAction('credits'); return;
-      case 'admin-tts': void this.onAdminMenuAction('tts'); return;
-      case 'admin-loudness': this.loudness.configure(!this.loudness.enabled()).subscribe(); return;
-      case 'kill-all': void this.onKillAll(); return;
+      case 'profile':
+        void this.onProfileClick();
+        return;
+      case 'avatar':
+        void this.onChangeAvatarClick();
+        return;
+      case 'upload':
+        void this.onUploadClick();
+        return;
+      case 'password':
+        void this.onChangePasswordClick();
+        return;
+      case 'tour':
+        void this.welcomeTour.restartTour();
+        return;
+      case 'logout':
+        void this.authService.logout();
+        return;
+      case 'login':
+        void this.onLoginClick();
+        return;
+      case 'admin-users':
+        void this.onAdminMenuAction('users');
+        return;
+      case 'admin-tags':
+        void this.onAdminMenuAction('tags');
+        return;
+      case 'admin-wizard':
+        void this.onAdminMenuAction('tag-wizard');
+        return;
+      case 'admin-credits':
+        void this.onAdminMenuAction('credits');
+        return;
+      case 'admin-tts':
+        void this.onAdminMenuAction('tts');
+        return;
+      case 'admin-loudness':
+        this.loudness.configure(!this.loudness.enabled()).subscribe();
+        return;
+      case 'kill-all':
+        void this.onKillAll();
+        return;
     }
   }
 
@@ -481,10 +534,12 @@ export class App implements OnInit {
     const query = this.searchQuery().toLowerCase().trim();
     const tags = this.selectedTags();
     const pool = this.sortedSounds().filter(
-      s =>
+      (s) =>
         s.enabled &&
-        (!query || s.name.toLowerCase().includes(query) || s.fileName.toLowerCase().includes(query)) &&
-        (tags.length === 0 || tags.some(t => s.tags?.includes(t))),
+        (!query ||
+          s.name.toLowerCase().includes(query) ||
+          s.fileName.toLowerCase().includes(query)) &&
+        (tags.length === 0 || tags.some((t) => s.tags?.includes(t))),
     );
     if (!pool.length) return;
     this.onPlaySound(pool[Math.floor(Math.random() * pool.length)]);
@@ -493,7 +548,7 @@ export class App implements OnInit {
   /** Nochmal-Taste: letzten eigenen Sound erneut abspielen */
   onPlayAgain(): void {
     const hash = this.nowPlaying.lastOwnHash();
-    const sound = hash ? this.soundService.sounds().find(s => s.hash === hash) : undefined;
+    const sound = hash ? this.soundService.sounds().find((s) => s.hash === hash) : undefined;
     if (sound) this.onPlaySound(sound);
   }
 
@@ -516,10 +571,13 @@ export class App implements OnInit {
     });
   }
 
-  async onAdminMenuAction(action: 'users' | 'tags' | 'tag-wizard' | 'credits' | 'tts'): Promise<void> {
+  async onAdminMenuAction(
+    action: 'users' | 'tags' | 'tag-wizard' | 'credits' | 'tts',
+  ): Promise<void> {
     switch (action) {
       case 'tts': {
-        const { TtsTestDialogComponent } = await import('./components/admin/tts-test-dialog.component');
+        const { TtsTestDialogComponent } =
+          await import('./components/admin/tts-test-dialog.component');
         this.dialog.open(TtsTestDialogComponent, { maxWidth: '95vw', panelClass: 'dark-dialog' });
         break;
       }

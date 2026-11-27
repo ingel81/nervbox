@@ -39,7 +39,7 @@ export class AchievementService {
   // Grouped achievements by category
   readonly achievementsByCategory = computed(() => {
     const achievements = this.allAchievements();
-    const earnedIds = new Set(this.myAchievements().map(ua => ua.achievementId));
+    const earnedIds = new Set(this.myAchievements().map((ua) => ua.achievementId));
 
     const grouped = new Map<AchievementCategory, (Achievement & { earned: boolean })[]>();
 
@@ -67,8 +67,8 @@ export class AchievementService {
     ];
 
     return categoryOrder
-      .filter(cat => grouped.has(cat))
-      .map(cat => ({
+      .filter((cat) => grouped.has(cat))
+      .map((cat) => ({
         category: cat,
         categoryName: CATEGORY_DISPLAY_NAMES[cat],
         categoryIcon: CATEGORY_ICONS[cat],
@@ -83,7 +83,7 @@ export class AchievementService {
       if (event && event.userId === this.auth.currentUser()?.id) {
         this.lastEarnedAchievement.set(event);
         // Add to my achievements
-        this.myAchievements.update(achievements => [
+        this.myAchievements.update((achievements) => [
           ...achievements,
           {
             achievementId: event.achievement.id,
@@ -154,7 +154,7 @@ export class AchievementService {
   }
 
   hasAchievement(achievementId: string): boolean {
-    return this.myAchievements().some(ua => ua.achievementId === achievementId);
+    return this.myAchievements().some((ua) => ua.achievementId === achievementId);
   }
 
   getCategoryDisplayName(category: AchievementCategory): string {

@@ -25,7 +25,14 @@ import { GAME_INFO } from '../../game-info';
 @Component({
   selector: 'app-arkanoid-game',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatIconModule, GameExitConfirmComponent, GameFrameComponent, GameOverlayComponent],
+  imports: [
+    CommonModule,
+    MatDialogModule,
+    MatIconModule,
+    GameExitConfirmComponent,
+    GameFrameComponent,
+    GameOverlayComponent,
+  ],
   template: `
     <app-game-frame
       #root
@@ -77,26 +84,44 @@ import { GAME_INFO } from '../../game-info';
               <button type="button" class="nk-key nk-key--accent nk-key--lg" (click)="resumeGame()">
                 <mat-icon>play_arrow</mat-icon>Weiterspielen
               </button>
-              <button type="button" class="nk-key nk-key--ghost" (click)="exitGame()">Beenden</button>
+              <button type="button" class="nk-key nk-key--ghost" (click)="exitGame()">
+                Beenden
+              </button>
             </div>
           </app-game-overlay>
         }
 
         @if (gameState() === 'gameover') {
-          <app-game-overlay tone="over" kicker="Game Over" icon="sentiment_very_dissatisfied" title="Game Over!">
+          <app-game-overlay
+            tone="over"
+            kicker="Game Over"
+            icon="sentiment_very_dissatisfied"
+            title="Game Over!"
+          >
             <span class="nk-counter nk-go__score">SCORE {{ score() }}</span>
             <p class="nk-go__text">Erreicht: Level {{ level() }}</p>
             <div goActions>
-              <button type="button" class="nk-key nk-key--accent nk-key--lg" (click)="restartGame()">
+              <button
+                type="button"
+                class="nk-key nk-key--accent nk-key--lg"
+                (click)="restartGame()"
+              >
                 <mat-icon>replay</mat-icon>Nochmal spielen
               </button>
-              <button type="button" class="nk-key nk-key--ghost" (click)="exitGame()">Beenden</button>
+              <button type="button" class="nk-key nk-key--ghost" (click)="exitGame()">
+                Beenden
+              </button>
             </div>
           </app-game-overlay>
         }
 
         @if (gameState() === 'won') {
-          <app-game-overlay tone="win" [kicker]="'Level ' + level()" icon="emoji_events" title="Level geschafft!">
+          <app-game-overlay
+            tone="win"
+            [kicker]="'Level ' + level()"
+            icon="emoji_events"
+            title="Level geschafft!"
+          >
             <span class="nk-counter nk-go__score">SCORE {{ score() }}</span>
             @if (levelReward() > 0) {
               <p class="nk-go__reward">+{{ levelReward() }} N$</p>

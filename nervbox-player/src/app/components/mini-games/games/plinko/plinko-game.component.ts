@@ -248,7 +248,7 @@ import { GAME_INFO } from '../../game-info';
 
     .quick-bet-btn:hover:not(:disabled) {
       background: rgba(75, 229, 133, 0.2);
-      border-color: #1F8E4C;
+      border-color: #1f8e4c;
       color: #ffffff;
     }
 
@@ -558,7 +558,10 @@ export class PlinkoGameComponent implements AfterViewInit, OnDestroy {
 
   readonly stats = computed<GameStat[]>(() => [
     { label: 'GUTHABEN N$', value: this.creditService.creditsFormatted() },
-    { label: 'LETZTER WURF', value: this.lastMultiplier() === null ? '--' : this.lastMultiplier() + 'x' },
+    {
+      label: 'LETZTER WURF',
+      value: this.lastMultiplier() === null ? '--' : this.lastMultiplier() + 'x',
+    },
   ]);
 
   private engine!: PlinkoEngine;

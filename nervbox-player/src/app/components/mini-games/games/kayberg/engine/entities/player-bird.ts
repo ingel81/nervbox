@@ -300,7 +300,13 @@ export class PlayerBirdEntity {
     this.pitch += (this.targetPitch - this.pitch) * 4 * dt;
 
     // Gradually return pitch to neutral when no input
-    if (!keys.has('w') && !keys.has('s') && !keys.has('arrowup') && !keys.has('arrowdown') && Math.abs(mouseDeltaY) < 1) {
+    if (
+      !keys.has('w') &&
+      !keys.has('s') &&
+      !keys.has('arrowup') &&
+      !keys.has('arrowdown') &&
+      Math.abs(mouseDeltaY) < 1
+    ) {
       this.targetPitch *= 0.98; // Slowly return to level
     }
 
@@ -344,9 +350,7 @@ export class PlayerBirdEntity {
 
     // Keep within bounds
     const maxDist = 90;
-    const dist = Math.sqrt(
-      this.position.x * this.position.x + this.position.z * this.position.z
-    );
+    const dist = Math.sqrt(this.position.x * this.position.x + this.position.z * this.position.z);
     if (dist > maxDist) {
       this.position.x *= maxDist / dist;
       this.position.z *= maxDist / dist;

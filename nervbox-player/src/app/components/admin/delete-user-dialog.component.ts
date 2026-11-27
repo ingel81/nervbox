@@ -31,25 +31,52 @@ export interface DeleteUserDialogData {
     <div class="nk-dlg ad-sm">
       <header class="nk-dialog__head">
         <h2 class="nk-dialog__title ad-danger">User löschen</h2>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close [disabled]="deleting()">✕</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon"
+          aria-label="Schließen"
+          mat-dialog-close
+          [disabled]="deleting()"
+        >
+          ✕
+        </button>
       </header>
       <div class="nk-dialog__body">
         <div class="nk-alert" role="alert">
           <span class="nk-alert__title">Achtung!</span>
-          <span>Der User <b>"{{ data.user.username }}"</b> wird unwiderruflich gelöscht. Alle zugehörigen Daten (Favoriten, Statistiken, etc.) gehen verloren.</span>
+          <span
+            >Der User <b>"{{ data.user.username }}"</b> wird unwiderruflich gelöscht. Alle
+            zugehörigen Daten (Favoriten, Statistiken, etc.) gehen verloren.</span
+          >
         </div>
         <label class="nk-field">
           <span class="nk-field__hint">Zur Bestätigung bitte den Usernamen eingeben:</span>
           <span class="nk-label">Username</span>
-          <span class="nk-input"><input class="nk-input__field" [(ngModel)]="confirmUsername" [placeholder]="data.user.username" autocomplete="off" aria-label="Username zur Bestätigung" /></span>
+          <span class="nk-input"
+            ><input
+              class="nk-input__field"
+              [(ngModel)]="confirmUsername"
+              [placeholder]="data.user.username"
+              autocomplete="off"
+              aria-label="Username zur Bestätigung"
+          /></span>
         </label>
         @if (error()) {
-          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert"><span class="nk-toast__text">{{ error() }}</span></div>
+          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert">
+            <span class="nk-toast__text">{{ error() }}</span>
+          </div>
         }
       </div>
       <footer class="nk-dialog__foot">
-        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close [disabled]="deleting()">Abbrechen</button>
-        <button type="button" class="nk-key nk-key--danger" (click)="onDelete()" [disabled]="confirmUsername !== data.user.username || deleting()">
+        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close [disabled]="deleting()">
+          Abbrechen
+        </button>
+        <button
+          type="button"
+          class="nk-key nk-key--danger"
+          (click)="onDelete()"
+          [disabled]="confirmUsername !== data.user.username || deleting()"
+        >
           @if (deleting()) {
             <span class="nk-spin" aria-hidden="true"></span>
           }

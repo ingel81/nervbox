@@ -26,36 +26,95 @@ import { ApiService } from '../../core/services/api.service';
     <form class="nk-dlg" (ngSubmit)="onSubmit()">
       <header class="nk-dialog__head">
         <h2 class="nk-dialog__title">Kennwort ändern</h2>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close>✕</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon"
+          aria-label="Schließen"
+          mat-dialog-close
+        >
+          ✕
+        </button>
       </header>
       <div class="nk-dialog__body">
         <label class="nk-field">
           <span class="nk-label">Aktuelles Kennwort</span>
           <span class="nk-input">
-            <input class="nk-input__field" [type]="hideOld() ? 'password' : 'text'" [(ngModel)]="oldPassword" name="oldPassword" autocomplete="current-password" required aria-label="Aktuelles Kennwort" />
-            <button type="button" class="nk-input__eye" [attr.aria-label]="hideOld() ? 'Kennwort anzeigen' : 'Kennwort verbergen'" (click)="hideOld.set(!hideOld())"><mat-icon>{{ hideOld() ? 'visibility_off' : 'visibility' }}</mat-icon></button>
+            <input
+              class="nk-input__field"
+              [type]="hideOld() ? 'password' : 'text'"
+              [(ngModel)]="oldPassword"
+              name="oldPassword"
+              autocomplete="current-password"
+              required
+              aria-label="Aktuelles Kennwort"
+            />
+            <button
+              type="button"
+              class="nk-input__eye"
+              [attr.aria-label]="hideOld() ? 'Kennwort anzeigen' : 'Kennwort verbergen'"
+              (click)="hideOld.set(!hideOld())"
+            >
+              <mat-icon>{{ hideOld() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
           </span>
         </label>
         <label class="nk-field">
           <span class="nk-label">Neues Kennwort</span>
           <span class="nk-input">
-            <input class="nk-input__field" [type]="hideNew() ? 'password' : 'text'" [(ngModel)]="newPassword1" name="newPassword1" autocomplete="new-password" required aria-label="Neues Kennwort" />
-            <button type="button" class="nk-input__eye" [attr.aria-label]="hideNew() ? 'Kennwort anzeigen' : 'Kennwort verbergen'" (click)="hideNew.set(!hideNew())"><mat-icon>{{ hideNew() ? 'visibility_off' : 'visibility' }}</mat-icon></button>
+            <input
+              class="nk-input__field"
+              [type]="hideNew() ? 'password' : 'text'"
+              [(ngModel)]="newPassword1"
+              name="newPassword1"
+              autocomplete="new-password"
+              required
+              aria-label="Neues Kennwort"
+            />
+            <button
+              type="button"
+              class="nk-input__eye"
+              [attr.aria-label]="hideNew() ? 'Kennwort anzeigen' : 'Kennwort verbergen'"
+              (click)="hideNew.set(!hideNew())"
+            >
+              <mat-icon>{{ hideNew() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
           </span>
         </label>
         <label class="nk-field">
           <span class="nk-label">Neues Kennwort bestätigen</span>
-          <span class="nk-input" [class.nk-input--error]="!!newPassword2 && newPassword2 !== newPassword1">
-            <input class="nk-input__field" [type]="hideConfirm() ? 'password' : 'text'" [(ngModel)]="newPassword2" name="newPassword2" autocomplete="new-password" required aria-label="Neues Kennwort bestätigen" />
-            <button type="button" class="nk-input__eye" [attr.aria-label]="hideConfirm() ? 'Kennwort anzeigen' : 'Kennwort verbergen'" (click)="hideConfirm.set(!hideConfirm())"><mat-icon>{{ hideConfirm() ? 'visibility_off' : 'visibility' }}</mat-icon></button>
+          <span
+            class="nk-input"
+            [class.nk-input--error]="!!newPassword2 && newPassword2 !== newPassword1"
+          >
+            <input
+              class="nk-input__field"
+              [type]="hideConfirm() ? 'password' : 'text'"
+              [(ngModel)]="newPassword2"
+              name="newPassword2"
+              autocomplete="new-password"
+              required
+              aria-label="Neues Kennwort bestätigen"
+            />
+            <button
+              type="button"
+              class="nk-input__eye"
+              [attr.aria-label]="hideConfirm() ? 'Kennwort anzeigen' : 'Kennwort verbergen'"
+              (click)="hideConfirm.set(!hideConfirm())"
+            >
+              <mat-icon>{{ hideConfirm() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
           </span>
         </label>
         @if (error()) {
-          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert"><span class="nk-toast__text">{{ error() }}</span></div>
+          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert">
+            <span class="nk-toast__text">{{ error() }}</span>
+          </div>
         }
       </div>
       <footer class="nk-dialog__foot">
-        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close [disabled]="loading()">Abbrechen</button>
+        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close [disabled]="loading()">
+          Abbrechen
+        </button>
         <button type="submit" class="nk-key nk-key--accent" [disabled]="loading() || !isValid()">
           @if (loading()) {
             <span class="nk-spin" aria-hidden="true"></span>

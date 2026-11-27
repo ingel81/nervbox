@@ -361,12 +361,12 @@ export const ALL_INGREDIENTS: Ingredient[] = [
 
 // Hilfsfunktion: Zutat nach ID finden
 export function getIngredientById(id: string): Ingredient | undefined {
-  return ALL_INGREDIENTS.find(i => i.id === id);
+  return ALL_INGREDIENTS.find((i) => i.id === id);
 }
 
 // Hilfsfunktion: Zutaten nach Kategorie filtern
 export function getIngredientsByCategory(
-  category: 'normal' | 'sauce' | 'rare' | 'epic'
+  category: 'normal' | 'sauce' | 'rare' | 'epic',
 ): Ingredient[] {
   switch (category) {
     case 'normal':

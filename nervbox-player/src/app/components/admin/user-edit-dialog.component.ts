@@ -35,38 +35,99 @@ export interface UserEditDialogData {
     <div class="nk-dlg ad-sm">
       <header class="nk-dialog__head">
         <h2 class="nk-dialog__title">User bearbeiten</h2>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close [disabled]="saving()">✕</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon"
+          aria-label="Schließen"
+          mat-dialog-close
+          [disabled]="saving()"
+        >
+          ✕
+        </button>
       </header>
       <div class="nk-dialog__body">
         <span class="ad-sub">{{ data.user.username }}</span>
         <div class="nk-field-row">
-          <label class="nk-field"><span class="nk-label">Vorname</span><span class="nk-input"><input class="nk-input__field" [(ngModel)]="firstName" name="firstName" aria-label="Vorname" /></span></label>
-          <label class="nk-field"><span class="nk-label">Nachname</span><span class="nk-input"><input class="nk-input__field" [(ngModel)]="lastName" name="lastName" aria-label="Nachname" /></span></label>
+          <label class="nk-field"
+            ><span class="nk-label">Vorname</span
+            ><span class="nk-input"
+              ><input
+                class="nk-input__field"
+                [(ngModel)]="firstName"
+                name="firstName"
+                aria-label="Vorname" /></span
+          ></label>
+          <label class="nk-field"
+            ><span class="nk-label">Nachname</span
+            ><span class="nk-input"
+              ><input
+                class="nk-input__field"
+                [(ngModel)]="lastName"
+                name="lastName"
+                aria-label="Nachname" /></span
+          ></label>
         </div>
         <div class="nk-field">
           <span class="nk-label">Rolle</span>
           <div class="ad-seg" role="radiogroup" aria-label="Rolle">
-            <button type="button" role="radio" [attr.aria-checked]="role === 'user'" [class]="role === 'user' ? 'nk-key nk-key--sm nk-key--on' : 'nk-key nk-key--sm'" [disabled]="data.user.username === 'admin'" (click)="role = 'user'">User</button>
-            <button type="button" role="radio" [attr.aria-checked]="role === 'admin'" [class]="role === 'admin' ? 'nk-key nk-key--sm nk-key--on' : 'nk-key nk-key--sm'" [disabled]="data.user.username === 'admin'" (click)="role = 'admin'">Admin</button>
+            <button
+              type="button"
+              role="radio"
+              [attr.aria-checked]="role === 'user'"
+              [class]="role === 'user' ? 'nk-key nk-key--sm nk-key--on' : 'nk-key nk-key--sm'"
+              [disabled]="data.user.username === 'admin'"
+              (click)="role = 'user'"
+            >
+              User
+            </button>
+            <button
+              type="button"
+              role="radio"
+              [attr.aria-checked]="role === 'admin'"
+              [class]="role === 'admin' ? 'nk-key nk-key--sm nk-key--on' : 'nk-key nk-key--sm'"
+              [disabled]="data.user.username === 'admin'"
+              (click)="role = 'admin'"
+            >
+              Admin
+            </button>
           </div>
           @if (data.user.username === 'admin') {
             <span class="nk-field__hint">Admin-Rolle kann nicht geändert werden</span>
           }
         </div>
         <span class="ad-switch">
-          <button type="button" role="switch" [attr.aria-checked]="isActive" [class]="isActive ? 'nk-switch nk-switch--on' : 'nk-switch'" aria-label="User ist aktiv" [disabled]="data.user.username === 'admin'" (click)="isActive = !isActive"><span class="nk-switch__knob" aria-hidden="true"></span></button>
+          <button
+            type="button"
+            role="switch"
+            [attr.aria-checked]="isActive"
+            [class]="isActive ? 'nk-switch nk-switch--on' : 'nk-switch'"
+            aria-label="User ist aktiv"
+            [disabled]="data.user.username === 'admin'"
+            (click)="isActive = !isActive"
+          >
+            <span class="nk-switch__knob" aria-hidden="true"></span>
+          </button>
           User ist aktiv
         </span>
         @if (data.user.username === 'admin') {
           <span class="nk-field__hint">Admin kann nicht deaktiviert werden</span>
         }
         @if (error()) {
-          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert"><span class="nk-toast__text">{{ error() }}</span></div>
+          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert">
+            <span class="nk-toast__text">{{ error() }}</span>
+          </div>
         }
       </div>
       <footer class="nk-dialog__foot">
-        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close [disabled]="saving()">Abbrechen</button>
-        <button type="button" class="nk-key nk-key--accent" (click)="onSave()" [disabled]="saving()">
+        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close [disabled]="saving()">
+          Abbrechen
+        </button>
+        <button
+          type="button"
+          class="nk-key nk-key--accent"
+          (click)="onSave()"
+          [disabled]="saving()"
+        >
           @if (saving()) {
             <span class="nk-spin" aria-hidden="true"></span>
           }

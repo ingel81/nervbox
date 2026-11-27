@@ -1,10 +1,5 @@
 import * as THREE from 'three';
-import {
-  TERRAIN_SIZE,
-  MOUNTAIN_HEIGHT,
-  MOUNTAIN_RADIUS,
-  COLORS,
-} from '../kayberg.types';
+import { TERRAIN_SIZE, MOUNTAIN_HEIGHT, MOUNTAIN_RADIUS, COLORS } from '../kayberg.types';
 
 export class KaybergTerrain {
   private scene: THREE.Scene;
@@ -73,12 +68,7 @@ export class KaybergTerrain {
 
   private createTerrain(): void {
     const segments = 128;
-    const geometry = new THREE.PlaneGeometry(
-      TERRAIN_SIZE,
-      TERRAIN_SIZE,
-      segments,
-      segments
-    );
+    const geometry = new THREE.PlaneGeometry(TERRAIN_SIZE, TERRAIN_SIZE, segments, segments);
 
     // Apply height map
     const vertices = geometry.attributes['position'].array as Float32Array;
@@ -169,16 +159,8 @@ export class KaybergTerrain {
 
     // Create instanced meshes for performance
     const treeCount = 200;
-    const trunkInstanced = new THREE.InstancedMesh(
-      trunkGeometry,
-      trunkMaterial,
-      treeCount
-    );
-    const foliageInstanced = new THREE.InstancedMesh(
-      foliageGeometry,
-      foliageMaterial,
-      treeCount
-    );
+    const trunkInstanced = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, treeCount);
+    const foliageInstanced = new THREE.InstancedMesh(foliageGeometry, foliageMaterial, treeCount);
 
     const matrix = new THREE.Matrix4();
     let treeIndex = 0;
@@ -273,7 +255,8 @@ export class KaybergTerrain {
             // Horizontal wire (between posts)
             if (p < numPosts - 1) {
               const nextT = (p + 1) / numPosts;
-              const nextAngle = section.startAngle + nextT * (section.endAngle - section.startAngle);
+              const nextAngle =
+                section.startAngle + nextT * (section.endAngle - section.startAngle);
               const nextX = Math.cos(nextAngle) * radius;
               const nextZ = Math.sin(nextAngle) * radius;
               const nextY = this.getTerrainHeight(nextX, nextZ);
@@ -283,11 +266,7 @@ export class KaybergTerrain {
                 const wireGeometry = new THREE.CylinderGeometry(0.02, 0.02, wireLength, 4);
                 const wire = new THREE.Mesh(wireGeometry, wireMaterial);
 
-                wire.position.set(
-                  (x + nextX) / 2,
-                  (y + nextY) / 2 + 1.4,
-                  (z + nextZ) / 2
-                );
+                wire.position.set((x + nextX) / 2, (y + nextY) / 2 + 1.4, (z + nextZ) / 2);
                 wire.rotation.z = Math.PI / 2;
                 wire.rotation.y = Math.atan2(nextZ - z, nextX - x);
                 this.addOwned(wire);
@@ -318,7 +297,7 @@ export class KaybergTerrain {
                       grape.position.set(
                         (Math.random() - 0.5) * 0.2,
                         -g * 0.08,
-                        (Math.random() - 0.5) * 0.2
+                        (Math.random() - 0.5) * 0.2,
                       );
                       grapeCluster.add(grape);
                     }
@@ -423,11 +402,7 @@ export class KaybergTerrain {
       const y = this.getTerrainHeight(x, z);
 
       rock.position.set(x, y + 0.3, z);
-      rock.scale.set(
-        0.5 + Math.random() * 1,
-        0.3 + Math.random() * 0.5,
-        0.5 + Math.random() * 1
-      );
+      rock.scale.set(0.5 + Math.random() * 1, 0.3 + Math.random() * 0.5, 0.5 + Math.random() * 1);
       rock.rotation.set(Math.random(), Math.random(), Math.random());
       rock.castShadow = true;
       this.addOwned(rock);
@@ -455,10 +430,7 @@ export class KaybergTerrain {
     return Math.max(0, height);
   }
 
-  getRandomPositionOnTerrain(
-    minRadius = 0,
-    maxRadius = TERRAIN_SIZE / 2
-  ): THREE.Vector3 {
+  getRandomPositionOnTerrain(minRadius = 0, maxRadius = TERRAIN_SIZE / 2): THREE.Vector3 {
     const angle = Math.random() * Math.PI * 2;
     const radius = minRadius + Math.random() * (maxRadius - minRadius);
     const x = Math.cos(angle) * radius;
@@ -467,10 +439,7 @@ export class KaybergTerrain {
     return new THREE.Vector3(x, y, z);
   }
 
-  getRandomPositionInAir(
-    minHeight = 10,
-    maxHeight = 30
-  ): THREE.Vector3 {
+  getRandomPositionInAir(minHeight = 10, maxHeight = 30): THREE.Vector3 {
     const pos = this.getRandomPositionOnTerrain(10, 80);
     pos.y += minHeight + Math.random() * (maxHeight - minHeight);
     return pos;

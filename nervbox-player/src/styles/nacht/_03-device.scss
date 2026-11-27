@@ -2,71 +2,405 @@
    3 · GERÄT: Tisch, Gehäuse, Lampe, Schrauben, Leisten, Platte, Wasserzeichen
    --------------------------------------------------------------------------- */
 /* Tischplatte im Lichtkegel der Lampe (oben links) */
-.nk-desk { overflow: hidden; padding: 9px; font-family: var(--nk-font-ui); color: var(--nk-iv);
-  background: repeating-linear-gradient(92deg, rgb(0 0 0 / .22) 0 2px, transparent 2px 9px, rgb(var(--nk-lamp-rgb) / .02) 9px 10px, transparent 10px 23px),
-    radial-gradient(ellipse 1000px 760px at 3% 0%, var(--nk-desk-1) 0%, var(--nk-desk-2) 34%, var(--nk-desk-3) 70%, var(--nk-desk-4) 100%); }
+.nk-desk {
+  overflow: hidden;
+  padding: 9px;
+  font-family: var(--nk-font-ui);
+  color: var(--nk-iv);
+  background:
+    repeating-linear-gradient(
+      92deg,
+      rgb(0 0 0 / 0.22) 0 2px,
+      transparent 2px 9px,
+      rgb(var(--nk-lamp-rgb) / 0.02) 9px 10px,
+      transparent 10px 23px
+    ),
+    radial-gradient(
+      ellipse 1000px 760px at 3% 0%,
+      var(--nk-desk-1) 0%,
+      var(--nk-desk-2) 34%,
+      var(--nk-desk-3) 70%,
+      var(--nk-desk-4) 100%
+    );
+}
 /* Putty-Gehäuse im Halbdunkel */
-.nk-device { position: relative; padding: 14px 24px; border-radius: var(--nk-r-device);
-  background: var(--nk-grain),
-    radial-gradient(ellipse 420px 320px at -20px -40px, rgb(var(--nk-lamp-warm-rgb) / .4) 0%, rgb(var(--nk-lamp-warm-rgb) / .19) 45%, rgb(var(--nk-lamp-warm-rgb) / .055) 75%, rgb(var(--nk-lamp-warm-rgb) / 0) 100%),
-    linear-gradient(135deg, var(--nk-chassis-1) 0%, var(--nk-chassis-2) 35%, var(--nk-chassis-3) 70%, var(--nk-chassis-4) 100%);
-  box-shadow: inset 0 2px 0 rgb(var(--nk-lamp-rgb) / .3), inset 2px 0 0 rgb(var(--nk-lamp-rgb) / .18), inset 0 -4px 0 rgb(0 0 0 / .45), inset -3px 0 0 rgb(0 0 0 / .3), 0 2px 0 var(--nk-ink), 12px 20px 40px rgb(0 0 0 / .85); }
+.nk-device {
+  position: relative;
+  padding: 14px 24px;
+  border-radius: var(--nk-r-device);
+  background:
+    var(--nk-grain),
+    radial-gradient(
+      ellipse 420px 320px at -20px -40px,
+      rgb(var(--nk-lamp-warm-rgb) / 0.4) 0%,
+      rgb(var(--nk-lamp-warm-rgb) / 0.19) 45%,
+      rgb(var(--nk-lamp-warm-rgb) / 0.055) 75%,
+      rgb(var(--nk-lamp-warm-rgb) / 0) 100%
+    ),
+    linear-gradient(
+      135deg,
+      var(--nk-chassis-1) 0%,
+      var(--nk-chassis-2) 35%,
+      var(--nk-chassis-3) 70%,
+      var(--nk-chassis-4) 100%
+    );
+  box-shadow:
+    inset 0 2px 0 rgb(var(--nk-lamp-rgb) / 0.3),
+    inset 2px 0 0 rgb(var(--nk-lamp-rgb) / 0.18),
+    inset 0 -4px 0 rgb(0 0 0 / 0.45),
+    inset -3px 0 0 rgb(0 0 0 / 0.3),
+    0 2px 0 var(--nk-ink),
+    12px 20px 40px rgb(0 0 0 / 0.85);
+}
 /* Lichtkante der Lampe an der Gehäusekante */
-.nk-lamp { position: absolute; border-radius: 2px; pointer-events: none; }
-.nk-lamp--top { left: 20px; top: 0; width: 640px; max-width: 60%; height: 2px; background: linear-gradient(90deg, rgb(var(--nk-lamp-edge-rgb) / .9), rgb(var(--nk-lamp-edge-rgb) / .25) 45%, rgb(var(--nk-lamp-edge-rgb) / 0)); }
-.nk-lamp--left { left: 0; top: 20px; width: 2px; height: 430px; max-height: 60%; background: linear-gradient(180deg, rgb(var(--nk-lamp-edge-rgb) / .75), rgb(var(--nk-lamp-edge-rgb) / .2) 45%, rgb(var(--nk-lamp-edge-rgb) / 0)); }
+.nk-lamp {
+  position: absolute;
+  border-radius: 2px;
+  pointer-events: none;
+}
+.nk-lamp--top {
+  left: 20px;
+  top: 0;
+  width: 640px;
+  max-width: 60%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    rgb(var(--nk-lamp-edge-rgb) / 0.9),
+    rgb(var(--nk-lamp-edge-rgb) / 0.25) 45%,
+    rgb(var(--nk-lamp-edge-rgb) / 0)
+  );
+}
+.nk-lamp--left {
+  left: 0;
+  top: 20px;
+  width: 2px;
+  height: 430px;
+  max-height: 60%;
+  background: linear-gradient(
+    180deg,
+    rgb(var(--nk-lamp-edge-rgb) / 0.75),
+    rgb(var(--nk-lamp-edge-rgb) / 0.2) 45%,
+    rgb(var(--nk-lamp-edge-rgb) / 0)
+  );
+}
 /* Schlitzschraube (Deko) */
-.nk-screw { --nk-screw-inset: 7px; --nk-screw-angle: 119deg; position: absolute; z-index: 3; width: 11px; height: 11px; border-radius: 50%; pointer-events: none;
-  background: linear-gradient(var(--nk-screw-angle), transparent 43%, #0F0D0B 43%, #0F0D0B 57%, transparent 57%), radial-gradient(circle at 35% 30%, #C4B89C, #6A6355 55%, #2B2823);
-  box-shadow: inset 0 0 0 1px rgb(0 0 0 / .6), 1px 1px 0 rgb(var(--nk-lamp-rgb) / .16), -1px -1px 1px rgb(0 0 0 / .5); }
-.nk-screw--sm { --nk-screw-inset: 3px; width: 8px; height: 8px; }
-.nk-screw--tl { left: var(--nk-screw-inset); top: var(--nk-screw-inset); }
-.nk-screw--tr { right: var(--nk-screw-inset); top: var(--nk-screw-inset); --nk-screw-angle: 124deg; }
-.nk-screw--bl { left: var(--nk-screw-inset); bottom: var(--nk-screw-inset); --nk-screw-angle: 128deg; }
-.nk-screw--br { right: var(--nk-screw-inset); bottom: var(--nk-screw-inset); --nk-screw-angle: 114deg; }
+.nk-screw {
+  --nk-screw-inset: 7px;
+  --nk-screw-angle: 119deg;
+  position: absolute;
+  z-index: 3;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      var(--nk-screw-angle),
+      transparent 43%,
+      #0f0d0b 43%,
+      #0f0d0b 57%,
+      transparent 57%
+    ),
+    radial-gradient(circle at 35% 30%, #c4b89c, #6a6355 55%, #2b2823);
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.6),
+    1px 1px 0 rgb(var(--nk-lamp-rgb) / 0.16),
+    -1px -1px 1px rgb(0 0 0 / 0.5);
+}
+.nk-screw--sm {
+  --nk-screw-inset: 3px;
+  width: 8px;
+  height: 8px;
+}
+.nk-screw--tl {
+  left: var(--nk-screw-inset);
+  top: var(--nk-screw-inset);
+}
+.nk-screw--tr {
+  right: var(--nk-screw-inset);
+  top: var(--nk-screw-inset);
+  --nk-screw-angle: 124deg;
+}
+.nk-screw--bl {
+  left: var(--nk-screw-inset);
+  bottom: var(--nk-screw-inset);
+  --nk-screw-angle: 128deg;
+}
+.nk-screw--br {
+  right: var(--nk-screw-inset);
+  bottom: var(--nk-screw-inset);
+  --nk-screw-angle: 114deg;
+}
 /* Kopf- und Fußleiste, versenkte Tag-Schiene */
-.nk-deck { height: 100px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: var(--nk-s-5); padding-bottom: 9px; border-bottom: 1px solid rgb(0 0 0 / .55); box-shadow: 0 1px 0 rgb(var(--nk-lamp-rgb) / .12); }
-.nk-foot { height: 78px; flex-shrink: 0; display: flex; align-items: center; gap: var(--nk-s-6); padding-top: 9px; border-top: 1px solid rgb(0 0 0 / .55); box-shadow: inset 0 1px 0 rgb(var(--nk-lamp-rgb) / .1); }
-.nk-rail { height: 42px; flex-shrink: 0; display: flex; align-items: center; gap: 9px; padding: 0 12px 0 14px; border-radius: 8px; background: rgb(0 0 0 / .22); box-shadow: inset 1px 2px 5px rgb(0 0 0 / .55), inset 0 0 0 1px rgb(0 0 0 / .3), 1px 1px 0 rgb(var(--nk-lamp-rgb) / .14); }
-.nk-rail__sep { margin-left: 14px; }
+.nk-deck {
+  height: 100px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nk-s-5);
+  padding-bottom: 9px;
+  border-bottom: 1px solid rgb(0 0 0 / 0.55);
+  box-shadow: 0 1px 0 rgb(var(--nk-lamp-rgb) / 0.12);
+}
+.nk-foot {
+  height: 78px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--nk-s-6);
+  padding-top: 9px;
+  border-top: 1px solid rgb(0 0 0 / 0.55);
+  box-shadow: inset 0 1px 0 rgb(var(--nk-lamp-rgb) / 0.1);
+}
+.nk-rail {
+  height: 42px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 12px 0 14px;
+  border-radius: 8px;
+  background: rgb(0 0 0 / 0.22);
+  box-shadow:
+    inset 1px 2px 5px rgb(0 0 0 / 0.55),
+    inset 0 0 0 1px rgb(0 0 0 / 0.3),
+    1px 1px 0 rgb(var(--nk-lamp-rgb) / 0.14);
+}
+.nk-rail__sep {
+  margin-left: 14px;
+}
 /* Bedienelement mit Beschriftung darüber/darunter */
-.nk-ctl { display: flex; flex-direction: column; gap: var(--nk-s-3); flex-shrink: 0; align-items: flex-start; }
-.nk-ctl--center { gap: var(--nk-s-6); align-items: center; }
+.nk-ctl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nk-s-3);
+  flex-shrink: 0;
+  align-items: flex-start;
+}
+.nk-ctl--center {
+  gap: var(--nk-s-6);
+  align-items: center;
+}
 /* versenktes Modul (Druckergehäuse, Kit-Felder) */
-.nk-panel, .nk-printer { border-radius: var(--nk-r-lg); background: var(--nk-grain), linear-gradient(135deg, var(--nk-panel-1), var(--nk-panel-2)); box-shadow: inset 2px 3px 7px rgb(0 0 0 / .6), inset 0 0 0 1px rgb(0 0 0 / .5), 1.5px 1.5px 0 rgb(var(--nk-lamp-rgb) / .14); }
-.nk-panel { padding: var(--nk-s-6); }
+.nk-panel,
+.nk-printer {
+  border-radius: var(--nk-r-lg);
+  background: var(--nk-grain), linear-gradient(135deg, var(--nk-panel-1), var(--nk-panel-2));
+  box-shadow:
+    inset 2px 3px 7px rgb(0 0 0 / 0.6),
+    inset 0 0 0 1px rgb(0 0 0 / 0.5),
+    1.5px 1.5px 0 rgb(var(--nk-lamp-rgb) / 0.14);
+}
+.nk-panel {
+  padding: var(--nk-s-6);
+}
 /* Pad-Platte: gebürstetes Alu im Dunkeln */
-.nk-plate { position: relative; overflow: hidden; border-radius: var(--nk-r-lg);
-  background: repeating-linear-gradient(0deg, rgb(var(--nk-lamp-rgb) / .035) 0 1px, rgb(0 0 0 / .1) 1px 2px, rgb(0 0 0 / 0) 2px 3px),
-    radial-gradient(ellipse 760px 460px at 0% 0%, rgb(var(--nk-lamp-warm-rgb) / .17) 0%, rgb(var(--nk-lamp-warm-rgb) / 0) 100%),
-    linear-gradient(105deg, var(--nk-plate-2) 0%, var(--nk-plate-1) 22%, var(--nk-plate-3) 48%, #33312C 72%, var(--nk-plate-4) 100%);
-  box-shadow: inset 0 1px 0 rgb(var(--nk-lamp-rgb) / .22), inset 0 -1px 0 rgb(0 0 0 / .6), 0 0 0 1px rgb(0 0 0 / .75), 1px 2px 0 1px rgb(var(--nk-lamp-rgb) / .1); }
+.nk-plate {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--nk-r-lg);
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgb(var(--nk-lamp-rgb) / 0.035) 0 1px,
+      rgb(0 0 0 / 0.1) 1px 2px,
+      rgb(0 0 0 / 0) 2px 3px
+    ),
+    radial-gradient(
+      ellipse 760px 460px at 0% 0%,
+      rgb(var(--nk-lamp-warm-rgb) / 0.17) 0%,
+      rgb(var(--nk-lamp-warm-rgb) / 0) 100%
+    ),
+    linear-gradient(
+      105deg,
+      var(--nk-plate-2) 0%,
+      var(--nk-plate-1) 22%,
+      var(--nk-plate-3) 48%,
+      #33312c 72%,
+      var(--nk-plate-4) 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgb(var(--nk-lamp-rgb) / 0.22),
+    inset 0 -1px 0 rgb(0 0 0 / 0.6),
+    0 0 0 1px rgb(0 0 0 / 0.75),
+    1px 2px 0 1px rgb(var(--nk-lamp-rgb) / 0.1);
+}
 /* Raster: Lichtschein-Ebene liegt UNTER den Pads und kriecht durch die Fugen */
-.nk-plate__glows, .nk-plate__grid { position: absolute; inset: 0; padding: 14px 16px; display: grid; gap: 14px;
-  grid-template-columns: repeat(var(--nk-cols, 8), minmax(0, 1fr)); grid-template-rows: repeat(var(--nk-rows, 7), minmax(0, 1fr)); }
-.nk-plate__glows { z-index: 1; pointer-events: none; }
-.nk-plate__grid { z-index: 2; }
-.nk-glow { --nk-glow-rgb: var(--nk-own-rgb); border-radius: var(--nk-r-lg); background: rgb(var(--nk-glow-rgb) / .4); box-shadow: 0 0 30px 11px rgb(var(--nk-glow-rgb) / .55), 0 0 84px 30px rgb(var(--nk-glow-rgb) / .2); animation: nk-glow var(--nk-beat) ease-in-out infinite; }
-.nk-glow--other { --nk-glow-rgb: var(--nk-other-rgb); }
-.nk-glow--xl { border-radius: var(--nk-r-xl); box-shadow: 0 0 44px 16px rgb(var(--nk-glow-rgb) / .55), 0 0 120px 44px rgb(var(--nk-glow-rgb) / .2); }
+.nk-plate__glows,
+.nk-plate__grid {
+  position: absolute;
+  inset: 0;
+  padding: 14px 16px;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(var(--nk-cols, 8), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--nk-rows, 7), minmax(0, 1fr));
+}
+.nk-plate__glows {
+  z-index: 1;
+  pointer-events: none;
+}
+.nk-plate__grid {
+  z-index: 2;
+}
+.nk-glow {
+  --nk-glow-rgb: var(--nk-own-rgb);
+  border-radius: var(--nk-r-lg);
+  background: rgb(var(--nk-glow-rgb) / 0.4);
+  box-shadow:
+    0 0 30px 11px rgb(var(--nk-glow-rgb) / 0.55),
+    0 0 84px 30px rgb(var(--nk-glow-rgb) / 0.2);
+  animation: nk-glow var(--nk-beat) ease-in-out infinite;
+}
+.nk-glow--other {
+  --nk-glow-rgb: var(--nk-other-rgb);
+}
+.nk-glow--xl {
+  border-radius: var(--nk-r-xl);
+  box-shadow:
+    0 0 44px 16px rgb(var(--nk-glow-rgb) / 0.55),
+    0 0 120px 44px rgb(var(--nk-glow-rgb) / 0.2);
+}
 /* CABD: durchscheinende Einlage in der Platte, von unten angestrahlt */
-.nk-watermark { position: absolute; left: 50%; top: 50%; z-index: 0; transform: translate(-50%, -52%); font: 800 var(--nk-watermark-size, var(--nk-fs-hero))/1 var(--nk-font-ui); letter-spacing: .02em; white-space: nowrap; pointer-events: none; user-select: none;
-  color: rgb(255 236 196 / .17); text-shadow: 0 0 26px rgb(255 222 160 / .3), 0 0 4px rgb(255 240 210 / .3), 1.5px 1.5px 0 rgb(0 0 0 / .55);
-  -webkit-mask-image: linear-gradient(0deg, #000 0%, rgb(0 0 0 / .5) 100%); mask-image: linear-gradient(0deg, #000 0%, rgb(0 0 0 / .5) 100%); }
-.nk-watermark--hero { color: rgb(255 236 196 / .34); text-shadow: 0 0 40px rgb(255 222 160 / .45), 0 0 6px rgb(255 240 210 / .45), 2px 2px 0 rgb(0 0 0 / .6); }
+.nk-watermark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 0;
+  transform: translate(-50%, -52%);
+  font: 800 var(--nk-watermark-size, var(--nk-fs-hero))/1 var(--nk-font-ui);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  color: rgb(255 236 196 / 0.17);
+  text-shadow:
+    0 0 26px rgb(255 222 160 / 0.3),
+    0 0 4px rgb(255 240 210 / 0.3),
+    1.5px 1.5px 0 rgb(0 0 0 / 0.55);
+  -webkit-mask-image: linear-gradient(0deg, #000 0%, rgb(0 0 0 / 0.5) 100%);
+  mask-image: linear-gradient(0deg, #000 0%, rgb(0 0 0 / 0.5) 100%);
+}
+.nk-watermark--hero {
+  color: rgb(255 236 196 / 0.34);
+  text-shadow:
+    0 0 40px rgb(255 222 160 / 0.45),
+    0 0 6px rgb(255 240 210 / 0.45),
+    2px 2px 0 rgb(0 0 0 / 0.6);
+}
 /* Leerzustand / wenige Treffer */
-.nk-empty { display: flex; flex-direction: column; align-items: flex-start; gap: var(--nk-s-4); }
-.nk-empty__title { font: 700 22px/1.1 var(--nk-font-ui); letter-spacing: 1px; color: var(--nk-iv); text-shadow: var(--nk-glow-text); }
-.nk-empty__text { font: 500 12px/1.35 var(--nk-font-mono); color: var(--nk-iv-2); }
+.nk-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--nk-s-4);
+}
+.nk-empty__title {
+  font: 700 22px/1.1 var(--nk-font-ui);
+  letter-spacing: 1px;
+  color: var(--nk-iv);
+  text-shadow: var(--nk-glow-text);
+}
+.nk-empty__text {
+  font: 500 12px/1.35 var(--nk-font-mono);
+  color: var(--nk-iv-2);
+}
 /* Schutzbügel mit Warnschraffur um gefährliche Tasten (nur Admin) */
-.nk-guard { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: var(--nk-s-2); padding: 5px 8px 7px; border-radius: 8px; background: repeating-linear-gradient(-45deg, #100E0B 0 7px, var(--nk-warn-stripe) 7px 14px); box-shadow: inset 0 0 0 1px rgb(0 0 0 / .6), inset 0 2px 4px rgb(0 0 0 / .5), 1.5px 1.5px 0 rgb(var(--nk-lamp-rgb) / .16), 0 0 18px 3px rgb(var(--nk-danger-rgb) / .16); }
-.nk-guard .nk-key { height: 34px; border-radius: 5px; font-size: 15px; }
-.nk-guard__label { padding: 0 7px; border-radius: 2px; background: #100E0B; color: var(--nk-iv); font: 700 10px/13px var(--nk-font-ui); letter-spacing: 1.6px; white-space: nowrap; text-shadow: 0 0 5px rgb(var(--nk-lamp-rgb) / .5); }
+.nk-guard {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--nk-s-2);
+  padding: 5px 8px 7px;
+  border-radius: 8px;
+  background: repeating-linear-gradient(-45deg, #100e0b 0 7px, var(--nk-warn-stripe) 7px 14px);
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.6),
+    inset 0 2px 4px rgb(0 0 0 / 0.5),
+    1.5px 1.5px 0 rgb(var(--nk-lamp-rgb) / 0.16),
+    0 0 18px 3px rgb(var(--nk-danger-rgb) / 0.16);
+}
+.nk-guard .nk-key {
+  height: 34px;
+  border-radius: 5px;
+  font-size: 15px;
+}
+.nk-guard__label {
+  padding: 0 7px;
+  border-radius: 2px;
+  background: #100e0b;
+  color: var(--nk-iv);
+  font: 700 10px/13px var(--nk-font-ui);
+  letter-spacing: 1.6px;
+  white-space: nowrap;
+  text-shadow: 0 0 5px rgb(var(--nk-lamp-rgb) / 0.5);
+}
 /* Logo: hinterleuchtetes Rauchglas-Schild */
-.nk-logo { position: relative; width: 190px; flex-shrink: 0; overflow: hidden; padding: 9px 10px 8px; display: flex; flex-direction: column; gap: var(--nk-s-3); border-radius: 7px; background: var(--nk-face-glass); box-shadow: inset 2px 3px 6px rgb(0 0 0 / .9), inset 0 0 0 1px rgb(0 0 0 / .7), 1.5px 1.5px 0 rgb(var(--nk-lamp-rgb) / .24), -1px -1px 0 rgb(0 0 0 / .45), 0 0 18px rgb(var(--nk-lamp-rgb) / .1); }
-.nk-logo::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: var(--nk-face-glare); }
-.nk-logo__stripes { display: flex; gap: 3px; }
-.nk-logo__stripe { --nk-stripe: #E0483C; width: 28px; height: 5px; border-radius: 1px; background: var(--nk-stripe); box-shadow: 0 0 7px var(--nk-stripe); }
-.nk-logo__stripe--2 { --nk-stripe: #E39A3A; } .nk-logo__stripe--3 { --nk-stripe: #EBC544; } .nk-logo__stripe--4 { --nk-stripe: #3BA8A1; } .nk-logo__stripe--5 { --nk-stripe: #6F93B5; }
-.nk-logo__word { font: 400 26px/1 var(--nk-font-logo); letter-spacing: 1px; white-space: nowrap; color: #FFF6DF; text-shadow: 0 0 10px rgb(255 226 170 / .75), 0 0 26px rgb(255 214 150 / .35); }
-.nk-logo__sub { font: 600 11px var(--nk-font-ui); letter-spacing: 1.7px; color: #F1E6C8; white-space: nowrap; text-shadow: 0 0 6px rgb(255 226 170 / .45); }
+.nk-logo {
+  position: relative;
+  width: 190px;
+  flex-shrink: 0;
+  overflow: hidden;
+  padding: 9px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--nk-s-3);
+  border-radius: 7px;
+  background: var(--nk-face-glass);
+  box-shadow:
+    inset 2px 3px 6px rgb(0 0 0 / 0.9),
+    inset 0 0 0 1px rgb(0 0 0 / 0.7),
+    1.5px 1.5px 0 rgb(var(--nk-lamp-rgb) / 0.24),
+    -1px -1px 0 rgb(0 0 0 / 0.45),
+    0 0 18px rgb(var(--nk-lamp-rgb) / 0.1);
+}
+.nk-logo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--nk-face-glare);
+}
+.nk-logo__stripes {
+  display: flex;
+  gap: 3px;
+}
+.nk-logo__stripe {
+  --nk-stripe: #e0483c;
+  width: 28px;
+  height: 5px;
+  border-radius: 1px;
+  background: var(--nk-stripe);
+  box-shadow: 0 0 7px var(--nk-stripe);
+}
+.nk-logo__stripe--2 {
+  --nk-stripe: #e39a3a;
+}
+.nk-logo__stripe--3 {
+  --nk-stripe: #ebc544;
+}
+.nk-logo__stripe--4 {
+  --nk-stripe: #3ba8a1;
+}
+.nk-logo__stripe--5 {
+  --nk-stripe: #6f93b5;
+}
+.nk-logo__word {
+  font: 400 26px/1 var(--nk-font-logo);
+  letter-spacing: 1px;
+  white-space: nowrap;
+  color: #fff6df;
+  text-shadow:
+    0 0 10px rgb(255 226 170 / 0.75),
+    0 0 26px rgb(255 214 150 / 0.35);
+}
+.nk-logo__sub {
+  font: 600 11px var(--nk-font-ui);
+  letter-spacing: 1.7px;
+  color: #f1e6c8;
+  white-space: nowrap;
+  text-shadow: 0 0 6px rgb(255 226 170 / 0.45);
+}

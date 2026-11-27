@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -50,7 +57,14 @@ const MAX_CHARS = 500;
       <header class="nk-dialog__head">
         <mat-icon class="tts-ico" aria-hidden="true">record_voice_over</mat-icon>
         <h2 class="nk-dialog__title">Sprachausgabe (Test)</h2>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" (click)="dialogRef.close()">✕</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon"
+          aria-label="Schließen"
+          (click)="dialogRef.close()"
+        >
+          ✕
+        </button>
       </header>
       <div class="nk-dialog__body tts-body">
         @if (error()) {
@@ -75,7 +89,12 @@ const MAX_CHARS = 500;
           <label class="nk-field">
             <span class="nk-label">Stimme</span>
             <span class="nk-input">
-              <select class="nk-input__field" [ngModel]="voice()" (ngModelChange)="voice.set($event); speaker.set('')" aria-label="Stimme">
+              <select
+                class="nk-input__field"
+                [ngModel]="voice()"
+                (ngModelChange)="voice.set($event); speaker.set('')"
+                aria-label="Stimme"
+              >
                 @for (v of voices(); track v.id) {
                   <option [value]="v.id">{{ label(v.id) }}</option>
                 }
@@ -86,7 +105,12 @@ const MAX_CHARS = 500;
             <label class="nk-field">
               <span class="nk-label">Gefühl</span>
               <span class="nk-input">
-                <select class="nk-input__field" [ngModel]="speaker()" (ngModelChange)="speaker.set($event)" aria-label="Gefühl">
+                <select
+                  class="nk-input__field"
+                  [ngModel]="speaker()"
+                  (ngModelChange)="speaker.set($event)"
+                  aria-label="Gefühl"
+                >
                   <option value="">neutral</option>
                   @for (s of speakers(); track s) {
                     @if (s !== 'neutral') {
@@ -100,7 +124,12 @@ const MAX_CHARS = 500;
           <label class="nk-field">
             <span class="nk-label">Tempo</span>
             <span class="nk-input">
-              <select class="nk-input__field" [ngModel]="lengthScale()" (ngModelChange)="lengthScale.set(+$event)" aria-label="Tempo">
+              <select
+                class="nk-input__field"
+                [ngModel]="lengthScale()"
+                (ngModelChange)="lengthScale.set(+$event)"
+                aria-label="Tempo"
+              >
                 <option [value]="0.8">schnell</option>
                 <option [value]="1">normal</option>
                 <option [value]="1.3">langsam</option>
@@ -109,19 +138,34 @@ const MAX_CHARS = 500;
           </label>
         </div>
         @if (busy()) {
-          <p class="tts-msg"><span class="nk-spin" aria-hidden="true"></span> Thorsten räuspert sich … (ca. {{ estimate() }} s)</p>
+          <p class="tts-msg">
+            <span class="nk-spin" aria-hidden="true"></span> Thorsten räuspert sich … (ca.
+            {{ estimate() }} s)
+          </p>
         } @else if (result(); as r) {
           <p class="tts-msg">
-            {{ (r.durationMs / 1000).toFixed(1) }} s Audio, erzeugt in {{ (r.synthMs / 1000).toFixed(1) }} s ·
-            {{ r.playedOnBox ? 'läuft auf der Nervbox' : 'Box spielt nicht lokal – im Browser angehört' }}
+            {{ (r.durationMs / 1000).toFixed(1) }} s Audio, erzeugt in
+            {{ (r.synthMs / 1000).toFixed(1) }} s ·
+            {{
+              r.playedOnBox
+                ? 'läuft auf der Nervbox'
+                : 'Box spielt nicht lokal – im Browser angehört'
+            }}
           </p>
         }
       </div>
       <footer class="nk-dialog__foot">
         @if (result(); as r) {
-          <button type="button" class="nk-key nk-key--ghost" (click)="listenHere(r)">Hier anhören</button>
+          <button type="button" class="nk-key nk-key--ghost" (click)="listenHere(r)">
+            Hier anhören
+          </button>
         }
-        <button type="button" class="nk-key nk-key--accent" [disabled]="busy() || !text().trim()" (click)="speak()">
+        <button
+          type="button"
+          class="nk-key nk-key--accent"
+          [disabled]="busy() || !text().trim()"
+          (click)="speak()"
+        >
           Sprechen
         </button>
       </footer>
@@ -181,12 +225,16 @@ export class TtsTestDialogComponent implements OnInit {
   readonly voice = signal('thorsten-high');
   readonly speaker = signal('');
   readonly lengthScale = signal(1);
-  readonly text = signal('Achtung, Achtung! Die Nervbox-Zentralbank gibt bekannt: Der Holzpreis steigt.');
+  readonly text = signal(
+    'Achtung, Achtung! Die Nervbox-Zentralbank gibt bekannt: Der Holzpreis steigt.',
+  );
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
   readonly result = signal<TtsResult | null>(null);
 
-  readonly speakers = computed(() => this.voices().find(v => v.id === this.voice())?.speakers ?? []);
+  readonly speakers = computed(
+    () => this.voices().find((v) => v.id === this.voice())?.speakers ?? [],
+  );
 
   /** Rough wait time: ~14 chars per second of audio, thorsten-high renders at ~2x real time on the Pi 4 */
   readonly estimate = computed(() => {
@@ -197,11 +245,11 @@ export class TtsTestDialogComponent implements OnInit {
 
   ngOnInit(): void {
     this.api.get<TtsVoice[]>('/tts/voices').subscribe({
-      next: v => {
+      next: (v) => {
         this.voices.set(v);
-        if (!v.some(x => x.id === this.voice()) && v.length) this.voice.set(v[0].id);
+        if (!v.some((x) => x.id === this.voice()) && v.length) this.voice.set(v[0].id);
       },
-      error: e => this.error.set(e?.error?.error ?? 'TTS-Dienst nicht erreichbar'),
+      error: (e) => this.error.set(e?.error?.error ?? 'TTS-Dienst nicht erreichbar'),
     });
   }
 
@@ -226,12 +274,12 @@ export class TtsTestDialogComponent implements OnInit {
         lengthScale: this.lengthScale(),
       })
       .subscribe({
-        next: r => {
+        next: (r) => {
           this.result.set(r);
           this.busy.set(false);
           if (!r.playedOnBox) this.listenHere(r);
         },
-        error: e => {
+        error: (e) => {
           this.error.set(e?.error?.error ?? 'Sprachausgabe fehlgeschlagen');
           this.busy.set(false);
         },

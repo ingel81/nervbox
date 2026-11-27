@@ -3,68 +3,352 @@
    Funktionstaste = opake Putty-Kappe im Schatten, Beschriftung hinterleuchtet,
    1px Lichtspalt + schwarzer Schacht ringsum. Braucht ≥ 8px Abstand zum Nachbarn.
    --------------------------------------------------------------------------- */
-.nk-key, .nk-select, .nk-tag, .nk-tag__remove, .nk-quickkey, .nk-tabs__tab {
+.nk-key,
+.nk-select,
+.nk-tag,
+.nk-tag__remove,
+.nk-quickkey,
+.nk-tabs__tab {
   --nk-key-face: var(--nk-cap);
-  position: relative; border: 0; cursor: pointer; border-radius: var(--nk-r-md); white-space: nowrap;
-  color: var(--nk-iv); text-shadow: var(--nk-glow-key);
-  background: var(--nk-face-cap), var(--nk-key-face); box-shadow: var(--nk-shadow-cap); }
-.nk-key { height: 38px; padding: 0 12px 2px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex-shrink: 0; font: 700 var(--nk-fs-md)/1 var(--nk-font-ui); letter-spacing: .6px; }
-.nk-key svg { filter: drop-shadow(0 0 3px rgb(var(--nk-lamp-rgb) / .55)); }
-.nk-key:hover, .nk-select:hover, .nk-tag:hover, .nk-tag__remove:hover, .nk-quickkey:hover, .nk-tabs__tab:hover { filter: brightness(1.12); }
-.nk-key:active { transform: translateY(1px); filter: brightness(.94); }
-.nk-key--pressed { padding-top: 2px; padding-bottom: 0; box-shadow: var(--nk-shadow-cap-down); }
-.nk-key:focus-visible, .nk-select:focus-visible, .nk-tag:focus-visible, .nk-quickkey:focus-visible, .nk-tabs__tab:focus-visible, .nk-switch:focus-visible, .nk-pad:focus-visible { outline: 2px solid var(--nk-iv); outline-offset: 5px; }
+  position: relative;
+  border: 0;
+  cursor: pointer;
+  border-radius: var(--nk-r-md);
+  white-space: nowrap;
+  color: var(--nk-iv);
+  text-shadow: var(--nk-glow-key);
+  background: var(--nk-face-cap), var(--nk-key-face);
+  box-shadow: var(--nk-shadow-cap);
+}
+.nk-key {
+  height: 38px;
+  padding: 0 12px 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex-shrink: 0;
+  font: 700 var(--nk-fs-md)/1 var(--nk-font-ui);
+  letter-spacing: 0.6px;
+}
+.nk-key svg {
+  filter: drop-shadow(0 0 3px rgb(var(--nk-lamp-rgb) / 0.55));
+}
+.nk-key:hover,
+.nk-select:hover,
+.nk-tag:hover,
+.nk-tag__remove:hover,
+.nk-quickkey:hover,
+.nk-tabs__tab:hover {
+  filter: brightness(1.12);
+}
+.nk-key:active {
+  transform: translateY(1px);
+  filter: brightness(0.94);
+}
+.nk-key--pressed {
+  padding-top: 2px;
+  padding-bottom: 0;
+  box-shadow: var(--nk-shadow-cap-down);
+}
+.nk-key:focus-visible,
+.nk-select:focus-visible,
+.nk-tag:focus-visible,
+.nk-quickkey:focus-visible,
+.nk-tabs__tab:focus-visible,
+.nk-switch:focus-visible,
+.nk-pad:focus-visible {
+  outline: 2px solid var(--nk-iv);
+  outline-offset: 5px;
+}
 /* eingerastet / aktiv: Kappe unten, grüner Lichtspalt */
-.nk-key--on { --nk-key-face: var(--nk-cap-on); padding-top: 2px; padding-bottom: 0; color: #FFFFFF; box-shadow: inset 0 2px 5px rgb(0 0 0 / .6), inset 0 -1px 0 rgb(0 0 0 / .3), 0 0 0 1px rgb(var(--nk-own-rgb) / .6), var(--nk-shadow-well); }
+.nk-key--on {
+  --nk-key-face: var(--nk-cap-on);
+  padding-top: 2px;
+  padding-bottom: 0;
+  color: #ffffff;
+  box-shadow:
+    inset 0 2px 5px rgb(0 0 0 / 0.6),
+    inset 0 -1px 0 rgb(0 0 0 / 0.3),
+    0 0 0 1px rgb(var(--nk-own-rgb) / 0.6),
+    var(--nk-shadow-well);
+}
 /* Primäraktion: voll durchleuchtete, lampenweiße Kappe mit dunklem Aufdruck */
-.nk-key--accent { color: var(--nk-ink); text-shadow: 0 1px 0 rgb(255 255 255 / .35); background: radial-gradient(ellipse 80% 120% at 50% 60%, #FFF6DF 0%, #EEDDB0 60%, #CDB988 100%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / .6), inset 0 -3px 0 rgb(0 0 0 / .22), 0 0 0 1px rgb(var(--nk-lamp-rgb) / .9), 0 0 0 3px var(--nk-well), 0 0 14px 4px rgb(var(--nk-lamp-rgb) / .38); }
-.nk-key--accent svg, .nk-key--danger svg { filter: none; }
+.nk-key--accent {
+  color: var(--nk-ink);
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.35);
+  background: radial-gradient(ellipse 80% 120% at 50% 60%, #fff6df 0%, #eeddb0 60%, #cdb988 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.6),
+    inset 0 -3px 0 rgb(0 0 0 / 0.22),
+    0 0 0 1px rgb(var(--nk-lamp-rgb) / 0.9),
+    0 0 0 3px var(--nk-well),
+    0 0 14px 4px rgb(var(--nk-lamp-rgb) / 0.38);
+}
+.nk-key--accent svg,
+.nk-key--danger svg {
+  filter: none;
+}
 /* Gefahr: rot durchleuchtet */
-.nk-key--danger { color: #FFFFFF; font-weight: 800; letter-spacing: 1.2px; text-shadow: 0 1px 1px rgb(0 0 0 / .4); background: radial-gradient(ellipse 80% 120% at 50% 60%, #C93A30 0%, #AC2B23 60%, #8A1F19 100%);
-  box-shadow: inset 0 1px 0 rgb(255 200 190 / .4), inset 0 -3px 0 rgb(0 0 0 / .3), 0 0 0 1px rgb(255 110 95 / .6), 0 0 0 3px var(--nk-well), 0 0 14px 4px rgb(var(--nk-danger-rgb) / .4); }
+.nk-key--danger {
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-shadow: 0 1px 1px rgb(0 0 0 / 0.4);
+  background: radial-gradient(ellipse 80% 120% at 50% 60%, #c93a30 0%, #ac2b23 60%, #8a1f19 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 200 190 / 0.4),
+    inset 0 -3px 0 rgb(0 0 0 / 0.3),
+    0 0 0 1px rgb(255 110 95 / 0.6),
+    0 0 0 3px var(--nk-well),
+    0 0 14px 4px rgb(var(--nk-danger-rgb) / 0.4);
+}
 /* leerer Tastenplatz */
-.nk-key--ghost { color: var(--nk-iv-2); text-shadow: none; font-weight: 600; background: rgb(0 0 0 / .25); box-shadow: var(--nk-shadow-recess); }
-.nk-key--icon { width: 44px; padding: 0 0 2px; }
-.nk-key--icon.nk-key--on { padding: 2px 0 0; }
-.nk-key--sm { height: 30px; padding: 0 9px 2px; font-size: var(--nk-fs-sm); }
-.nk-key--sm.nk-key--icon { width: 34px; padding: 0 0 2px; }
-.nk-key--lg { height: 44px; padding: 0 14px 2px; font-size: 15px; letter-spacing: 1.2px; }
+.nk-key--ghost {
+  color: var(--nk-iv-2);
+  text-shadow: none;
+  font-weight: 600;
+  background: rgb(0 0 0 / 0.25);
+  box-shadow: var(--nk-shadow-recess);
+}
+.nk-key--icon {
+  width: 44px;
+  padding: 0 0 2px;
+}
+.nk-key--icon.nk-key--on {
+  padding: 2px 0 0;
+}
+.nk-key--sm {
+  height: 30px;
+  padding: 0 9px 2px;
+  font-size: var(--nk-fs-sm);
+}
+.nk-key--sm.nk-key--icon {
+  width: 34px;
+  padding: 0 0 2px;
+}
+.nk-key--lg {
+  height: 44px;
+  padding: 0 14px 2px;
+  font-size: 15px;
+  letter-spacing: 1.2px;
+}
 /* runder Pilzknopf (Zufall): rot durchleuchtet, sitzt in einem Ring */
-.nk-key--round { width: 50px; height: 50px; padding: 0; border-radius: 50%; color: #FFFFFF; background: radial-gradient(circle at 50% 58%, var(--nk-danger-hot) 0%, #C23A30 48%, var(--nk-danger-edge) 100%);
-  box-shadow: inset 0 2px 1px rgb(255 220 200 / .35), inset 0 -4px 6px rgb(0 0 0 / .35), 0 0 0 1px rgb(255 120 100 / .55), var(--nk-shadow-ring), 0 0 18px 8px rgb(var(--nk-danger-rgb) / .3); }
-.nk-key--round svg { filter: none; }
-.nk-key[disabled], .nk-key--disabled { opacity: .45; cursor: not-allowed; filter: none; }
+.nk-key--round {
+  width: 50px;
+  height: 50px;
+  padding: 0;
+  border-radius: 50%;
+  color: #ffffff;
+  background: radial-gradient(
+    circle at 50% 58%,
+    var(--nk-danger-hot) 0%,
+    #c23a30 48%,
+    var(--nk-danger-edge) 100%
+  );
+  box-shadow:
+    inset 0 2px 1px rgb(255 220 200 / 0.35),
+    inset 0 -4px 6px rgb(0 0 0 / 0.35),
+    0 0 0 1px rgb(255 120 100 / 0.55),
+    var(--nk-shadow-ring),
+    0 0 18px 8px rgb(var(--nk-danger-rgb) / 0.3);
+}
+.nk-key--round svg {
+  filter: none;
+}
+.nk-key[disabled],
+.nk-key--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+}
 /* Werkzeugtaste: LED · Taste · Beschriftung */
-.nk-toolkey { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 52px; flex-shrink: 0; }
-.nk-toolkey__label { font: 600 9.5px var(--nk-font-ui); letter-spacing: .9px; color: var(--nk-iv); white-space: nowrap; text-transform: uppercase; text-shadow: var(--nk-glow-text); }
+.nk-toolkey {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 52px;
+  flex-shrink: 0;
+}
+.nk-toolkey__label {
+  font: 600 9.5px var(--nk-font-ui);
+  letter-spacing: 0.9px;
+  color: var(--nk-iv);
+  white-space: nowrap;
+  text-transform: uppercase;
+  text-shadow: var(--nk-glow-text);
+}
 /* LED-Fenster: aus = dunkel; Farbe über Modifier */
-.nk-led { --nk-led: #1E1B17; display: inline-block; flex-shrink: 0; width: 14px; height: 4px; border-radius: 2px; background: var(--nk-led); box-shadow: inset 0 1px 1px rgb(0 0 0 / .85), 0 1px 0 rgb(var(--nk-lamp-rgb) / .12); }
-.nk-led--own { --nk-led: var(--nk-own); --nk-led-rgb: var(--nk-own-rgb); }
-.nk-led--other { --nk-led: var(--nk-other); --nk-led-rgb: var(--nk-other-rgb); }
-.nk-led--danger { --nk-led: var(--nk-danger-lit); --nk-led-rgb: var(--nk-danger-rgb); }
-.nk-led--warn { --nk-led: var(--nk-warn); --nk-led-rgb: var(--nk-warn-rgb); }
-.nk-led--lamp { --nk-led: var(--nk-iv); --nk-led-rgb: var(--nk-lamp-rgb); }
-.nk-led--own, .nk-led--other, .nk-led--danger, .nk-led--warn, .nk-led--lamp { box-shadow: 0 0 7px 1px rgb(var(--nk-led-rgb) / .9), 0 0 18px 5px rgb(var(--nk-led-rgb) / .28), inset 0 0 0 .5px rgb(255 255 255 / .5); }
-.nk-led--dot { width: 8px; height: 8px; border-radius: 50%; }
-.nk-led--blink { animation: nk-blink 1.1s steps(2, jump-none) infinite; }
+.nk-led {
+  --nk-led: #1e1b17;
+  display: inline-block;
+  flex-shrink: 0;
+  width: 14px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--nk-led);
+  box-shadow:
+    inset 0 1px 1px rgb(0 0 0 / 0.85),
+    0 1px 0 rgb(var(--nk-lamp-rgb) / 0.12);
+}
+.nk-led--own {
+  --nk-led: var(--nk-own);
+  --nk-led-rgb: var(--nk-own-rgb);
+}
+.nk-led--other {
+  --nk-led: var(--nk-other);
+  --nk-led-rgb: var(--nk-other-rgb);
+}
+.nk-led--danger {
+  --nk-led: var(--nk-danger-lit);
+  --nk-led-rgb: var(--nk-danger-rgb);
+}
+.nk-led--warn {
+  --nk-led: var(--nk-warn);
+  --nk-led-rgb: var(--nk-warn-rgb);
+}
+.nk-led--lamp {
+  --nk-led: var(--nk-iv);
+  --nk-led-rgb: var(--nk-lamp-rgb);
+}
+.nk-led--own,
+.nk-led--other,
+.nk-led--danger,
+.nk-led--warn,
+.nk-led--lamp {
+  box-shadow:
+    0 0 7px 1px rgb(var(--nk-led-rgb) / 0.9),
+    0 0 18px 5px rgb(var(--nk-led-rgb) / 0.28),
+    inset 0 0 0 0.5px rgb(255 255 255 / 0.5);
+}
+.nk-led--dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.nk-led--blink {
+  animation: nk-blink 1.1s steps(2, jump-none) infinite;
+}
 /* Zähl-Badge */
-.nk-badge { min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; display: inline-grid; place-items: center; flex-shrink: 0; background: var(--nk-danger); color: #FFFFFF; font: 700 11px/1 var(--nk-font-mono); letter-spacing: 0; text-shadow: none; box-shadow: 0 0 8px rgb(var(--nk-danger-rgb) / .7), inset 0 1px 0 rgb(255 255 255 / .35); }
-.nk-badge--sm { min-width: 16px; height: 16px; border-radius: 8px; font-size: 10px; }
-.nk-badge--corner { position: absolute; top: -8px; right: -8px; }
-.nk-badge--other { background: var(--nk-other-deep); color: #CDEBFF; box-shadow: 0 0 0 1px rgb(255 255 255 / .6); }
-.nk-badge--lamp { background: var(--nk-iv); color: var(--nk-ink); box-shadow: 0 0 8px 1px rgb(var(--nk-lamp-rgb) / .7); }
+.nk-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: var(--nk-danger);
+  color: #ffffff;
+  font: 700 11px/1 var(--nk-font-mono);
+  letter-spacing: 0;
+  text-shadow: none;
+  box-shadow:
+    0 0 8px rgb(var(--nk-danger-rgb) / 0.7),
+    inset 0 1px 0 rgb(255 255 255 / 0.35);
+}
+.nk-badge--sm {
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  font-size: 10px;
+}
+.nk-badge--corner {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+}
+.nk-badge--other {
+  background: var(--nk-other-deep);
+  color: #cdebff;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.6);
+}
+.nk-badge--lamp {
+  background: var(--nk-iv);
+  color: var(--nk-ink);
+  box-shadow: 0 0 8px 1px rgb(var(--nk-lamp-rgb) / 0.7);
+}
 /* Avatar-Plakette (Initialen) */
-.nk-avatar { width: 20px; height: 20px; flex-shrink: 0; border: 0; padding: 0; border-radius: 50%; display: inline-grid; place-items: center; background: #0E0C0A; color: #FFFFFF; font: 700 10px/1 var(--nk-font-ui); letter-spacing: 0; text-shadow: none; }
-.nk-avatar--xs { width: 17px; height: 17px; font-size: 9px; }
-.nk-avatar--md { width: 24px; height: 24px; font-size: 11px; }
-.nk-avatar--lg { width: 34px; height: 34px; font-size: 14px; }
-.nk-avatar--own { background: var(--nk-own); color: #0B1712; box-shadow: 0 0 7px rgb(var(--nk-own-rgb) / .8); }
-.nk-avatar--other { background: var(--nk-other); color: #0B1712; box-shadow: 0 0 7px rgb(var(--nk-other-rgb) / .8); }
-.nk-avatar--free { background: transparent; border: 1px dashed #8D8676; }
-.nk-avatar--paper { border-radius: 3px; background: var(--nk-paper-ink); color: var(--nk-paper); font-family: var(--nk-font-paper); }
+.nk-avatar {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: #0e0c0a;
+  color: #ffffff;
+  font: 700 10px/1 var(--nk-font-ui);
+  letter-spacing: 0;
+  text-shadow: none;
+}
+.nk-avatar--xs {
+  width: 17px;
+  height: 17px;
+  font-size: 9px;
+}
+.nk-avatar--md {
+  width: 24px;
+  height: 24px;
+  font-size: 11px;
+}
+.nk-avatar--lg {
+  width: 34px;
+  height: 34px;
+  font-size: 14px;
+}
+.nk-avatar--own {
+  background: var(--nk-own);
+  color: #0b1712;
+  box-shadow: 0 0 7px rgb(var(--nk-own-rgb) / 0.8);
+}
+.nk-avatar--other {
+  background: var(--nk-other);
+  color: #0b1712;
+  box-shadow: 0 0 7px rgb(var(--nk-other-rgb) / 0.8);
+}
+.nk-avatar--free {
+  background: transparent;
+  border: 1px dashed #8d8676;
+}
+.nk-avatar--paper {
+  border-radius: 3px;
+  background: var(--nk-paper-ink);
+  color: var(--nk-paper);
+  font-family: var(--nk-font-paper);
+}
 /* Konto-Knopf oben rechts: Avatar als Taste im Ring */
-.nk-avatar--key { width: 44px; height: 44px; cursor: pointer; font: 800 16px/1 var(--nk-font-ui); letter-spacing: .5px; background: radial-gradient(circle at 50% 58%, #5A7189, #43566B 55%, #283545);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / .3), inset 0 -3px 4px rgb(0 0 0 / .35), 0 0 0 1px rgb(150 190 230 / .5), 0 0 0 3px var(--nk-well), 0 0 0 6px #4B453A, 1.5px 1.5px 0 6px rgb(var(--nk-lamp-rgb) / .2), -1px -1px 0 6px rgb(0 0 0 / .5), 0 0 14px 6px rgb(120 165 210 / .22); }
+.nk-avatar--key {
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  font: 800 16px/1 var(--nk-font-ui);
+  letter-spacing: 0.5px;
+  background: radial-gradient(circle at 50% 58%, #5a7189, #43566b 55%, #283545);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.3),
+    inset 0 -3px 4px rgb(0 0 0 / 0.35),
+    0 0 0 1px rgb(150 190 230 / 0.5),
+    0 0 0 3px var(--nk-well),
+    0 0 0 6px #4b453a,
+    1.5px 1.5px 0 6px rgb(var(--nk-lamp-rgb) / 0.2),
+    -1px -1px 0 6px rgb(0 0 0 / 0.5),
+    0 0 14px 6px rgb(120 165 210 / 0.22);
+}
 /* Tooltip */
-.nk-tooltip { display: inline-block; padding: 3px 8px 4px; border-radius: 4px; background: #0B0A08; color: var(--nk-iv); font: 600 12px/1.2 var(--nk-font-ui); letter-spacing: .5px; white-space: nowrap; box-shadow: 0 0 0 1px rgb(var(--nk-lamp-rgb) / .3), 0 4px 10px rgb(0 0 0 / .7); }
+.nk-tooltip {
+  display: inline-block;
+  padding: 3px 8px 4px;
+  border-radius: 4px;
+  background: #0b0a08;
+  color: var(--nk-iv);
+  font: 600 12px/1.2 var(--nk-font-ui);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  box-shadow:
+    0 0 0 1px rgb(var(--nk-lamp-rgb) / 0.3),
+    0 4px 10px rgb(0 0 0 / 0.7);
+}

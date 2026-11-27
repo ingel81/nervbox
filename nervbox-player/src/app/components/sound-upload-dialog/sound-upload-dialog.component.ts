@@ -45,12 +45,32 @@ interface FileUploadItem {
       <header class="nk-dialog__head">
         <mat-icon class="up-ico" aria-hidden="true">upload_file</mat-icon>
         <h2 class="nk-dialog__title">Sounds hochladen</h2>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close [disabled]="isUploading()">✕</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon"
+          aria-label="Schließen"
+          mat-dialog-close
+          [disabled]="isUploading()"
+        >
+          ✕
+        </button>
       </header>
       <div class="nk-dialog__body up-body">
-        <input type="file" #fileInput [accept]="uploadService.getAcceptString()" multiple hidden (change)="onFilesSelected($event)" />
+        <input
+          type="file"
+          #fileInput
+          [accept]="uploadService.getAcceptString()"
+          multiple
+          hidden
+          (change)="onFilesSelected($event)"
+        />
         <div class="nk-drop up-drop">
-          <button type="button" class="nk-key" (click)="fileInput.click()" [disabled]="isUploading()">
+          <button
+            type="button"
+            class="nk-key"
+            (click)="fileInput.click()"
+            [disabled]="isUploading()"
+          >
             <mat-icon class="up-btn-ico">folder_open</mat-icon>Dateien auswählen
           </button>
           <span class="nk-drop__hint">.mp3, .wav, .ogg</span>
@@ -61,11 +81,25 @@ interface FileUploadItem {
             @for (item of files(); track item.file.name; let i = $index) {
               <div class="up-file">
                 <div class="up-line">
-                  <span [class]="'up-state up-state--' + item.status" [attr.aria-label]="statusLabel(item.status)">{{ statusGlyph(item.status) }}</span>
-                  <span class="nk-row__title up-name" [matTooltip]="item.file.name">{{ item.displayName }}</span>
+                  <span
+                    [class]="'up-state up-state--' + item.status"
+                    [attr.aria-label]="statusLabel(item.status)"
+                    >{{ statusGlyph(item.status) }}</span
+                  >
+                  <span class="nk-row__title up-name" [matTooltip]="item.file.name">{{
+                    item.displayName
+                  }}</span>
                   <span class="nk-row__meta">{{ formatFileSize(item.file.size) }}</span>
                   @if (item.status === 'pending') {
-                    <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Entfernen" matTooltip="Entfernen" (click)="removeFile(i)">✕</button>
+                    <button
+                      type="button"
+                      class="nk-key nk-key--sm nk-key--icon"
+                      aria-label="Entfernen"
+                      matTooltip="Entfernen"
+                      (click)="removeFile(i)"
+                    >
+                      ✕
+                    </button>
                   }
                 </div>
                 @if (item.status === 'pending') {
@@ -75,11 +109,17 @@ interface FileUploadItem {
                       @for (tag of availableTags(); track tag.name) {
                         <button
                           type="button"
-                          [class]="item.selectedTags.includes(tag.name) ? 'nk-tag nk-tag--selected' : 'nk-tag'"
+                          [class]="
+                            item.selectedTags.includes(tag.name)
+                              ? 'nk-tag nk-tag--selected'
+                              : 'nk-tag'
+                          "
                           [style]="tone(tag.name)"
                           [attr.aria-pressed]="item.selectedTags.includes(tag.name)"
                           (click)="toggleTag(i, tag.name)"
-                        ><span class="nk-tag__lens" aria-hidden="true"></span>#{{ tag.name }}</button>
+                        >
+                          <span class="nk-tag__lens" aria-hidden="true"></span>#{{ tag.name }}
+                        </button>
                       }
                     </div>
                   </div>
@@ -91,7 +131,13 @@ interface FileUploadItem {
                   </div>
                 }
                 @if (item.status === 'uploading' || item.status === 'success') {
-                  <span [class]="item.status === 'success' ? 'nk-progress' : 'nk-progress nk-progress--lamp'" role="progressbar" [attr.aria-valuenow]="item.progress">
+                  <span
+                    [class]="
+                      item.status === 'success' ? 'nk-progress' : 'nk-progress nk-progress--lamp'
+                    "
+                    role="progressbar"
+                    [attr.aria-valuenow]="item.progress"
+                  >
                     <span class="nk-progress__fill" [style.width.%]="item.progress"></span>
                   </span>
                 }
@@ -106,9 +152,21 @@ interface FileUploadItem {
         }
       </div>
       <footer class="nk-dialog__foot">
-        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close [disabled]="isUploading()">{{ allDone() ? 'Schließen' : 'Abbrechen' }}</button>
+        <button
+          type="button"
+          class="nk-key nk-key--ghost"
+          mat-dialog-close
+          [disabled]="isUploading()"
+        >
+          {{ allDone() ? 'Schließen' : 'Abbrechen' }}
+        </button>
         @if (!allDone()) {
-          <button type="button" class="nk-key nk-key--accent" [disabled]="!canUpload() || isUploading()" (click)="uploadAll()">
+          <button
+            type="button"
+            class="nk-key nk-key--accent"
+            [disabled]="!canUpload() || isUploading()"
+            (click)="uploadAll()"
+          >
             @if (isUploading()) {
               <span class="nk-spin" aria-hidden="true"></span>
               Hochladen...
@@ -427,12 +485,20 @@ export class SoundUploadDialogComponent {
   }
 
   statusLabel(status: FileUploadItem['status']): string {
-    return { pending: 'Wartet', uploading: 'Wird hochgeladen', success: 'Hochgeladen', error: 'Fehler' }[status];
+    return {
+      pending: 'Wartet',
+      uploading: 'Wird hochgeladen',
+      success: 'Hochgeladen',
+      error: 'Fehler',
+    }[status];
   }
 
   toggleTag(fileIndex: number, tag: string): void {
     const current = this.files()[fileIndex]?.selectedTags ?? [];
-    this.onTagsChange(fileIndex, current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag]);
+    this.onTagsChange(
+      fileIndex,
+      current.includes(tag) ? current.filter((t) => t !== tag) : [...current, tag],
+    );
   }
 
   tone(tag: string): string {

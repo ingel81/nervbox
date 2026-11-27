@@ -162,7 +162,9 @@ export class CreditService {
     if (this.hourlyCreditsEnabled()) {
       const capped = !this.isAdmin() && credits >= this.maxCredits();
       if (capped) {
-        lines.push(`Zuwachs: +${fmt(this.hourlyCreditsAmount())} N$/h · pausiert (Limit ${fmt(this.maxCredits())} N$)`);
+        lines.push(
+          `Zuwachs: +${fmt(this.hourlyCreditsAmount())} N$/h · pausiert (Limit ${fmt(this.maxCredits())} N$)`,
+        );
       } else {
         const last = this.lastCreditGrantAt();
         let next = '';
@@ -224,7 +226,9 @@ export class CreditService {
         this.maxCredits.set(info.maxCredits);
         this.hourlyCreditsEnabled.set(info.hourlyCreditsEnabled);
         this.hourlyCreditsAmount.set(info.hourlyCreditsAmount);
-        this.lastCreditGrantAt.set(info.lastCreditGrantAt ? new Date(info.lastCreditGrantAt) : null);
+        this.lastCreditGrantAt.set(
+          info.lastCreditGrantAt ? new Date(info.lastCreditGrantAt) : null,
+        );
         this.isAdmin.set(!!info.isAdmin);
         this.todayEarned.set(info.todayEarned ?? 0);
         this.todaySpent.set(info.todaySpent ?? 0);
@@ -258,25 +262,27 @@ export class CreditService {
     return this.api.post<CreditGrantResponse>('/credit/grant', request);
   }
 
-  getUserCredits(userId: number): Observable<{ userId: number; username: string; credits: number; role: string }> {
+  getUserCredits(
+    userId: number,
+  ): Observable<{ userId: number; username: string; credits: number; role: string }> {
     return this.api.get(`/credit/user/${userId}`);
   }
 
   // Gambling
   gamble(amount: number): Observable<GambleResponse> {
     return this.api.post<GambleResponse>('/credit/gamble', { amount }).pipe(
-      tap(response => {
+      tap((response) => {
         this.credits.set(response.newBalance);
-      })
+      }),
     );
   }
 
   // Plinko
   playPlinko(amount: number, multiplier: number): Observable<PlinkoResponse> {
     return this.api.post<PlinkoResponse>('/credit/plinko', { amount, multiplier }).pipe(
-      tap(response => {
+      tap((response) => {
         this.credits.set(response.newBalance);
-      })
+      }),
     );
   }
 
@@ -287,31 +293,33 @@ export class CreditService {
 
   transfer(toUserId: number, amount: number): Observable<TransferResponse> {
     return this.api.post<TransferResponse>('/credit/transfer', { toUserId, amount }).pipe(
-      tap(response => {
+      tap((response) => {
         if (response.success) {
           this.credits.set(response.newBalance);
         }
-      })
+      }),
     );
   }
 
   // Minigame rewards
   claimMinigameReward(gameName: string, level: number): Observable<MinigameRewardResponse> {
-    return this.api.post<MinigameRewardResponse>('/credit/minigame-reward', { gameName, level }).pipe(
-      tap(response => {
-        if (response.success) {
-          this.credits.set(response.newBalance);
-        }
-      })
-    );
+    return this.api
+      .post<MinigameRewardResponse>('/credit/minigame-reward', { gameName, level })
+      .pipe(
+        tap((response) => {
+          if (response.success) {
+            this.credits.set(response.newBalance);
+          }
+        }),
+      );
   }
 
   // Slot Machine
   playSlotMachine(betAmount: number): Observable<SlotMachineResponse> {
     return this.api.post<SlotMachineResponse>('/credit/slotmachine', { betAmount }).pipe(
-      tap(response => {
+      tap((response) => {
         this.credits.set(response.newBalance);
-      })
+      }),
     );
   }
 
@@ -320,7 +328,7 @@ export class CreditService {
     gameName: string,
     balance: number,
     hits: number,
-    misses: number
+    misses: number,
   ): Observable<ShooterGameResultResponse> {
     return this.api
       .post<ShooterGameResultResponse>('/credit/shooter-game', {
@@ -330,20 +338,20 @@ export class CreditService {
         misses,
       })
       .pipe(
-        tap(response => {
+        tap((response) => {
           this.credits.set(response.newBalance);
-        })
+        }),
       );
   }
 
   // Spend Credits (for minigames like Sandwichmaster)
   spendCredits(amount: number, reason: string): Observable<SpendCreditsResponse> {
     return this.api.post<SpendCreditsResponse>('/credit/spend', { amount, reason }).pipe(
-      tap(response => {
+      tap((response) => {
         if (response.success) {
           this.credits.set(response.newBalance);
         }
-      })
+      }),
     );
   }
 }

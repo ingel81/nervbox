@@ -29,12 +29,24 @@ import {
   template: `
     <div class="nk-section ach">
       @if (loading()) {
-        <div class="ach-state"><span class="nk-spin" aria-hidden="true"></span>Achievements werden geladen …</div>
+        <div class="ach-state">
+          <span class="nk-spin" aria-hidden="true"></span>Achievements werden geladen …
+        </div>
       } @else if (error()) {
         <div class="ach-state">Achievements konnten nicht geladen werden</div>
       } @else {
-        <h3 class="nk-section__title">Achievements <span class="nk-section__aside">{{ earnedCount() }} / {{ totalCount() }}</span></h3>
-        <div class="nk-progress nk-progress--lamp ach-progress" role="progressbar" [attr.aria-valuenow]="completionPercentage()" aria-valuemin="0" aria-valuemax="100" [attr.aria-label]="earnedCount() + ' von ' + totalCount() + ' Achievements'">
+        <h3 class="nk-section__title">
+          Achievements
+          <span class="nk-section__aside">{{ earnedCount() }} / {{ totalCount() }}</span>
+        </h3>
+        <div
+          class="nk-progress nk-progress--lamp ach-progress"
+          role="progressbar"
+          [attr.aria-valuenow]="completionPercentage()"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          [attr.aria-label]="earnedCount() + ' von ' + totalCount() + ' Achievements'"
+        >
           <span class="nk-progress__fill" [style.width.%]="completionPercentage()"></span>
         </div>
         <div class="ach-felt" [class.ach-felt--compact]="compact">
@@ -92,10 +104,14 @@ import {
       flex-wrap: wrap;
       align-content: flex-start;
       gap: 16px 26px;
-      background: radial-gradient(rgb(255 255 255 / 0.035) 0.7px, transparent 1px) 0 0 / 3px 3px,
+      background:
+        radial-gradient(rgb(255 255 255 / 0.035) 0.7px, transparent 1px) 0 0 / 3px 3px,
         radial-gradient(ellipse 520px 300px at 0 0, rgb(255 206 140 / 0.12), rgb(255 206 140 / 0)),
         linear-gradient(160deg, #2b2620, #1d1a16);
-      box-shadow: inset 2px 3px 10px rgb(0 0 0 / 0.85), inset 0 0 0 1px rgb(0 0 0 / 0.6), 1px 1px 0 rgb(255 226 176 / 0.16);
+      box-shadow:
+        inset 2px 3px 10px rgb(0 0 0 / 0.85),
+        inset 0 0 0 1px rgb(0 0 0 / 0.6),
+        1px 1px 0 rgb(255 226 176 / 0.16);
     }
     .ach-felt--compact {
       gap: 12px 18px;

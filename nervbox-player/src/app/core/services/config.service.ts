@@ -26,20 +26,20 @@ export class ConfigService {
    */
   loadConfig() {
     return this.api.get<AppConfig>('/config').pipe(
-      tap(config => {
+      tap((config) => {
         this.config.set(config);
         this.isBrowserPlayback.set(config.playbackMode === 'Browser');
         this.loaded.set(true);
         console.log(`[Config] PlaybackMode: ${config.playbackMode}`);
       }),
-      catchError(err => {
+      catchError((err) => {
         console.warn('[Config] Failed to load config, using defaults:', err);
         // Default values if config endpoint fails (backward compatibility)
         this.config.set({ playbackMode: 'Local', version: 'unknown' });
         this.isBrowserPlayback.set(false);
         this.loaded.set(true);
         return of(null);
-      })
+      }),
     );
   }
 }

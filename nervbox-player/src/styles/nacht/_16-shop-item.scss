@@ -1,18 +1,85 @@
 /* ---------------------------------------------------------------------------
    16 · SHOP-FACH: Automatenfach mit Leuchtfenster, Preis-LCD, Status-Lampe
    --------------------------------------------------------------------------- */
-.nk-item { --nk-item-rgb: var(--nk-lamp-rgb); position: relative; display: flex; flex-direction: column; gap: 6px; padding: 9px 10px 8px; border-radius: 9px; overflow: hidden;
-  background: var(--nk-face-cap), linear-gradient(180deg, var(--nk-plate-1), var(--nk-plate-3)); box-shadow: var(--nk-shadow-cap); }
-.nk-item__head { display: flex; align-items: center; gap: 6px; }
-.nk-item__status { font: 700 10px/1 var(--nk-font-ui); letter-spacing: 1.4px; color: var(--nk-iv); white-space: nowrap; }
-.nk-item__glyph { width: 34px; height: 30px; flex-shrink: 0; display: grid; place-items: center; border-radius: 6px; background: var(--nk-face-glass); box-shadow: inset 1px 2px 5px rgb(0 0 0 / .9), 0 0 0 1px rgb(0 0 0 / .5); color: rgb(var(--nk-item-rgb)); }
-.nk-item__glyph svg { filter: drop-shadow(0 0 5px rgb(var(--nk-item-rgb) / .75)); }
-.nk-item__name { font: 700 15.5px/1.1 var(--nk-font-ui); letter-spacing: .3px; color: #FFFFFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.nk-item__desc { font: 500 11px/1.3 var(--nk-font-mono); color: var(--nk-iv-2); height: 28px; overflow: hidden; }
-.nk-item__foot { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.nk-item__foot .nk-counter { margin: 3px 3px 3px 3px; }
-.nk-item--available { --nk-item-rgb: var(--nk-own-rgb); box-shadow: var(--nk-shadow-cap), 0 0 0 5px rgb(var(--nk-own-rgb) / .5), 0 0 24px rgb(var(--nk-own-rgb) / .22); }
-.nk-item--soon { --nk-item-rgb: var(--nk-warn-rgb); }
-.nk-item--sold { --nk-item-rgb: var(--nk-danger-rgb); }
-.nk-item--never { --nk-item-rgb: var(--nk-other-rgb); }
-.nk-item--sold .nk-item__glyph, .nk-item--never .nk-item__glyph { filter: saturate(.5) brightness(.85); }
+.nk-item {
+  --nk-item-rgb: var(--nk-lamp-rgb);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 10px 8px;
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--nk-face-cap), linear-gradient(180deg, var(--nk-plate-1), var(--nk-plate-3));
+  box-shadow: var(--nk-shadow-cap);
+}
+.nk-item__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.nk-item__status {
+  font: 700 10px/1 var(--nk-font-ui);
+  letter-spacing: 1.4px;
+  color: var(--nk-iv);
+  white-space: nowrap;
+}
+.nk-item__glyph {
+  width: 34px;
+  height: 30px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--nk-face-glass);
+  box-shadow:
+    inset 1px 2px 5px rgb(0 0 0 / 0.9),
+    0 0 0 1px rgb(0 0 0 / 0.5);
+  color: rgb(var(--nk-item-rgb));
+}
+.nk-item__glyph svg {
+  filter: drop-shadow(0 0 5px rgb(var(--nk-item-rgb) / 0.75));
+}
+.nk-item__name {
+  font: 700 15.5px/1.1 var(--nk-font-ui);
+  letter-spacing: 0.3px;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nk-item__desc {
+  font: 500 11px/1.3 var(--nk-font-mono);
+  color: var(--nk-iv-2);
+  height: 28px;
+  overflow: hidden;
+}
+.nk-item__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.nk-item__foot .nk-counter {
+  margin: 3px 3px 3px 3px;
+}
+.nk-item--available {
+  --nk-item-rgb: var(--nk-own-rgb);
+  box-shadow:
+    var(--nk-shadow-cap),
+    0 0 0 5px rgb(var(--nk-own-rgb) / 0.5),
+    0 0 24px rgb(var(--nk-own-rgb) / 0.22);
+}
+.nk-item--soon {
+  --nk-item-rgb: var(--nk-warn-rgb);
+}
+.nk-item--sold {
+  --nk-item-rgb: var(--nk-danger-rgb);
+}
+.nk-item--never {
+  --nk-item-rgb: var(--nk-other-rgb);
+}
+.nk-item--sold .nk-item__glyph,
+.nk-item--never .nk-item__glyph {
+  filter: saturate(0.5) brightness(0.85);
+}

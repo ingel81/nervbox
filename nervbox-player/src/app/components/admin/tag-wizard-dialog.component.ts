@@ -43,49 +43,101 @@ import { tagToneStyle } from '../../shared/tag-tone';
       <header class="nk-dialog__head">
         <mat-icon class="wz-ico" aria-hidden="true">auto_fix_high</mat-icon>
         <h2 class="nk-dialog__title">Tag-Wizard</h2>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close>✕</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon"
+          aria-label="Schließen"
+          mat-dialog-close
+        >
+          ✕
+        </button>
       </header>
       <div class="nk-dialog__body wz-body">
         @if (loading()) {
-          <div class="wz-state"><span class="nk-spin" aria-hidden="true"></span>Sounds werden geladen...</div>
+          <div class="wz-state">
+            <span class="nk-spin" aria-hidden="true"></span>Sounds werden geladen...
+          </div>
         } @else if (filteredSounds().length === 0) {
           <div class="wz-state wz-state--col">
-            <span class="nk-empty__title">{{ showOnlyUntagged() ? 'Alle Sounds sind getaggt!' : 'Keine Sounds vorhanden.' }}</span>
+            <span class="nk-empty__title">{{
+              showOnlyUntagged() ? 'Alle Sounds sind getaggt!' : 'Keine Sounds vorhanden.'
+            }}</span>
             @if (showOnlyUntagged()) {
-              <button type="button" class="nk-key" (click)="showOnlyUntagged.set(false)">Alle Sounds anzeigen</button>
+              <button type="button" class="nk-key" (click)="showOnlyUntagged.set(false)">
+                Alle Sounds anzeigen
+              </button>
             }
           </div>
         } @else {
           <div class="wz-line">
             <span class="wz-switch">
-              <button type="button" role="switch" [attr.aria-checked]="showOnlyUntagged()" [class]="showOnlyUntagged() ? 'nk-switch nk-switch--on' : 'nk-switch'" aria-label="Nur ungetaggte Sounds" (click)="onFilterChange(!showOnlyUntagged())"><span class="nk-switch__knob" aria-hidden="true"></span></button>
+              <button
+                type="button"
+                role="switch"
+                [attr.aria-checked]="showOnlyUntagged()"
+                [class]="showOnlyUntagged() ? 'nk-switch nk-switch--on' : 'nk-switch'"
+                aria-label="Nur ungetaggte Sounds"
+                (click)="onFilterChange(!showOnlyUntagged())"
+              >
+                <span class="nk-switch__knob" aria-hidden="true"></span>
+              </button>
               Nur ungetaggte Sounds
             </span>
             <span class="nk-counter">{{ filteredSounds().length }} SOUNDS</span>
             <span class="wz-flex"></span>
-            <span class="nk-row__meta wz-pos">{{ currentIndex() + 1 }} von {{ filteredSounds().length }}</span>
+            <span class="nk-row__meta wz-pos"
+              >{{ currentIndex() + 1 }} von {{ filteredSounds().length }}</span
+            >
             <span class="nk-row__num">{{ progressPercent() }}%</span>
           </div>
-          <span class="nk-progress nk-progress--lamp" role="progressbar" [attr.aria-valuenow]="progressPercent()"><span class="nk-progress__fill" [style.width.%]="progressPercent()"></span></span>
+          <span
+            class="nk-progress nk-progress--lamp"
+            role="progressbar"
+            [attr.aria-valuenow]="progressPercent()"
+            ><span class="nk-progress__fill" [style.width.%]="progressPercent()"></span
+          ></span>
 
           @if (currentSound(); as sound) {
             <div class="wz-card">
-              <button type="button" class="nk-key nk-key--round wz-play" aria-label="Sound abspielen" matTooltip="Sound abspielen" (click)="playCurrentSound()"><mat-icon>play_arrow</mat-icon></button>
+              <button
+                type="button"
+                class="nk-key nk-key--round wz-play"
+                aria-label="Sound abspielen"
+                matTooltip="Sound abspielen"
+                (click)="playCurrentSound()"
+              >
+                <mat-icon>play_arrow</mat-icon>
+              </button>
               <span class="wz-meta">
                 <span class="wz-name">{{ sound.name }}</span>
-                <span class="nk-row__meta">{{ formatDuration(sound.durationMs) }} · {{ sound.fileName }}</span>
+                <span class="nk-row__meta"
+                  >{{ formatDuration(sound.durationMs) }} · {{ sound.fileName }}</span
+                >
               </span>
             </div>
 
             <div class="nk-section">
-              <h3 class="nk-section__title">Aktuelle Tags @if (currentTags().length > 0) { <span class="nk-section__aside">({{ currentTags().length }})</span> }</h3>
+              <h3 class="nk-section__title">
+                Aktuelle Tags
+                @if (currentTags().length > 0) {
+                  <span class="nk-section__aside">({{ currentTags().length }})</span>
+                }
+              </h3>
               <div class="wz-chips">
                 @if (currentTags().length === 0) {
                   <span class="wz-none">Noch keine Tags vergeben</span>
                 }
                 @for (tag of currentTags(); track tag) {
-                  <button type="button" class="nk-tag nk-tag--selected" [style]="tone(tag)" aria-pressed="true" [attr.aria-label]="'#' + tag + ' entfernen'" (click)="toggleTag(tag)">
-                    <span class="nk-tag__lens" aria-hidden="true"></span>#{{ tag }} <span aria-hidden="true">✓</span>
+                  <button
+                    type="button"
+                    class="nk-tag nk-tag--selected"
+                    [style]="tone(tag)"
+                    aria-pressed="true"
+                    [attr.aria-label]="'#' + tag + ' entfernen'"
+                    (click)="toggleTag(tag)"
+                  >
+                    <span class="nk-tag__lens" aria-hidden="true"></span>#{{ tag }}
+                    <span aria-hidden="true">✓</span>
                   </button>
                 }
               </div>
@@ -94,10 +146,35 @@ import { tagToneStyle } from '../../shared/tag-tone';
             <div class="nk-section">
               <h3 class="nk-section__title">Verfügbare Tags</h3>
               <label class="nk-input nk-input--sm wz-search">
-                <svg class="nk-input__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
-                <input class="nk-input__field" placeholder="Tags suchen..." aria-label="Tags suchen" [value]="tagSearchQuery()" (input)="tagSearchQuery.set($any($event.target).value)" />
+                <svg
+                  class="nk-input__icon"
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  aria-hidden="true"
+                >
+                  <circle cx="11" cy="11" r="7"></circle>
+                  <path d="M20 20l-3.5-3.5"></path>
+                </svg>
+                <input
+                  class="nk-input__field"
+                  placeholder="Tags suchen..."
+                  aria-label="Tags suchen"
+                  [value]="tagSearchQuery()"
+                  (input)="tagSearchQuery.set($any($event.target).value)"
+                />
                 @if (tagSearchQuery()) {
-                  <button type="button" class="nk-input__clear" aria-label="Suche leeren" (click)="tagSearchQuery.set('')">✕</button>
+                  <button
+                    type="button"
+                    class="nk-input__clear"
+                    aria-label="Suche leeren"
+                    (click)="tagSearchQuery.set('')"
+                  >
+                    ✕
+                  </button>
                 }
               </label>
               <div class="wz-chips">
@@ -105,7 +182,13 @@ import { tagToneStyle } from '../../shared/tag-tone';
                   <span class="wz-none">Keine Tags gefunden</span>
                 }
                 @for (tag of availableTagsFiltered(); track tag.name) {
-                  <button type="button" [class]="isTagSelected(tag.name) ? 'nk-tag nk-tag--selected' : 'nk-tag'" [style]="tone(tag.name)" [attr.aria-pressed]="isTagSelected(tag.name)" (click)="toggleTag(tag.name)">
+                  <button
+                    type="button"
+                    [class]="isTagSelected(tag.name) ? 'nk-tag nk-tag--selected' : 'nk-tag'"
+                    [style]="tone(tag.name)"
+                    [attr.aria-pressed]="isTagSelected(tag.name)"
+                    (click)="toggleTag(tag.name)"
+                  >
                     <span class="nk-tag__lens" aria-hidden="true"></span>#{{ tag.name }}
                     @if (isTagSelected(tag.name)) {
                       <span aria-hidden="true">✓</span>
@@ -118,8 +201,24 @@ import { tagToneStyle } from '../../shared/tag-tone';
             <div class="nk-section">
               <h3 class="nk-section__title">Neuer Tag</h3>
               <div class="wz-line">
-                <label class="nk-input wz-grow"><input class="nk-input__field" [(ngModel)]="newTagInput" (keydown.enter)="createAndAddTag()" placeholder="Tag eingeben und Enter drücken" aria-label="Neuer Tag" /></label>
-                <button type="button" class="nk-key nk-key--icon" aria-label="Tag hinzufügen" matTooltip="Tag hinzufügen" [disabled]="!newTagInput.trim()" (click)="createAndAddTag()"><mat-icon>add</mat-icon></button>
+                <label class="nk-input wz-grow"
+                  ><input
+                    class="nk-input__field"
+                    [(ngModel)]="newTagInput"
+                    (keydown.enter)="createAndAddTag()"
+                    placeholder="Tag eingeben und Enter drücken"
+                    aria-label="Neuer Tag"
+                /></label>
+                <button
+                  type="button"
+                  class="nk-key nk-key--icon"
+                  aria-label="Tag hinzufügen"
+                  matTooltip="Tag hinzufügen"
+                  [disabled]="!newTagInput.trim()"
+                  (click)="createAndAddTag()"
+                >
+                  <mat-icon>add</mat-icon>
+                </button>
               </div>
             </div>
           }
@@ -129,9 +228,29 @@ import { tagToneStyle } from '../../shared/tag-tone';
         <button type="button" class="nk-key nk-key--ghost" mat-dialog-close>Schließen</button>
         <span class="wz-flex"></span>
         @if (filteredSounds().length > 0) {
-          <button type="button" class="nk-key" [disabled]="currentIndex() === 0 || saving()" (click)="goPrevious()">‹ Zurück</button>
-          <button type="button" class="nk-key" matTooltip="Ohne Speichern weiter" [disabled]="currentIndex() >= filteredSounds().length - 1" (click)="skip()">Überspringen</button>
-          <button type="button" class="nk-key nk-key--accent" [disabled]="saving()" (click)="goNext()">
+          <button
+            type="button"
+            class="nk-key"
+            [disabled]="currentIndex() === 0 || saving()"
+            (click)="goPrevious()"
+          >
+            ‹ Zurück
+          </button>
+          <button
+            type="button"
+            class="nk-key"
+            matTooltip="Ohne Speichern weiter"
+            [disabled]="currentIndex() >= filteredSounds().length - 1"
+            (click)="skip()"
+          >
+            Überspringen
+          </button>
+          <button
+            type="button"
+            class="nk-key nk-key--accent"
+            [disabled]="saving()"
+            (click)="goNext()"
+          >
             @if (saving()) {
               <span class="nk-spin" aria-hidden="true"></span>
             } @else if (isLastSound()) {
@@ -199,7 +318,10 @@ import { tagToneStyle } from '../../shared/tag-tone';
       padding: 16px 18px;
       border-radius: 10px;
       background: var(--nk-face-glare), var(--nk-face-glass);
-      box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 226 176 / 0.3), 0 0 20px rgb(255 226 176 / 0.1);
+      box-shadow:
+        inset 0 0 0 1px rgb(0 0 0 / 0.7),
+        0 0 0 1px rgb(255 226 176 / 0.3),
+        0 0 20px rgb(255 226 176 / 0.1);
     }
     .wz-play {
       background: radial-gradient(circle at 50% 58%, #96f7b9 0%, #4be585 48%, #1f8e4c 100%);

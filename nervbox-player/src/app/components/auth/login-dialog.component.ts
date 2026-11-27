@@ -26,14 +26,28 @@ import { AuthService } from '../../core/services/auth.service';
     <form class="nk-dlg" (ngSubmit)="onSubmit()" autocomplete="on">
       <header class="nk-dialog__head">
         <h2 class="nk-dialog__title">Anmelden</h2>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" (click)="onCancel()">✕</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon"
+          aria-label="Schließen"
+          (click)="onCancel()"
+        >
+          ✕
+        </button>
       </header>
       <div class="nk-dialog__body">
         <label class="nk-field">
           <span class="nk-label">Benutzername</span>
           <span class="nk-input">
             <mat-icon class="nk-input__icon dlg-ico">person</mat-icon>
-            <input class="nk-input__field" [(ngModel)]="username" name="username" autocomplete="username" required aria-label="Benutzername" />
+            <input
+              class="nk-input__field"
+              [(ngModel)]="username"
+              name="username"
+              autocomplete="username"
+              required
+              aria-label="Benutzername"
+            />
           </span>
         </label>
         <label class="nk-field">
@@ -49,19 +63,40 @@ import { AuthService } from '../../core/services/auth.service';
               required
               aria-label="Passwort"
             />
-            <button type="button" class="nk-input__eye" [attr.aria-label]="hidePassword() ? 'Passwort anzeigen' : 'Passwort verbergen'" (click)="hidePassword.set(!hidePassword())">
+            <button
+              type="button"
+              class="nk-input__eye"
+              [attr.aria-label]="hidePassword() ? 'Passwort anzeigen' : 'Passwort verbergen'"
+              (click)="hidePassword.set(!hidePassword())"
+            >
               <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
             </button>
           </span>
         </label>
         @if (error()) {
-          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert"><span class="nk-toast__text">{{ error() }}</span></div>
+          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert">
+            <span class="nk-toast__text">{{ error() }}</span>
+          </div>
         }
-        <span class="dlg-row">Noch kein Konto? <button type="button" class="nk-link" (click)="onRegister()">Registrieren</button></span>
+        <span class="dlg-row"
+          >Noch kein Konto?
+          <button type="button" class="nk-link" (click)="onRegister()">Registrieren</button></span
+        >
       </div>
       <footer class="nk-dialog__foot">
-        <button type="button" class="nk-key nk-key--ghost" (click)="onCancel()" [disabled]="loading()">Abbrechen</button>
-        <button type="submit" class="nk-key nk-key--accent" [disabled]="loading() || !username || !password">
+        <button
+          type="button"
+          class="nk-key nk-key--ghost"
+          (click)="onCancel()"
+          [disabled]="loading()"
+        >
+          Abbrechen
+        </button>
+        <button
+          type="submit"
+          class="nk-key nk-key--accent"
+          [disabled]="loading() || !username || !password"
+        >
           @if (loading()) {
             <span class="nk-spin" aria-hidden="true"></span>
           }

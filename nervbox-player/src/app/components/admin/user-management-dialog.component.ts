@@ -48,26 +48,59 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
       <header class="nk-dialog__head">
         <mat-icon class="um-ico" aria-hidden="true">people</mat-icon>
         <h2 class="nk-dialog__title">Userverwaltung</h2>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close>✕</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon"
+          aria-label="Schließen"
+          mat-dialog-close
+        >
+          ✕
+        </button>
       </header>
       <div class="nk-dialog__body um-body">
         @if (loading()) {
-          <div class="um-state"><span class="nk-spin" aria-hidden="true"></span>User werden geladen...</div>
+          <div class="um-state">
+            <span class="nk-spin" aria-hidden="true"></span>User werden geladen...
+          </div>
         } @else {
           <label class="nk-field">
             <span class="nk-label">Suche nach Username, Name oder IP</span>
             <span class="nk-input">
-              <svg class="nk-input__icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
-              <input class="nk-input__field" [(ngModel)]="searchQuery" placeholder="Suchen..." aria-label="User suchen" />
+              <svg
+                class="nk-input__icon"
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="7"></circle>
+                <path d="M20 20l-3.5-3.5"></path>
+              </svg>
+              <input
+                class="nk-input__field"
+                [(ngModel)]="searchQuery"
+                placeholder="Suchen..."
+                aria-label="User suchen"
+              />
             </span>
           </label>
           <div class="nk-well um-list">
             @if (filteredUsers().length === 0) {
-              <div class="um-state">{{ searchQuery ? 'Keine User gefunden' : 'Keine User vorhanden' }}</div>
+              <div class="um-state">
+                {{ searchQuery ? 'Keine User gefunden' : 'Keine User vorhanden' }}
+              </div>
             } @else {
               @for (user of filteredUsers(); track user.id) {
                 <div [class]="user.isActive ? 'nk-row um-row' : 'nk-row nk-row--off um-row'">
-                  <app-user-avatar class="um-av" [userId]="user.id" size="medium" [clickable]="user.role !== 'system'" />
+                  <app-user-avatar
+                    class="um-av"
+                    [userId]="user.id"
+                    size="medium"
+                    [clickable]="user.role !== 'system'"
+                  />
                   <span class="nk-row__main um-main">
                     <span class="um-name">
                       <span class="nk-row__title">{{ user.username }}</span>
@@ -77,7 +110,9 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
                       }
                     </span>
                     @if (user.firstName || user.lastName) {
-                      <span class="nk-row__meta um-full">{{ user.firstName }} {{ user.lastName }}</span>
+                      <span class="nk-row__meta um-full"
+                        >{{ user.firstName }} {{ user.lastName }}</span
+                      >
                     }
                     <span class="nk-row__meta">
                       <span matTooltip="IP-Adresse">{{ user.ipAddress || 'Keine IP' }}</span> ·
@@ -92,13 +127,51 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
                   </span>
                   @if (user.role !== 'system') {
                     <span class="um-acts">
-                      <button type="button" class="nk-key nk-key--sm" matTooltip="+1 Credit" [disabled]="actionInProgress() === user.id" (click)="onGrantCredits(user, 1)">+1 N$</button>
-                      <button type="button" class="nk-key nk-key--sm" matTooltip="+5 Credits" [disabled]="actionInProgress() === user.id" (click)="onGrantCredits(user, 5)">+5 N$</button>
-                      <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Bearbeiten" matTooltip="Bearbeiten" [disabled]="actionInProgress() === user.id" (click)="onEditUser(user)"><mat-icon>edit</mat-icon></button>
-                      <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Passwort zurücksetzen" matTooltip="Passwort zurücksetzen" [disabled]="actionInProgress() === user.id" (click)="onResetPassword(user)"><mat-icon>key</mat-icon></button>
                       <button
                         type="button"
-                        [class]="user.isActive ? 'nk-key nk-key--sm nk-key--icon' : 'nk-key nk-key--sm nk-key--icon nk-key--on'"
+                        class="nk-key nk-key--sm"
+                        matTooltip="+1 Credit"
+                        [disabled]="actionInProgress() === user.id"
+                        (click)="onGrantCredits(user, 1)"
+                      >
+                        +1 N$
+                      </button>
+                      <button
+                        type="button"
+                        class="nk-key nk-key--sm"
+                        matTooltip="+5 Credits"
+                        [disabled]="actionInProgress() === user.id"
+                        (click)="onGrantCredits(user, 5)"
+                      >
+                        +5 N$
+                      </button>
+                      <button
+                        type="button"
+                        class="nk-key nk-key--sm nk-key--icon"
+                        aria-label="Bearbeiten"
+                        matTooltip="Bearbeiten"
+                        [disabled]="actionInProgress() === user.id"
+                        (click)="onEditUser(user)"
+                      >
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button
+                        type="button"
+                        class="nk-key nk-key--sm nk-key--icon"
+                        aria-label="Passwort zurücksetzen"
+                        matTooltip="Passwort zurücksetzen"
+                        [disabled]="actionInProgress() === user.id"
+                        (click)="onResetPassword(user)"
+                      >
+                        <mat-icon>key</mat-icon>
+                      </button>
+                      <button
+                        type="button"
+                        [class]="
+                          user.isActive
+                            ? 'nk-key nk-key--sm nk-key--icon'
+                            : 'nk-key nk-key--sm nk-key--icon nk-key--on'
+                        "
                         [attr.aria-label]="user.isActive ? 'Deaktivieren' : 'Aktivieren'"
                         [matTooltip]="user.isActive ? 'Deaktivieren' : 'Aktivieren'"
                         [disabled]="actionInProgress() === user.id || user.username === 'admin'"
@@ -110,7 +183,16 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
                           <mat-icon>{{ user.isActive ? 'person' : 'person_off' }}</mat-icon>
                         }
                       </button>
-                      <button type="button" class="nk-key nk-key--sm nk-key--icon um-del" aria-label="Löschen" matTooltip="Löschen" [disabled]="actionInProgress() === user.id || user.username === 'admin'" (click)="onDeleteUser(user)"><mat-icon>delete</mat-icon></button>
+                      <button
+                        type="button"
+                        class="nk-key nk-key--sm nk-key--icon um-del"
+                        aria-label="Löschen"
+                        matTooltip="Löschen"
+                        [disabled]="actionInProgress() === user.id || user.username === 'admin'"
+                        (click)="onDeleteUser(user)"
+                      >
+                        <mat-icon>delete</mat-icon>
+                      </button>
                     </span>
                   }
                 </div>
@@ -126,7 +208,9 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
             <span class="um-count-off">({{ inactiveUserCount() }} deaktiviert)</span>
           }
         </span>
-        <button type="button" class="nk-key" (click)="onCreateUser()"><mat-icon class="um-btn-ico">person_add</mat-icon>Neuer User</button>
+        <button type="button" class="nk-key" (click)="onCreateUser()">
+          <mat-icon class="um-btn-ico">person_add</mat-icon>Neuer User
+        </button>
         <button type="button" class="nk-key nk-key--ghost" mat-dialog-close>Schließen</button>
       </footer>
     </div>

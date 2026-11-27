@@ -33,29 +33,71 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
       <header class="nk-dialog__head sk-head">
         <span class="sk-coin" aria-hidden="true">N$</span>
         <span class="sk-title">
-          <span class="nk-dialog__title">{{ activeTab() === 0 ? 'Shekel senden' : 'Shekel Casino' }}</span>
+          <span class="nk-dialog__title">{{
+            activeTab() === 0 ? 'Shekel senden' : 'Shekel Casino'
+          }}</span>
           <span class="sk-bal">{{ creditService.creditsFormatted() }} N$</span>
         </span>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" (click)="close()">✕</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon"
+          aria-label="Schließen"
+          (click)="close()"
+        >
+          ✕
+        </button>
       </header>
       <div class="nk-dialog__body">
         <div class="nk-tabs" role="tablist">
-          <button type="button" role="tab" [attr.aria-selected]="activeTab() === 0" [class]="activeTab() === 0 ? 'nk-tabs__tab nk-tabs__tab--on' : 'nk-tabs__tab'" (click)="activeTab.set(0)">Senden</button>
-          <button type="button" role="tab" [attr.aria-selected]="activeTab() === 1" [class]="activeTab() === 1 ? 'nk-tabs__tab nk-tabs__tab--on' : 'nk-tabs__tab'" (click)="activeTab.set(1)">Gamblen</button>
+          <button
+            type="button"
+            role="tab"
+            [attr.aria-selected]="activeTab() === 0"
+            [class]="activeTab() === 0 ? 'nk-tabs__tab nk-tabs__tab--on' : 'nk-tabs__tab'"
+            (click)="activeTab.set(0)"
+          >
+            Senden
+          </button>
+          <button
+            type="button"
+            role="tab"
+            [attr.aria-selected]="activeTab() === 1"
+            [class]="activeTab() === 1 ? 'nk-tabs__tab nk-tabs__tab--on' : 'nk-tabs__tab'"
+            (click)="activeTab.set(1)"
+          >
+            Gamblen
+          </button>
         </div>
 
         @if (activeTab() === 0) {
-          <span class="sk-info"><mat-icon>volunteer_activism</mat-icon>Sende Shekel an andere User!</span>
+          <span class="sk-info"
+            ><mat-icon>volunteer_activism</mat-icon>Sende Shekel an andere User!</span
+          >
           @if (transferResult(); as r) {
-            <div [class]="r.success ? 'nk-toast nk-toast--success nk-toast--inline' : 'nk-toast nk-toast--error nk-toast--inline'" role="status"><span class="nk-toast__text">{{ r.message }}</span></div>
+            <div
+              [class]="
+                r.success
+                  ? 'nk-toast nk-toast--success nk-toast--inline'
+                  : 'nk-toast nk-toast--error nk-toast--inline'
+              "
+              role="status"
+            >
+              <span class="nk-toast__text">{{ r.message }}</span>
+            </div>
           }
           @if (isLoadingUsers()) {
-            <span class="sk-info"><span class="nk-spin" aria-hidden="true"></span>Lade User...</span>
+            <span class="sk-info"
+              ><span class="nk-spin" aria-hidden="true"></span>Lade User...</span
+            >
           } @else {
             <label class="nk-field">
               <span class="nk-label">Empfänger</span>
               <span class="nk-input">
-                <select class="nk-input__field sk-select" [(ngModel)]="selectedUserId" aria-label="Empfänger">
+                <select
+                  class="nk-input__field sk-select"
+                  [(ngModel)]="selectedUserId"
+                  aria-label="Empfänger"
+                >
                   <option [ngValue]="null" disabled>Empfänger wählen …</option>
                   @for (user of users(); track user.id) {
                     <option [ngValue]="user.id">{{ user.username }}</option>
@@ -66,19 +108,43 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
             <label class="nk-field">
               <span class="nk-label">Betrag (N$)</span>
               <span class="nk-input">
-                <input class="nk-input__field sk-num" type="number" [(ngModel)]="transferAmount" [min]="1" [max]="creditService.credits()" placeholder="Wie viel willst du senden?" aria-label="Betrag in N$" />
+                <input
+                  class="nk-input__field sk-num"
+                  type="number"
+                  [(ngModel)]="transferAmount"
+                  [min]="1"
+                  [max]="creditService.credits()"
+                  placeholder="Wie viel willst du senden?"
+                  aria-label="Betrag in N$"
+                />
               </span>
               <span class="nk-field__hint">Max: {{ creditService.credits() }} N$</span>
             </label>
             <div class="sk-quick">
               @for (a of transferQuick; track a) {
-                <button type="button" [class]="transferAmount() === a ? 'nk-key nk-key--sm nk-key--pressed' : 'nk-key nk-key--sm'" [disabled]="creditService.credits() < a" (click)="setTransferAmount(a)">{{ a }}</button>
+                <button
+                  type="button"
+                  [class]="
+                    transferAmount() === a
+                      ? 'nk-key nk-key--sm nk-key--pressed'
+                      : 'nk-key nk-key--sm'
+                  "
+                  [disabled]="creditService.credits() < a"
+                  (click)="setTransferAmount(a)"
+                >
+                  {{ a }}
+                </button>
               }
             </div>
             <button
               type="button"
               class="nk-key nk-key--accent nk-key--lg sk-go"
-              [disabled]="isTransferring() || !selectedUserId() || transferAmount() <= 0 || transferAmount() > creditService.credits()"
+              [disabled]="
+                isTransferring() ||
+                !selectedUserId() ||
+                transferAmount() <= 0 ||
+                transferAmount() > creditService.credits()
+              "
               (click)="transfer()"
             >
               @if (isTransferring()) {
@@ -90,31 +156,68 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
             </button>
           }
         } @else {
-          <span class="sk-info"><mat-icon>casino</mat-icon>Setze deine Shekel ein und verdopple sie - oder verliere alles!</span>
+          <span class="sk-info"
+            ><mat-icon>casino</mat-icon>Setze deine Shekel ein und verdopple sie - oder verliere
+            alles!</span
+          >
           <span class="sk-odds">50/50 Chance</span>
           @if (gambleResult(); as r) {
-            <div [class]="r.won ? 'nk-toast nk-toast--success nk-toast--inline' : 'nk-toast nk-toast--error nk-toast--inline'" role="status">
-              <mat-icon class="sk-res-ico">{{ r.won ? 'celebration' : 'sentiment_very_dissatisfied' }}</mat-icon>
+            <div
+              [class]="
+                r.won
+                  ? 'nk-toast nk-toast--success nk-toast--inline'
+                  : 'nk-toast nk-toast--error nk-toast--inline'
+              "
+              role="status"
+            >
+              <mat-icon class="sk-res-ico">{{
+                r.won ? 'celebration' : 'sentiment_very_dissatisfied'
+              }}</mat-icon>
               <span class="nk-toast__text">{{ r.message }}</span>
             </div>
           }
           <label class="nk-field">
             <span class="nk-label">Einsatz (N$)</span>
             <span class="nk-input">
-              <input class="nk-input__field sk-num" type="number" [(ngModel)]="gambleAmount" [min]="1" [max]="creditService.credits()" placeholder="Wie viel willst du setzen?" aria-label="Einsatz in N$" />
+              <input
+                class="nk-input__field sk-num"
+                type="number"
+                [(ngModel)]="gambleAmount"
+                [min]="1"
+                [max]="creditService.credits()"
+                placeholder="Wie viel willst du setzen?"
+                aria-label="Einsatz in N$"
+              />
             </span>
             <span class="nk-field__hint">Max: {{ creditService.credits() }} N$</span>
           </label>
           <div class="sk-quick">
             @for (a of gambleQuick; track a) {
-              <button type="button" [class]="gambleAmount() === a ? 'nk-key nk-key--sm nk-key--pressed' : 'nk-key nk-key--sm'" [disabled]="creditService.credits() < a" (click)="setGambleAmount(a)">{{ a }}</button>
+              <button
+                type="button"
+                [class]="
+                  gambleAmount() === a ? 'nk-key nk-key--sm nk-key--pressed' : 'nk-key nk-key--sm'
+                "
+                [disabled]="creditService.credits() < a"
+                (click)="setGambleAmount(a)"
+              >
+                {{ a }}
+              </button>
             }
-            <button type="button" class="nk-key nk-key--sm sk-allin" (click)="setGambleAmount(creditService.credits())">ALL IN!</button>
+            <button
+              type="button"
+              class="nk-key nk-key--sm sk-allin"
+              (click)="setGambleAmount(creditService.credits())"
+            >
+              ALL IN!
+            </button>
           </div>
           <button
             type="button"
             class="nk-key nk-key--danger nk-key--lg sk-go"
-            [disabled]="isGambling() || gambleAmount() <= 0 || gambleAmount() > creditService.credits()"
+            [disabled]="
+              isGambling() || gambleAmount() <= 0 || gambleAmount() > creditService.credits()
+            "
             (click)="gamble()"
           >
             @if (isGambling()) {
@@ -146,7 +249,9 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
       font: 400 22px/1 var(--nk-font-lcd);
       color: var(--nk-lcd-ink);
       background: var(--nk-face-lcd);
-      box-shadow: 0 0 0 2px #0B0A08, 0 0 12px rgb(196 220 112 / 0.45);
+      box-shadow:
+        0 0 0 2px #0b0a08,
+        0 0 12px rgb(196 220 112 / 0.45);
     }
     .sk-title {
       flex: 1;
@@ -190,7 +295,7 @@ import { CreditService, TransferableUser } from '../../../core/services/credit.s
       cursor: pointer;
     }
     .sk-select option {
-      background: #1A1814;
+      background: #1a1814;
       color: var(--nk-iv);
     }
     .sk-num {

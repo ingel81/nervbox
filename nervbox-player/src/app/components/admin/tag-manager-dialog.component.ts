@@ -34,19 +34,57 @@ import { SoundService } from '../../core/services/sound.service';
       <header class="nk-dialog__head">
         <mat-icon class="tm-ico" aria-hidden="true">label</mat-icon>
         <h2 class="nk-dialog__title">Tag-Verwaltung</h2>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close>✕</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon"
+          aria-label="Schließen"
+          mat-dialog-close
+        >
+          ✕
+        </button>
       </header>
       <div class="nk-dialog__body tm-body">
         @if (loading()) {
-          <div class="tm-state"><span class="nk-spin" aria-hidden="true"></span>Tags werden geladen...</div>
+          <div class="tm-state">
+            <span class="nk-spin" aria-hidden="true"></span>Tags werden geladen...
+          </div>
         } @else {
           <div class="nk-section">
             <h3 class="nk-section__title">Neuer Tag</h3>
             <div class="tm-line">
-              <input type="color" class="tm-color" [(ngModel)]="newTagColor" matTooltip="Farbe wählen" aria-label="Farbe wählen" />
-              <label class="nk-input tm-grow"><input class="nk-input__field" [(ngModel)]="newTagName" (keydown.enter)="createTag()" placeholder="Tag-Name eingeben" aria-label="Neuer Tag" /></label>
-              <button type="button" [class]="newTagPinned ? 'nk-key nk-key--icon nk-key--on' : 'nk-key nk-key--icon'" [attr.aria-pressed]="newTagPinned" [matTooltip]="newTagPinned ? 'Gepinnt' : 'Nicht gepinnt'" aria-label="Anpinnen" (click)="newTagPinned = !newTagPinned"><mat-icon>push_pin</mat-icon></button>
-              <button type="button" class="nk-key nk-key--icon nk-key--accent" matTooltip="Tag erstellen" aria-label="Tag erstellen" [disabled]="!newTagName.trim() || creating()" (click)="createTag()">
+              <input
+                type="color"
+                class="tm-color"
+                [(ngModel)]="newTagColor"
+                matTooltip="Farbe wählen"
+                aria-label="Farbe wählen"
+              />
+              <label class="nk-input tm-grow"
+                ><input
+                  class="nk-input__field"
+                  [(ngModel)]="newTagName"
+                  (keydown.enter)="createTag()"
+                  placeholder="Tag-Name eingeben"
+                  aria-label="Neuer Tag"
+              /></label>
+              <button
+                type="button"
+                [class]="newTagPinned ? 'nk-key nk-key--icon nk-key--on' : 'nk-key nk-key--icon'"
+                [attr.aria-pressed]="newTagPinned"
+                [matTooltip]="newTagPinned ? 'Gepinnt' : 'Nicht gepinnt'"
+                aria-label="Anpinnen"
+                (click)="newTagPinned = !newTagPinned"
+              >
+                <mat-icon>push_pin</mat-icon>
+              </button>
+              <button
+                type="button"
+                class="nk-key nk-key--icon nk-key--accent"
+                matTooltip="Tag erstellen"
+                aria-label="Tag erstellen"
+                [disabled]="!newTagName.trim() || creating()"
+                (click)="createTag()"
+              >
                 @if (creating()) {
                   <span class="nk-spin" aria-hidden="true"></span>
                 } @else {
@@ -60,26 +98,95 @@ import { SoundService } from '../../core/services/sound.service';
               <div class="tm-state">Keine Tags vorhanden</div>
             } @else {
               @for (tag of tags(); track tag.id) {
-                <div [class]="editingTagId() === tag.id ? 'nk-row nk-row--hl tm-row' : 'nk-row tm-row'">
+                <div
+                  [class]="editingTagId() === tag.id ? 'nk-row nk-row--hl tm-row' : 'nk-row tm-row'"
+                >
                   @if (editingTagId() === tag.id) {
-                    <input type="color" class="tm-color" [(ngModel)]="editingTagColor" matTooltip="Farbe wählen" aria-label="Farbe wählen" />
-                    <label class="nk-input nk-input--focus tm-grow tm-edit"><input #editInput class="nk-input__field" [(ngModel)]="editingTagName" (keydown.enter)="saveTag(tag)" (keydown.escape)="cancelEdit()" aria-label="Tag-Name" /></label>
-                    <button type="button" [class]="editingTagPinned ? 'nk-key nk-key--sm nk-key--icon nk-key--on' : 'nk-key nk-key--sm nk-key--icon'" [attr.aria-pressed]="editingTagPinned" [matTooltip]="editingTagPinned ? 'Gepinnt' : 'Nicht gepinnt'" aria-label="Anpinnen" (click)="editingTagPinned = !editingTagPinned"><mat-icon>push_pin</mat-icon></button>
-                    <button type="button" class="nk-key nk-key--sm nk-key--icon nk-key--accent" matTooltip="Speichern" aria-label="Speichern" (click)="saveTag(tag)"><mat-icon>check</mat-icon></button>
-                    <button type="button" class="nk-key nk-key--sm nk-key--icon" matTooltip="Abbrechen" aria-label="Abbrechen" (click)="cancelEdit()"><mat-icon>close</mat-icon></button>
+                    <input
+                      type="color"
+                      class="tm-color"
+                      [(ngModel)]="editingTagColor"
+                      matTooltip="Farbe wählen"
+                      aria-label="Farbe wählen"
+                    />
+                    <label class="nk-input nk-input--focus tm-grow tm-edit"
+                      ><input
+                        #editInput
+                        class="nk-input__field"
+                        [(ngModel)]="editingTagName"
+                        (keydown.enter)="saveTag(tag)"
+                        (keydown.escape)="cancelEdit()"
+                        aria-label="Tag-Name"
+                    /></label>
+                    <button
+                      type="button"
+                      [class]="
+                        editingTagPinned
+                          ? 'nk-key nk-key--sm nk-key--icon nk-key--on'
+                          : 'nk-key nk-key--sm nk-key--icon'
+                      "
+                      [attr.aria-pressed]="editingTagPinned"
+                      [matTooltip]="editingTagPinned ? 'Gepinnt' : 'Nicht gepinnt'"
+                      aria-label="Anpinnen"
+                      (click)="editingTagPinned = !editingTagPinned"
+                    >
+                      <mat-icon>push_pin</mat-icon>
+                    </button>
+                    <button
+                      type="button"
+                      class="nk-key nk-key--sm nk-key--icon nk-key--accent"
+                      matTooltip="Speichern"
+                      aria-label="Speichern"
+                      (click)="saveTag(tag)"
+                    >
+                      <mat-icon>check</mat-icon>
+                    </button>
+                    <button
+                      type="button"
+                      class="nk-key nk-key--sm nk-key--icon"
+                      matTooltip="Abbrechen"
+                      aria-label="Abbrechen"
+                      (click)="cancelEdit()"
+                    >
+                      <mat-icon>close</mat-icon>
+                    </button>
                   } @else {
-                    <span class="tm-swatch" [style.background]="tag.color" aria-hidden="true"></span>
+                    <span
+                      class="tm-swatch"
+                      [style.background]="tag.color"
+                      aria-hidden="true"
+                    ></span>
                     @if (tag.isPinned) {
-                      <mat-icon class="tm-pin" matTooltip="Gepinnt" aria-label="Gepinnt">push_pin</mat-icon>
+                      <mat-icon class="tm-pin" matTooltip="Gepinnt" aria-label="Gepinnt"
+                        >push_pin</mat-icon
+                      >
                     }
-                    <span class="nk-row__main"><span class="nk-row__title">#{{ tag.name }}</span></span>
-                    <span class="nk-counter tm-count" [matTooltip]="tag.soundCount + ' Sounds verwenden diesen Tag'">{{ tag.soundCount }}</span>
-                    <button type="button" class="nk-key nk-key--sm nk-key--icon" matTooltip="Bearbeiten" aria-label="Bearbeiten" (click)="startEdit(tag)"><mat-icon>edit</mat-icon></button>
+                    <span class="nk-row__main"
+                      ><span class="nk-row__title">#{{ tag.name }}</span></span
+                    >
+                    <span
+                      class="nk-counter tm-count"
+                      [matTooltip]="tag.soundCount + ' Sounds verwenden diesen Tag'"
+                      >{{ tag.soundCount }}</span
+                    >
+                    <button
+                      type="button"
+                      class="nk-key nk-key--sm nk-key--icon"
+                      matTooltip="Bearbeiten"
+                      aria-label="Bearbeiten"
+                      (click)="startEdit(tag)"
+                    >
+                      <mat-icon>edit</mat-icon>
+                    </button>
                     <button
                       type="button"
                       class="nk-key nk-key--sm nk-key--icon"
                       [class.tm-del]="!tag.soundCount"
-                      [matTooltip]="tag.soundCount ? 'Wird von ' + tag.soundCount + ' Sounds verwendet' : 'Löschen'"
+                      [matTooltip]="
+                        tag.soundCount
+                          ? 'Wird von ' + tag.soundCount + ' Sounds verwendet'
+                          : 'Löschen'
+                      "
                       aria-label="Löschen"
                       [disabled]="deleting() === tag.id"
                       (click)="deleteTag(tag)"
@@ -146,7 +253,9 @@ import { SoundService } from '../../core/services/sound.service';
       border-radius: 5px;
       cursor: pointer;
       background: transparent;
-      box-shadow: 0 0 0 3px #0b0a08, 1.5px 1.5px 0 3px rgb(255 226 176 / 0.17);
+      box-shadow:
+        0 0 0 3px #0b0a08,
+        1.5px 1.5px 0 3px rgb(255 226 176 / 0.17);
     }
     .tm-color::-webkit-color-swatch-wrapper {
       padding: 0;
@@ -173,7 +282,9 @@ import { SoundService } from '../../core/services/sound.service';
       height: 22px;
       flex-shrink: 0;
       border-radius: 5px;
-      box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.45), 0 0 0 3px #0b0a08;
+      box-shadow:
+        inset 0 0 0 1px rgb(0 0 0 / 0.45),
+        0 0 0 3px #0b0a08;
     }
     .tm-pin {
       width: 14px;

@@ -19,9 +19,9 @@ export class VoteService {
    * Load all votes for the current user
    */
   loadUserVotes(): Observable<Record<string, number>> {
-    return this.api.get<Record<string, number>>('/vote/user').pipe(
-      tap(votes => this._userVotes.set(votes))
-    );
+    return this.api
+      .get<Record<string, number>>('/vote/user')
+      .pipe(tap((votes) => this._userVotes.set(votes)));
   }
 
   /**
@@ -36,16 +36,21 @@ export class VoteService {
    */
   vote(soundHash: string, voteValue: 1 | -1): Observable<VoteResult> {
     return this.api.post<VoteResult>(`/vote/${soundHash}`, { voteValue }).pipe(
-      tap(result => {
+      tap((result) => {
         if (result.success) {
-          this._userVotes.update(votes => ({
+          this._userVotes.update((votes) => ({
             ...votes,
-            [soundHash]: voteValue
+            [soundHash]: voteValue,
           }));
           // Update sound score immediately
-          this.soundService.updateSoundVotes(soundHash, result.upVotes, result.downVotes, result.score);
+          this.soundService.updateSoundVotes(
+            soundHash,
+            result.upVotes,
+            result.downVotes,
+            result.score,
+          );
         }
-      })
+      }),
     );
   }
 
@@ -54,17 +59,22 @@ export class VoteService {
    */
   removeVote(soundHash: string): Observable<VoteResult> {
     return this.api.delete<VoteResult>(`/vote/${soundHash}`).pipe(
-      tap(result => {
+      tap((result) => {
         if (result.success) {
-          this._userVotes.update(votes => {
+          this._userVotes.update((votes) => {
             const newVotes = { ...votes };
             delete newVotes[soundHash];
             return newVotes;
           });
           // Update sound score immediately
-          this.soundService.updateSoundVotes(soundHash, result.upVotes, result.downVotes, result.score);
+          this.soundService.updateSoundVotes(
+            soundHash,
+            result.upVotes,
+            result.downVotes,
+            result.score,
+          );
         }
-      })
+      }),
     );
   }
 
@@ -105,9 +115,9 @@ export class VoteService {
    */
   updateVoteFromEvent(soundHash: string, userVote: number | undefined): void {
     if (userVote !== undefined) {
-      this._userVotes.update(votes => ({
+      this._userVotes.update((votes) => ({
         ...votes,
-        [soundHash]: userVote
+        [soundHash]: userVote,
       }));
     }
   }

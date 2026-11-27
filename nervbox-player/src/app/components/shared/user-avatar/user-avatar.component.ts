@@ -56,7 +56,9 @@ type AvatarSize = 'xs' | 'small' | 'medium' | 'large';
 
     .avatar-container.clickable:hover {
       transform: scale(1.1);
-      box-shadow: 0 0 0 1.5px var(--nk-iv), 0 0 10px rgb(var(--nk-lamp-rgb) / 0.5);
+      box-shadow:
+        0 0 0 1.5px var(--nk-iv),
+        0 0 10px rgb(var(--nk-lamp-rgb) / 0.5);
     }
 
     /* Sizes */
@@ -100,8 +102,8 @@ type AvatarSize = 'xs' | 'small' | 'medium' | 'large';
       display: flex;
       align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at 50% 58%, #5A7189, #43566B 55%, #283545);
-      color: #FFFFFF;
+      background: radial-gradient(circle at 50% 58%, #5a7189, #43566b 55%, #283545);
+      color: #ffffff;
       font-family: var(--nk-font-ui);
       font-weight: 800;
       letter-spacing: 0.4px;

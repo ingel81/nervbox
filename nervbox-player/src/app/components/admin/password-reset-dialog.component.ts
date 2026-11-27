@@ -31,31 +31,68 @@ export interface PasswordResetDialogData {
     <div class="nk-dlg ad-sm">
       <header class="nk-dialog__head">
         <h2 class="nk-dialog__title">Passwort zurücksetzen</h2>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close [disabled]="saving()">✕</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon"
+          aria-label="Schließen"
+          mat-dialog-close
+          [disabled]="saving()"
+        >
+          ✕
+        </button>
       </header>
       <div class="nk-dialog__body">
         <span class="ad-sub">{{ data.user.username }}</span>
         <label class="nk-field">
           <span class="nk-label">Neues Passwort</span>
-          <span class="nk-input"><input class="nk-input__field" type="password" [(ngModel)]="newPassword" name="newPassword" autocomplete="new-password" aria-label="Neues Passwort" /></span>
+          <span class="nk-input"
+            ><input
+              class="nk-input__field"
+              type="password"
+              [(ngModel)]="newPassword"
+              name="newPassword"
+              autocomplete="new-password"
+              aria-label="Neues Passwort"
+          /></span>
           <span class="nk-field__hint">Mindestens 4 Zeichen</span>
         </label>
         <label class="nk-field">
           <span class="nk-label">Passwort bestätigen</span>
-          <span class="nk-input" [class.nk-input--error]="confirmPassword && newPassword !== confirmPassword">
-            <input class="nk-input__field" type="password" [(ngModel)]="confirmPassword" name="confirmPassword" autocomplete="new-password" aria-label="Passwort bestätigen" />
+          <span
+            class="nk-input"
+            [class.nk-input--error]="confirmPassword && newPassword !== confirmPassword"
+          >
+            <input
+              class="nk-input__field"
+              type="password"
+              [(ngModel)]="confirmPassword"
+              name="confirmPassword"
+              autocomplete="new-password"
+              aria-label="Passwort bestätigen"
+            />
           </span>
           @if (confirmPassword && newPassword !== confirmPassword) {
-            <span class="nk-field__hint nk-field__hint--error">Passwörter stimmen nicht überein</span>
+            <span class="nk-field__hint nk-field__hint--error"
+              >Passwörter stimmen nicht überein</span
+            >
           }
         </label>
         @if (error()) {
-          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert"><span class="nk-toast__text">{{ error() }}</span></div>
+          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert">
+            <span class="nk-toast__text">{{ error() }}</span>
+          </div>
         }
       </div>
       <footer class="nk-dialog__foot">
-        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close [disabled]="saving()">Abbrechen</button>
-        <button type="button" class="nk-key nk-key--accent" (click)="onSave()" [disabled]="!isValid() || saving()">
+        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close [disabled]="saving()">
+          Abbrechen
+        </button>
+        <button
+          type="button"
+          class="nk-key nk-key--accent"
+          (click)="onSave()"
+          [disabled]="!isValid() || saving()"
+        >
           @if (saving()) {
             <span class="nk-spin" aria-hidden="true"></span>
           }

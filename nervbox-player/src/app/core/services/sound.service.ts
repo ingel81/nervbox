@@ -30,21 +30,21 @@ export class SoundService {
 
     return this.api.get<Sound[]>('/sound').pipe(
       tap({
-        next: sounds => {
+        next: (sounds) => {
           this.sounds.set(sounds);
           this.loading.set(false);
         },
-        error: err => {
+        error: (err) => {
           this.error.set(err.message || 'Failed to load sounds');
           this.loading.set(false);
         },
-      })
+      }),
     );
   }
 
   playSound(hash: string): Observable<PlaySoundResponse> {
     return this.api.get<PlaySoundResponse>(`/sound/${hash}/play`).pipe(
-      tap(response => {
+      tap((response) => {
         if (response?.creditsRemaining !== undefined) {
           this.creditService.updateCreditsFromPlayResponse(response.creditsRemaining);
         }
@@ -54,7 +54,7 @@ export class SoundService {
         if (this.configService.isBrowserPlayback()) {
           this.playInBrowser(hash);
         }
-      })
+      }),
     );
   }
 
@@ -66,7 +66,7 @@ export class SoundService {
   playInBrowser(hash: string): void {
     const audio = new Audio(this.api.getFullUrl(`/sound/${hash}/file`));
     audio.volume = this.loudness.gain(hash);
-    audio.play().catch(err => console.warn('Browser audio playback failed:', err));
+    audio.play().catch((err) => console.warn('Browser audio playback failed:', err));
   }
 
   /**
@@ -107,8 +107,8 @@ export class SoundService {
   // Helper to get unique tags from all sounds
   getAllTags(): string[] {
     const tagSet = new Set<string>();
-    this.sounds().forEach(sound => {
-      sound.tags?.forEach(tag => tagSet.add(tag));
+    this.sounds().forEach((sound) => {
+      sound.tags?.forEach((tag) => tagSet.add(tag));
     });
     return Array.from(tagSet).sort();
   }
@@ -121,47 +121,41 @@ export class SoundService {
 
     return this.api.get<Sound[]>('/sound/all').pipe(
       tap({
-        next: sounds => {
+        next: (sounds) => {
           this.sounds.set(sounds);
           this.loading.set(false);
         },
-        error: err => {
+        error: (err) => {
           this.error.set(err.message || 'Failed to load sounds');
           this.loading.set(false);
         },
-      })
+      }),
     );
   }
 
   updateSound(hash: string, data: SoundUpdateRequest): Observable<Sound> {
     return this.api.put<Sound>(`/sound/${hash}`, data).pipe(
-      tap(updatedSound => {
-        this.sounds.update(sounds =>
-          sounds.map(s => (s.hash === hash ? updatedSound : s))
-        );
-      })
+      tap((updatedSound) => {
+        this.sounds.update((sounds) => sounds.map((s) => (s.hash === hash ? updatedSound : s)));
+      }),
     );
   }
 
   toggleSound(hash: string): Observable<{ hash: string; enabled: boolean }> {
-    return this.api
-      .put<{ hash: string; enabled: boolean }>(`/sound/${hash}/toggle`, {})
-      .pipe(
-        tap(result => {
-          this.sounds.update(sounds =>
-            sounds.map(s =>
-              s.hash === hash ? { ...s, enabled: result.enabled } : s
-            )
-          );
-        })
-      );
+    return this.api.put<{ hash: string; enabled: boolean }>(`/sound/${hash}/toggle`, {}).pipe(
+      tap((result) => {
+        this.sounds.update((sounds) =>
+          sounds.map((s) => (s.hash === hash ? { ...s, enabled: result.enabled } : s)),
+        );
+      }),
+    );
   }
 
   deleteSound(hash: string): Observable<void> {
     return this.api.delete<void>(`/sound/${hash}`).pipe(
       tap(() => {
-        this.sounds.update(sounds => sounds.filter(s => s.hash !== hash));
-      })
+        this.sounds.update((sounds) => sounds.filter((s) => s.hash !== hash));
+      }),
     );
   }
 
@@ -169,10 +163,8 @@ export class SoundService {
    * Update vote data for a sound (called after voting)
    */
   updateSoundVotes(hash: string, upVotes: number, downVotes: number, score: number): void {
-    this.sounds.update(sounds =>
-      sounds.map(s =>
-        s.hash === hash ? { ...s, upVotes, downVotes, score } : s
-      )
+    this.sounds.update((sounds) =>
+      sounds.map((s) => (s.hash === hash ? { ...s, upVotes, downVotes, score } : s)),
     );
   }
 
@@ -187,30 +179,32 @@ export class SoundService {
     return map;
   });
   readonly pinnedTagNames = computed(() =>
-    this.tags().filter(t => t.isPinned).map(t => t.name)
+    this.tags()
+      .filter((t) => t.isPinned)
+      .map((t) => t.name),
   );
 
   loadTags(): Observable<Tag[]> {
     return this.api.get<Tag[]>('/tag').pipe(
-      tap(tags => {
+      tap((tags) => {
         this.tags.set(tags);
-      })
+      }),
     );
   }
 
   createTag(name: string, color?: string, isPinned?: boolean): Observable<Tag> {
     return this.api.post<Tag>('/tag', { name, color, isPinned }).pipe(
-      tap(newTag => {
-        this.tags.update(tags => this.sortTags([...tags, newTag]));
-      })
+      tap((newTag) => {
+        this.tags.update((tags) => this.sortTags([...tags, newTag]));
+      }),
     );
   }
 
   updateTag(id: number, name: string, color?: string, isPinned?: boolean): Observable<Tag> {
     return this.api.put<Tag>(`/tag/${id}`, { name, color, isPinned }).pipe(
-      tap(updatedTag => {
-        this.tags.update(tags => this.sortTags(tags.map(t => (t.id === id ? updatedTag : t))));
-      })
+      tap((updatedTag) => {
+        this.tags.update((tags) => this.sortTags(tags.map((t) => (t.id === id ? updatedTag : t))));
+      }),
     );
   }
 
@@ -224,8 +218,8 @@ export class SoundService {
   deleteTag(id: number): Observable<void> {
     return this.api.delete<void>(`/tag/${id}`).pipe(
       tap(() => {
-        this.tags.update(tags => tags.filter(t => t.id !== id));
-      })
+        this.tags.update((tags) => tags.filter((t) => t.id !== id));
+      }),
     );
   }
 }

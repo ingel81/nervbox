@@ -39,17 +39,39 @@ export interface SoundEditDialogData {
     <div class="nk-dlg se">
       <header class="nk-dialog__head">
         <h2 class="nk-dialog__title">Sound bearbeiten</h2>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close>✕</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon"
+          aria-label="Schließen"
+          mat-dialog-close
+        >
+          ✕
+        </button>
       </header>
       <div class="nk-dialog__body">
         <label class="nk-field">
           <span class="nk-label">Name</span>
-          <span class="nk-input"><input class="nk-input__field" [(ngModel)]="name" aria-label="Name" /></span>
+          <span class="nk-input"
+            ><input class="nk-input__field" [(ngModel)]="name" aria-label="Name"
+          /></span>
         </label>
-        <span class="se-kv">Datei: <b>{{ data.sound.fileName }}</b></span>
-        <span class="se-kv">Hash: <b>{{ data.sound.hash }}</b></span>
+        <span class="se-kv"
+          >Datei: <b>{{ data.sound.fileName }}</b></span
+        >
+        <span class="se-kv"
+          >Hash: <b>{{ data.sound.hash }}</b></span
+        >
         <span class="se-switch">
-          <button type="button" role="switch" [attr.aria-checked]="enabled" [class]="enabled ? 'nk-switch nk-switch--on' : 'nk-switch'" [attr.aria-label]="enabled ? 'Aktiviert' : 'Deaktiviert'" (click)="enabled = !enabled"><span class="nk-switch__knob" aria-hidden="true"></span></button>
+          <button
+            type="button"
+            role="switch"
+            [attr.aria-checked]="enabled"
+            [class]="enabled ? 'nk-switch nk-switch--on' : 'nk-switch'"
+            [attr.aria-label]="enabled ? 'Aktiviert' : 'Deaktiviert'"
+            (click)="enabled = !enabled"
+          >
+            <span class="nk-switch__knob" aria-hidden="true"></span>
+          </button>
           {{ enabled ? 'Aktiviert' : 'Deaktiviert' }}
         </span>
         <div class="nk-section">
@@ -57,22 +79,62 @@ export interface SoundEditDialogData {
           <div class="se-chips">
             @for (tag of tags(); track tag) {
               <span class="nk-tag-group">
-                <span class="nk-tag" [style]="tone(tag)"><span class="nk-tag__lens" aria-hidden="true"></span>#{{ tag }}</span>
-                <button type="button" class="nk-tag__remove" [attr.aria-label]="'#' + tag + ' entfernen'" (click)="removeTag(tag)">✕</button>
+                <span class="nk-tag" [style]="tone(tag)"
+                  ><span class="nk-tag__lens" aria-hidden="true"></span>#{{ tag }}</span
+                >
+                <button
+                  type="button"
+                  class="nk-tag__remove"
+                  [attr.aria-label]="'#' + tag + ' entfernen'"
+                  (click)="removeTag(tag)"
+                >
+                  ✕
+                </button>
               </span>
             }
           </div>
           <div class="se-add">
             <label class="nk-input se-grow">
-              <svg class="nk-input__icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
-              <input class="nk-input__field" placeholder="Tag hinzufügen" aria-label="Tag hinzufügen" [(ngModel)]="newTag" [matAutocomplete]="auto" (keydown.enter)="addTag()" (input)="updateFilteredTags()" />
+              <svg
+                class="nk-input__icon"
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.4"
+                aria-hidden="true"
+              >
+                <path d="M12 5v14M5 12h14"></path>
+              </svg>
+              <input
+                class="nk-input__field"
+                placeholder="Tag hinzufügen"
+                aria-label="Tag hinzufügen"
+                [(ngModel)]="newTag"
+                [matAutocomplete]="auto"
+                (keydown.enter)="addTag()"
+                (input)="updateFilteredTags()"
+              />
             </label>
             <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onTagSelected($event)">
               @for (tag of filteredTags(); track tag) {
-                <mat-option [value]="tag"><span class="se-opt" [style]="tone(tag)"><span class="nk-tag__lens" aria-hidden="true"></span>#{{ tag }}</span></mat-option>
+                <mat-option [value]="tag"
+                  ><span class="se-opt" [style]="tone(tag)"
+                    ><span class="nk-tag__lens" aria-hidden="true"></span>#{{ tag }}</span
+                  ></mat-option
+                >
               }
             </mat-autocomplete>
-            <button type="button" class="nk-key nk-key--icon" aria-label="Tag hinzufügen" [disabled]="!newTag.trim()" (click)="addTag()"><mat-icon>add</mat-icon></button>
+            <button
+              type="button"
+              class="nk-key nk-key--icon"
+              aria-label="Tag hinzufügen"
+              [disabled]="!newTag.trim()"
+              (click)="addTag()"
+            >
+              <mat-icon>add</mat-icon>
+            </button>
           </div>
         </div>
       </div>
@@ -175,7 +237,6 @@ export class SoundEditDialogComponent implements OnInit {
   tone(tag: string): string {
     return tagToneStyle(this.getTagColor(tag));
   }
-
 
   addTag(): void {
     const tag = this.newTag.trim().toLowerCase();

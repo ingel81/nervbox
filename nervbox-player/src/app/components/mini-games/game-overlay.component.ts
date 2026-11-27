@@ -25,7 +25,11 @@ import { MatIconModule } from '@angular/material/icon';
     '[class.nk-go--click]': 'clickable()',
   },
   template: `
-    <div [class]="'nk-go__card nk-go__card--' + tone()" role="dialog" [attr.aria-label]="title() || kicker()">
+    <div
+      [class]="'nk-go__card nk-go__card--' + tone()"
+      role="dialog"
+      [attr.aria-label]="title() || kicker()"
+    >
       <div class="nk-go__band">
         <span class="nk-go__kicker">{{ kicker() }}</span>
         @if (year()) {
@@ -37,7 +41,9 @@ import { MatIconModule } from '@angular/material/icon';
       <div class="nk-go__inner">
         <ng-content select="[goArt]" />
         @if (icon()) {
-          <span class="nk-go__lens" aria-hidden="true"><mat-icon>{{ icon() }}</mat-icon></span>
+          <span class="nk-go__lens" aria-hidden="true"
+            ><mat-icon>{{ icon() }}</mat-icon></span
+          >
         }
         @if (title()) {
           <h3 class="nk-go__title">{{ title() }}</h3>

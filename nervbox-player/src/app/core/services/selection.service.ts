@@ -30,7 +30,7 @@ export class SelectionService {
 
   /** Sound zur Auswahl hinzufügen/entfernen (toggle) */
   toggleSelection(hash: string): void {
-    this._selectedHashes.update(set => {
+    this._selectedHashes.update((set) => {
       const newSet = new Set(set);
       if (newSet.has(hash)) {
         newSet.delete(hash);

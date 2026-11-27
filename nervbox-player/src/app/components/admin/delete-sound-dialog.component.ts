@@ -31,25 +31,51 @@ export interface DeleteSoundDialogData {
     <div class="nk-dlg sd">
       <header class="nk-dialog__head">
         <h2 class="nk-dialog__title sd-danger">Sound löschen</h2>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close [disabled]="deleting()">✕</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon"
+          aria-label="Schließen"
+          mat-dialog-close
+          [disabled]="deleting()"
+        >
+          ✕
+        </button>
       </header>
       <div class="nk-dialog__body">
         <div class="nk-alert" role="alert">
           <span class="nk-alert__title">Diese Aktion kann nicht rückgängig gemacht werden!</span>
-          <span>Der Sound <b>"{{ data.sound.name }}"</b> wird unwiderruflich gelöscht.</span>
+          <span
+            >Der Sound <b>"{{ data.sound.name }}"</b> wird unwiderruflich gelöscht.</span
+          >
         </div>
         <label class="nk-field">
           <span class="nk-field__hint">Gib den Namen des Sounds zur Bestätigung ein:</span>
           <span class="nk-label">Sound-Name</span>
-          <span class="nk-input"><input class="nk-input__field" [(ngModel)]="confirmName" [placeholder]="data.sound.name" autocomplete="off" aria-label="Sound-Name zur Bestätigung" /></span>
+          <span class="nk-input"
+            ><input
+              class="nk-input__field"
+              [(ngModel)]="confirmName"
+              [placeholder]="data.sound.name"
+              autocomplete="off"
+              aria-label="Sound-Name zur Bestätigung"
+          /></span>
         </label>
         @if (error()) {
-          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert"><span class="nk-toast__text">{{ error() }}</span></div>
+          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert">
+            <span class="nk-toast__text">{{ error() }}</span>
+          </div>
         }
       </div>
       <footer class="nk-dialog__foot">
-        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close [disabled]="deleting()">Abbrechen</button>
-        <button type="button" class="nk-key nk-key--danger" (click)="delete()" [disabled]="!canDelete() || deleting()">
+        <button type="button" class="nk-key nk-key--ghost" mat-dialog-close [disabled]="deleting()">
+          Abbrechen
+        </button>
+        <button
+          type="button"
+          class="nk-key nk-key--danger"
+          (click)="delete()"
+          [disabled]="!canDelete() || deleting()"
+        >
           @if (deleting()) {
             <span class="nk-spin" aria-hidden="true"></span>
           }

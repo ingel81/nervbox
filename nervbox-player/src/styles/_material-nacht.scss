@@ -5,32 +5,32 @@
    nk-Markup brauchen davon nichts; das hier ist die Grundierung für alles.
    --------------------------------------------------------------------------- */
 html {
-  --mat-sys-primary: #FFE2B0;
-  --mat-sys-on-primary: #14110D;
-  --mat-sys-primary-container: #4E483D;
-  --mat-sys-on-primary-container: #FFF4D8;
-  --mat-sys-secondary: #D9CFB6;
-  --mat-sys-on-secondary: #14110D;
-  --mat-sys-secondary-container: #3F3A31;
-  --mat-sys-on-secondary-container: #FFF4D8;
-  --mat-sys-tertiary: #4BE585;
-  --mat-sys-on-tertiary: #0B1712;
-  --mat-sys-error: #FF9A8E;
-  --mat-sys-on-error: #14110D;
-  --mat-sys-surface: #37332B;
+  --mat-sys-primary: #ffe2b0;
+  --mat-sys-on-primary: #14110d;
+  --mat-sys-primary-container: #4e483d;
+  --mat-sys-on-primary-container: #fff4d8;
+  --mat-sys-secondary: #d9cfb6;
+  --mat-sys-on-secondary: #14110d;
+  --mat-sys-secondary-container: #3f3a31;
+  --mat-sys-on-secondary-container: #fff4d8;
+  --mat-sys-tertiary: #4be585;
+  --mat-sys-on-tertiary: #0b1712;
+  --mat-sys-error: #ff9a8e;
+  --mat-sys-on-error: #14110d;
+  --mat-sys-surface: #37332b;
   --mat-sys-surface-dim: #292723;
-  --mat-sys-surface-bright: #554E41;
-  --mat-sys-surface-container-lowest: #14120F;
-  --mat-sys-surface-container-low: #24211B;
-  --mat-sys-surface-container: #302E29;
-  --mat-sys-surface-container-high: #3A3832;
-  --mat-sys-surface-container-highest: #453F35;
-  --mat-sys-on-surface: #FFF4D8;
-  --mat-sys-on-surface-variant: #D9CFB6;
-  --mat-sys-outline: #8D8676;
-  --mat-sys-outline-variant: #4E483D;
-  --mat-sys-inverse-surface: #EBDDB8;
-  --mat-sys-inverse-on-surface: #1F1B16;
+  --mat-sys-surface-bright: #554e41;
+  --mat-sys-surface-container-lowest: #14120f;
+  --mat-sys-surface-container-low: #24211b;
+  --mat-sys-surface-container: #302e29;
+  --mat-sys-surface-container-high: #3a3832;
+  --mat-sys-surface-container-highest: #453f35;
+  --mat-sys-on-surface: #fff4d8;
+  --mat-sys-on-surface-variant: #d9cfb6;
+  --mat-sys-outline: #8d8676;
+  --mat-sys-outline-variant: #4e483d;
+  --mat-sys-inverse-surface: #ebddb8;
+  --mat-sys-inverse-on-surface: #1f1b16;
   --mat-sys-body-large-font: 'Barlow Condensed', sans-serif;
   --mat-sys-body-medium-font: 'Barlow Condensed', sans-serif;
   --mat-sys-label-large-font: 'Barlow Condensed', sans-serif;
@@ -47,12 +47,27 @@ html {
   border-radius: var(--nk-r-xl);
   color: var(--nk-iv);
   font-family: var(--nk-font-ui);
-  background: var(--nk-grain),
-    radial-gradient(ellipse 260px 180px at 0 0, rgb(var(--nk-lamp-warm-rgb) / 0.22) 0%, rgb(var(--nk-lamp-warm-rgb) / 0) 100%),
-    linear-gradient(135deg, var(--nk-chassis-1) 0%, var(--nk-chassis-2) 40%, var(--nk-chassis-4) 100%);
-  box-shadow: inset 0 2px 0 rgb(var(--nk-lamp-rgb) / 0.3), inset 2px 0 0 rgb(var(--nk-lamp-rgb) / 0.16),
-    inset 0 -3px 0 rgb(0 0 0 / 0.45), inset -2px 0 0 rgb(0 0 0 / 0.3), 0 0 0 1px #0B0A08,
-    0 0 0 5px rgb(0 0 0 / 0.45), 0 24px 70px rgb(0 0 0 / 0.9);
+  background:
+    var(--nk-grain),
+    radial-gradient(
+      ellipse 260px 180px at 0 0,
+      rgb(var(--nk-lamp-warm-rgb) / 0.22) 0%,
+      rgb(var(--nk-lamp-warm-rgb) / 0) 100%
+    ),
+    linear-gradient(
+      135deg,
+      var(--nk-chassis-1) 0%,
+      var(--nk-chassis-2) 40%,
+      var(--nk-chassis-4) 100%
+    );
+  box-shadow:
+    inset 0 2px 0 rgb(var(--nk-lamp-rgb) / 0.3),
+    inset 2px 0 0 rgb(var(--nk-lamp-rgb) / 0.16),
+    inset 0 -3px 0 rgb(0 0 0 / 0.45),
+    inset -2px 0 0 rgb(0 0 0 / 0.3),
+    0 0 0 1px #0b0a08,
+    0 0 0 5px rgb(0 0 0 / 0.45),
+    0 24px 70px rgb(0 0 0 / 0.9);
 }
 
 .mat-mdc-dialog-container .mat-mdc-dialog-title {
@@ -74,7 +89,10 @@ html {
 .mat-mdc-autocomplete-panel {
   border-radius: 8px !important;
   background: var(--nk-face-glare), var(--nk-face-glass) !important;
-  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(var(--nk-lamp-rgb) / 0.35), var(--nk-shadow-float) !important;
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.7),
+    0 0 0 1px rgb(var(--nk-lamp-rgb) / 0.35),
+    var(--nk-shadow-float) !important;
 }
 
 .mat-mdc-menu-item,
@@ -97,7 +115,7 @@ html {
 }
 
 .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
-  color: #FFFFFF !important;
+  color: #ffffff !important;
   text-shadow: 0 0 7px rgb(var(--nk-lamp-rgb) / 0.85);
 }
 
@@ -108,14 +126,19 @@ html {
   color: var(--nk-iv) !important;
   font: 600 12.5px/1.3 var(--nk-font-ui) !important;
   letter-spacing: 0.3px;
-  box-shadow: 0 0 0 1px rgb(var(--nk-lamp-rgb) / 0.35), 0 4px 12px rgb(0 0 0 / 0.7);
+  box-shadow:
+    0 0 0 1px rgb(var(--nk-lamp-rgb) / 0.35),
+    0 4px 12px rgb(0 0 0 / 0.7);
 }
 
 /* Snackbar = Toast */
 .mat-mdc-snack-bar-container .mdc-snackbar__surface {
   border-radius: 9px !important;
   background: var(--nk-face-glare), var(--nk-face-glass) !important;
-  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(var(--nk-lamp-rgb) / 0.6), var(--nk-shadow-float) !important;
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.7),
+    0 0 0 1px rgb(var(--nk-lamp-rgb) / 0.6),
+    var(--nk-shadow-float) !important;
 }
 
 .mat-mdc-snack-bar-container .mat-mdc-snack-bar-label {
@@ -167,11 +190,11 @@ html {
 
 /* Reiter */
 .mat-mdc-tab-group {
-  --mat-tab-header-active-label-text-color: #FFFFFF;
+  --mat-tab-header-active-label-text-color: #ffffff;
   --mat-tab-header-inactive-label-text-color: var(--nk-iv-2);
   --mat-tab-header-active-indicator-color: var(--nk-iv);
-  --mat-tab-header-active-focus-label-text-color: #FFFFFF;
-  --mat-tab-header-active-hover-label-text-color: #FFFFFF;
+  --mat-tab-header-active-focus-label-text-color: #ffffff;
+  --mat-tab-header-active-hover-label-text-color: #ffffff;
   --mat-tab-header-active-focus-indicator-color: var(--nk-iv);
   --mat-tab-header-active-hover-indicator-color: var(--nk-iv);
   --mat-tab-header-label-text-font: var(--nk-font-ui);
@@ -188,8 +211,8 @@ html {
 .mat-mdc-progress-bar {
   --mdc-linear-progress-active-indicator-color: var(--nk-own);
   --mat-progress-bar-active-indicator-color: var(--nk-own);
-  --mdc-linear-progress-track-color: #0C0B09;
-  --mat-progress-bar-track-color: #0C0B09;
+  --mdc-linear-progress-track-color: #0c0b09;
+  --mat-progress-bar-track-color: #0c0b09;
 }
 
 /* Schalter: an = grün */
@@ -220,7 +243,7 @@ html {
 }
 
 .deck-menu-current {
-  color: #FFFFFF;
+  color: #ffffff;
   text-shadow: 0 0 7px rgb(var(--nk-lamp-rgb) / 0.85);
 }
 

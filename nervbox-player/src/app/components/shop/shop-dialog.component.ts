@@ -34,42 +34,119 @@ interface ShopItem {
   template: `
     <div class="nk-dlg shop">
       <header class="nk-dialog__head shop-head">
-        <span class="nk-logo__stripes" aria-hidden="true"><span class="nk-logo__stripe"></span><span class="nk-logo__stripe nk-logo__stripe--2"></span><span class="nk-logo__stripe nk-logo__stripe--3"></span><span class="nk-logo__stripe nk-logo__stripe--4"></span><span class="nk-logo__stripe nk-logo__stripe--5"></span></span>
+        <span class="nk-logo__stripes" aria-hidden="true"
+          ><span class="nk-logo__stripe"></span
+          ><span class="nk-logo__stripe nk-logo__stripe--2"></span
+          ><span class="nk-logo__stripe nk-logo__stripe--3"></span
+          ><span class="nk-logo__stripe nk-logo__stripe--4"></span
+          ><span class="nk-logo__stripe nk-logo__stripe--5"></span
+        ></span>
         <h2 class="nk-dialog__title shop-title">Nervbox Shop</h2>
         <span class="nk-label">Guthaben</span>
-        <span class="nk-counter" [attr.aria-label]="'Guthaben ' + creditService.creditsFormatted() + ' Schekel'">{{ creditService.creditsFormatted() }} N$</span>
+        <span
+          class="nk-counter"
+          [attr.aria-label]="'Guthaben ' + creditService.creditsFormatted() + ' Schekel'"
+          >{{ creditService.creditsFormatted() }} N$</span
+        >
         <span class="nk-label">Holz</span>
-        <span class="nk-counter" [attr.aria-label]="'Holz-Bestand ' + inventoryService.wood()">{{ inventoryService.wood() }} HOLZ</span>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon shop-close" aria-label="Shop schließen" (click)="close()">✕</button>
+        <span class="nk-counter" [attr.aria-label]="'Holz-Bestand ' + inventoryService.wood()"
+          >{{ inventoryService.wood() }} HOLZ</span
+        >
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon shop-close"
+          aria-label="Shop schließen"
+          (click)="close()"
+        >
+          ✕
+        </button>
       </header>
       <div class="nk-dialog__body shop-body">
         <label class="nk-input shop-search">
-          <svg class="nk-input__icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
-          <input class="nk-input__field" type="text" aria-label="Items durchsuchen" placeholder="Items durchsuchen..." [value]="searchQuery()" (input)="onSearch($event)" />
-          <button type="button" class="nk-input__clear" aria-label="Suche leeren" [disabled]="!searchQuery()" (click)="clearSearch()">✕</button>
+          <svg
+            class="nk-input__icon"
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="M20 20l-3.5-3.5"></path>
+          </svg>
+          <input
+            class="nk-input__field"
+            type="text"
+            aria-label="Items durchsuchen"
+            placeholder="Items durchsuchen..."
+            [value]="searchQuery()"
+            (input)="onSearch($event)"
+          />
+          <button
+            type="button"
+            class="nk-input__clear"
+            aria-label="Suche leeren"
+            [disabled]="!searchQuery()"
+            (click)="clearSearch()"
+          >
+            ✕
+          </button>
         </label>
-        <h3 class="nk-section__title">{{ searchQuery() ? 'Suchergebnisse' : 'Alle Items' }} ({{ filteredItems().length }})</h3>
+        <h3 class="nk-section__title">
+          {{ searchQuery() ? 'Suchergebnisse' : 'Alle Items' }} ({{ filteredItems().length }})
+        </h3>
         @if (filteredItems().length === 0) {
-          <div class="nk-empty shop-empty"><span class="nk-empty__text">Keine Items gefunden für "{{ searchQuery() }}"</span></div>
+          <div class="nk-empty shop-empty">
+            <span class="nk-empty__text">Keine Items gefunden für "{{ searchQuery() }}"</span>
+          </div>
         } @else {
           <div class="shop-grid">
             @for (item of filteredItems(); track item.id) {
-              <article [class]="'nk-item ' + itemClass(item.status)" [attr.data-category]="item.category" [attr.aria-label]="item.name">
+              <article
+                [class]="'nk-item ' + itemClass(item.status)"
+                [attr.data-category]="item.category"
+                [attr.aria-label]="item.name"
+              >
                 <span class="nk-item__head">
-                  <span [class]="'nk-led nk-led--dot ' + ledClass(item.status)" aria-hidden="true"></span>
+                  <span
+                    [class]="'nk-led nk-led--dot ' + ledClass(item.status)"
+                    aria-hidden="true"
+                  ></span>
                   <span class="nk-item__status">{{ getStatusLabel(item.status) }}</span>
                   <span class="shop-flex"></span>
                   <span class="nk-item__glyph" aria-hidden="true">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path [attr.d]="iconFor(item.category)"></path></svg>
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.9"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path [attr.d]="iconFor(item.category)"></path>
+                    </svg>
                   </span>
                 </span>
                 <span class="nk-item__name" [title]="item.name">{{ item.name }}</span>
                 <span class="nk-item__desc">{{ item.description }}</span>
                 <span class="nk-item__foot">
-                  <span class="nk-counter" [attr.aria-label]="'Preis ' + formatPrice(item.price) + ' Schekel'">{{ formatPrice(item.price) }} N$</span>
+                  <span
+                    class="nk-counter"
+                    [attr.aria-label]="'Preis ' + formatPrice(item.price) + ' Schekel'"
+                    >{{ formatPrice(item.price) }} N$</span
+                  >
                 </span>
                 @if (item.status === 'available') {
-                  <button type="button" class="nk-key nk-key--sm nk-key--accent" [disabled]="isPurchasing() || !canAffordItem(item)" (click)="purchaseItem(item)">
+                  <button
+                    type="button"
+                    class="nk-key nk-key--sm nk-key--accent"
+                    [disabled]="isPurchasing() || !canAffordItem(item)"
+                    (click)="purchaseItem(item)"
+                  >
                     @if (isPurchasing()) {
                       <span class="nk-spin" aria-hidden="true"></span>
                     } @else {
@@ -77,7 +154,9 @@ interface ShopItem {
                     }
                   </button>
                 } @else {
-                  <button type="button" class="nk-key nk-key--sm nk-key--ghost" disabled>{{ getButtonLabel(item.status) }}</button>
+                  <button type="button" class="nk-key nk-key--sm nk-key--ghost" disabled>
+                    {{ getButtonLabel(item.status) }}
+                  </button>
                 }
               </article>
             }
@@ -85,7 +164,9 @@ interface ShopItem {
         }
       </div>
       <footer class="nk-dialog__foot shop-foot">
-        <span class="shop-disclaimer">* Alle Verkäufe sind endgültig. Keine Rückgabe. Holz ist Holz.</span>
+        <span class="shop-disclaimer"
+          >* Alle Verkäufe sind endgültig. Keine Rückgabe. Holz ist Holz.</span
+        >
         <button type="button" class="nk-key" (click)="close()">Schließen</button>
       </footer>
     </div>
@@ -585,11 +666,21 @@ export class ShopDialogComponent {
   }
 
   itemClass(status: ShopItem['status']): string {
-    return { available: 'nk-item--available', coming_soon: 'nk-item--soon', sold_out: 'nk-item--sold', never: 'nk-item--never' }[status];
+    return {
+      available: 'nk-item--available',
+      coming_soon: 'nk-item--soon',
+      sold_out: 'nk-item--sold',
+      never: 'nk-item--never',
+    }[status];
   }
 
   ledClass(status: ShopItem['status']): string {
-    return { available: 'nk-led--own', coming_soon: 'nk-led--warn', sold_out: 'nk-led--danger', never: 'nk-led--other' }[status];
+    return {
+      available: 'nk-led--own',
+      coming_soon: 'nk-led--warn',
+      sold_out: 'nk-led--danger',
+      never: 'nk-led--other',
+    }[status];
   }
 
   /** Glyphe im Leuchtfenster je Kategorie (ersetzt die Emojis) */
@@ -600,7 +691,8 @@ export class ShopDialogComponent {
       cosmetic: 'M6 4h12l3 5-9 11L3 9zM3 9h18M9 4l3 16M15 4l-3 16',
       fun: 'M12 3a9 9 0 110 18 9 9 0 010-18zM8 14c1 2 2.5 3 4 3s3-1 4-3M9 9.5h.01M15 9.5h.01',
       meta: 'M12 3a9 9 0 110 18 9 9 0 010-18zM9.5 9.5a2.5 2.5 0 115 0c0 2-2.5 2-2.5 4M12 17h.01',
-      social: 'M9 11a3 3 0 100-6 3 3 0 000 6zM3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 11a3 3 0 100-6M21 20c0-3-2-5.4-4.5-5.9',
+      social:
+        'M9 11a3 3 0 100-6 3 3 0 000 6zM3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 11a3 3 0 100-6M21 20c0-3-2-5.4-4.5-5.9',
       time: 'M12 3a9 9 0 110 18 9 9 0 010-18zM12 7v5l3 2',
       prestige: 'M4 8l4 4 4-7 4 7 4-4-2 11H6zM6 21h12',
       seasonal: 'M12 3v18M4.5 7.5l15 9M19.5 7.5l-15 9',

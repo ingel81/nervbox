@@ -13,12 +13,7 @@
 >
   <!-- Game Canvas -->
   <div class="canvas-container">
-    <canvas
-      #gameCanvas
-      [width]="canvasWidth"
-      [height]="canvasHeight"
-      class="game-canvas"
-    ></canvas>
+    <canvas #gameCanvas [width]="canvasWidth" [height]="canvasHeight" class="game-canvas"></canvas>
 
     <!-- Crosshair -->
     @if (gameState() === 'playing') {
@@ -63,7 +58,12 @@
     }
 
     @if (gameState() === 'gameover') {
-      <app-game-overlay tone="over" kicker="Game Over" icon="sentiment_very_dissatisfied" title="Game Over!">
+      <app-game-overlay
+        tone="over"
+        kicker="Game Over"
+        icon="sentiment_very_dissatisfied"
+        title="Game Over!"
+      >
         <span class="nk-counter nk-go__score">SCORE {{ score() }}</span>
         <p class="nk-go__text">Erreicht: Level {{ level() }}</p>
         <div goActions>
@@ -76,7 +76,12 @@
     }
 
     @if (gameState() === 'won') {
-      <app-game-overlay tone="win" [kicker]="'Level ' + level()" icon="emoji_events" title="Level geschafft!">
+      <app-game-overlay
+        tone="win"
+        [kicker]="'Level ' + level()"
+        icon="emoji_events"
+        title="Level geschafft!"
+      >
         <span class="nk-counter nk-go__score">SCORE {{ score() }}</span>
         @if (levelReward() > 0) {
           <p class="nk-go__reward">+{{ levelReward() }} N$</p>

@@ -33,7 +33,6 @@ export function fitCanvas(
   opts: FitCanvasOptions = {},
 ): () => void {
   const factor = opts.heightFactor ?? 0.95;
-  
 
   const apply = (): void => {
     const canvas = getCanvas();
@@ -49,14 +48,19 @@ export function fitCanvas(
     const widthEl = opts.widthEl?.() ?? parent;
     const wcs = getComputedStyle(widthEl);
     let availW =
-      widthEl.clientWidth - (parseFloat(wcs.paddingLeft) || 0) - (parseFloat(wcs.paddingRight) || 0);
+      widthEl.clientWidth -
+      (parseFloat(wcs.paddingLeft) || 0) -
+      (parseFloat(wcs.paddingRight) || 0);
     availW -= opts.reserveW?.() ?? 0;
     if (widthEl !== parent) {
       availW -=
-        (parseFloat(pcs.paddingLeft) || 0) + (parseFloat(pcs.paddingRight) || 0) +
-        (parseFloat(pcs.borderLeftWidth) || 0) + (parseFloat(pcs.borderRightWidth) || 0);
+        (parseFloat(pcs.paddingLeft) || 0) +
+        (parseFloat(pcs.paddingRight) || 0) +
+        (parseFloat(pcs.borderLeftWidth) || 0) +
+        (parseFloat(pcs.borderRightWidth) || 0);
     }
-    const padV2 = padV + (parseFloat(pcs.borderTopWidth) || 0) + (parseFloat(pcs.borderBottomWidth) || 0);
+    const padV2 =
+      padV + (parseFloat(pcs.borderTopWidth) || 0) + (parseFloat(pcs.borderBottomWidth) || 0);
     const chrome = root.scrollHeight - parent.offsetHeight - (opts.excludeH?.() ?? 0);
     const availH = window.innerHeight * factor - chrome - padV2;
 

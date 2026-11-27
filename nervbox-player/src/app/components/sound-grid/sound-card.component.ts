@@ -1,11 +1,4 @@
-import {
-  Component,
-  computed,
-  inject,
-  input,
-  output,
-  ChangeDetectionStrategy,
-} from '@angular/core';
+import { Component, computed, inject, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
@@ -55,7 +48,12 @@ const NEW_MS = 7 * 24 * 60 * 60 * 1000;
     >
       <div class="nk-pad__top">
         <span class="nk-pad__check" aria-hidden="true">✓</span>
-        <div class="nk-pad__text" [matTooltip]="padTooltip()" matTooltipClass="nk-tip-multiline" matTooltipShowDelay="600">
+        <div
+          class="nk-pad__text"
+          [matTooltip]="padTooltip()"
+          matTooltipClass="nk-tip-multiline"
+          matTooltipShowDelay="600"
+        >
           @if (rank()) {
             <span class="nk-pad__rank">#{{ rank() }} · MEISTGESPIELT</span>
           }
@@ -68,18 +66,34 @@ const NEW_MS = 7 * 24 * 60 * 60 * 1000;
             [class]="isUpvoted() ? 'nk-pad__vote nk-pad__vote--on' : 'nk-pad__vote'"
             [attr.aria-pressed]="isUpvoted()"
             [attr.aria-label]="isUpvoted() ? 'Upvote entfernen' : 'Upvote'"
-            [matTooltip]="auth.isLoggedIn() ? (isUpvoted() ? 'Upvote entfernen' : 'Upvote') : 'Einloggen zum Voten'"
+            [matTooltip]="
+              auth.isLoggedIn()
+                ? isUpvoted()
+                  ? 'Upvote entfernen'
+                  : 'Upvote'
+                : 'Einloggen zum Voten'
+            "
             (click)="onUpvote($event)"
-          >▲</button>
+          >
+            ▲
+          </button>
           <span class="nk-pad__score">{{ scoreText() }}</span>
           <button
             type="button"
             [class]="isDownvoted() ? 'nk-pad__vote nk-pad__vote--on' : 'nk-pad__vote'"
             [attr.aria-pressed]="isDownvoted()"
             [attr.aria-label]="isDownvoted() ? 'Downvote entfernen' : 'Downvote'"
-            [matTooltip]="auth.isLoggedIn() ? (isDownvoted() ? 'Downvote entfernen' : 'Downvote') : 'Einloggen zum Voten'"
+            [matTooltip]="
+              auth.isLoggedIn()
+                ? isDownvoted()
+                  ? 'Downvote entfernen'
+                  : 'Downvote'
+                : 'Einloggen zum Voten'
+            "
             (click)="onDownvote($event)"
-          >▼</button>
+          >
+            ▼
+          </button>
         </div>
       </div>
 
@@ -91,21 +105,29 @@ const NEW_MS = 7 * 24 * 60 * 60 * 1000;
             [attr.aria-label]="isFavorite() ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'"
             [matTooltip]="isFavorite() ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'"
             (click)="toggleFavorite($event)"
-          >{{ isFavorite() ? '♥' : '♡' }}</button>
+          >
+            {{ isFavorite() ? '♥' : '♡' }}
+          </button>
         }
         <span class="nk-pad__tags">
           @for (tag of displayedTags(); track tag) {
             <span class="nk-chip">#{{ tag }}</span>
           }
           @if (hiddenTagCount() > 0) {
-            <span class="nk-chip nk-chip--more" [matTooltip]="hiddenTags()">+{{ hiddenTagCount() }}</span>
+            <span class="nk-chip nk-chip--more" [matTooltip]="hiddenTags()"
+              >+{{ hiddenTagCount() }}</span
+            >
           }
         </span>
         <span class="nk-pad__new">NEU</span>
         <span class="nk-pad__spacer"></span>
         @if (players().length) {
           @for (p of players(); track $index) {
-            <span class="nk-avatar nk-avatar--xs nk-pad__player" [matTooltip]="p.name + ' spielt gerade'">{{ initials(p.name) }}</span>
+            <span
+              class="nk-avatar nk-avatar--xs nk-pad__player"
+              [matTooltip]="p.name + ' spielt gerade'"
+              >{{ initials(p.name) }}</span
+            >
           }
           @if (players().length > 1) {
             <span class="nk-pad__multi">×{{ players().length }}</span>
@@ -124,7 +146,15 @@ const NEW_MS = 7 * 24 * 60 * 60 * 1000;
           matTooltip="Im Browser anhören"
           (click)="$event.stopPropagation(); playInBrowser()"
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            aria-hidden="true"
+          >
             <path d="M4 14v-2a8 8 0 0116 0v2M4 14h3v6H4zM17 14h3v6h-3z"></path>
           </svg>
         </button>
@@ -135,7 +165,9 @@ const NEW_MS = 7 * 24 * 60 * 60 * 1000;
           aria-haspopup="menu"
           [matMenuTriggerFor]="menu"
           (click)="$event.stopPropagation()"
-        >⋮</button>
+        >
+          ⋮
+        </button>
       </span>
       <span class="nk-pad__progress" aria-hidden="true">
         <span class="nk-pad__progress-fill" [style.width.%]="playState()?.progress ?? 0"></span>
@@ -224,7 +256,11 @@ export class SoundCardComponent {
     Math.max(0, (this.sound().tags?.length ?? 0) - this.maxChips()),
   );
   readonly hiddenTags = computed(
-    () => this.sound().tags?.slice(this.maxChips()).map(t => `#${t}`).join(', ') ?? '',
+    () =>
+      this.sound()
+        .tags?.slice(this.maxChips())
+        .map((t) => `#${t}`)
+        .join(', ') ?? '',
   );
 
   readonly userVote = computed(() => this.voteService.getUserVote(this.sound().hash));
@@ -246,13 +282,19 @@ export class SoundCardComponent {
   private formatPlays(n: number): string {
     if (n < 1000) return String(n);
     const k = Math.floor(n / 100) / 10;
-    return (k >= 100 || Number.isInteger(k) ? String(Math.round(k)) : k.toFixed(1).replace('.', ',')) + 'k';
+    return (
+      (k >= 100 || Number.isInteger(k) ? String(Math.round(k)) : k.toFixed(1).replace('.', ',')) +
+      'k'
+    );
   }
 
   /** Name + price (+ hint when the wallet is too low) */
   readonly padTooltip = computed(() => {
     const cost = this.creditService.costPerPlay();
-    const lines = [this.sound().name, cost > 0 ? `Kostet ${cost.toLocaleString('de-DE')} N$ pro Abspielen` : 'Kostenlos'];
+    const lines = [
+      this.sound().name,
+      cost > 0 ? `Kostet ${cost.toLocaleString('de-DE')} N$ pro Abspielen` : 'Kostenlos',
+    ];
     if (this.auth.isLoggedIn() && cost > 0 && this.creditService.credits() < cost) {
       lines.push('Zu wenig Schekel');
     }
@@ -305,7 +347,7 @@ export class SoundCardComponent {
     let label = `${s.name} abspielen`;
     if (!s.enabled) label += ' (deaktiviert)';
     const st = this.playState();
-    if (st) label += `, läuft gerade (${st.players.map(p => p.name).join(', ')})`;
+    if (st) label += `, läuft gerade (${st.players.map((p) => p.name).join(', ')})`;
     return label;
   });
 
@@ -341,7 +383,11 @@ export class SoundCardComponent {
     const pointerType = (event as PointerEvent).pointerType;
     if (pointerType === 'mouse') return;
     // Browsers without PointerEvent clicks: fall back to the time guard
-    if (pointerType === undefined && this.firedOnPointerDownAt && Date.now() - this.firedOnPointerDownAt < 1500) {
+    if (
+      pointerType === undefined &&
+      this.firedOnPointerDownAt &&
+      Date.now() - this.firedOnPointerDownAt < 1500
+    ) {
       this.firedOnPointerDownAt = 0;
       return;
     }
@@ -358,7 +404,12 @@ export class SoundCardComponent {
   }
 
   initials(name: string): string {
-    return (name || '?').replace(/[^A-Za-zÄÖÜäöü0-9]/g, '').slice(0, 2).toUpperCase() || '?';
+    return (
+      (name || '?')
+        .replace(/[^A-Za-zÄÖÜäöü0-9]/g, '')
+        .slice(0, 2)
+        .toUpperCase() || '?'
+    );
   }
 
   private formatDuration(ms: number): string {
@@ -375,7 +426,7 @@ export class SoundCardComponent {
     const url = this.api.getFullUrl(`/sound/${this.sound().hash}/file`);
     const audio = new Audio(url);
     audio.volume = 0.7 * this.loudness.gain(this.sound().hash);
-    audio.play().catch(err => console.warn('Browser audio playback failed:', err));
+    audio.play().catch((err) => console.warn('Browser audio playback failed:', err));
   }
 
   isFavorite(): boolean {

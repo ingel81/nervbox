@@ -16,11 +16,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { SandwichmasterEngine } from './sandwichmaster-engine';
-import {
-  GameState,
-  Ingredient,
-  SelectedIngredient,
-} from './sandwichmaster.types';
+import { GameState, Ingredient, SelectedIngredient } from './sandwichmaster.types';
 import {
   NORMAL_INGREDIENTS,
   SAUCE_INGREDIENTS,
@@ -225,7 +221,13 @@ import { GAME_INFO } from '../../game-info';
 
       <!-- Finished Overlay -->
       @if (gameState() === 'finished') {
-        <app-game-overlay class="nk-go--solid" tone="win" kicker="Bestellung fertig" icon="celebration" title="Sandwich fertig!">
+        <app-game-overlay
+          class="nk-go--solid"
+          tone="win"
+          kicker="Bestellung fertig"
+          icon="celebration"
+          title="Sandwich fertig!"
+        >
           <div class="final-stats">
             <div class="final-stat">
               <span class="final-label">Zutaten</span>
@@ -362,7 +364,7 @@ import { GAME_INFO } from '../../game-info';
     }
 
     .ingredient-card.normal:hover:not(.disabled) {
-      border-color: #1F8E4C;
+      border-color: #1f8e4c;
       box-shadow: 0 5px 20px rgba(75, 229, 133, 0.3);
     }
 
@@ -414,7 +416,7 @@ import { GAME_INFO } from '../../game-info';
       position: absolute;
       top: 4px;
       right: 4px;
-      background: linear-gradient(135deg, #ef4444 0%, #1F8E4C 100%);
+      background: linear-gradient(135deg, #ef4444 0%, #1f8e4c 100%);
       color: white;
       font-family: 'JetBrains Mono', monospace;
       font-size: 10px;
@@ -822,7 +824,8 @@ export class SandwichmasterGameComponent implements AfterViewInit, OnDestroy {
         widthEl: () => root.querySelector<HTMLElement>('.sandwich-panel'),
         minScale: 0.55,
         // Spalten-Layout (Handy hochkant): Canvas nur ca. 38% der Hoehe, Rest scrollt
-        maxScale: () => (window.innerWidth <= 700 ? (window.innerHeight * 0.38) / this.canvasHeight : 1),
+        maxScale: () =>
+          window.innerWidth <= 700 ? (window.innerHeight * 0.38) / this.canvasHeight : 1,
         // Liste/Stats/Buttons unter dem Canvas duerfen scrollen (Spalten- und Querformat-Layout)
         excludeH: () => {
           if (window.innerWidth > 700 && window.innerHeight > 500) return 0;

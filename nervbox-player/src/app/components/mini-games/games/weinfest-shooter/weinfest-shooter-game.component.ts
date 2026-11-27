@@ -24,7 +24,14 @@ import { GAME_INFO } from '../../game-info';
 @Component({
   selector: 'app-weinfest-shooter-game',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatIconModule, GameExitConfirmComponent, GameFrameComponent, GameOverlayComponent],
+  imports: [
+    CommonModule,
+    MatDialogModule,
+    MatIconModule,
+    GameExitConfirmComponent,
+    GameFrameComponent,
+    GameOverlayComponent,
+  ],
   template: `
     <app-game-frame
       #root
@@ -73,8 +80,12 @@ import { GAME_INFO } from '../../game-info';
           >
             <p class="nk-go__text nk-go__hide-compact">Schiesse die Weinflaschen ab!</p>
             <div class="nk-go__list">
-              <span class="nk-go__row nk-go__row--pos"><mat-icon>add_circle</mat-icon>+3 N$ pro Treffer</span>
-              <span class="nk-go__row nk-go__row--neg"><mat-icon>remove_circle</mat-icon>-2 N$ pro Miss</span>
+              <span class="nk-go__row nk-go__row--pos"
+                ><mat-icon>add_circle</mat-icon>+3 N$ pro Treffer</span
+              >
+              <span class="nk-go__row nk-go__row--neg"
+                ><mat-icon>remove_circle</mat-icon>-2 N$ pro Miss</span
+              >
             </div>
             <div goActions>
               <button type="button" class="nk-key nk-key--accent nk-key--lg">

@@ -18,7 +18,14 @@ import { GAME_INFO } from './game-info';
         <span class="nk-counter">EARN N$</span>
         <span class="gs-flex"></span>
         <span class="nk-label gs-hint">Modul einstecken = spielen</span>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" mat-dialog-close>✕</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon"
+          aria-label="Schließen"
+          mat-dialog-close
+        >
+          ✕
+        </button>
       </header>
       <div class="nk-dialog__body gs-body">
         @for (shelf of shelves; track shelf.label) {
@@ -27,7 +34,9 @@ import { GAME_INFO } from './game-info';
               @for (c of shelf.carts; track c.title) {
                 <button
                   type="button"
-                  [class]="c.soon ? 'nk-cart nk-cart--soon' : c.isNew ? 'nk-cart nk-cart--new' : 'nk-cart'"
+                  [class]="
+                    c.soon ? 'nk-cart nk-cart--soon' : c.isNew ? 'nk-cart nk-cart--new' : 'nk-cart'
+                  "
                   [style.--nk-cart-c]="c.color"
                   [attr.aria-label]="c.soon ? c.title + ' – bald verfügbar' : c.title + ' spielen'"
                   [disabled]="c.soon"
@@ -35,8 +44,16 @@ import { GAME_INFO } from './game-info';
                 >
                   <span class="nk-cart__grip" aria-hidden="true"></span>
                   <span class="nk-cart__label">
-                    <span class="nk-cart__kind"><span>{{ c.kind }}</span><span [class]="c.soon ? 'nk-led nk-led--dot' : 'nk-led nk-led--dot nk-led--own'" aria-hidden="true"></span></span>
-                    <span class="gs-art" aria-hidden="true"><mat-icon>{{ c.icon }}</mat-icon></span>
+                    <span class="nk-cart__kind"
+                      ><span>{{ c.kind }}</span
+                      ><span
+                        [class]="c.soon ? 'nk-led nk-led--dot' : 'nk-led nk-led--dot nk-led--own'"
+                        aria-hidden="true"
+                      ></span
+                    ></span>
+                    <span class="gs-art" aria-hidden="true"
+                      ><mat-icon>{{ c.icon }}</mat-icon></span
+                    >
                     <span class="nk-cart__title">{{ c.title }}</span>
                     @if (c.text) {
                       <span class="nk-cart__text">{{ c.text }}</span>
@@ -47,12 +64,16 @@ import { GAME_INFO } from './game-info';
                           <span class="nk-cart__pay">{{ c.pay }}</span>
                         }
                         @if (c.year) {
-                          <span class="gs-year" [attr.aria-label]="'Baujahr ' + c.year">© {{ c.year }}</span>
+                          <span class="gs-year" [attr.aria-label]="'Baujahr ' + c.year"
+                            >© {{ c.year }}</span
+                          >
                         }
                       </span>
                     }
                   </span>
-                  <span class="nk-cart__edge" aria-hidden="true"><span class="nk-cart__pins"></span></span>
+                  <span class="nk-cart__edge" aria-hidden="true"
+                    ><span class="nk-cart__pins"></span
+                  ></span>
                 </button>
               }
             </div>
@@ -152,7 +173,10 @@ import { GAME_INFO } from './game-info';
       gap: 10px;
       padding: 0 12px;
       background: linear-gradient(180deg, #2a2620, #171410);
-      box-shadow: inset 0 2px 0 rgb(255 226 176 / 0.14), inset 0 -2px 0 rgb(0 0 0 / 0.6), 0 3px 8px rgb(0 0 0 / 0.7);
+      box-shadow:
+        inset 0 2px 0 rgb(255 226 176 / 0.14),
+        inset 0 -2px 0 rgb(0 0 0 / 0.6),
+        0 3px 8px rgb(0 0 0 / 0.7);
     }
     .gs-rail__tag {
       font: 700 10px/1 var(--nk-font-ui);
@@ -183,16 +207,110 @@ import { GAME_INFO } from './game-info';
 export class GameSelectionDialogComponent {
   /** Steckmodule 1:1 wie die bisherigen Spielkarten (Badge, Titel, Untertitel, Auszahlung) */
   readonly carts = [
-    { key: 'arkanoid', kind: 'SPIELEN', title: 'ARKANOID', text: 'Zerstöre alle Blöcke!', pay: 'N$ pro Level', color: '#4E7BA6', icon: 'sports_tennis', year: GAME_INFO.arkanoid.year },
-    { key: 'hotdog', kind: 'SPIELEN', title: 'HOTDOG KATAPULT', text: 'Stopfe die Mäuler!', pay: '1 N$/Treffer', color: '#B8702A', icon: 'lunch_dining', year: GAME_INFO.hotdog.year },
-    { key: 'plinko', kind: 'CASINO', title: 'PLINKO', text: 'Drop & Win!', pay: '0.2x - 50x', color: '#93271F', icon: 'scatter_plot', year: GAME_INFO.plinko.year },
-    { key: 'slot', kind: 'CASINO', title: 'SLOT MACHINE', text: 'Pull the lever!', pay: '1x - 100x', color: '#7E6212', icon: 'casino', year: GAME_INFO.slot.year },
-    { key: 'kayberg', kind: 'MODUL 05', title: 'KAYBERG HUNTER', text: 'Jage als Greifvogel!', pay: 'N$ pro Level', color: '#22635F', icon: 'flight', year: GAME_INFO.kayberg.year },
-    { key: 'weinfest', kind: 'MODUL 06', title: 'WEINFEST SHOOTER', text: 'Schieß die Flaschen ab!', pay: '+3/-2 N$', color: '#7A2E4A', icon: 'wine_bar', year: GAME_INFO.weinfest.year },
-    { key: 'sandwich', kind: 'NEU', title: 'SANDWICHMASTER', text: 'Baue das ultimative Sandwich!', pay: 'Punkte sammeln', color: '#5E7426', icon: 'bakery_dining', year: GAME_INFO.sandwich.year, isNew: true },
-    { key: '', kind: 'COMING SOON', title: 'Mary Haze – The Game', text: '', pay: '', color: '#5A5346', icon: 'local_florist', soon: true, year: 0 },
-    { key: '', kind: 'COMING SOON', title: 'Fehlersuche mit Paddi', text: '', pay: '', color: '#5A5346', icon: 'search', soon: true, year: 0 },
-    { key: '', kind: 'COMING SOON', title: 'Mixe das perfekte Spezi', text: '', pay: '', color: '#5A5346', icon: 'local_bar', soon: true, year: 0 },
+    {
+      key: 'arkanoid',
+      kind: 'SPIELEN',
+      title: 'ARKANOID',
+      text: 'Zerstöre alle Blöcke!',
+      pay: 'N$ pro Level',
+      color: '#4E7BA6',
+      icon: 'sports_tennis',
+      year: GAME_INFO.arkanoid.year,
+    },
+    {
+      key: 'hotdog',
+      kind: 'SPIELEN',
+      title: 'HOTDOG KATAPULT',
+      text: 'Stopfe die Mäuler!',
+      pay: '1 N$/Treffer',
+      color: '#B8702A',
+      icon: 'lunch_dining',
+      year: GAME_INFO.hotdog.year,
+    },
+    {
+      key: 'plinko',
+      kind: 'CASINO',
+      title: 'PLINKO',
+      text: 'Drop & Win!',
+      pay: '0.2x - 50x',
+      color: '#93271F',
+      icon: 'scatter_plot',
+      year: GAME_INFO.plinko.year,
+    },
+    {
+      key: 'slot',
+      kind: 'CASINO',
+      title: 'SLOT MACHINE',
+      text: 'Pull the lever!',
+      pay: '1x - 100x',
+      color: '#7E6212',
+      icon: 'casino',
+      year: GAME_INFO.slot.year,
+    },
+    {
+      key: 'kayberg',
+      kind: 'MODUL 05',
+      title: 'KAYBERG HUNTER',
+      text: 'Jage als Greifvogel!',
+      pay: 'N$ pro Level',
+      color: '#22635F',
+      icon: 'flight',
+      year: GAME_INFO.kayberg.year,
+    },
+    {
+      key: 'weinfest',
+      kind: 'MODUL 06',
+      title: 'WEINFEST SHOOTER',
+      text: 'Schieß die Flaschen ab!',
+      pay: '+3/-2 N$',
+      color: '#7A2E4A',
+      icon: 'wine_bar',
+      year: GAME_INFO.weinfest.year,
+    },
+    {
+      key: 'sandwich',
+      kind: 'NEU',
+      title: 'SANDWICHMASTER',
+      text: 'Baue das ultimative Sandwich!',
+      pay: 'Punkte sammeln',
+      color: '#5E7426',
+      icon: 'bakery_dining',
+      year: GAME_INFO.sandwich.year,
+      isNew: true,
+    },
+    {
+      key: '',
+      kind: 'COMING SOON',
+      title: 'Mary Haze – The Game',
+      text: '',
+      pay: '',
+      color: '#5A5346',
+      icon: 'local_florist',
+      soon: true,
+      year: 0,
+    },
+    {
+      key: '',
+      kind: 'COMING SOON',
+      title: 'Fehlersuche mit Paddi',
+      text: '',
+      pay: '',
+      color: '#5A5346',
+      icon: 'search',
+      soon: true,
+      year: 0,
+    },
+    {
+      key: '',
+      kind: 'COMING SOON',
+      title: 'Mixe das perfekte Spezi',
+      text: '',
+      pay: '',
+      color: '#5A5346',
+      icon: 'local_bar',
+      soon: true,
+      year: 0,
+    },
   ];
   readonly shelves = [
     { label: 'SCHACHT A · SPIELEN & CASINO', carts: this.carts.slice(0, 5) },
@@ -201,13 +319,20 @@ export class GameSelectionDialogComponent {
 
   start(key: string): void {
     switch (key) {
-      case 'arkanoid': return void this.startArkanoid();
-      case 'hotdog': return void this.startHotdog();
-      case 'plinko': return void this.startPlinko();
-      case 'slot': return void this.startSlotMachine();
-      case 'kayberg': return void this.startKayberg();
-      case 'weinfest': return void this.startWeinfestShooter();
-      case 'sandwich': return void this.startSandwichmaster();
+      case 'arkanoid':
+        return void this.startArkanoid();
+      case 'hotdog':
+        return void this.startHotdog();
+      case 'plinko':
+        return void this.startPlinko();
+      case 'slot':
+        return void this.startSlotMachine();
+      case 'kayberg':
+        return void this.startKayberg();
+      case 'weinfest':
+        return void this.startWeinfestShooter();
+      case 'sandwich':
+        return void this.startSandwichmaster();
     }
   }
 
@@ -253,7 +378,8 @@ export class GameSelectionDialogComponent {
   }
 
   async startSlotMachine(): Promise<void> {
-    const { SlotMachineGameComponent } = await import('./games/slot-machine/slot-machine-game.component');
+    const { SlotMachineGameComponent } =
+      await import('./games/slot-machine/slot-machine-game.component');
     this.dialog.open(SlotMachineGameComponent, {
       width: '950px',
       maxWidth: '95vw',
@@ -276,7 +402,8 @@ export class GameSelectionDialogComponent {
   }
 
   async startWeinfestShooter(): Promise<void> {
-    const { WeinfestShooterGameComponent } = await import('./games/weinfest-shooter/weinfest-shooter-game.component');
+    const { WeinfestShooterGameComponent } =
+      await import('./games/weinfest-shooter/weinfest-shooter-game.component');
     this.dialog.open(WeinfestShooterGameComponent, {
       width: '95vw',
       maxWidth: '900px',
@@ -288,7 +415,8 @@ export class GameSelectionDialogComponent {
   }
 
   async startSandwichmaster(): Promise<void> {
-    const { SandwichmasterGameComponent } = await import('./games/sandwichmaster/sandwichmaster-game.component');
+    const { SandwichmasterGameComponent } =
+      await import('./games/sandwichmaster/sandwichmaster-game.component');
     this.dialog.open(SandwichmasterGameComponent, {
       width: '95vw',
       maxWidth: '850px',

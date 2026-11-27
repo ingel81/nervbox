@@ -137,13 +137,12 @@ export class ParticleSystem {
 
   private createParticle(
     emitter: ParticleEmitter,
-    config: (typeof EFFECT_CONFIGS)[ParticleEffectType]
+    config: (typeof EFFECT_CONFIGS)[ParticleEffectType],
   ): Particle {
     const angle = Math.random() * Math.PI * 2;
     const speed =
       config.speedRange[0] + Math.random() * (config.speedRange[1] - config.speedRange[0]);
-    const life =
-      config.lifeRange[0] + Math.random() * (config.lifeRange[1] - config.lifeRange[0]);
+    const life = config.lifeRange[0] + Math.random() * (config.lifeRange[1] - config.lifeRange[0]);
 
     return {
       x: emitter.x + (Math.random() - 0.5) * 20,
@@ -235,7 +234,7 @@ export class ParticleSystem {
       p.x + p.size / 2,
       p.y + p.size / 2,
       p.x,
-      p.y + p.size
+      p.y + p.size,
     );
     ctx.bezierCurveTo(
       p.x - p.size / 2,
@@ -243,7 +242,7 @@ export class ParticleSystem {
       p.x - p.size,
       p.y - p.size / 2,
       p.x,
-      p.y - p.size
+      p.y - p.size,
     );
     ctx.fillStyle = p.color;
     ctx.shadowColor = p.color;

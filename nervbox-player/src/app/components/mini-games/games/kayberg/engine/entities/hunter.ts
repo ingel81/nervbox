@@ -18,7 +18,7 @@ export class HunterEntity {
   constructor(
     position: THREE.Vector3,
     fireRate: number,
-    getTerrainHeight: (x: number, z: number) => number
+    getTerrainHeight: (x: number, z: number) => number,
   ) {
     this.position = position.clone();
     this.velocity = new THREE.Vector3();
@@ -117,7 +117,7 @@ export class HunterEntity {
     // Aim gun up/down
     const horizontalDist = Math.sqrt(
       Math.pow(this.targetPosition.x - this.position.x, 2) +
-      Math.pow(this.targetPosition.z - this.position.z, 2)
+        Math.pow(this.targetPosition.z - this.position.z, 2),
     );
     const verticalDist = this.targetPosition.y - this.position.y - 1.3;
     const pitchAngle = Math.atan2(verticalDist, horizontalDist);

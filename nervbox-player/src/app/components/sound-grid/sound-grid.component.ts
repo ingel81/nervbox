@@ -31,7 +31,12 @@ import { SoundCardComponent } from './sound-card.component';
       <span class="nk-screw nk-screw--sm nk-screw--tr" aria-hidden="true"></span>
       <span class="nk-screw nk-screw--sm nk-screw--bl" aria-hidden="true"></span>
       <span class="nk-screw nk-screw--sm nk-screw--br" aria-hidden="true"></span>
-      <div [class]="fewResults() ? 'nk-watermark nk-watermark--hero' : 'nk-watermark'" aria-hidden="true">CABD</div>
+      <div
+        [class]="fewResults() ? 'nk-watermark nk-watermark--hero' : 'nk-watermark'"
+        aria-hidden="true"
+      >
+        CABD
+      </div>
 
       @if (filteredSounds().length === 0) {
         <div class="nk-empty grid-empty" role="status">
@@ -64,7 +69,12 @@ import { SoundCardComponent } from './sound-card.component';
               }
             </div>
           }
-          <cdk-virtual-scroll-viewport class="grid-viewport" [itemSize]="rowHeight" [minBufferPx]="400" [maxBufferPx]="800">
+          <cdk-virtual-scroll-viewport
+            class="grid-viewport"
+            [itemSize]="rowHeight"
+            [minBufferPx]="400"
+            [maxBufferPx]="800"
+          >
             <div
               *cdkVirtualFor="let row of rows(); let r = index; trackBy: trackRow"
               class="grid-row"
@@ -123,12 +133,30 @@ import { SoundCardComponent } from './sound-card.component';
       margin: 0 6px 14px 0;
     }
 
-    .feat-0 { grid-column: 1; grid-row: 1 / span 2; }
-    .feat-1 { grid-column: 2; grid-row: 1 / span 2; }
-    .feat-2 { grid-column: 3; grid-row: 1; }
-    .feat-3 { grid-column: 4; grid-row: 1; }
-    .feat-4 { grid-column: 3; grid-row: 2; }
-    .feat-5 { grid-column: 4; grid-row: 2; }
+    .feat-0 {
+      grid-column: 1;
+      grid-row: 1 / span 2;
+    }
+    .feat-1 {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+    }
+    .feat-2 {
+      grid-column: 3;
+      grid-row: 1;
+    }
+    .feat-3 {
+      grid-column: 4;
+      grid-row: 1;
+    }
+    .feat-4 {
+      grid-column: 3;
+      grid-row: 2;
+    }
+    .feat-5 {
+      grid-column: 4;
+      grid-row: 2;
+    }
 
     .grid-viewport {
       overflow: visible;
@@ -188,15 +216,15 @@ export class SoundGridComponent implements AfterViewInit, OnDestroy {
 
     if (query) {
       result = result.filter(
-        sound =>
+        (sound) =>
           sound.name.toLowerCase().includes(query) ||
           sound.fileName.toLowerCase().includes(query) ||
-          sound.tags?.some(tag => tag.toLowerCase().includes(query)),
+          sound.tags?.some((tag) => tag.toLowerCase().includes(query)),
       );
     }
 
     if (tags.length > 0) {
-      result = result.filter(sound => tags.some(tag => sound.tags?.includes(tag)));
+      result = result.filter((sound) => tags.some((tag) => sound.tags?.includes(tag)));
     }
 
     return result;
@@ -231,10 +259,7 @@ export class SoundGridComponent implements AfterViewInit, OnDestroy {
       const minPad = el.clientWidth < 600 ? 96 : SoundGridComponent.MIN_PAD_WIDTH;
       const cols = Math.max(
         1,
-        Math.floor(
-          (available + SoundGridComponent.GAP) /
-            (minPad + SoundGridComponent.GAP),
-        ),
+        Math.floor((available + SoundGridComponent.GAP) / (minPad + SoundGridComponent.GAP)),
       );
       this.columnsCount.set(cols);
     };
@@ -254,6 +279,6 @@ export class SoundGridComponent implements AfterViewInit, OnDestroy {
   }
 
   trackRow(_index: number, row: Sound[]): string {
-    return row.map(s => s.hash).join('-');
+    return row.map((s) => s.hash).join('-');
   }
 }

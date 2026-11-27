@@ -1,10 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import {
-  HttpClient,
-  HttpEventType,
-  HttpProgressEvent,
-  HttpResponse,
-} from '@angular/common/http';
+import { HttpClient, HttpEventType, HttpProgressEvent, HttpResponse } from '@angular/common/http';
 import { Observable, Subject, finalize } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
@@ -43,7 +38,7 @@ export class UploadService {
    */
   uploadSound(
     file: File,
-    tags: string[] = []
+    tags: string[] = [],
   ): Observable<{ progress: number; result?: UploadResponse }> {
     const subject = new Subject<{ progress: number; result?: UploadResponse }>();
 
@@ -61,7 +56,7 @@ export class UploadService {
       .pipe(
         finalize(() => {
           subject.complete();
-        })
+        }),
       )
       .subscribe({
         next: (event) => {
@@ -120,6 +115,8 @@ export class UploadService {
    * Get accept string for file input
    */
   getAcceptString(): string {
-    return this.allowedExtensions.map((ext) => `audio/${ext.slice(1)}`).join(',') + ',.mp3,.wav,.ogg';
+    return (
+      this.allowedExtensions.map((ext) => `audio/${ext.slice(1)}`).join(',') + ',.mp3,.wav,.ogg'
+    );
   }
 }

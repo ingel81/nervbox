@@ -1,4 +1,11 @@
-import { Component, inject, OnInit, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  signal,
+  computed,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -24,27 +31,54 @@ import { TopSound, TopUser } from '../../core/models';
       <header class="nk-dialog__head">
         <mat-icon class="st-ico" aria-hidden="true">leaderboard</mat-icon>
         <h2 class="nk-dialog__title">Statistiken</h2>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" (click)="onClose()">✕</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon"
+          aria-label="Schließen"
+          (click)="onClose()"
+        >
+          ✕
+        </button>
       </header>
       <div class="nk-dialog__body">
         <div class="nk-tabs" role="tablist">
           @for (t of tabs; track t.key; let i = $index) {
-            <button type="button" role="tab" [attr.aria-selected]="tab() === i" [class]="tab() === i ? 'nk-tabs__tab nk-tabs__tab--on' : 'nk-tabs__tab'" (click)="tab.set(i)">{{ t.label }}</button>
+            <button
+              type="button"
+              role="tab"
+              [attr.aria-selected]="tab() === i"
+              [class]="tab() === i ? 'nk-tabs__tab nk-tabs__tab--on' : 'nk-tabs__tab'"
+              (click)="tab.set(i)"
+            >
+              {{ t.label }}
+            </button>
           }
         </div>
         @if (loading()) {
           <div class="st-state"><span class="nk-spin" aria-hidden="true"></span>lädt …</div>
         } @else if (rows().length === 0) {
-          <div class="st-state">{{ tab() === 2 ? 'Noch keine Favoriten vorhanden' : 'Noch keine Daten vorhanden' }}</div>
+          <div class="st-state">
+            {{ tab() === 2 ? 'Noch keine Favoriten vorhanden' : 'Noch keine Daten vorhanden' }}
+          </div>
         } @else {
           <div class="nk-well st-list">
             @for (r of rows(); track $index; let i = $index) {
               <div [class]="i < 3 ? 'nk-row nk-row--hl' : 'nk-row'">
                 <span [class]="i < 3 ? 'nk-rank nk-rank--' + (i + 1) : 'nk-rank'">{{ i + 1 }}</span>
-                <span class="nk-row__main"><span class="nk-row__title">{{ r.name }}</span></span>
+                <span class="nk-row__main"
+                  ><span class="nk-row__title">{{ r.name }}</span></span
+                >
                 <span class="st-bar" aria-hidden="true">
                   @for (s of segs; track s) {
-                    <span [class]="s < r.level ? (i === 0 ? 'st-seg st-seg--top' : 'st-seg st-seg--on') : 'st-seg'"></span>
+                    <span
+                      [class]="
+                        s < r.level
+                          ? i === 0
+                            ? 'st-seg st-seg--top'
+                            : 'st-seg st-seg--on'
+                          : 'st-seg'
+                      "
+                    ></span>
                   }
                 </span>
                 <span class="nk-row__num st-count">{{ r.count }}×</span>
@@ -139,8 +173,12 @@ export class StatsDialogComponent implements OnInit {
     const t = this.tab();
     const list: { name: string; count: number }[] =
       t === 0 ? this.topSounds() : t === 1 ? this.topUsers() : this.topFavorites();
-    const max = Math.max(1, ...list.map(r => r.count));
-    return list.map(r => ({ name: r.name, count: r.count, level: Math.max(1, Math.round((r.count / max) * 15)) }));
+    const max = Math.max(1, ...list.map((r) => r.count));
+    return list.map((r) => ({
+      name: r.name,
+      count: r.count,
+      level: Math.max(1, Math.round((r.count / max) * 15)),
+    }));
   });
 
   ngOnInit(): void {

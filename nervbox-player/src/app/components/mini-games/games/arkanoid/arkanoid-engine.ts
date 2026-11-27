@@ -147,7 +147,7 @@ export class ArkanoidEngine {
   movePaddle(x: number): void {
     this.paddle.targetX = Math.max(
       0,
-      Math.min(this.width - this.paddle.width, x - this.paddle.width / 2)
+      Math.min(this.width - this.paddle.width, x - this.paddle.width / 2),
     );
   }
 
@@ -227,7 +227,7 @@ export class ArkanoidEngine {
         }
 
         // Check win condition
-        if (this.bricks.every(b => b.destroyed)) {
+        if (this.bricks.every((b) => b.destroyed)) {
           this.onLevelComplete?.();
         }
         break;
@@ -303,7 +303,12 @@ export class ArkanoidEngine {
     this.ctx.shadowBlur = 10;
 
     // Brick gradient
-    const gradient = this.ctx.createLinearGradient(brick.x, brick.y, brick.x, brick.y + brick.height);
+    const gradient = this.ctx.createLinearGradient(
+      brick.x,
+      brick.y,
+      brick.x,
+      brick.y + brick.height,
+    );
     gradient.addColorStop(0, brick.color);
     gradient.addColorStop(1, this.adjustBrightness(brick.color, -30));
 
@@ -318,7 +323,7 @@ export class ArkanoidEngine {
       brick.x,
       brick.y,
       brick.x,
-      brick.y + brick.height / 2
+      brick.y + brick.height / 2,
     );
     highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.2)');
     highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
@@ -338,7 +343,7 @@ export class ArkanoidEngine {
       this.paddle.x,
       0,
       this.paddle.x + this.paddle.width,
-      0
+      0,
     );
     gradient.addColorStop(0, this.colors.paddleStart);
     gradient.addColorStop(1, this.colors.paddleEnd);
@@ -354,7 +359,7 @@ export class ArkanoidEngine {
       this.paddle.x,
       this.paddle.y,
       this.paddle.x,
-      this.paddle.y + this.paddle.height / 2
+      this.paddle.y + this.paddle.height / 2,
     );
     highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
     highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
@@ -383,7 +388,7 @@ export class ArkanoidEngine {
       0,
       this.ball.x,
       this.ball.y,
-      this.ball.radius
+      this.ball.radius,
     );
     gradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
     gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');

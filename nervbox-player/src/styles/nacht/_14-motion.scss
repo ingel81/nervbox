@@ -1,11 +1,55 @@
 /* ---------------------------------------------------------------------------
    14 · BEWEGUNG
    --------------------------------------------------------------------------- */
-@keyframes nk-lit { 0%, 100% { filter: brightness(.96); } 50% { filter: brightness(1.05); } }
-@keyframes nk-glow { 0%, 100% { opacity: .7; } 50% { opacity: 1; } }
-@keyframes nk-blink { 0% { opacity: 1; } 100% { opacity: .25; } }
-@keyframes nk-rise { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: translateY(0); } }
+@keyframes nk-lit {
+  0%,
+  100% {
+    filter: brightness(0.96);
+  }
+  50% {
+    filter: brightness(1.05);
+  }
+}
+@keyframes nk-glow {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes nk-blink {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.25;
+  }
+}
+@keyframes nk-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
-  [class^="nk-"], [class*=" nk-"], [class^="nk-"]::before, [class*=" nk-"]::before, [class^="nk-"]::after, [class*=" nk-"]::after { animation: none !important; transition: none !important; }
-  .nk-pad:hover, .nk-pad--hover, .nk-pad:active { transform: none; }
+  [class^='nk-'],
+  [class*=' nk-'],
+  [class^='nk-']::before,
+  [class*=' nk-']::before,
+  [class^='nk-']::after,
+  [class*=' nk-']::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .nk-pad:hover,
+  .nk-pad--hover,
+  .nk-pad:active {
+    transform: none;
+  }
 }

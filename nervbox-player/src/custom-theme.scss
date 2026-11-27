@@ -3,30 +3,82 @@
 
 // Define custom palettes for nervbox purple and pink
 $nervbox-purple-palette: (
-  50: #FFF8E8, 100: #FFF4D8, 200: #FFE9C2, 300: #FFE2B0, 400: #EBCB94, 500: #D9B479,
-  600: #B9975F, 700: #8E7347, 800: #5A4A31, 900: #33291B,
-  A100: #FFF4D8, A200: #FFE2B0, A400: #D9B479, A700: #8E7347,
-  contrast: (50: #14110D, 100: #14110D, 200: #14110D, 300: #14110D, 400: #14110D, 500: #14110D,
-    600: #14110D, 700: white, 800: white, 900: white, A100: #14110D, A200: #14110D, A400: #14110D, A700: white)
+  50: #fff8e8,
+  100: #fff4d8,
+  200: #ffe9c2,
+  300: #ffe2b0,
+  400: #ebcb94,
+  500: #d9b479,
+  600: #b9975f,
+  700: #8e7347,
+  800: #5a4a31,
+  900: #33291b,
+  A100: #fff4d8,
+  A200: #ffe2b0,
+  A400: #d9b479,
+  A700: #8e7347,
+  contrast: (
+    50: #14110d,
+    100: #14110d,
+    200: #14110d,
+    300: #14110d,
+    400: #14110d,
+    500: #14110d,
+    600: #14110d,
+    700: white,
+    800: white,
+    900: white,
+    A100: #14110d,
+    A200: #14110d,
+    A400: #14110d,
+    A700: white,
+  ),
 );
 
 $nervbox-pink-palette: (
-  50: #EEFFF3, 100: #D2FBE0, 200: #96F7B9, 300: #6FEE9E, 400: #4BE585, 500: #44D97D,
-  600: #2FB466, 700: #1F8E4C, 800: #125F32, 900: #0C2A18,
-  A100: #96F7B9, A200: #4BE585, A400: #44D97D, A700: #1F8E4C,
-  contrast: (50: #14110D, 100: #14110D, 200: #14110D, 300: #14110D, 400: #14110D, 500: #14110D,
-    600: #14110D, 700: white, 800: white, 900: white, A100: #14110D, A200: #14110D, A400: #14110D, A700: white)
+  50: #eefff3,
+  100: #d2fbe0,
+  200: #96f7b9,
+  300: #6fee9e,
+  400: #4be585,
+  500: #44d97d,
+  600: #2fb466,
+  700: #1f8e4c,
+  800: #125f32,
+  900: #0c2a18,
+  A100: #96f7b9,
+  A200: #4be585,
+  A400: #44d97d,
+  A700: #1f8e4c,
+  contrast: (
+    50: #14110d,
+    100: #14110d,
+    200: #14110d,
+    300: #14110d,
+    400: #14110d,
+    500: #14110d,
+    600: #14110d,
+    700: white,
+    800: white,
+    900: white,
+    A100: #14110d,
+    A200: #14110d,
+    A400: #14110d,
+    A700: white,
+  ),
 );
 
 html {
-  @include mat.theme((
-    color: (
-      primary: $nervbox-purple-palette,
-      tertiary: $nervbox-pink-palette,
-    ),
-    typography: 'Barlow Condensed',
-    density: 0,
-  ));
+  @include mat.theme(
+    (
+      color: (
+        primary: $nervbox-purple-palette,
+        tertiary: $nervbox-pink-palette,
+      ),
+      typography: 'Barlow Condensed',
+      density: 0,
+    )
+  );
 }
 
 body {

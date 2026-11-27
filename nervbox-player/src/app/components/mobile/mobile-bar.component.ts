@@ -1,4 +1,12 @@
-import { Component, ChangeDetectionStrategy, computed, inject, input, output, signal } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { AuthService } from '../../core/services/auth.service';
 import { LoudnessService } from '../../core/services/loudness.service';
@@ -49,8 +57,26 @@ interface MenuItem {
           <div class="nk-menu mb-group">
             <span class="nk-menu__head">{{ group.title }}</span>
             @for (it of group.items; track it.action) {
-              <button type="button" role="menuitem" [class]="it.danger ? 'nk-menu__item nk-menu__item--danger' : 'nk-menu__item'" (click)="pick(it.action)">
-                <svg class="nk-menu__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="it.icon"></path></svg>
+              <button
+                type="button"
+                role="menuitem"
+                [class]="it.danger ? 'nk-menu__item nk-menu__item--danger' : 'nk-menu__item'"
+                (click)="pick(it.action)"
+              >
+                <svg
+                  class="nk-menu__icon"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path [attr.d]="it.icon"></path>
+                </svg>
                 {{ it.label }}
               </button>
             }
@@ -64,35 +90,125 @@ interface MenuItem {
       <div class="mb-chans">
         @for (c of channels(); track c.id) {
           <span [class]="c.own ? 'mb-chan mb-chan--own' : 'mb-chan mb-chan--other'">
-            <span [class]="c.own ? 'nk-avatar nk-avatar--xs nk-avatar--own' : 'nk-avatar nk-avatar--xs nk-avatar--other'">{{ initials(c.userName) }}</span>{{ c.name }}
+            <span
+              [class]="
+                c.own
+                  ? 'nk-avatar nk-avatar--xs nk-avatar--own'
+                  : 'nk-avatar nk-avatar--xs nk-avatar--other'
+              "
+              >{{ initials(c.userName) }}</span>{{ c.name }}
           </span>
         } @empty {
           <span class="mb-idle">kein Signal</span>
         }
       </div>
       @if (auth.isLoggedIn()) {
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Letzten Sound nochmal spielen" [disabled]="!nowPlaying.lastOwnHash()" (click)="again.emit()">↻</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon"
+          aria-label="Letzten Sound nochmal spielen"
+          [disabled]="!nowPlaying.lastOwnHash()"
+          (click)="again.emit()"
+        >
+          ↻
+        </button>
       }
       @if (isAdmin()) {
-        <button type="button" class="nk-key nk-key--sm nk-key--icon nk-key--danger" aria-label="Alle Sounds stoppen (nur Admin)" (click)="action.emit('kill-all')">■</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon nk-key--danger"
+          aria-label="Alle Sounds stoppen (nur Admin)"
+          (click)="action.emit('kill-all')"
+        >
+          ■
+        </button>
       }
     </div>
 
     <nav class="mb-nav" aria-label="Hauptnavigation">
-      <button type="button" [class]="view() === 'sounds' && !moreOpen() ? 'nk-key nk-key--on' : 'nk-key'" [attr.aria-current]="view() === 'sounds' ? 'page' : null" (click)="go('sounds')">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"></path></svg>SOUNDS
+      <button
+        type="button"
+        [class]="view() === 'sounds' && !moreOpen() ? 'nk-key nk-key--on' : 'nk-key'"
+        [attr.aria-current]="view() === 'sounds' ? 'page' : null"
+        (click)="go('sounds')"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"></path></svg
+        >SOUNDS
       </button>
-      <button type="button" [class]="view() === 'chat' && !moreOpen() ? 'nk-key nk-key--on' : 'nk-key'" [attr.aria-current]="view() === 'chat' ? 'page' : null" (click)="go('chat')">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"></path></svg>CHAT
+      <button
+        type="button"
+        [class]="view() === 'chat' && !moreOpen() ? 'nk-key nk-key--on' : 'nk-key'"
+        [attr.aria-current]="view() === 'chat' ? 'page' : null"
+        (click)="go('chat')"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path d="M4 5h16v11H9l-5 4z"></path></svg
+        >CHAT
       </button>
       <button type="button" class="nk-key" [disabled]="!auth.isLoggedIn()" (click)="openGames()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 8h12a4 4 0 014 4v1a4 4 0 01-4 4H6a4 4 0 01-4-4v-1a4 4 0 014-4zM7 11v3M5.5 12.5h3M16 12h.01M18 14h.01"></path></svg>SPIELHALLE
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path
+            d="M6 8h12a4 4 0 014 4v1a4 4 0 01-4 4H6a4 4 0 01-4-4v-1a4 4 0 014-4zM7 11v3M5.5 12.5h3M16 12h.01M18 14h.01"
+          ></path></svg
+        >SPIELHALLE
       </button>
       <button type="button" class="nk-key" [disabled]="!auth.isLoggedIn()" (click)="openShop()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8zM9 8V6a3 3 0 016 0v2"></path></svg>SHOP
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path d="M5 8h14l-1 12H6L5 8zM9 8V6a3 3 0 016 0v2"></path></svg
+        >SHOP
       </button>
-      <button type="button" [class]="moreOpen() ? 'nk-key nk-key--on' : 'nk-key'" [attr.aria-expanded]="moreOpen()" (click)="moreOpen.set(!moreOpen())">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"></path></svg>MEHR
+      <button
+        type="button"
+        [class]="moreOpen() ? 'nk-key nk-key--on' : 'nk-key'"
+        [attr.aria-expanded]="moreOpen()"
+        (click)="moreOpen.set(!moreOpen())"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M5 12h.01M12 12h.01M19 12h.01"></path></svg
+        >MEHR
       </button>
     </nav>
   `,
@@ -110,7 +226,9 @@ interface MenuItem {
       padding: 6px 8px;
       border-radius: 8px;
       background: rgb(0 0 0 / 0.24);
-      box-shadow: inset 1px 2px 5px rgb(0 0 0 / 0.6), 1px 1px 0 rgb(255 226 176 / 0.12);
+      box-shadow:
+        inset 1px 2px 5px rgb(0 0 0 / 0.6),
+        1px 1px 0 rgb(255 226 176 / 0.12);
     }
     .mb-count {
       margin: 0;
@@ -217,7 +335,8 @@ export class MobileBarComponent {
     tour: 'M12 3a9 9 0 110 18 9 9 0 010-18zM15.5 8.5l-2 5-5 2 2-5z',
     out: 'M10 4H4v16h6M14 8l4 4-4 4M18 12H9',
     login: 'M14 4h6v16h-6M10 8l4 4-4 4M14 12H3',
-    users: 'M9 11a3 3 0 100-6 3 3 0 000 6zM3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 11a3 3 0 100-6M21 20c0-3-2-5.4-4.5-5.9',
+    users:
+      'M9 11a3 3 0 100-6 3 3 0 000 6zM3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 11a3 3 0 100-6M21 20c0-3-2-5.4-4.5-5.9',
     tag: 'M3 12V4h8l10 10-8 8zM7.5 8.5h.01',
     wand: 'M4 20L16 8M14 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z',
     coins: 'M5 8a7 3 0 1014 0 7 3 0 10-14 0zM5 8v8c0 1.7 3 3 7 3s7-1.3 7-3V8',
@@ -254,7 +373,11 @@ export class MobileBarComponent {
           { action: 'admin-wizard', label: 'Tag-Wizard', icon: I.wand },
           { action: 'admin-credits', label: 'Shekel-Einstellungen', icon: I.coins },
           { action: 'admin-tts', label: 'Sprachausgabe (Test)', icon: I.voice },
-          { action: 'admin-loudness', label: `Lautstärke angleichen: ${this.loudness.enabled() ? 'an' : 'aus'}`, icon: I.voice },
+          {
+            action: 'admin-loudness',
+            label: `Lautstärke angleichen: ${this.loudness.enabled() ? 'an' : 'aus'}`,
+            icon: I.voice,
+          },
           { action: 'kill-all', label: 'Alle Sounds stoppen', icon: I.stop, danger: true },
         ],
       });
@@ -274,16 +397,26 @@ export class MobileBarComponent {
 
   async openGames(): Promise<void> {
     this.moreOpen.set(false);
-    const { GameSelectionDialogComponent } = await import('../mini-games/game-selection-dialog.component');
+    const { GameSelectionDialogComponent } =
+      await import('../mini-games/game-selection-dialog.component');
     this.dialog.open(GameSelectionDialogComponent, { maxWidth: '95vw', panelClass: 'dark-dialog' });
   }
 
   openShop(): void {
     this.moreOpen.set(false);
-    this.dialog.open(ShopDialogComponent, { maxWidth: '95vw', maxHeight: '92vh', panelClass: 'dark-dialog' });
+    this.dialog.open(ShopDialogComponent, {
+      maxWidth: '95vw',
+      maxHeight: '92vh',
+      panelClass: 'dark-dialog',
+    });
   }
 
   initials(name: string): string {
-    return (name || '?').replace(/[^A-Za-zÄÖÜäöü0-9]/g, '').slice(0, 2).toUpperCase() || '?';
+    return (
+      (name || '?')
+        .replace(/[^A-Za-zÄÖÜäöü0-9]/g, '')
+        .slice(0, 2)
+        .toUpperCase() || '?'
+    );
   }
 }

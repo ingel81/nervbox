@@ -99,7 +99,7 @@ export class WeinfestShooterEngine {
       'guy_arm_down.png',
     ];
 
-    const loadPromises = assets.map(asset => {
+    const loadPromises = assets.map((asset) => {
       return new Promise<void>((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
@@ -190,7 +190,7 @@ export class WeinfestShooterEngine {
 
     // Spawn new throwers/bottles - only one at a time
     this.lastSpawnTime += deltaTime;
-    const hasActiveThrower = this.throwers.some(t => t.state !== 'idle');
+    const hasActiveThrower = this.throwers.some((t) => t.state !== 'idle');
     if (this.lastSpawnTime >= this.spawnInterval && !hasActiveThrower) {
       this.spawnThrower();
       this.lastSpawnTime = 0;
@@ -211,8 +211,8 @@ export class WeinfestShooterEngine {
     }
 
     // Cleanup done bottles
-    this.bottles = this.bottles.filter(b => b.state !== 'done');
-    this.throwers = this.throwers.filter(t => t.state !== 'idle' || t.targetBottle !== null);
+    this.bottles = this.bottles.filter((b) => b.state !== 'done');
+    this.throwers = this.throwers.filter((t) => t.state !== 'idle' || t.targetBottle !== null);
   }
 
   private spawnThrower(): void {
@@ -265,7 +265,7 @@ export class WeinfestShooterEngine {
 
     // Remove idle throwers without bottles
     this.throwers = this.throwers.filter(
-      t => t.state !== 'idle' || (t.targetBottle && t.targetBottle.state === 'flying')
+      (t) => t.state !== 'idle' || (t.targetBottle && t.targetBottle.state === 'flying'),
     );
   }
 
@@ -480,8 +480,8 @@ export class WeinfestShooterEngine {
       const baseY = this.height - h + 10;
 
       // Leichte Bewegung in Richtung Maus (max 15px)
-      const offsetX = ((this.mousePos.x / this.width) - 0.5) * 30;
-      const offsetY = ((this.mousePos.y / this.height) - 0.5) * 15;
+      const offsetX = (this.mousePos.x / this.width - 0.5) * 30;
+      const offsetY = (this.mousePos.y / this.height - 0.5) * 15;
 
       this.ctx.drawImage(img, baseX + offsetX, baseY + offsetY, w, h);
     }

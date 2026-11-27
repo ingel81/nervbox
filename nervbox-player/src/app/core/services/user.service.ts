@@ -25,21 +25,21 @@ export class UserService {
 
     return this.api.get<UserAdmin[]>('/users/admin').pipe(
       tap({
-        next: users => {
+        next: (users) => {
           this.users.set(users);
           this.loading.set(false);
         },
-        error: err => {
+        error: (err) => {
           this.error.set(err.message || 'Failed to load users');
           this.loading.set(false);
         },
-      })
+      }),
     );
   }
 
   createUser(data: AdminCreateUserRequest): Observable<User> {
     return this.api.post<User>('/users/admin', data).pipe(
-      tap(newUser => {
+      tap((newUser) => {
         // Add to local state as UserAdmin
         const userAdmin: UserAdmin = {
           id: newUser.id,
@@ -52,16 +52,16 @@ export class UserService {
           createdAt: newUser.createdAt || new Date().toISOString(),
           credits: 0,
         };
-        this.users.update(users => [...users, userAdmin]);
-      })
+        this.users.update((users) => [...users, userAdmin]);
+      }),
     );
   }
 
   updateUser(id: number, data: AdminUpdateUserRequest): Observable<User> {
     return this.api.put<User>(`/users/admin/${id}`, data).pipe(
-      tap(updatedUser => {
-        this.users.update(users =>
-          users.map(u =>
+      tap((updatedUser) => {
+        this.users.update((users) =>
+          users.map((u) =>
             u.id === id
               ? {
                   ...u,
@@ -70,10 +70,10 @@ export class UserService {
                   role: updatedUser.role,
                   isActive: data.isActive ?? u.isActive,
                 }
-              : u
-          )
+              : u,
+          ),
         );
-      })
+      }),
     );
   }
 
@@ -84,16 +84,18 @@ export class UserService {
   toggleUserActive(id: number): Observable<{ success: boolean }> {
     return this.api.put<{ success: boolean }>(`/users/admin/${id}/toggle-active`).pipe(
       tap(() => {
-        this.users.update(users => users.map(u => (u.id === id ? { ...u, isActive: !u.isActive } : u)));
-      })
+        this.users.update((users) =>
+          users.map((u) => (u.id === id ? { ...u, isActive: !u.isActive } : u)),
+        );
+      }),
     );
   }
 
   deleteUser(id: number): Observable<{ success: boolean }> {
     return this.api.delete<{ success: boolean }>(`/users/admin/${id}`).pipe(
       tap(() => {
-        this.users.update(users => users.filter(u => u.id !== id));
-      })
+        this.users.update((users) => users.filter((u) => u.id !== id));
+      }),
     );
   }
 }

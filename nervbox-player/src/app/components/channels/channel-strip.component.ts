@@ -33,11 +33,21 @@ interface ChannelView {
     <footer class="nk-foot strip" aria-label="Läuft gerade">
       <div class="strip-count">
         <span class="nk-label">Kanäle · läuft</span>
-        <span class="nk-counter" [attr.aria-label]="busy() + ' von ' + total + ' Kanälen laufen'">{{ busy() }} / {{ total }}</span>
+        <span class="nk-counter" [attr.aria-label]="busy() + ' von ' + total + ' Kanälen laufen'"
+          >{{ busy() }} / {{ total }}</span
+        >
       </div>
       <div class="strip-channels">
         @for (c of view(); track c.n) {
-          <div [class]="c.free ? 'nk-channel' : c.own ? 'nk-channel nk-channel--own' : 'nk-channel nk-channel--other'">
+          <div
+            [class]="
+              c.free
+                ? 'nk-channel'
+                : c.own
+                  ? 'nk-channel nk-channel--own'
+                  : 'nk-channel nk-channel--other'
+            "
+          >
             <span class="nk-channel__meter" aria-hidden="true">
               <span class="nk-meter">
                 @for (s of c.segs; track $index) {
@@ -53,7 +63,16 @@ interface ChannelView {
             <div class="nk-channel__body">
               <span class="nk-channel__head">
                 <span class="nk-channel__num">{{ c.n }}</span>
-                <span [class]="c.free ? 'nk-avatar nk-avatar--free' : c.own ? 'nk-avatar nk-avatar--own' : 'nk-avatar nk-avatar--other'">{{ c.initials }}</span>
+                <span
+                  [class]="
+                    c.free
+                      ? 'nk-avatar nk-avatar--free'
+                      : c.own
+                        ? 'nk-avatar nk-avatar--own'
+                        : 'nk-avatar nk-avatar--other'
+                  "
+                  >{{ c.initials }}</span
+                >
                 <span class="nk-channel__user">{{ c.user }}</span>
               </span>
               <span class="nk-channel__strip">{{ c.sound }}</span>
@@ -69,12 +88,21 @@ interface ChannelView {
           [disabled]="!nowPlaying.lastOwnHash()"
           matTooltip="Letzten eigenen Sound nochmal spielen"
           (click)="again.emit()"
-        >↻ NOCHMAL</button>
+        >
+          ↻ NOCHMAL
+        </button>
       }
       @if (isAdmin()) {
         <div class="nk-guard strip-guard">
           <span class="nk-guard__label">NUR ADMIN</span>
-          <button type="button" class="nk-key nk-key--danger" matTooltip="Alle laufenden Sounds stoppen" (click)="killAll.emit()">■ ALLE STOPPEN</button>
+          <button
+            type="button"
+            class="nk-key nk-key--danger"
+            matTooltip="Alle laufenden Sounds stoppen"
+            (click)="killAll.emit()"
+          >
+            ■ ALLE STOPPEN
+          </button>
         </div>
       }
     </footer>
@@ -150,7 +178,16 @@ export class ChannelStripComponent {
   }
 
   private freeView(n: number): ChannelView {
-    return { n, free: true, own: false, user: 'frei', initials: '', sound: '—', time: 'kein Signal', segs: this.segs(0) };
+    return {
+      n,
+      free: true,
+      own: false,
+      user: 'frei',
+      initials: '',
+      sound: '—',
+      time: 'kein Signal',
+      segs: this.segs(0),
+    };
   }
 
   private segs(level: number): string[] {
@@ -166,7 +203,12 @@ export class ChannelStripComponent {
   }
 
   private initials(name: string): string {
-    return (name || '?').replace(/[^A-Za-zÄÖÜäöü0-9]/g, '').slice(0, 2).toUpperCase() || '?';
+    return (
+      (name || '?')
+        .replace(/[^A-Za-zÄÖÜäöü0-9]/g, '')
+        .slice(0, 2)
+        .toUpperCase() || '?'
+    );
   }
 
   private fmt(ms: number): string {

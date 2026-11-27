@@ -8,88 +8,113 @@
   hint="ESC = Beenden?"
   (closed)="exitGame()"
 >
-<div class="slot-machine-container">
-  <!-- Main Content -->
-  <div class="main-content">
-    <!-- Left: Slot Machine -->
-    <div class="slot-section">
-      <div class="canvas-container">
-        <canvas #gameCanvas></canvas>
+  <div class="slot-machine-container">
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Left: Slot Machine -->
+      <div class="slot-section">
+        <div class="canvas-container">
+          <canvas #gameCanvas></canvas>
 
-        @if (showWinAnimation()) {
-          <div class="win-overlay">
-            <div class="win-message neon-text">
-              <div class="win-title">{{ lastWinMessage() }}</div>
-              <div class="win-amount">+{{ lastWinAmount() }} N$</div>
+          @if (showWinAnimation()) {
+            <div class="win-overlay">
+              <div class="win-message neon-text">
+                <div class="win-title">{{ lastWinMessage() }}</div>
+                <div class="win-amount">+{{ lastWinAmount() }} N$</div>
+              </div>
             </div>
-          </div>
-        }
+          }
 
-        @if (showLoseAnimation()) {
-          <div class="lose-overlay">
-            <div class="lose-message">
-              <div class="lose-title">VERLOREN</div>
-              <div class="lose-amount">-{{ betAmount() }} N$</div>
+          @if (showLoseAnimation()) {
+            <div class="lose-overlay">
+              <div class="lose-message">
+                <div class="lose-title">VERLOREN</div>
+                <div class="lose-amount">-{{ betAmount() }} N$</div>
+              </div>
             </div>
-          </div>
-        }
+          }
 
-        @if (isSpinning()) {
-          <div class="spinning-indicator">
-            <span class="spinner-text neon-text">SPINNING...</span>
-          </div>
-        }
+          @if (isSpinning()) {
+            <div class="spinning-indicator">
+              <span class="spinner-text neon-text">SPINNING...</span>
+            </div>
+          }
+        </div>
+
+        <button mat-raised-button class="spin-btn" (click)="spin()" [disabled]="!canSpin()">
+          <mat-icon class="spin-icon">play_arrow</mat-icon>
+          <span>SPIN!</span>
+        </button>
       </div>
 
-      <button mat-raised-button class="spin-btn" (click)="spin()" [disabled]="!canSpin()">
-        <mat-icon class="spin-icon">play_arrow</mat-icon>
-        <span>SPIN!</span>
-      </button>
-    </div>
+      <!-- Middle: Balance & Bet -->
+      <div class="controls-section">
+        <div class="balance-card">
+          <div class="card-label">BALANCE</div>
+          <div class="card-value">
+            <img src="icons/nervbox-coin.svg" alt="" class="coin-icon" />
+            <span>{{ displayedBalance() }} N$</span>
+          </div>
+        </div>
 
-    <!-- Middle: Balance & Bet -->
-    <div class="controls-section">
-      <div class="balance-card">
-        <div class="card-label">BALANCE</div>
-        <div class="card-value">
-          <img src="icons/nervbox-coin.svg" alt="" class="coin-icon">
-          <span>{{ displayedBalance() }} N$</span>
+        <div class="bet-card">
+          <div class="card-label">BET</div>
+          <div class="bet-row">
+            <button
+              mat-icon-button
+              class="bet-btn"
+              (click)="decreaseBet()"
+              [disabled]="betAmount() <= minBet || isSpinning()"
+            >
+              <mat-icon>remove</mat-icon>
+            </button>
+            <span class="bet-value">{{ betAmount() }} N$</span>
+            <button
+              mat-icon-button
+              class="bet-btn"
+              (click)="increaseBet()"
+              [disabled]="betAmount() >= maxBet || isSpinning()"
+            >
+              <mat-icon>add</mat-icon>
+            </button>
+          </div>
         </div>
       </div>
 
-      <div class="bet-card">
-        <div class="card-label">BET</div>
-        <div class="bet-row">
-          <button mat-icon-button class="bet-btn" (click)="decreaseBet()" [disabled]="betAmount() <= minBet || isSpinning()">
-            <mat-icon>remove</mat-icon>
-          </button>
-          <span class="bet-value">{{ betAmount() }} N$</span>
-          <button mat-icon-button class="bet-btn" (click)="increaseBet()" [disabled]="betAmount() >= maxBet || isSpinning()">
-            <mat-icon>add</mat-icon>
-          </button>
+      <!-- Right: Paytable -->
+      <div class="paytable-section">
+        <div class="paytable-card">
+          <div class="card-label">PAYTABLE</div>
+          <table class="paytable">
+            <tr class="jackpot">
+              <td>🌭🌭🌭</td>
+              <td>50x</td>
+            </tr>
+            <tr>
+              <td>👑👑👑</td>
+              <td>25x</td>
+            </tr>
+            <tr>
+              <td>7️⃣7️⃣7️⃣</td>
+              <td>15x</td>
+            </tr>
+            <tr>
+              <td>💎💎💎</td>
+              <td>8x</td>
+            </tr>
+            <tr>
+              <td>🎰🎰🎰</td>
+              <td>5x</td>
+            </tr>
+            <tr>
+              <td>🍒🍒🍒</td>
+              <td>3x</td>
+            </tr>
+          </table>
         </div>
-      </div>
-    </div>
-
-    <!-- Right: Paytable -->
-    <div class="paytable-section">
-      <div class="paytable-card">
-        <div class="card-label">PAYTABLE</div>
-        <table class="paytable">
-          <tr class="jackpot"><td>🌭🌭🌭</td><td>50x</td></tr>
-          <tr><td>👑👑👑</td><td>25x</td></tr>
-          <tr><td>7️⃣7️⃣7️⃣</td><td>15x</td></tr>
-          <tr><td>💎💎💎</td><td>8x</td></tr>
-          <tr><td>🎰🎰🎰</td><td>5x</td></tr>
-          <tr><td>🍒🍒🍒</td><td>3x</td></tr>
-        </table>
       </div>
     </div>
   </div>
-</div>
 
-  <app-game-exit-confirm
-    [hint]="exitHint()"
-    (exit)="exitGame()"
-  />
+  <app-game-exit-confirm [hint]="exitHint()" (exit)="exitGame()" />
 </app-game-frame>

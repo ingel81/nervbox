@@ -28,50 +28,123 @@ import { AuthService } from '../../core/services/auth.service';
     <form class="nk-dlg" (ngSubmit)="onSubmit()" autocomplete="on">
       <header class="nk-dialog__head">
         <h2 class="nk-dialog__title">Registrieren</h2>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="Schließen" (click)="onCancel()">✕</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon"
+          aria-label="Schließen"
+          (click)="onCancel()"
+        >
+          ✕
+        </button>
       </header>
       <div class="nk-dialog__body">
         <label class="nk-field">
           <span class="nk-label">Benutzername</span>
           <span class="nk-input">
-            <input class="nk-input__field" [(ngModel)]="username" name="username" autocomplete="username" required minlength="3" aria-label="Benutzername" />
+            <input
+              class="nk-input__field"
+              [(ngModel)]="username"
+              name="username"
+              autocomplete="username"
+              required
+              minlength="3"
+              aria-label="Benutzername"
+            />
           </span>
         </label>
         <div class="nk-field-row">
           <label class="nk-field">
             <span class="nk-label">Vorname</span>
-            <span class="nk-input"><input class="nk-input__field" [(ngModel)]="firstname" name="firstname" autocomplete="given-name" aria-label="Vorname" /></span>
+            <span class="nk-input"
+              ><input
+                class="nk-input__field"
+                [(ngModel)]="firstname"
+                name="firstname"
+                autocomplete="given-name"
+                aria-label="Vorname"
+            /></span>
           </label>
           <label class="nk-field">
             <span class="nk-label">Nachname</span>
-            <span class="nk-input"><input class="nk-input__field" [(ngModel)]="lastname" name="lastname" autocomplete="family-name" aria-label="Nachname" /></span>
+            <span class="nk-input"
+              ><input
+                class="nk-input__field"
+                [(ngModel)]="lastname"
+                name="lastname"
+                autocomplete="family-name"
+                aria-label="Nachname"
+            /></span>
           </label>
         </div>
         <label class="nk-field">
           <span class="nk-label">Passwort</span>
           <span class="nk-input">
-            <input class="nk-input__field" [type]="hidePassword() ? 'password' : 'text'" [(ngModel)]="password" name="password" autocomplete="new-password" required minlength="6" aria-label="Passwort" />
-            <button type="button" class="nk-input__eye" [attr.aria-label]="hidePassword() ? 'Passwort anzeigen' : 'Passwort verbergen'" (click)="hidePassword.set(!hidePassword())">
+            <input
+              class="nk-input__field"
+              [type]="hidePassword() ? 'password' : 'text'"
+              [(ngModel)]="password"
+              name="password"
+              autocomplete="new-password"
+              required
+              minlength="6"
+              aria-label="Passwort"
+            />
+            <button
+              type="button"
+              class="nk-input__eye"
+              [attr.aria-label]="hidePassword() ? 'Passwort anzeigen' : 'Passwort verbergen'"
+              (click)="hidePassword.set(!hidePassword())"
+            >
               <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
             </button>
           </span>
         </label>
         <label class="nk-field">
           <span class="nk-label">Passwort bestätigen</span>
-          <span class="nk-input" [class.nk-input--error]="!!confirmPassword && confirmPassword !== password">
-            <input class="nk-input__field" [type]="hidePassword() ? 'password' : 'text'" [(ngModel)]="confirmPassword" name="confirmPassword" autocomplete="new-password" required aria-label="Passwort bestätigen" />
+          <span
+            class="nk-input"
+            [class.nk-input--error]="!!confirmPassword && confirmPassword !== password"
+          >
+            <input
+              class="nk-input__field"
+              [type]="hidePassword() ? 'password' : 'text'"
+              [(ngModel)]="confirmPassword"
+              name="confirmPassword"
+              autocomplete="new-password"
+              required
+              aria-label="Passwort bestätigen"
+            />
           </span>
         </label>
-        <button type="button" role="checkbox" [attr.aria-checked]="terms" [class]="terms ? 'nk-check nk-check--on dlg-check' : 'nk-check dlg-check'" (click)="terms = !terms">
-          <span class="nk-check__box" aria-hidden="true">✓</span>Ich akzeptiere die Nutzungsbedingungen
+        <button
+          type="button"
+          role="checkbox"
+          [attr.aria-checked]="terms"
+          [class]="terms ? 'nk-check nk-check--on dlg-check' : 'nk-check dlg-check'"
+          (click)="terms = !terms"
+        >
+          <span class="nk-check__box" aria-hidden="true">✓</span>Ich akzeptiere die
+          Nutzungsbedingungen
         </button>
-        <span class="nk-field__hint dlg-info"><span class="nk-led nk-led--dot nk-led--warn" aria-hidden="true"></span>Pro IP-Adresse ist nur ein Account erlaubt.</span>
+        <span class="nk-field__hint dlg-info"
+          ><span class="nk-led nk-led--dot nk-led--warn" aria-hidden="true"></span>Pro IP-Adresse
+          ist nur ein Account erlaubt.</span
+        >
         @if (error()) {
-          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert"><span class="nk-toast__text">{{ error() }}</span></div>
+          <div class="nk-toast nk-toast--error nk-toast--inline" role="alert">
+            <span class="nk-toast__text">{{ error() }}</span>
+          </div>
         }
       </div>
       <footer class="nk-dialog__foot">
-        <button type="button" class="nk-key nk-key--ghost" (click)="onCancel()" [disabled]="loading()">Abbrechen</button>
+        <button
+          type="button"
+          class="nk-key nk-key--ghost"
+          (click)="onCancel()"
+          [disabled]="loading()"
+        >
+          Abbrechen
+        </button>
         <button type="submit" class="nk-key nk-key--accent" [disabled]="loading() || !isValid()">
           @if (loading()) {
             <span class="nk-spin" aria-hidden="true"></span>

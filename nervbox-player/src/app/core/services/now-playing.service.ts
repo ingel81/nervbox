@@ -56,7 +56,7 @@ export class NowPlayingService {
   readonly channels = computed(() => {
     const now = this.now();
     return this.channelsInternal().filter(
-      c => now < c.startedAt + Math.max(c.durationMs, MIN_VISIBLE_MS),
+      (c) => now < c.startedAt + Math.max(c.durationMs, MIN_VISIBLE_MS),
     );
   });
 
@@ -103,7 +103,7 @@ export class NowPlayingService {
       if (first) this.seen.delete(first);
     }
 
-    const sound = this.soundService.sounds().find(s => s.hash === ev.soundHash);
+    const sound = this.soundService.sounds().find((s) => s.hash === ev.soundHash);
     const me = this.auth.currentUser();
     const own = !!me && ev.initiator?.id === me.id;
     const channel: PlayingChannel = {
@@ -118,13 +118,15 @@ export class NowPlayingService {
     };
     if (own) this.lastOwnHash.set(ev.soundHash);
 
-    this.channelsInternal.update(list => [...this.prune(list), channel].slice(-CHANNEL_COUNT * 2));
+    this.channelsInternal.update((list) =>
+      [...this.prune(list), channel].slice(-CHANNEL_COUNT * 2),
+    );
     this.startTimer();
   }
 
   private prune(list: PlayingChannel[]): PlayingChannel[] {
     const now = Date.now();
-    return list.filter(c => now < c.startedAt + Math.max(c.durationMs, MIN_VISIBLE_MS));
+    return list.filter((c) => now < c.startedAt + Math.max(c.durationMs, MIN_VISIBLE_MS));
   }
 
   private startTimer(): void {

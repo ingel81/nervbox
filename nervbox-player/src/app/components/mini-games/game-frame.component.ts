@@ -49,7 +49,9 @@ export interface GameStat {
   template: `
     <div class="nk-gf__scroll" #scroll>
       <header class="nk-gf__head">
-        <span class="nk-gf__lens" aria-hidden="true"><mat-icon>{{ icon() }}</mat-icon></span>
+        <span class="nk-gf__lens" aria-hidden="true"
+          ><mat-icon>{{ icon() }}</mat-icon></span
+        >
         <h2 class="nk-gf__title">{{ title() }}</h2>
         @if (stats().length) {
           <div class="nk-gf__lcd">
@@ -64,7 +66,9 @@ export interface GameStat {
                     <span class="nk-gf__pips" [attr.aria-label]="s.label + ' ' + s.pips">
                       @for (i of pipRange(s); track $index) {
                         @if (s.pipIcon) {
-                          <mat-icon class="nk-gf__pip-ico" [class.nk-gf__pip--off]="i >= s.pips!">{{ s.pipIcon }}</mat-icon>
+                          <mat-icon class="nk-gf__pip-ico" [class.nk-gf__pip--off]="i >= s.pips!">{{
+                            s.pipIcon
+                          }}</mat-icon>
                         } @else {
                           <span class="nk-gf__pip" [class.nk-gf__pip--off]="i >= s.pips!"></span>
                         }
@@ -83,7 +87,9 @@ export interface GameStat {
           class="nk-key nk-key--sm nk-key--icon nk-gf__close"
           aria-label="Spiel schließen"
           (click)="closed.emit()"
-        >✕</button>
+        >
+          ✕
+        </button>
       </header>
 
       <div class="nk-gf__screen">
@@ -92,7 +98,12 @@ export interface GameStat {
 
       <footer class="nk-gf__foot">
         @if (pausable()) {
-          <button type="button" class="nk-key nk-key--sm" [disabled]="pauseDisabled()" (click)="pauseToggle.emit()">
+          <button
+            type="button"
+            class="nk-key nk-key--sm"
+            [disabled]="pauseDisabled()"
+            (click)="pauseToggle.emit()"
+          >
             <mat-icon>pause</mat-icon>Pause
           </button>
         }

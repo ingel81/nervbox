@@ -27,6 +27,6 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
         window.location.reload();
       }
       return throwError(() => error);
-    })
+    }),
   );
 };

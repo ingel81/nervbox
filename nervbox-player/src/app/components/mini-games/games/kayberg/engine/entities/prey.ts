@@ -21,7 +21,7 @@ export class PreyEntity {
   constructor(
     type: PreyType,
     position: THREE.Vector3,
-    getTerrainHeight: (x: number, z: number) => number
+    getTerrainHeight: (x: number, z: number) => number,
   ) {
     this.type = type;
     this.config = PREY_CONFIGS[type];
@@ -30,9 +30,10 @@ export class PreyEntity {
     this.getTerrainHeight = getTerrainHeight;
 
     // Set base height
-    this.baseHeight = this.config.flightHeight > 0
-      ? position.y + this.config.flightHeight
-      : getTerrainHeight(position.x, position.z);
+    this.baseHeight =
+      this.config.flightHeight > 0
+        ? position.y + this.config.flightHeight
+        : getTerrainHeight(position.x, position.z);
 
     this.position.y = this.baseHeight;
 
@@ -135,11 +136,17 @@ export class PreyEntity {
     // Inner ears
     const innerEarGeom = new THREE.SphereGeometry(0.15, 8, 8);
     innerEarGeom.scale(1, 1, 0.2);
-    const innerLeftEar = new THREE.Mesh(innerEarGeom, new THREE.MeshLambertMaterial({ color: 0xff9999 }));
+    const innerLeftEar = new THREE.Mesh(
+      innerEarGeom,
+      new THREE.MeshLambertMaterial({ color: 0xff9999 }),
+    );
     innerLeftEar.position.set(1.0, 0.5, 0.32);
     innerLeftEar.rotation.x = 0.3;
     group.add(innerLeftEar);
-    const innerRightEar = new THREE.Mesh(innerEarGeom, new THREE.MeshLambertMaterial({ color: 0xff9999 }));
+    const innerRightEar = new THREE.Mesh(
+      innerEarGeom,
+      new THREE.MeshLambertMaterial({ color: 0xff9999 }),
+    );
     innerRightEar.position.set(1.0, 0.5, -0.32);
     innerRightEar.rotation.x = -0.3;
     group.add(innerRightEar);
@@ -289,7 +296,10 @@ export class PreyEntity {
     innerEarShape.quadraticCurveTo(0.08, 0.45, 0.05, 0.85);
     innerEarShape.quadraticCurveTo(0, 0.9, -0.05, 0.85);
     innerEarShape.quadraticCurveTo(-0.08, 0.45, 0, 0.1);
-    const innerEarGeom = new THREE.ExtrudeGeometry(innerEarShape, { depth: 0.02, bevelEnabled: false });
+    const innerEarGeom = new THREE.ExtrudeGeometry(innerEarShape, {
+      depth: 0.02,
+      bevelEnabled: false,
+    });
 
     const innerLeftEar = new THREE.Mesh(innerEarGeom, innerEarMaterial);
     innerLeftEar.position.set(0.7, 0.72, 0.2);
@@ -346,7 +356,7 @@ export class PreyEntity {
       fluff.position.set(
         -1.0 + Math.cos(angle) * 0.15,
         0.1 + Math.sin(angle) * 0.1,
-        Math.sin(angle) * 0.1
+        Math.sin(angle) * 0.1,
       );
       group.add(fluff);
     }
@@ -394,10 +404,16 @@ export class PreyEntity {
 
     // Eyes
     const eyeGeometry = new THREE.SphereGeometry(0.08, 8, 8);
-    const leftEye = new THREE.Mesh(eyeGeometry, isPigeon ? new THREE.MeshLambertMaterial({ color: 0xff6600 }) : blackMaterial);
+    const leftEye = new THREE.Mesh(
+      eyeGeometry,
+      isPigeon ? new THREE.MeshLambertMaterial({ color: 0xff6600 }) : blackMaterial,
+    );
     leftEye.position.set(1.05, 0.35, 0.2);
     group.add(leftEye);
-    const rightEye = new THREE.Mesh(eyeGeometry, isPigeon ? new THREE.MeshLambertMaterial({ color: 0xff6600 }) : blackMaterial);
+    const rightEye = new THREE.Mesh(
+      eyeGeometry,
+      isPigeon ? new THREE.MeshLambertMaterial({ color: 0xff6600 }) : blackMaterial,
+    );
     rightEye.position.set(1.05, 0.35, -0.2);
     group.add(rightEye);
 
@@ -459,7 +475,7 @@ export class PreyEntity {
 
     // Wing tips (primary feathers)
     const darkWingMaterial = new THREE.MeshLambertMaterial({
-      color: isPigeon ? 0x444444 : 0x222244
+      color: isPigeon ? 0x444444 : 0x222244,
     });
     for (let i = 0; i < 4; i++) {
       const featherGeom = new THREE.BoxGeometry(0.25 - i * 0.03, 0.04, 0.2);
@@ -475,7 +491,9 @@ export class PreyEntity {
     }
 
     // Tail (fan shaped)
-    const tailBaseMat = isPigeon ? new THREE.MeshLambertMaterial({ color: 0x555555 }) : bodyMaterial;
+    const tailBaseMat = isPigeon
+      ? new THREE.MeshLambertMaterial({ color: 0x555555 })
+      : bodyMaterial;
     for (let i = 0; i < 5; i++) {
       const tailFeatherGeom = new THREE.BoxGeometry(0.4, 0.03, 0.12);
       const tailFeather = new THREE.Mesh(tailFeatherGeom, tailBaseMat);
@@ -566,9 +584,7 @@ export class PreyEntity {
 
     // Keep within bounds
     const maxDist = 85;
-    const dist = Math.sqrt(
-      this.position.x * this.position.x + this.position.z * this.position.z
-    );
+    const dist = Math.sqrt(this.position.x * this.position.x + this.position.z * this.position.z);
     if (dist > maxDist) {
       // Turn around
       this.wanderAngle = Math.atan2(-this.position.z, -this.position.x);
@@ -590,9 +606,7 @@ export class PreyEntity {
     this.fleeTimer = 3000;
 
     // Calculate flee direction (away from threat)
-    const fleeDir = new THREE.Vector3()
-      .subVectors(this.position, position)
-      .normalize();
+    const fleeDir = new THREE.Vector3().subVectors(this.position, position).normalize();
     this.wanderAngle = Math.atan2(fleeDir.z, fleeDir.x);
   }
 

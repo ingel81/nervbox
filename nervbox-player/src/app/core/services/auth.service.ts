@@ -28,15 +28,15 @@ export class AuthService {
   readonly isLoggedIn = computed(() => this.currentUser() !== null);
 
   login(credentials: LoginRequest): Observable<User> {
-    return this.api.post<User>('/users/auth/login', credentials).pipe(
-      tap(response => this.handleAuthSuccess(response.token))
-    );
+    return this.api
+      .post<User>('/users/auth/login', credentials)
+      .pipe(tap((response) => this.handleAuthSuccess(response.token)));
   }
 
   register(data: RegisterRequest): Observable<User> {
-    return this.api.post<User>('/users/auth/register', data).pipe(
-      tap(response => this.handleAuthSuccess(response.token))
-    );
+    return this.api
+      .post<User>('/users/auth/register', data)
+      .pipe(tap((response) => this.handleAuthSuccess(response.token)));
   }
 
   logout(): void {

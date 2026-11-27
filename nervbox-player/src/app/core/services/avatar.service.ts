@@ -31,13 +31,15 @@ export class AvatarService {
     formData.append('file', file, 'avatar.png');
 
     return this.api.postFormData<AvatarUploadResponse>('/users/avatar', formData).pipe(
-      tap(response => {
+      tap((response) => {
         if (response.success && response.avatarUrl) {
           // Add cache buster to force refresh
-          this.currentUserAvatarUrl.set(`${environment.apiUrl}${response.avatarUrl}?t=${Date.now()}`);
+          this.currentUserAvatarUrl.set(
+            `${environment.apiUrl}${response.avatarUrl}?t=${Date.now()}`,
+          );
           this.userCache.reloadUsers().subscribe();
         }
-      })
+      }),
     );
   }
 
@@ -49,7 +51,7 @@ export class AvatarService {
       tap(() => {
         this.currentUserAvatarUrl.set(null);
         this.userCache.reloadUsers().subscribe();
-      })
+      }),
     );
   }
 
@@ -58,13 +60,15 @@ export class AvatarService {
    */
   getMyAvatarUrl(): Observable<AvatarUrlResponse> {
     return this.api.get<AvatarUrlResponse>('/users/avatar').pipe(
-      tap(response => {
+      tap((response) => {
         if (response.avatarUrl) {
-          this.currentUserAvatarUrl.set(`${environment.apiUrl}${response.avatarUrl}?t=${Date.now()}`);
+          this.currentUserAvatarUrl.set(
+            `${environment.apiUrl}${response.avatarUrl}?t=${Date.now()}`,
+          );
         } else {
           this.currentUserAvatarUrl.set(null);
         }
-      })
+      }),
     );
   }
 

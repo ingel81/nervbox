@@ -76,9 +76,7 @@ export class ProjectileEntity {
     }
 
     // Check bounds
-    const dist = Math.sqrt(
-      this.position.x * this.position.x + this.position.z * this.position.z
-    );
+    const dist = Math.sqrt(this.position.x * this.position.x + this.position.z * this.position.z);
     if (dist > 150) {
       this.deactivate();
       return;

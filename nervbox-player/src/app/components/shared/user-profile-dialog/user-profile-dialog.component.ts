@@ -50,7 +50,9 @@ interface UserProfile {
   template: `
     <div class="nk-dlg pf">
       @if (loading()) {
-        <div class="pf-state"><span class="nk-spin" aria-hidden="true"></span>Profil wird geladen …</div>
+        <div class="pf-state">
+          <span class="nk-spin" aria-hidden="true"></span>Profil wird geladen …
+        </div>
       } @else if (error()) {
         <div class="pf-state pf-state--col">
           <span>Profil konnte nicht geladen werden</span>
@@ -58,7 +60,12 @@ interface UserProfile {
         </div>
       } @else if (profile(); as p) {
         <header class="nk-dialog__head pf-head">
-          <app-user-avatar class="pf-avatar" [userId]="data.userId" size="large" [clickable]="false" />
+          <app-user-avatar
+            class="pf-avatar"
+            [userId]="data.userId"
+            size="large"
+            [clickable]="false"
+          />
           <div class="pf-who">
             <h2 class="nk-dialog__title pf-name">{{ p.username }}</h2>
             @if (p.firstName || p.lastName) {
@@ -66,14 +73,27 @@ interface UserProfile {
             }
             <span class="pf-since">Dabei seit {{ formatDate(p.createdAt) }}</span>
           </div>
-          <button type="button" class="nk-key nk-key--sm nk-key--icon pf-close" aria-label="Profil schließen" (click)="dialogRef.close()">✕</button>
+          <button
+            type="button"
+            class="nk-key nk-key--sm nk-key--icon pf-close"
+            aria-label="Profil schließen"
+            (click)="dialogRef.close()"
+          >
+            ✕
+          </button>
         </header>
         <div class="nk-dialog__body pf-body">
           <div class="pf-left">
             <div class="pf-stats">
-              <div class="pf-stat"><b>{{ p.stats.soundCount }}</b><span>Sounds</span></div>
-              <div class="pf-stat"><b>{{ p.stats.totalPlays }}</b><span>Plays</span></div>
-              <div class="pf-stat"><b>{{ formatCredits(p.credits) }}</b><span>Shekel</span></div>
+              <div class="pf-stat">
+                <b>{{ p.stats.soundCount }}</b><span>Sounds</span>
+              </div>
+              <div class="pf-stat">
+                <b>{{ p.stats.totalPlays }}</b><span>Plays</span>
+              </div>
+              <div class="pf-stat">
+                <b>{{ formatCredits(p.credits) }}</b><span>Shekel</span>
+              </div>
             </div>
             <div class="nk-section">
               <h3 class="nk-section__title">Eigene Sounds</h3>
@@ -82,9 +102,13 @@ interface UserProfile {
                   @for (sound of p.sounds; track sound.hash) {
                     <div class="nk-row pf-row">
                       <mat-icon class="pf-note" aria-hidden="true">audiotrack</mat-icon>
-                      <span class="nk-row__main"><span class="nk-row__title pf-sound">{{ sound.name }}</span></span>
+                      <span class="nk-row__main"
+                        ><span class="nk-row__title pf-sound">{{ sound.name }}</span></span
+                      >
                       <span class="nk-row__meta">{{ sound.durationMs | duration }}</span>
-                      <span class="nk-row__meta pf-plays" matTooltip="Abgespielt">{{ sound.playCount }}x</span>
+                      <span class="nk-row__meta pf-plays" matTooltip="Abgespielt"
+                        >{{ sound.playCount }}x</span
+                      >
                     </div>
                   }
                 </div>
@@ -178,7 +202,11 @@ interface UserProfile {
       border-radius: 6px;
       color: var(--nk-lcd-ink);
       background: var(--nk-face-lcd);
-      box-shadow: inset 0 0 6px rgb(46 62 14 / 0.45), 0 0 0 3px #0b0a08, 1.5px 1.5px 0 3px rgb(255 226 176 / 0.18), 0 0 14px 3px rgb(196 220 112 / 0.2);
+      box-shadow:
+        inset 0 0 6px rgb(46 62 14 / 0.45),
+        0 0 0 3px #0b0a08,
+        1.5px 1.5px 0 3px rgb(255 226 176 / 0.18),
+        0 0 14px 3px rgb(196 220 112 / 0.2);
     }
     .pf-stat b {
       font: 400 32px/28px var(--nk-font-lcd);

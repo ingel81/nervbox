@@ -59,14 +59,25 @@ const KNOB_ANGLE: Record<SortOption, number> = {
 @Component({
   selector: 'app-toolbar',
   standalone: true,
-  imports: [FormsModule, MatIconModule, MatMenuModule, MatTooltipModule, MatDividerModule, UserAvatarComponent],
+  imports: [
+    FormsModule,
+    MatIconModule,
+    MatMenuModule,
+    MatTooltipModule,
+    MatDividerModule,
+    UserAvatarComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="nk-deck deck">
       <!-- Wortmarke -->
       <div class="nk-logo logo">
         <span class="nk-logo__stripes" aria-hidden="true">
-          <span class="nk-logo__stripe"></span><span class="nk-logo__stripe nk-logo__stripe--2"></span><span class="nk-logo__stripe nk-logo__stripe--3"></span><span class="nk-logo__stripe nk-logo__stripe--4"></span><span class="nk-logo__stripe nk-logo__stripe--5"></span>
+          <span class="nk-logo__stripe"></span
+          ><span class="nk-logo__stripe nk-logo__stripe--2"></span
+          ><span class="nk-logo__stripe nk-logo__stripe--3"></span
+          ><span class="nk-logo__stripe nk-logo__stripe--4"></span
+          ><span class="nk-logo__stripe nk-logo__stripe--5"></span>
         </span>
         <span class="nk-logo__word">NERVBOX</span>
         <span class="nk-logo__sub">30 JAHRE CABD · 1996–2026</span>
@@ -76,7 +87,19 @@ const KNOB_ANGLE: Record<SortOption, number> = {
       <div class="nk-ctl search-container">
         <span class="nk-label">Suche</span>
         <label class="nk-input deck-search">
-          <svg class="nk-input__icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+          <svg
+            class="nk-input__icon"
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="M20 20l-3.5-3.5"></path>
+          </svg>
           <input
             class="nk-input__field"
             type="text"
@@ -93,7 +116,9 @@ const KNOB_ANGLE: Record<SortOption, number> = {
             matTooltip="Suche leeren"
             [disabled]="!searchQuery"
             (click)="clearSearch()"
-          >✕</button>
+          >
+            ✕
+          </button>
         </label>
       </div>
 
@@ -114,7 +139,12 @@ const KNOB_ANGLE: Record<SortOption, number> = {
         </button>
         <mat-menu #sortMenu="matMenu" class="nk-mat-menu">
           @for (opt of sortOptions; track opt) {
-            <button mat-menu-item role="menuitemradio" [attr.aria-checked]="opt === currentSort()" (click)="onSortChange(opt)">
+            <button
+              mat-menu-item
+              role="menuitemradio"
+              [attr.aria-checked]="opt === currentSort()"
+              (click)="onSortChange(opt)"
+            >
               <span [class.deck-menu-current]="opt === currentSort()">{{ sortLabels[opt] }}</span>
             </button>
           }
@@ -130,7 +160,9 @@ const KNOB_ANGLE: Record<SortOption, number> = {
             class="nk-switch deck-switch"
             role="switch"
             [attr.aria-checked]="showFavoritesOnly()"
-            [attr.aria-label]="showFavoritesOnly() ? 'Alle Sounds anzeigen' : 'Nur Favoriten anzeigen'"
+            [attr.aria-label]="
+              showFavoritesOnly() ? 'Alle Sounds anzeigen' : 'Nur Favoriten anzeigen'
+            "
             [matTooltip]="showFavoritesOnly() ? 'Alle Sounds anzeigen' : 'Nur Favoriten anzeigen'"
             (click)="favoritesFilterToggle.emit()"
           >
@@ -148,14 +180,34 @@ const KNOB_ANGLE: Record<SortOption, number> = {
           matTooltip="Zufälligen Sound spielen"
           (click)="randomClick.emit()"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M9 9h.01M15 15h.01M15 9h.01M9 15h.01M12 12h.01" stroke-width="3" stroke-linecap="round"></path></svg>
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <rect x="4" y="4" width="16" height="16" rx="3"></rect>
+            <path
+              d="M9 9h.01M15 15h.01M15 9h.01M9 15h.01M12 12h.01"
+              stroke-width="3"
+              stroke-linecap="round"
+            ></path>
+          </svg>
         </button>
         <span class="nk-label">Zufall</span>
       </div>
 
       <!-- Konto-LCD -->
       @if (auth.isLoggedIn()) {
-        <div class="nk-lcd deck-lcd" [class.nk-lcd--low]="!creditService.canPlay()" role="group" aria-label="Konto">
+        <div
+          class="nk-lcd deck-lcd"
+          [class.nk-lcd--low]="!creditService.canPlay()"
+          role="group"
+          aria-label="Konto"
+        >
           <div class="nk-lcd__glass">
             <button
               type="button"
@@ -163,12 +215,16 @@ const KNOB_ANGLE: Record<SortOption, number> = {
               [matTooltip]="creditService.walletTooltip()"
               matTooltipClass="nk-tip-multiline"
               (mouseenter)="creditService.refreshIfStale()"
-              [attr.aria-label]="'Schekel-Funktionen öffnen, Kontostand ' + creditService.creditsFormatted() + ' N$'"
+              [attr.aria-label]="
+                'Schekel-Funktionen öffnen, Kontostand ' + creditService.creditsFormatted() + ' N$'
+              "
               (click)="openShekelPopover($event)"
             >
               <span class="nk-lcd__label">SCHEKEL (N$)</span>
               <span class="nk-lcd__value">
-                <span class="nk-lcd__ghost" aria-hidden="true">{{ ghost(creditService.creditsFormatted()) }}</span>
+                <span class="nk-lcd__ghost" aria-hidden="true">{{
+                  ghost(creditService.creditsFormatted())
+                }}</span>
                 <span class="nk-lcd__digits">{{ creditService.creditsFormatted() }}</span>
               </span>
               <span class="nk-lcd__label">{{ creditService.costPerPlay() }} N$/SOUND</span>
@@ -183,7 +239,9 @@ const KNOB_ANGLE: Record<SortOption, number> = {
             >
               <span class="nk-lcd__label">HOLZ</span>
               <span class="nk-lcd__value">
-                <span class="nk-lcd__ghost" aria-hidden="true">{{ ghost('' + inventoryService.wood()) }}</span>
+                <span class="nk-lcd__ghost" aria-hidden="true">{{
+                  ghost('' + inventoryService.wood())
+                }}</span>
                 <span class="nk-lcd__digits">{{ inventoryService.wood() }}</span>
               </span>
               <span class="nk-lcd__label">&nbsp;</span>
@@ -192,7 +250,9 @@ const KNOB_ANGLE: Record<SortOption, number> = {
               <span class="nk-lcd__div" aria-hidden="true"></span>
               <div class="nk-lcd__cell deck-income" matTooltip="Stündliches Einkommen">
                 <span class="nk-lcd__label">● ONLINE-BONUS</span>
-                <span class="nk-lcd__value nk-lcd__value--md">+{{ creditService.hourlyCreditsAmount() }} N$/h</span>
+                <span class="nk-lcd__value nk-lcd__value--md"
+                  >+{{ creditService.hourlyCreditsAmount() }} N$/h</span
+                >
                 <span class="nk-lcd__label">STÜNDLICH</span>
               </div>
             }
@@ -205,7 +265,10 @@ const KNOB_ANGLE: Record<SortOption, number> = {
       <!-- Funktionstasten -->
       <div class="deck-tools">
         <div class="nk-toolkey">
-          <span [class]="selectionMode() ? 'nk-led nk-led--own' : 'nk-led'" aria-hidden="true"></span>
+          <span
+            [class]="selectionMode() ? 'nk-led nk-led--own' : 'nk-led'"
+            aria-hidden="true"
+          ></span>
           <button
             type="button"
             data-tour="selection"
@@ -215,7 +278,17 @@ const KNOB_ANGLE: Record<SortOption, number> = {
             [matTooltip]="selectionMode() ? 'Auswahlmodus beenden' : 'Mehrfachauswahl'"
             (click)="selectionModeToggle.emit()"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6l2 2 3-3M4 13l2 2 3-3M12 7h8M12 14h8"></path></svg>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="M4 6l2 2 3-3M4 13l2 2 3-3M12 7h8M12 14h8"></path>
+            </svg>
             @if (selectionMode() && selectionCount() > 0) {
               <span class="nk-badge nk-badge--corner nk-badge--lamp">{{ selectionCount() }}</span>
             }
@@ -232,13 +305,18 @@ const KNOB_ANGLE: Record<SortOption, number> = {
               aria-label="Alle abwählen"
               matTooltip="Alle abwählen"
               (click)="clearSelection.emit()"
-            >✕</button>
+            >
+              ✕
+            </button>
             <span class="nk-toolkey__label">Abwählen</span>
           </div>
         }
 
         <div class="nk-toolkey">
-          <span [class]="hasSelection() ? 'nk-led nk-led--own nk-led--blink' : 'nk-led'" aria-hidden="true"></span>
+          <span
+            [class]="hasSelection() ? 'nk-led nk-led--own nk-led--blink' : 'nk-led'"
+            aria-hidden="true"
+          ></span>
           <button
             type="button"
             data-tour="mixer"
@@ -247,7 +325,19 @@ const KNOB_ANGLE: Record<SortOption, number> = {
             [matTooltip]="hasSelection() ? 'Auswahl im Mixer öffnen' : 'Mixer öffnen'"
             (click)="hasSelection() ? openSelectionInMixer.emit() : openMixer()"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"></path></svg>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path
+                d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"
+              ></path>
+            </svg>
           </button>
           <span class="nk-toolkey__label">{{ hasSelection() ? 'In Mixer' : 'Mixer' }}</span>
         </div>
@@ -255,15 +345,50 @@ const KNOB_ANGLE: Record<SortOption, number> = {
         @if (auth.currentUser()) {
           <div class="nk-toolkey">
             <span class="nk-led" aria-hidden="true"></span>
-            <button type="button" class="nk-key nk-key--icon" aria-label="Spielhalle (Minispiele)" matTooltip="Mini-Games – Earn N$" (click)="openGames()">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 8h12a4 4 0 014 4v1a4 4 0 01-4 4H6a4 4 0 01-4-4v-1a4 4 0 014-4zM7 11v3M5.5 12.5h3M16 12h.01M18 14h.01"></path></svg>
+            <button
+              type="button"
+              class="nk-key nk-key--icon"
+              aria-label="Spielhalle (Minispiele)"
+              matTooltip="Mini-Games – Earn N$"
+              (click)="openGames()"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M6 8h12a4 4 0 014 4v1a4 4 0 01-4 4H6a4 4 0 01-4-4v-1a4 4 0 014-4zM7 11v3M5.5 12.5h3M16 12h.01M18 14h.01"
+                ></path>
+              </svg>
             </button>
             <span class="nk-toolkey__label">Spielhalle</span>
           </div>
           <div class="nk-toolkey">
             <span class="nk-led" aria-hidden="true"></span>
-            <button type="button" class="nk-key nk-key--icon" aria-label="Shop" matTooltip="Shop" (click)="openShop()">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8zM9 8V6a3 3 0 016 0v2"></path></svg>
+            <button
+              type="button"
+              class="nk-key nk-key--icon"
+              aria-label="Shop"
+              matTooltip="Shop"
+              (click)="openShop()"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <path d="M5 8h14l-1 12H6L5 8zM9 8V6a3 3 0 016 0v2"></path>
+              </svg>
             </button>
             <span class="nk-toolkey__label">Shop</span>
           </div>
@@ -271,8 +396,25 @@ const KNOB_ANGLE: Record<SortOption, number> = {
 
         <div class="nk-toolkey">
           <span class="nk-led" aria-hidden="true"></span>
-          <button type="button" class="nk-key nk-key--icon" data-tour="stats" aria-label="Statistiken" matTooltip="Statistiken" (click)="statsClick.emit()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"></path></svg>
+          <button
+            type="button"
+            class="nk-key nk-key--icon"
+            data-tour="stats"
+            aria-label="Statistiken"
+            matTooltip="Statistiken"
+            (click)="statsClick.emit()"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="M5 20V10M12 20V4M19 20v-7"></path>
+            </svg>
           </button>
           <span class="nk-toolkey__label">Statistik</span>
         </div>
@@ -288,7 +430,17 @@ const KNOB_ANGLE: Record<SortOption, number> = {
             matTooltip="Chat"
             (click)="chatClick.emit()"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"></path></svg>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="M4 5h16v11H9l-5 4z"></path>
+            </svg>
           </button>
           <span class="nk-toolkey__label">Chat</span>
         </div>
@@ -305,21 +457,50 @@ const KNOB_ANGLE: Record<SortOption, number> = {
               matTooltip="Admin"
               [matMenuTriggerFor]="adminMenu"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"></path></svg>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"></path>
+              </svg>
             </button>
             <span class="nk-toolkey__label">Admin</span>
           </div>
           <mat-menu #adminMenu="matMenu">
             <div class="deck-menu-head">Administration</div>
             <mat-divider></mat-divider>
-            <button mat-menu-item (click)="adminMenuAction.emit('users')"><mat-icon>people</mat-icon><span>Userverwaltung</span></button>
-            <button mat-menu-item (click)="adminMenuAction.emit('tags')"><mat-icon>label</mat-icon><span>Tag-Verwaltung</span></button>
-            <button mat-menu-item (click)="adminMenuAction.emit('tag-wizard')"><mat-icon>auto_fix_high</mat-icon><span>Tag-Wizard</span></button>
-            <button mat-menu-item (click)="adminMenuAction.emit('credits')"><mat-icon>savings</mat-icon><span>Shekel-Einstellungen</span></button>
-            <button mat-menu-item (click)="adminMenuAction.emit('tts')"><mat-icon>record_voice_over</mat-icon><span>Sprachausgabe (Test)</span></button>
-            <button mat-menu-item (click)="toggleLoudness()" [attr.aria-pressed]="loudness.enabled()"><mat-icon>equalizer</mat-icon><span>Lautstärke angleichen: {{ loudness.enabled() ? 'an' : 'aus' }}</span></button>
+            <button mat-menu-item (click)="adminMenuAction.emit('users')">
+              <mat-icon>people</mat-icon><span>Userverwaltung</span>
+            </button>
+            <button mat-menu-item (click)="adminMenuAction.emit('tags')">
+              <mat-icon>label</mat-icon><span>Tag-Verwaltung</span>
+            </button>
+            <button mat-menu-item (click)="adminMenuAction.emit('tag-wizard')">
+              <mat-icon>auto_fix_high</mat-icon><span>Tag-Wizard</span>
+            </button>
+            <button mat-menu-item (click)="adminMenuAction.emit('credits')">
+              <mat-icon>savings</mat-icon><span>Shekel-Einstellungen</span>
+            </button>
+            <button mat-menu-item (click)="adminMenuAction.emit('tts')">
+              <mat-icon>record_voice_over</mat-icon><span>Sprachausgabe (Test)</span>
+            </button>
+            <button
+              mat-menu-item
+              (click)="toggleLoudness()"
+              [attr.aria-pressed]="loudness.enabled()"
+            >
+              <mat-icon>equalizer</mat-icon
+              ><span>Lautstärke angleichen: {{ loudness.enabled() ? 'an' : 'aus' }}</span>
+            </button>
             <mat-divider></mat-divider>
-            <button mat-menu-item class="nk-menu-danger" (click)="killAllClick.emit()"><mat-icon>stop_circle</mat-icon><span>Alle Sounds stoppen</span></button>
+            <button mat-menu-item class="nk-menu-danger" (click)="killAllClick.emit()">
+              <mat-icon>stop_circle</mat-icon><span>Alle Sounds stoppen</span>
+            </button>
           </mat-menu>
         }
       </div>
@@ -344,18 +525,37 @@ const KNOB_ANGLE: Record<SortOption, number> = {
         <mat-menu #userMenu="matMenu">
           <div class="deck-menu-head">{{ auth.currentUser()?.username }}</div>
           <mat-divider></mat-divider>
-          <button mat-menu-item (click)="profileClick.emit()"><mat-icon>person</mat-icon><span>Mein Profil</span></button>
-          <button mat-menu-item (click)="changeAvatarClick.emit()"><mat-icon>photo_camera</mat-icon><span>Avatar ändern</span></button>
-          <button mat-menu-item (click)="uploadClick.emit()"><mat-icon>upload_file</mat-icon><span>Sound hochladen</span></button>
-          <button mat-menu-item (click)="changePasswordClick.emit()"><mat-icon>key</mat-icon><span>Kennwort ändern</span></button>
-          <button mat-menu-item (click)="restartTourClick.emit()"><mat-icon>help_outline</mat-icon><span>Tour starten</span></button>
+          <button mat-menu-item (click)="profileClick.emit()">
+            <mat-icon>person</mat-icon><span>Mein Profil</span>
+          </button>
+          <button mat-menu-item (click)="changeAvatarClick.emit()">
+            <mat-icon>photo_camera</mat-icon><span>Avatar ändern</span>
+          </button>
+          <button mat-menu-item (click)="uploadClick.emit()">
+            <mat-icon>upload_file</mat-icon><span>Sound hochladen</span>
+          </button>
+          <button mat-menu-item (click)="changePasswordClick.emit()">
+            <mat-icon>key</mat-icon><span>Kennwort ändern</span>
+          </button>
+          <button mat-menu-item (click)="restartTourClick.emit()">
+            <mat-icon>help_outline</mat-icon><span>Tour starten</span>
+          </button>
           <mat-divider></mat-divider>
-          <button mat-menu-item (click)="auth.logout()"><mat-icon>logout</mat-icon><span>Abmelden</span></button>
+          <button mat-menu-item (click)="auth.logout()">
+            <mat-icon>logout</mat-icon><span>Abmelden</span>
+          </button>
         </mat-menu>
       } @else {
         <div class="nk-toolkey deck-login">
           <span class="nk-led nk-led--lamp nk-led--blink" aria-hidden="true"></span>
-          <button type="button" class="nk-key nk-key--accent" data-tour="profile" (click)="loginClick.emit()">Anmelden</button>
+          <button
+            type="button"
+            class="nk-key nk-key--accent"
+            data-tour="profile"
+            (click)="loginClick.emit()"
+          >
+            Anmelden
+          </button>
           <span class="nk-toolkey__label">&nbsp;</span>
         </div>
       }
@@ -519,7 +719,9 @@ const KNOB_ANGLE: Record<SortOption, number> = {
         grid-area: acc;
         align-self: center;
         margin: 0 4px 0 6px;
-        box-shadow: 0 0 0 3px var(--nk-well), 1.5px 1.5px 0 3px rgb(var(--nk-lamp-rgb) / 0.17);
+        box-shadow:
+          0 0 0 3px var(--nk-well),
+          1.5px 1.5px 0 3px rgb(var(--nk-lamp-rgb) / 0.17);
       }
       .deck .deck-account app-user-avatar {
         display: block;
@@ -670,7 +872,10 @@ export class ToolbarComponent {
     const rect = el?.getBoundingClientRect();
     const position =
       rect && window.innerWidth > 768
-        ? { top: `${Math.round(rect.bottom + 14)}px`, left: `${Math.max(8, Math.round(rect.left - 20))}px` }
+        ? {
+            top: `${Math.round(rect.bottom + 14)}px`,
+            left: `${Math.max(8, Math.round(rect.left - 20))}px`,
+          }
         : undefined;
     this.dialog.open(ShekelPopoverComponent, {
       panelClass: 'shekel-popover-dialog',

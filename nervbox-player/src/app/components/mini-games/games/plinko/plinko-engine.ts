@@ -326,7 +326,7 @@ export class PlinkoEngine {
       0,
       this.ball.x,
       this.ball.y,
-      this.ball.radius
+      this.ball.radius,
     );
     gradient.addColorStop(0, '#f472b6');
     gradient.addColorStop(0.7, this.colors.ball);
@@ -345,7 +345,7 @@ export class PlinkoEngine {
       0,
       this.ball.x,
       this.ball.y,
-      this.ball.radius
+      this.ball.radius,
     );
     highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
     highlightGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.1)');

@@ -144,11 +144,7 @@ export class KaybergEngine {
           ? this.terrain.getRandomPositionInAir(8, 25)
           : this.terrain.getRandomPositionOnTerrain(10, 80);
 
-        const prey = new PreyEntity(
-          type,
-          pos,
-          (x, z) => this.terrain.getTerrainHeight(x, z)
-        );
+        const prey = new PreyEntity(type, pos, (x, z) => this.terrain.getTerrainHeight(x, z));
         this.preyEntities.push(prey);
         this.scene.add(prey.mesh);
       }
@@ -157,10 +153,8 @@ export class KaybergEngine {
     // Spawn hunters
     for (let i = 0; i < config.hunters; i++) {
       const pos = this.terrain.getRandomPositionOnTerrain(20, 70);
-      const hunter = new HunterEntity(
-        pos,
-        config.hunterFireRate,
-        (x, z) => this.terrain.getTerrainHeight(x, z)
+      const hunter = new HunterEntity(pos, config.hunterFireRate, (x, z) =>
+        this.terrain.getTerrainHeight(x, z),
       );
       this.hunters.push(hunter);
       this.scene.add(hunter.mesh);
@@ -203,7 +197,7 @@ export class KaybergEngine {
     // Terrain collision - keep player above ground
     const terrainHeight = this.terrain.getTerrainHeight(
       this.player.position.x,
-      this.player.position.z
+      this.player.position.z,
     );
     const minAltitude = terrainHeight + 2; // Minimum 2 units above terrain
     if (this.player.position.y < minAltitude) {
@@ -294,9 +288,7 @@ export class KaybergEngine {
 
     // Apply player rotation to camera offset
     const quaternion = new THREE.Quaternion();
-    quaternion.setFromEuler(
-      new THREE.Euler(this.player.pitch * 0.3, this.player.yaw, 0, 'YXZ')
-    );
+    quaternion.setFromEuler(new THREE.Euler(this.player.pitch * 0.3, this.player.yaw, 0, 'YXZ'));
     cameraOffset.applyQuaternion(quaternion);
 
     // Position camera
@@ -359,7 +351,7 @@ export class KaybergEngine {
         if (indicator.mesh.geometry.type === 'SphereGeometry') {
           const angle = Math.atan2(
             indicator.mesh.position.z - this.player.position.z,
-            indicator.mesh.position.x - this.player.position.x
+            indicator.mesh.position.x - this.player.position.x,
           );
           indicator.mesh.position.x += Math.cos(angle + i * 0.8) * deltaTime * 0.02;
           indicator.mesh.position.z += Math.sin(angle + i * 0.8) * deltaTime * 0.02;

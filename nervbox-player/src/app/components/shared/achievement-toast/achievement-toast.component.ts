@@ -31,11 +31,15 @@ import { AchievementService } from '../../../core/services/achievement.service';
   template: `
     @if (achievement(); as earned) {
       <div class="nk-toast nk-toast--success ach-toast" @slideIn role="status" (click)="dismiss()">
-        <span class="nk-toast__icon"><mat-icon>{{ earned.achievement.icon }}</mat-icon></span>
+        <span class="nk-toast__icon"
+          ><mat-icon>{{ earned.achievement.icon }}</mat-icon></span
+        >
         <span class="nk-toast__body">
           <span class="nk-toast__title">Achievement freigeschaltet!</span>
           <span class="nk-toast__name">{{ earned.achievement.name }}</span>
-          <span class="nk-toast__text nk-toast__text--dim">{{ earned.achievement.description }}</span>
+          <span class="nk-toast__text nk-toast__text--dim">{{
+            earned.achievement.description
+          }}</span>
         </span>
         @if (earned.achievement.rewardCredits > 0) {
           <span class="nk-counter ach-reward">+{{ earned.achievement.rewardCredits }} N$</span>

@@ -49,13 +49,48 @@ interface GiphyResponse {
     <div class="gp" role="dialog" aria-label="GIF suchen" (click)="$event.stopPropagation()">
       <div class="gp-head">
         <label class="nk-input gp-search">
-          <svg class="nk-input__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
-          <input #searchInput class="nk-input__field" type="text" [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange($event)" placeholder="GIFs suchen..." autocomplete="off" aria-label="GIFs suchen" />
+          <svg
+            class="nk-input__icon"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="M20 20l-3.5-3.5"></path>
+          </svg>
+          <input
+            #searchInput
+            class="nk-input__field"
+            type="text"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onSearchChange($event)"
+            placeholder="GIFs suchen..."
+            autocomplete="off"
+            aria-label="GIFs suchen"
+          />
           @if (searchQuery) {
-            <button type="button" class="nk-input__clear" aria-label="Suche leeren" (click)="clearSearch()">✕</button>
+            <button
+              type="button"
+              class="nk-input__clear"
+              aria-label="Suche leeren"
+              (click)="clearSearch()"
+            >
+              ✕
+            </button>
           }
         </label>
-        <button type="button" class="nk-key nk-key--sm nk-key--icon" aria-label="GIF-Suche schließen" (click)="closed.emit()">✕</button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm nk-key--icon"
+          aria-label="GIF-Suche schließen"
+          (click)="closed.emit()"
+        >
+          ✕
+        </button>
       </div>
       <div class="gp-grid" #gifGrid (scroll)="onScroll($event)">
         @if (loading() && gifs().length === 0) {
@@ -63,10 +98,17 @@ interface GiphyResponse {
         } @else if (error()) {
           <div class="gp-state gp-state--err">{{ error() }}</div>
         } @else if (gifs().length === 0) {
-          <div class="gp-state">{{ searchQuery ? 'Keine GIFs gefunden' : 'Suche nach GIFs...' }}</div>
+          <div class="gp-state">
+            {{ searchQuery ? 'Keine GIFs gefunden' : 'Suche nach GIFs...' }}
+          </div>
         } @else {
           @for (gif of gifs(); track gif.id) {
-            <button type="button" class="gp-item" [attr.aria-label]="gif.title || 'GIF'" (click)="selectGif(gif)">
+            <button
+              type="button"
+              class="gp-item"
+              [attr.aria-label]="gif.title || 'GIF'"
+              (click)="selectGif(gif)"
+            >
               <img [src]="gif.images.fixed_height_small.url" [alt]="gif.title" loading="lazy" />
             </button>
           }
@@ -76,7 +118,11 @@ interface GiphyResponse {
         }
       </div>
       <div class="gp-foot">
-        <img src="https://giphy.com/static/img/giphy_logo_square_social.png" alt="Powered by GIPHY" class="gp-logo" />
+        <img
+          src="https://giphy.com/static/img/giphy_logo_square_social.png"
+          alt="Powered by GIPHY"
+          class="gp-logo"
+        />
         <span class="nk-label">Powered by GIPHY</span>
       </div>
     </div>
@@ -93,7 +139,10 @@ interface GiphyResponse {
       padding: 10px;
       border-radius: 8px;
       background: var(--nk-face-glare), var(--nk-face-glass);
-      box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(var(--nk-lamp-rgb) / 0.35), var(--nk-shadow-float);
+      box-shadow:
+        inset 0 0 0 1px rgb(0 0 0 / 0.7),
+        0 0 0 1px rgb(var(--nk-lamp-rgb) / 0.35),
+        var(--nk-shadow-float);
     }
     .gp-head {
       display: flex;
@@ -128,7 +177,9 @@ interface GiphyResponse {
     .gp-item:hover,
     .gp-item:focus-visible {
       outline: none;
-      box-shadow: 0 0 0 2px var(--nk-iv), 0 0 10px rgb(var(--nk-lamp-rgb) / 0.5);
+      box-shadow:
+        0 0 0 2px var(--nk-iv),
+        0 0 10px rgb(var(--nk-lamp-rgb) / 0.5);
     }
     .gp-item img {
       width: 100%;

@@ -64,7 +64,7 @@ export class SignalRService {
       .build();
 
     this.chatConnection.on('message', (msg: ChatMessage) => {
-      this.chatMessages.update(messages => [...messages, msg]);
+      this.chatMessages.update((messages) => [...messages, msg]);
     });
 
     this.chatConnection.on('rateLimit', (reason: string) => {
@@ -100,7 +100,7 @@ export class SignalRService {
       .build();
 
     this.soundConnection.on('soundPlayed', (event: SoundPlayedEvent) => {
-      this.soundEvents.update(events => [event, ...events].slice(0, 10));
+      this.soundEvents.update((events) => [event, ...events].slice(0, 10));
     });
 
     this.soundConnection.on('creditUpdate', (event: CreditUpdateEvent) => {
@@ -164,7 +164,7 @@ export class SignalRService {
   }
 
   prependMessages(messages: ChatMessage[]): void {
-    this.chatMessages.update(current => [...messages, ...current]);
+    this.chatMessages.update((current) => [...messages, ...current]);
   }
 
   disconnect(): void {

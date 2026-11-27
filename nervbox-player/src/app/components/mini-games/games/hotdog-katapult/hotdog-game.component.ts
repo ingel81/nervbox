@@ -48,7 +48,14 @@ const SPRITES = {
 @Component({
   selector: 'app-hotdog-game',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatIconModule, GameExitConfirmComponent, GameFrameComponent, GameOverlayComponent],
+  imports: [
+    CommonModule,
+    MatDialogModule,
+    MatIconModule,
+    GameExitConfirmComponent,
+    GameFrameComponent,
+    GameOverlayComponent,
+  ],
   template: `
     <app-game-frame
       #root
@@ -65,7 +72,12 @@ const SPRITES = {
         <canvas #gameCanvas class="game-canvas"></canvas>
 
         @if (gameState() === 'loading') {
-          <app-game-overlay tone="info" [kicker]="'Modul · ' + info.title" [icon]="info.icon" title="Lädt..." />
+          <app-game-overlay
+            tone="info"
+            [kicker]="'Modul · ' + info.title"
+            [icon]="info.icon"
+            title="Lädt..."
+          />
         }
 
         @if (gameState() === 'ready') {
@@ -76,7 +88,12 @@ const SPRITES = {
             [clickable]="true"
             (click)="startGame()"
           >
-            <img goArt src="/games/hotdog/logo.png" class="nk-go__art logo-sprite" alt="Hotdog Katapult" />
+            <img
+              goArt
+              src="/games/hotdog/logo.png"
+              class="nk-go__art logo-sprite"
+              alt="Hotdog Katapult"
+            />
             <p class="nk-go__text">Stopfe die Mäuler: 1 N$ pro Treffer</p>
             <div goActions>
               <button type="button" class="nk-key nk-key--accent nk-key--lg">
@@ -88,7 +105,12 @@ const SPRITES = {
         }
 
         @if (gameState() === 'roundover') {
-          <app-game-overlay tone="win" [kicker]="'Runde ' + round()" icon="gps_fixed" [title]="'Runde ' + round() + ' geschafft!'">
+          <app-game-overlay
+            tone="win"
+            [kicker]="'Runde ' + round()"
+            icon="gps_fixed"
+            [title]="'Runde ' + round() + ' geschafft!'"
+          >
             <span class="nk-counter nk-go__score">SCORE {{ score() }}</span>
             <div goActions>
               <button type="button" class="nk-key nk-key--accent nk-key--lg" (click)="nextRound()">
@@ -99,17 +121,28 @@ const SPRITES = {
         }
 
         @if (gameState() === 'gameover') {
-          <app-game-overlay tone="win" kicker="Spielende" icon="sentiment_very_satisfied" title="Lecker!">
+          <app-game-overlay
+            tone="win"
+            kicker="Spielende"
+            icon="sentiment_very_satisfied"
+            title="Lecker!"
+          >
             <span class="nk-counter nk-go__score">SCORE {{ score() }}</span>
             <p class="nk-go__text">Erreicht: Runde {{ round() }}</p>
             @if (reward() > 0) {
               <p class="nk-go__reward">+{{ reward() }} N$</p>
             }
             <div goActions>
-              <button type="button" class="nk-key nk-key--accent nk-key--lg" (click)="restartGame()">
+              <button
+                type="button"
+                class="nk-key nk-key--accent nk-key--lg"
+                (click)="restartGame()"
+              >
                 <mat-icon>replay</mat-icon>Nochmal spielen
               </button>
-              <button type="button" class="nk-key nk-key--ghost" (click)="exitGame()">Beenden</button>
+              <button type="button" class="nk-key nk-key--ghost" (click)="exitGame()">
+                Beenden
+              </button>
             </div>
           </app-game-overlay>
         }
