@@ -2,7 +2,6 @@ import { Component, ChangeDetectionStrategy, computed, inject, input, output, si
 import { MatDialog } from '@angular/material/dialog';
 import { AuthService } from '../../core/services/auth.service';
 import { NowPlayingService, CHANNEL_COUNT } from '../../core/services/now-playing.service';
-import { GameSelectionDialogComponent } from '../mini-games/game-selection-dialog.component';
 import { ShopDialogComponent } from '../shop/shop-dialog.component';
 
 export type MobileView = 'sounds' | 'chat';
@@ -267,8 +266,9 @@ export class MobileBarComponent {
     this.action.emit(a);
   }
 
-  openGames(): void {
+  async openGames(): Promise<void> {
     this.moreOpen.set(false);
+    const { GameSelectionDialogComponent } = await import('../mini-games/game-selection-dialog.component');
     this.dialog.open(GameSelectionDialogComponent, { maxWidth: '95vw', panelClass: 'dark-dialog' });
   }
 

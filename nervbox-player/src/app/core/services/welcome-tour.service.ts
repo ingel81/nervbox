@@ -1,5 +1,4 @@
 import { Injectable, signal, computed, inject, effect } from '@angular/core';
-import Shepherd from 'shepherd.js';
 import { AuthService } from './auth.service';
 import { AchievementService } from './achievement.service';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
@@ -215,7 +214,7 @@ export class WelcomeTourService {
 
   // ============ USER TOUR ============
 
-  startUserTour(): void {
+  async startUserTour(): Promise<void> {
     // Tour nur für eingeloggte User
     if (!this.auth.isLoggedIn()) return;
     if (this.userTourActive() || this.adminTourActive()) return;
@@ -223,7 +222,7 @@ export class WelcomeTourService {
     if (this.isMobile()) return;
 
     this.userTourActive.set(true);
-    this.tour = this.createTour();
+    this.tour = await this.createTour();
     this.addUserSteps();
 
     this.tour.on('complete', () => this.completeUserTour());
@@ -470,7 +469,7 @@ export class WelcomeTourService {
 
   // ============ ADMIN TOUR ============
 
-  startAdminTour(): void {
+  async startAdminTour(): Promise<void> {
     if (this.userTourActive() || this.adminTourActive()) return;
     if (this.auth.currentUser()?.role !== 'admin') return;
     // Tour auf Mobile nicht starten - Tooltips werden von Dialogen verdeckt
@@ -485,7 +484,7 @@ export class WelcomeTourService {
     }
 
     this.adminTourActive.set(true);
-    this.tour = this.createTour();
+    this.tour = await this.createTour();
     this.addAdminSteps();
 
     this.tour.on('complete', () => this.completeAdminTour());
@@ -635,7 +634,9 @@ export class WelcomeTourService {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private createTour(): any {
+  private async createTour(): Promise<any> {
+    // shepherd.js erst beim Tour-Start laden (eigener Lazy-Chunk)
+    const { default: Shepherd } = await import('shepherd.js');
     return new Shepherd.Tour({
       useModalOverlay: true,
       defaultStepOptions: {

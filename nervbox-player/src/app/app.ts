@@ -19,20 +19,9 @@ import { LoginDialogComponent } from './components/auth/login-dialog.component';
 import { RegisterDialogComponent } from './components/auth/register-dialog.component';
 import { ChangePasswordDialogComponent } from './components/auth/change-password-dialog.component';
 import { StatsDialogComponent } from './components/stats/stats-dialog.component';
-import {
-  SoundEditDialogComponent,
-  SoundEditDialogData,
-} from './components/admin/sound-edit-dialog.component';
-import {
-  DeleteSoundDialogComponent,
-  DeleteSoundDialogData,
-} from './components/admin/delete-sound-dialog.component';
-import { TagManagerDialogComponent } from './components/admin/tag-manager-dialog.component';
-import { TagWizardDialogComponent } from './components/admin/tag-wizard-dialog.component';
-import { UserManagementDialogComponent } from './components/admin/user-management-dialog.component';
-import { CreditSettingsDialogComponent } from './components/admin/credit-settings-dialog.component';
+import type { SoundEditDialogData } from './components/admin/sound-edit-dialog.component';
+import type { DeleteSoundDialogData } from './components/admin/delete-sound-dialog.component';
 import { ChatSidebarComponent } from './components/chat/chat-sidebar.component';
-import { AvatarUploadDialogComponent } from './components/avatar-upload-dialog/avatar-upload-dialog.component';
 import { SoundUploadDialogComponent } from './components/sound-upload-dialog/sound-upload-dialog.component';
 import { AchievementToastComponent } from './components/shared/achievement-toast/achievement-toast.component';
 import { ChannelStripComponent } from './components/channels/channel-strip.component';
@@ -517,21 +506,29 @@ export class App implements OnInit {
     });
   }
 
-  onAdminMenuAction(action: 'users' | 'tags' | 'tag-wizard' | 'credits'): void {
+  async onAdminMenuAction(action: 'users' | 'tags' | 'tag-wizard' | 'credits'): Promise<void> {
     switch (action) {
-      case 'users':
+      case 'users': {
+        const { UserManagementDialogComponent } =
+          await import('./components/admin/user-management-dialog.component');
         this.dialog.open(UserManagementDialogComponent, {
           maxWidth: '95vw',
           panelClass: 'dark-dialog',
         });
         break;
-      case 'tags':
+      }
+      case 'tags': {
+        const { TagManagerDialogComponent } =
+          await import('./components/admin/tag-manager-dialog.component');
         this.dialog.open(TagManagerDialogComponent, {
           maxWidth: '95vw',
           panelClass: 'dark-dialog',
         });
         break;
+      }
       case 'tag-wizard': {
+        const { TagWizardDialogComponent } =
+          await import('./components/admin/tag-wizard-dialog.component');
         const dialogRef = this.dialog.open(TagWizardDialogComponent, {
           maxWidth: '95vw',
           maxHeight: '90vh',
@@ -545,12 +542,15 @@ export class App implements OnInit {
         });
         break;
       }
-      case 'credits':
+      case 'credits': {
+        const { CreditSettingsDialogComponent } =
+          await import('./components/admin/credit-settings-dialog.component');
         this.dialog.open(CreditSettingsDialogComponent, {
           maxWidth: '95vw',
           panelClass: 'dark-dialog',
         });
         break;
+      }
     }
   }
 
@@ -620,7 +620,9 @@ export class App implements OnInit {
     });
   }
 
-  onChangeAvatarClick(): void {
+  async onChangeAvatarClick(): Promise<void> {
+    const { AvatarUploadDialogComponent } =
+      await import('./components/avatar-upload-dialog/avatar-upload-dialog.component');
     const dialogRef = this.dialog.open(AvatarUploadDialogComponent, {
       maxWidth: '95vw',
       panelClass: 'dark-dialog',
@@ -656,7 +658,9 @@ export class App implements OnInit {
 
   // === Admin: Sound Management ===
 
-  onEditSound(sound: Sound): void {
+  async onEditSound(sound: Sound): Promise<void> {
+    const { SoundEditDialogComponent } =
+      await import('./components/admin/sound-edit-dialog.component');
     const dialogRef = this.dialog.open(SoundEditDialogComponent, {
       maxWidth: '95vw',
       panelClass: 'dark-dialog',
@@ -690,7 +694,9 @@ export class App implements OnInit {
     });
   }
 
-  onDeleteSound(sound: Sound): void {
+  async onDeleteSound(sound: Sound): Promise<void> {
+    const { DeleteSoundDialogComponent } =
+      await import('./components/admin/delete-sound-dialog.component');
     const dialogRef = this.dialog.open(DeleteSoundDialogComponent, {
       maxWidth: '95vw',
       panelClass: 'dark-dialog',

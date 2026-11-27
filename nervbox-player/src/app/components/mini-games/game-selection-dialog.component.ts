@@ -3,13 +3,6 @@ import { CommonModule } from '@angular/common';
 import { MatDialogModule, MatDialogRef, MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { ArkanoidGameComponent } from './games/arkanoid/arkanoid-game.component';
-import { HotdogGameComponent } from './games/hotdog-katapult/hotdog-game.component';
-import { PlinkoGameComponent } from './games/plinko/plinko-game.component';
-import { SlotMachineGameComponent } from './games/slot-machine/slot-machine-game.component';
-import { KaybergGameComponent } from './games/kayberg/kayberg-game.component';
-import { WeinfestShooterGameComponent } from './games/weinfest-shooter/weinfest-shooter-game.component';
-import { SandwichmasterGameComponent } from './games/sandwichmaster/sandwichmaster-game.component';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -180,13 +173,13 @@ export class GameSelectionDialogComponent {
 
   start(key: string): void {
     switch (key) {
-      case 'arkanoid': return this.startArkanoid();
-      case 'hotdog': return this.startHotdog();
-      case 'plinko': return this.startPlinko();
-      case 'slot': return this.startSlotMachine();
-      case 'kayberg': return this.startKayberg();
-      case 'weinfest': return this.startWeinfestShooter();
-      case 'sandwich': return this.startSandwichmaster();
+      case 'arkanoid': return void this.startArkanoid();
+      case 'hotdog': return void this.startHotdog();
+      case 'plinko': return void this.startPlinko();
+      case 'slot': return void this.startSlotMachine();
+      case 'kayberg': return void this.startKayberg();
+      case 'weinfest': return void this.startWeinfestShooter();
+      case 'sandwich': return void this.startSandwichmaster();
     }
   }
 
@@ -196,8 +189,9 @@ export class GameSelectionDialogComponent {
 
   readonly isAdmin = computed(() => this.auth.currentUser()?.role === 'admin');
 
-  startArkanoid(): void {
+  async startArkanoid(): Promise<void> {
     this.dialogRef.close();
+    const { ArkanoidGameComponent } = await import('./games/arkanoid/arkanoid-game.component');
     this.dialog.open(ArkanoidGameComponent, {
       width: '95vw',
       maxWidth: '800px',
@@ -208,8 +202,9 @@ export class GameSelectionDialogComponent {
     });
   }
 
-  startHotdog(): void {
+  async startHotdog(): Promise<void> {
     this.dialogRef.close();
+    const { HotdogGameComponent } = await import('./games/hotdog-katapult/hotdog-game.component');
     this.dialog.open(HotdogGameComponent, {
       width: 'auto',
       maxWidth: '95vw',
@@ -220,8 +215,9 @@ export class GameSelectionDialogComponent {
     });
   }
 
-  startPlinko(): void {
+  async startPlinko(): Promise<void> {
     this.dialogRef.close();
+    const { PlinkoGameComponent } = await import('./games/plinko/plinko-game.component');
     this.dialog.open(PlinkoGameComponent, {
       width: '95vw',
       maxWidth: '900px',
@@ -232,8 +228,9 @@ export class GameSelectionDialogComponent {
     });
   }
 
-  startSlotMachine(): void {
+  async startSlotMachine(): Promise<void> {
     this.dialogRef.close();
+    const { SlotMachineGameComponent } = await import('./games/slot-machine/slot-machine-game.component');
     this.dialog.open(SlotMachineGameComponent, {
       width: '950px',
       maxWidth: '95vw',
@@ -242,8 +239,9 @@ export class GameSelectionDialogComponent {
     });
   }
 
-  startKayberg(): void {
+  async startKayberg(): Promise<void> {
     this.dialogRef.close();
+    const { KaybergGameComponent } = await import('./games/kayberg/kayberg-game.component');
     this.dialog.open(KaybergGameComponent, {
       width: '95vw',
       maxWidth: '950px',
@@ -254,8 +252,9 @@ export class GameSelectionDialogComponent {
     });
   }
 
-  startWeinfestShooter(): void {
+  async startWeinfestShooter(): Promise<void> {
     this.dialogRef.close();
+    const { WeinfestShooterGameComponent } = await import('./games/weinfest-shooter/weinfest-shooter-game.component');
     this.dialog.open(WeinfestShooterGameComponent, {
       width: '95vw',
       maxWidth: '900px',
@@ -266,8 +265,9 @@ export class GameSelectionDialogComponent {
     });
   }
 
-  startSandwichmaster(): void {
+  async startSandwichmaster(): Promise<void> {
     this.dialogRef.close();
+    const { SandwichmasterGameComponent } = await import('./games/sandwichmaster/sandwichmaster-game.component');
     this.dialog.open(SandwichmasterGameComponent, {
       width: '95vw',
       maxWidth: '850px',

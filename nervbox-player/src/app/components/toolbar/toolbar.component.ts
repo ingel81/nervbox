@@ -14,7 +14,6 @@ import { InventoryService } from '../../core/services/inventory.service';
 import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component';
 import { ShekelPopoverComponent } from '../shared/shekel-popover/shekel-popover.component';
 import { ShopDialogComponent } from '../shop/shop-dialog.component';
-import { GameSelectionDialogComponent } from '../mini-games/game-selection-dialog.component';
 
 export type SortOption =
   | 'name-asc'
@@ -678,7 +677,9 @@ export class ToolbarComponent {
     });
   }
 
-  openGames(): void {
+  async openGames(): Promise<void> {
+    const { GameSelectionDialogComponent } =
+      await import('../mini-games/game-selection-dialog.component');
     this.dialog.open(GameSelectionDialogComponent, {
       maxWidth: '95vw',
       panelClass: 'dark-dialog',
