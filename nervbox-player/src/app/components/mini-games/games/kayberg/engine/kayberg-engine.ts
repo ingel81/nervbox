@@ -27,12 +27,13 @@ export class KaybergEngine {
 
   private waveManager: WaveManager;
   private gameState: GameState = 'ready';
+  private disposed = false;
 
   // Input state
-  private keys: Set<string> = new Set();
-  private mouseDeltaX: number = 0;
-  private mouseDeltaY: number = 0;
-  private isPointerLocked: boolean = false;
+  private keys = new Set<string>();
+  private mouseDeltaX = 0;
+  private mouseDeltaY = 0;
+  private isPointerLocked = false;
 
   // Callbacks
   callbacks: EngineCallbacks = {};
@@ -463,10 +464,20 @@ export class KaybergEngine {
     return this.waveManager.calculateReward();
   }
 
+  /** Idempotent: safe to call more than once (e.g. close dialog + ngOnDestroy). */
   dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.gameState = 'paused';
     this.clearEntities();
-    this.player.dispose();
-    this.terrain.dispose();
+    for (const indicator of this.hitIndicators) {
+      indicator.mesh.removeFromParent();
+      indicator.mesh.geometry.dispose();
+      (indicator.mesh.material as THREE.Material).dispose();
+    }
+    this.hitIndicators = [];
+    this.player?.dispose();
+    this.terrain?.dispose();
     this.renderer.dispose();
   }
 }

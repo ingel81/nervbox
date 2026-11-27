@@ -9,8 +9,9 @@ import {
 export class KaybergTerrain {
   private scene: THREE.Scene;
   private terrainMesh!: THREE.Mesh;
-  private trees: THREE.InstancedMesh[] = [];
-  private vineyardRows: THREE.Mesh[] = [];
+  /** Every root object this terrain added to the scene; disposed via traversal. */
+  private ownedObjects: THREE.Object3D[] = [];
+  private disposed = false;
   private cross!: THREE.Group;
   private jesusStatue!: THREE.Group;
 
@@ -60,14 +61,14 @@ export class KaybergTerrain {
       side: THREE.BackSide,
     });
     const sky = new THREE.Mesh(skyGeometry, skyMaterial);
-    this.scene.add(sky);
+    this.addOwned(sky);
 
     // Sun
     const sunGeometry = new THREE.SphereGeometry(10, 16, 16);
     const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffffaa });
     const sun = new THREE.Mesh(sunGeometry, sunMaterial);
     sun.position.set(100, 150, -100);
-    this.scene.add(sun);
+    this.addOwned(sun);
   }
 
   private createTerrain(): void {
@@ -153,7 +154,7 @@ export class KaybergTerrain {
     this.terrainMesh = new THREE.Mesh(geometry, material);
     this.terrainMesh.rotation.x = -Math.PI / 2;
     this.terrainMesh.receiveShadow = true;
-    this.scene.add(this.terrainMesh);
+    this.addOwned(this.terrainMesh);
   }
 
   private createForest(): void {
@@ -214,9 +215,8 @@ export class KaybergTerrain {
     trunkInstanced.castShadow = true;
     foliageInstanced.castShadow = true;
 
-    this.scene.add(trunkInstanced);
-    this.scene.add(foliageInstanced);
-    this.trees.push(trunkInstanced, foliageInstanced);
+    this.addOwned(trunkInstanced);
+    this.addOwned(foliageInstanced);
   }
 
   private createVineyards(): void {
@@ -268,8 +268,7 @@ export class KaybergTerrain {
             const post = new THREE.Mesh(postGeometry, postMaterial);
             post.position.set(x, y + 0.9, z);
             post.castShadow = true;
-            this.scene.add(post);
-            this.vineyardRows.push(post);
+            this.addOwned(post);
 
             // Horizontal wire (between posts)
             if (p < numPosts - 1) {
@@ -291,8 +290,7 @@ export class KaybergTerrain {
                 );
                 wire.rotation.z = Math.PI / 2;
                 wire.rotation.y = Math.atan2(nextZ - z, nextX - x);
-                this.scene.add(wire);
-                this.vineyardRows.push(wire);
+                this.addOwned(wire);
 
                 // Vine leaves and grapes between posts
                 const leafCount = 3;
@@ -307,8 +305,7 @@ export class KaybergTerrain {
                   const leaf = new THREE.Mesh(leafGeometry, leafMaterial);
                   leaf.position.set(leafX, leafY + 1.3, leafZ);
                   leaf.scale.set(1.2, 0.8, 1);
-                  this.scene.add(leaf);
-                  this.vineyardRows.push(leaf);
+                  this.addOwned(leaf);
 
                   // Grape clusters hanging below
                   if (Math.random() > 0.3) {
@@ -327,8 +324,7 @@ export class KaybergTerrain {
                     }
 
                     grapeCluster.position.set(leafX, leafY + 0.9, leafZ);
-                    this.scene.add(grapeCluster);
-                    this.vineyardRows.push(grapeCluster as unknown as THREE.Mesh);
+                    this.addOwned(grapeCluster);
                   }
                 }
               }
@@ -363,7 +359,7 @@ export class KaybergTerrain {
     this.cross.position.set(crossX, crossY, crossZ);
     this.cross.castShadow = true;
 
-    this.scene.add(this.cross);
+    this.addOwned(this.cross);
   }
 
   private createJesusStatue(): void {
@@ -412,7 +408,7 @@ export class KaybergTerrain {
     this.jesusStatue.position.y += 4;
     this.jesusStatue.castShadow = true;
 
-    this.scene.add(this.jesusStatue);
+    this.addOwned(this.jesusStatue);
   }
 
   private createAmbientObjects(): void {
@@ -434,7 +430,7 @@ export class KaybergTerrain {
       );
       rock.rotation.set(Math.random(), Math.random(), Math.random());
       rock.castShadow = true;
-      this.scene.add(rock);
+      this.addOwned(rock);
     }
   }
 
@@ -480,28 +476,38 @@ export class KaybergTerrain {
     return pos;
   }
 
+  private addOwned(object: THREE.Object3D): void {
+    this.scene.add(object);
+    this.ownedObjects.push(object);
+  }
+
+  /**
+   * Idempotent: removes everything this terrain added to the scene and frees
+   * GPU resources. Traverses groups (grape clusters, cross, statue) instead of
+   * assuming every tracked object is a Mesh, and disposes shared materials and
+   * geometries only once.
+   */
   dispose(): void {
-    this.trees.forEach((tree) => {
-      tree.geometry.dispose();
-      if (Array.isArray(tree.material)) {
-        tree.material.forEach((m) => m.dispose());
-      } else {
-        tree.material.dispose();
-      }
-    });
-    this.vineyardRows.forEach((row) => {
-      row.geometry.dispose();
-      if (Array.isArray(row.material)) {
-        row.material.forEach((m) => m.dispose());
-      } else {
-        row.material.dispose();
-      }
-    });
-    this.terrainMesh.geometry.dispose();
-    if (Array.isArray(this.terrainMesh.material)) {
-      this.terrainMesh.material.forEach((m) => m.dispose());
-    } else {
-      this.terrainMesh.material.dispose();
+    if (this.disposed) return;
+    this.disposed = true;
+
+    const geometries = new Set<THREE.BufferGeometry>();
+    const materials = new Set<THREE.Material>();
+    const instanced = new Set<THREE.InstancedMesh>();
+    for (const root of this.ownedObjects) {
+      root.traverse((child) => {
+        if (child instanceof THREE.InstancedMesh) instanced.add(child);
+        const renderable = child as Partial<THREE.Mesh>;
+        if (renderable.geometry) geometries.add(renderable.geometry);
+        const material = renderable.material;
+        if (Array.isArray(material)) material.forEach((m) => materials.add(m));
+        else if (material) materials.add(material);
+      });
+      root.removeFromParent();
     }
+    instanced.forEach((mesh) => mesh.dispose());
+    geometries.forEach((g) => g.dispose());
+    materials.forEach((m) => m.dispose());
+    this.ownedObjects = [];
   }
 }
