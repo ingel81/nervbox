@@ -42,10 +42,12 @@ import { VoteService } from './core/services/vote.service';
 import { AvatarService } from './core/services/avatar.service';
 import { AchievementService } from './core/services/achievement.service';
 import { ConfigService } from './core/services/config.service';
+import { HotkeyService } from './core/services/hotkey.service';
 import { Sound } from './core/models';
 
 @Component({
   selector: 'app-root',
+  host: { '(document:keydown)': 'onHotkey($event)' },
   standalone: true,
   imports: [
     CommonModule,
@@ -292,6 +294,7 @@ export class App implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
+  private readonly hotkeys = inject(HotkeyService);
 
   readonly isDevRoute = signal(window.location.pathname.startsWith('/dev/'));
 
@@ -465,6 +468,35 @@ export class App implements OnInit {
         this.snackBar.open(errorMsg, 'OK', { duration: 4000 });
       },
     });
+  }
+
+  /**
+   * Sound hotkeys 1–9 (digit row + numpad): plays the assigned sound like a pad click.
+   * Ignored while typing, with modifiers, and while a dialog (incl. games) or menu is open.
+   */
+  onHotkey(event: KeyboardEvent): void {
+    if (event.defaultPrevented || event.repeat) return;
+    if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
+    const digit = HotkeyService.digitOf(event);
+    if (digit === null || !this.authService.isLoggedIn() || this.isDevRoute()) return;
+    const target = event.target as HTMLElement | null;
+    if (
+      target?.isContentEditable ||
+      target?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')
+    ) {
+      return;
+    }
+    if (
+      this.dialog.openDialogs.length > 0 ||
+      document.querySelector('.mat-mdc-dialog-container, .mat-mdc-menu-panel')
+    ) {
+      return;
+    }
+    const hash = this.hotkeys.hashFor(digit);
+    const sound = hash ? this.soundService.sounds().find((s) => s.hash === hash) : undefined;
+    if (!sound?.enabled) return;
+    event.preventDefault();
+    this.onPlaySound(sound);
   }
 
   /** Schmaler Schirm: Taschen-Sampler-Layout mit unterer Tastenreihe */

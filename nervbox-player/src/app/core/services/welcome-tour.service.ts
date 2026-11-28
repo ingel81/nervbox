@@ -331,7 +331,8 @@ export class WelcomeTourService {
       text: `Das Drei-Punkte-Menü bietet:<br><br>
         • <b>Auf Nervbox abspielen</b> - Spielt auf dem Pi<br>
         • <b>Im Browser anhören</b> - Spielt lokal in deinem Browser<br>
-        • <b>Im Mixer öffnen</b> - Zum Bearbeiten und Mixen`,
+        • <b>Im Mixer öffnen</b> - Zum Bearbeiten und Mixen<br>
+        • <b>Auf Taste legen</b> - Sound per Zifferntaste 1–9 abspielen`,
       attachTo: { element: '.cdk-overlay-pane', on: 'left' },
       buttons: this.getNavButtons(),
       beforeShowPromise: () => {

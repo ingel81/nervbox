@@ -15,6 +15,8 @@ import { PadPlayState } from '../../core/services/now-playing.service';
 import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component';
 import { tagToneStyle } from '../../shared/tag-tone';
 import { LoudnessService } from '../../core/services/loudness.service';
+import { HOTKEY_DIGITS, HotkeyService } from '../../core/services/hotkey.service';
+import { SoundService } from '../../core/services/sound.service';
 
 export type PadVariant = 'normal' | 'wide' | 'xl';
 
@@ -108,6 +110,11 @@ const NEW_MS = 7 * 24 * 60 * 60 * 1000;
           >
             {{ isFavorite() ? '♥' : '♡' }}
           </button>
+          @if (hotkey(); as key) {
+            <span class="nk-keycap" [matTooltip]="'Taste ' + key + ' spielt diesen Sound'">{{
+              key
+            }}</span>
+          }
         }
         <span class="nk-pad__tags">
           @for (tag of displayedTags(); track tag) {
@@ -189,6 +196,18 @@ const NEW_MS = 7 * 24 * 60 * 60 * 1000;
         <mat-icon>tune</mat-icon>
         <span>Im Mixer öffnen</span>
       </button>
+      @if (auth.isLoggedIn()) {
+        <button mat-menu-item [matMenuTriggerFor]="keyMenu">
+          <mat-icon>keyboard</mat-icon>
+          <span>Auf Taste legen</span>
+        </button>
+        @if (hotkey(); as key) {
+          <button mat-menu-item (click)="releaseHotkey()">
+            <mat-icon>keyboard_hide</mat-icon>
+            <span>Taste {{ key }} freigeben</span>
+          </button>
+        }
+      }
       @if (isAdmin()) {
         <mat-divider></mat-divider>
         <button mat-menu-item (click)="editClick.emit(sound())">
@@ -202,6 +221,21 @@ const NEW_MS = 7 * 24 * 60 * 60 * 1000;
         <button mat-menu-item class="nk-menu-danger" (click)="deleteClick.emit(sound())">
           <mat-icon>delete_forever</mat-icon>
           <span>Löschen</span>
+        </button>
+      }
+    </mat-menu>
+
+    <mat-menu #keyMenu="matMenu" class="hk-menu">
+      @for (digit of digits; track digit) {
+        <button
+          mat-menu-item
+          [class.hk-menu__item--current]="hotkey() === digit"
+          (click)="assignHotkey(digit)"
+        >
+          <span class="hk-menu__row">
+            <span class="nk-keycap" [class.nk-keycap--light]="hotkey() === digit">{{ digit }}</span>
+            <span class="hk-menu__name">{{ slotLabel(digit) }}</span>
+          </span>
         </button>
       }
     </mat-menu>
@@ -221,6 +255,23 @@ const NEW_MS = 7 * 24 * 60 * 60 * 1000;
       box-shadow: 0 0 0 1px rgb(255 255 255 / 0.55);
       --avatar-size: 17px;
     }
+    .hk-menu__row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+    .hk-menu__name {
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      opacity: 0.7;
+    }
+    .hk-menu__item--current .hk-menu__name {
+      opacity: 1;
+      text-shadow: var(--nk-glow-key);
+    }
   `,
 })
 export class SoundCardComponent {
@@ -232,6 +283,10 @@ export class SoundCardComponent {
   private readonly api = inject(ApiService);
   private readonly voteService = inject(VoteService);
   private readonly loudness = inject(LoudnessService);
+  private readonly hotkeys = inject(HotkeyService);
+  private readonly soundService = inject(SoundService);
+
+  readonly digits = HOTKEY_DIGITS;
 
   readonly sound = input.required<Sound>();
   readonly tagColors = input<Record<string, string>>({});
@@ -248,6 +303,11 @@ export class SoundCardComponent {
   readonly toggleClick = output<Sound>();
   readonly deleteClick = output<Sound>();
   readonly selectionToggle = output<Sound>();
+
+  /** Hotkey digit 1–9 this sound is on (logged-in users only) */
+  readonly hotkey = computed(() =>
+    this.auth.isLoggedIn() ? this.hotkeys.digitFor(this.sound().hash) : undefined,
+  );
 
   readonly isAdmin = computed(() => this.auth.currentUser()?.role === 'admin');
   private readonly maxChips = computed(() => (this.variant() === 'normal' ? 1 : 3));
@@ -415,6 +475,22 @@ export class SoundCardComponent {
   private formatDuration(ms: number): string {
     const total = Math.round((ms || 0) / 1000);
     return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+  }
+
+  /** Hotkey submenu label: the sound currently on that key */
+  slotLabel(digit: number): string {
+    const hash = this.hotkeys.hashFor(digit);
+    if (!hash) return 'frei';
+    if (hash === this.sound().hash) return 'dieser Sound';
+    return this.soundService.sounds().find((s) => s.hash === hash)?.name ?? 'unbekannter Sound';
+  }
+
+  assignHotkey(digit: number): void {
+    this.hotkeys.assign(this.sound().hash, digit);
+  }
+
+  releaseHotkey(): void {
+    this.hotkeys.release(this.sound().hash);
   }
 
   openInMixer(): void {
