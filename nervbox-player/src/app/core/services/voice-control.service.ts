@@ -35,6 +35,10 @@ const SEND_INTERVAL_MS = 50; // ~20 Updates/s an den Hub
 const BIND_TIMEOUT_MS = 5000;
 /** Totzone, bevor aus einem Klick eine Live-Geste wird */
 const DEADZONE_PX = 6;
+/** Gedrückt halten ohne Bewegung: so schnell erscheint das XY-Pad (kurzer Klick bleibt ein Klick) */
+const HOLD_SHOW_MS = 160;
+/** Body-Klasse während einer Live-Geste (styles/nacht/_08-pad.scss) */
+const LIVE_DRAG_CLASS = 'nk-live-drag';
 
 /**
  * Steuerung einzelner Stimmen: Ein-Klick-Effekt „scharf schalten“, Stopp, Live-Steuerung.
@@ -66,6 +70,9 @@ export class VoiceControlService {
   blockTouchScroll = false;
 
   constructor() {
+    // Sicherheitsnetz: Hover-Sperre der Live-Geste nie hängen lassen (Loslassen außerhalb, Fokusverlust)
+    const unlock = (): void => document.body.classList.remove(LIVE_DRAG_CLASS);
+    for (const t of ['pointerup', 'pointercancel', 'blur']) window.addEventListener(t, unlock);
     this.signalR.soundEnded$.subscribe((ev) => {
       this.markEnded(ev.voiceId);
       // Browser-Modus: Admin/anderer Tab hat gestoppt → hier hörbare Stimme anhalten
@@ -159,7 +166,13 @@ export class VoiceControlService {
    * Beginnt mit dem Druck auf ein Pad (der Sound startet wie gewohnt). Die Stimme wird an die
    * nächste eigene Play-Antwort dieses Sounds gebunden. Bewegung jenseits der Totzone steuert sie.
    */
-  beginGesture(hash: string, name: string, x: number, y: number): LiveGesture {
+  beginGesture(
+    hash: string,
+    name: string,
+    x: number,
+    y: number,
+    holdMs = HOLD_SHOW_MS,
+  ): LiveGesture {
     let voiceId: number | null = null;
     let live = false;
     let released = false;
@@ -207,6 +220,29 @@ export class VoiceControlService {
       this.patchHud({ dx: lastRawX - x, dy: lastRawY - y, params });
     };
 
+    /** XY-Pad einblenden: beim Ziehen über die Totzone oder nach kurzem Halten ohne Bewegung */
+    const goLive = (dx: number, dy: number): void => {
+      if (live || released) return;
+      live = true;
+      if (holdTimer) clearTimeout(holdTimer);
+      // während des Ziehens nichts darunter hovern (Pads, Tooltips); Zeiger-Listener hängen am Fenster
+      document.body.classList.add(LIVE_DRAG_CLASS);
+      sx = dx;
+      sy = dy;
+      this.hud.set({
+        x,
+        y,
+        dx,
+        dy,
+        params: liveFromDrag(dx, dy, 0),
+        name,
+        bound: voiceId !== null,
+        ended: voiceId !== null && this.endedIds.has(voiceId),
+        released: false,
+      });
+    };
+    const holdTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => goLive(0, 0), holdMs);
+
     const gesture: LiveGesture = {
       active: () => live && !released,
       move: (mx: number, my: number, t: number) => {
@@ -215,20 +251,7 @@ export class VoiceControlService {
         const dy = my - y;
         if (!live) {
           if (Math.hypot(dx, dy) < DEADZONE_PX) return;
-          live = true;
-          sx = dx;
-          sy = dy;
-          this.hud.set({
-            x,
-            y,
-            dx,
-            dy,
-            params: liveFromDrag(dx, dy, 0),
-            name,
-            bound: voiceId !== null,
-            ended: voiceId !== null && this.endedIds.has(voiceId),
-            released: false,
-          });
+          goLive(dx, dy);
         }
         const dt = Math.max(1, t - lastT);
         lastT = t;
@@ -270,6 +293,8 @@ export class VoiceControlService {
       end: () => {
         if (released) return;
         released = true;
+        if (holdTimer) clearTimeout(holdTimer);
+        document.body.classList.remove(LIVE_DRAG_CLASS);
         detach();
         if (!live) return;
         // Tempo/Filter bleiben, Wobble klingt über den Timer aus

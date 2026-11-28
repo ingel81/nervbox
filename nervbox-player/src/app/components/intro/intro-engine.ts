@@ -19,21 +19,28 @@ const S = 100;
 
 // Zeitplan (Sekunden)
 const T_FLY0 = 0;
-const T_IMPACT = 1.2;
-const T_LIGHT0 = 1.34;
+const T_IMPACT = 2.0; // langsamer Anflug: das 3D soll man wahrnehmen
+const T_LIGHT0 = 2.14;
 const LIGHT_SPAN = 0.78;
 const LIGHT_RAMP = 0.16;
-const T_CAM0 = 1.5;
-const T_CAM1 = 3.0;
-const T_SHADE0 = 2.2;
-const T_SHADE1 = 2.92;
-const T_XFADE0 = 2.92;
-const T_XFADE1 = 3.36;
+const T_CAM0 = 2.3;
+const T_CAM1 = 4.2;
+const T_SHADE0 = 3.3;
+const T_SHADE1 = 4.12;
+const T_XFADE0 = 4.12;
+const T_XFADE1 = 4.56;
 
 const FOV0 = 36;
 const FOV1 = 13;
 const POLAR0 = THREE.MathUtils.degToRad(57);
 const AZ0 = -0.32;
+
+/** Neigung der Oberseite (hinten höher) */
+const SLOPE = THREE.MathUtils.degToRad(9);
+/** Höhe der herausstehenden Pads/Tasten in DOM-px (bei 1400 px Gerätebreite) */
+const RAISE_PX = 11;
+const T_RAISE0 = 3.3;
+const T_RAISE1 = 4.08;
 
 const BG = 0x050403;
 const LAMP_COLOR = 0xffd6a0;
@@ -47,6 +54,22 @@ interface Lightable {
   r: number;
   glow: string; // "r g b"
   start: number;
+  /** aktuelle Verschiebung der herausstehenden Oberseite (px) */
+  ox: number;
+  oy: number;
+}
+
+interface Raised {
+  el: HTMLElement;
+  cx: number;
+  cy: number;
+  wall: string;
+  base: string;
+  prevTransform: string;
+  prevShadow: string;
+  prevTransition: string;
+  ox: number;
+  oy: number;
 }
 
 interface Dust {
@@ -114,7 +137,16 @@ export class IntroEngine {
   private readonly DW: number;
   private readonly DH: number;
   private readonly TH: number;
+  /** Gehäusehöhe vorne / hinten (Keil) */
+  private readonly HF: number;
+  private readonly HB: number;
   private readonly topY: number;
+  /** gekippte Umgebung (Tisch, Licht) – Drehpunkt an der Gerätevorderkante auf Tischhöhe */
+  private readonly env = new THREE.Group();
+  private readonly envInner = new THREE.Group();
+  /** herausstehende Bedienelemente (CSS-Extrusion) */
+  private raised: Raised[] = [];
+  private raisedDone = false;
   private readonly rest = new THREE.Vector3();
   private readonly viewH: number;
 
@@ -152,9 +184,14 @@ export class IntroEngine {
     this.q = this.vw < 700 ? 0.6 : 0.5;
     this.DW = this.rect.width / S;
     this.DH = this.rect.height / S;
-    this.TH = THREE.MathUtils.clamp(Math.min(this.DW, this.DH) * 0.065, 0.32, 0.58);
+    // Massives Keilgehäuse wie eine echte Groovebox: vorne HF hoch, hinten HB (Oberseite um SLOPE
+    // geneigt). Die Szene rechnet im Rahmen der Oberseite; stattdessen ist der Tisch gekippt –
+    // so blickt die Kamera am Ende senkrecht auf die Oberseite und die Übergabe bleibt nahtlos.
+    this.HF = THREE.MathUtils.clamp(Math.min(this.DW, this.DH) * 0.16, 0.8, 1.9);
+    this.HB = this.HF + this.DH * Math.tan(SLOPE);
+    this.TH = this.HF;
     const feet = 0.06;
-    this.topY = feet + this.TH;
+    this.topY = feet + this.HF;
     this.viewH = this.vh / S;
     // Ruheposition: Gerätemitte so, dass es am Ende exakt auf seinem DOM-Platz liegt
     this.rest.set(
@@ -171,6 +208,7 @@ export class IntroEngine {
       this.buildRenderer();
       this.buildScene();
       this.buildOverlays();
+      this.collectRaised();
     } catch (err) {
       console.warn('[Intro] Setup fehlgeschlagen:', err);
       this.finishNow();
@@ -260,6 +298,14 @@ export class IntroEngine {
     scene.environmentIntensity = 0.1;
     this.disposables.push(envTex);
 
+    // Umgebung kippen: Drehpunkt = Vorderkante des Geräts auf Tischhöhe
+    const pivot = new THREE.Vector3(this.rest.x, 0, this.rest.z + this.DH / 2);
+    this.env.position.copy(pivot);
+    this.env.rotation.x = -SLOPE;
+    this.envInner.position.copy(pivot).negate();
+    this.env.add(this.envInner);
+    scene.add(this.env);
+
     // Spot (warme Schreibtischlampe, oben vorne links)
     const spot = new THREE.SpotLight(LAMP_COLOR, 0, 0, 0.6, 0.62, 1.6);
     const span = Math.max(this.DW, this.DH);
@@ -280,15 +326,15 @@ export class IntroEngine {
     spot.shadow.normalBias = 0.02;
     spot.shadow.camera.near = Math.max(1, dist - span - 8);
     spot.shadow.camera.far = dist + span + 8;
-    scene.add(spot, spot.target);
+    this.envInner.add(spot, spot.target);
     this.spot = spot;
 
     // Kühles Gegenlicht für Konturen
     const rim = new THREE.DirectionalLight(0xa9b0bd, 0.14);
     rim.position.set(this.rest.x + 6, this.topY + 5, this.rest.z - 12);
     rim.target.position.copy(this.rest);
-    scene.add(rim, rim.target);
-    scene.add(new THREE.HemisphereLight(0x3a3026, 0x080605, 0.08));
+    this.envInner.add(rim, rim.target);
+    this.envInner.add(new THREE.HemisphereLight(0x3a3026, 0x080605, 0.08));
 
     this.buildTable();
     this.buildDevice();
@@ -316,7 +362,7 @@ export class IntroEngine {
     table.rotation.x = -Math.PI / 2;
     table.position.set(this.rest.x, 0, this.rest.z);
     table.receiveShadow = true;
-    this.scene.add(table);
+    this.envInner.add(table);
     this.disposables.push(tex, rough, mat, geo);
   }
 
@@ -326,8 +372,10 @@ export class IntroEngine {
     const H = this.DH;
     const R = Math.max(0.025, Math.min(this.radiusPx / S, W / 2 - 0.01, H / 2 - 0.01));
     const bevel = Math.min(0.045, R * 0.8);
-    const upperH = this.TH * 0.66;
-    const lowerH = this.TH - upperH;
+    // Oberschale gerade (deckt exakt die DOM-Fläche), darunter der Keil-Korpus: vorne HF, hinten HB
+    // hoch, Flanken leicht nach innen geneigt (von oben verdeckt → Übergang nahtlos).
+    const upperH = Math.min(0.42, this.HF * 0.3);
+    const taper = Math.min(0.22, this.HF * 0.12);
 
     const grain = new THREE.CanvasTexture(makeNoiseCanvas(256, 90, 170));
     grain.wrapS = grain.wrapT = THREE.RepeatWrapping;
@@ -354,23 +402,37 @@ export class IntroEngine {
     upper.receiveShadow = true;
     g.add(upper);
 
-    // Unterschale: dunkler, minimal eingerückt (Gehäusefuge)
+    // Korpus: dunklerer Kunststoff, minimal eingerückt (Gehäusefuge), Keilform
     const inset = 0.035;
     const lowerMat = new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color('#25211b'),
-      roughness: 0.82,
+      color: new THREE.Color('#3d362c'),
+      roughness: 0.72,
       roughnessMap: grain,
-      clearcoat: 0.1,
+      bumpMap: grain,
+      bumpScale: 0.25,
+      clearcoat: 0.15,
+      clearcoatRoughness: 0.6,
     });
+    const bodyMax = this.HB - upperH;
     const lowerGeo = roundedSlab(
       W - inset * 2,
       H - inset * 2,
       Math.max(0.02, R - inset),
-      lowerH,
-      Math.min(0.03, bevel),
+      bodyMax,
+      Math.min(0.05, bevel),
     );
     lowerGeo.computeBoundingBox();
-    lowerGeo.translate(0, -lowerGeo.boundingBox!.max.y - upperH + 0.004, 0);
+    lowerGeo.translate(0, -lowerGeo.boundingBox!.max.y, 0);
+    wedgeBody(
+      lowerGeo,
+      bodyMax,
+      H,
+      this.HF - upperH,
+      (W - inset * 2) / 2,
+      (H - inset * 2) / 2,
+      taper,
+    );
+    lowerGeo.translate(0, -upperH + 0.004, 0);
     const lower = new THREE.Mesh(lowerGeo, lowerMat);
     lower.castShadow = true;
     lower.receiveShadow = true;
@@ -379,8 +441,9 @@ export class IntroEngine {
     // Gummifüße
     const footMat = new THREE.MeshStandardMaterial({ color: 0x0b0a09, roughness: 0.95 });
     const footGeo = new THREE.CylinderGeometry(0.16, 0.18, 0.07, 20);
-    const fx = W / 2 - Math.min(0.55, W * 0.12);
-    const fz = H / 2 - Math.min(0.55, H * 0.08);
+    const fx = W / 2 - taper - Math.min(0.45, W * 0.1);
+    const fz = H / 2 - taper - Math.min(0.45, H * 0.07);
+    const tanS = Math.tan(SLOPE);
     for (const [sx, sz] of [
       [-1, -1],
       [1, -1],
@@ -388,7 +451,10 @@ export class IntroEngine {
       [1, 1],
     ]) {
       const f = new THREE.Mesh(footGeo, footMat);
-      f.position.set(sx * fx, -this.TH - 0.03, sz * fz);
+      // Unterseite ist schräg (Keil): Fuß sitzt auf ihr, parallel zum Tisch
+      const z = sz * fz;
+      f.position.set(sx * fx, -(this.HF + (H / 2 - z) * tanS) - 0.03, z);
+      f.rotation.x = -SLOPE;
       f.castShadow = true;
       g.add(f);
     }
@@ -444,7 +510,7 @@ export class IntroEngine {
     const dir = new THREE.Vector3().subVectors(spot.target.position, spot.position).normalize();
     cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir);
     cone.renderOrder = 5;
-    this.scene.add(cone);
+    this.envInner.add(cone);
     this.cone = cone;
     this.disposables.push(geo, this.coneMat);
   }
@@ -554,6 +620,7 @@ export class IntroEngine {
     this.deviceGroup.updateMatrixWorld(true);
     this.camera.updateMatrixWorld(true);
     this.applyCssMatrix();
+    this.updateRaised(t);
 
     if (!this.impactDone && t >= T_IMPACT) {
       this.impactDone = true;
@@ -702,6 +769,104 @@ export class IntroEngine {
     this.device.style.transform = css;
   }
 
+  // ------------------------------------------------------------------ raised keys
+
+  /**
+   * Pads und Tasten stehen physisch heraus: Die (flach projizierte) DOM-Ebene kann keine echte
+   * Tiefe, deshalb wird jede Oberseite dorthin verschoben, wo die um RAISE_PX angehobene Fläche aus
+   * Kamerasicht läge, und die Flanken werden als Box-Shadow-Stapel bis zur Grundfläche gezogen.
+   * Zur Übergabe (Kamera senkrecht von oben) sinkt die Höhe auf 0 → exakt die echte UI.
+   */
+  private collectRaised(): void {
+    const W = this.rect.width;
+    const H = this.rect.height;
+    const els = Array.from(this.device.querySelectorAll<HTMLElement>('.nk-pad, .nk-key'));
+    for (const el of els) {
+      const r = localRect(el, this.device);
+      if (!r || r.w < 8 || r.h < 8) continue;
+      if (r.x > W || r.y > H || r.x + r.w < 0 || r.y + r.h < 0) continue;
+      const cs = getComputedStyle(el);
+      this.raised.push({
+        el,
+        cx: r.x + r.w / 2,
+        cy: r.y + r.h / 2,
+        wall: wallColor(cs.backgroundColor),
+        base: cs.boxShadow && cs.boxShadow !== 'none' ? cs.boxShadow + ', ' : '',
+        prevTransform: el.style.transform,
+        prevShadow: el.style.boxShadow,
+        prevTransition: el.style.transition,
+        ox: 0,
+        oy: 0,
+      });
+    }
+  }
+
+  private updateRaised(t: number): void {
+    if (this.raisedDone || !this.raised.length) return;
+    const k = 1 - easeInOutSine(seg(t, T_RAISE0, T_RAISE1));
+    if (k <= 0) {
+      this.restoreRaised();
+      return;
+    }
+    const h = RAISE_PX * Math.max(0.5, this.rect.width / 1400) * k;
+    // Kamera im Rahmen der Oberseite, in DOM-px (u nach rechts, v nach unten, n = Höhe)
+    const c = this.v3
+      .copy(this.camera.position)
+      .applyMatrix4(this.tmpM.copy(this.deviceGroup.matrixWorld).invert());
+    const cu = c.x * S + this.rect.width / 2;
+    const cv = c.z * S + this.rect.height / 2;
+    const cn = c.y * S;
+    const visible = cn > h * 2;
+    const f = visible ? h / (cn - h) : 0;
+    const maxLen = h * 2.6;
+    const byEl = new Map(this.lightables.map((l) => [l.el, l]));
+    for (const r of this.raised) {
+      let ox = (r.cx - cu) * f;
+      let oy = (r.cy - cv) * f;
+      const len = Math.hypot(ox, oy);
+      if (len > maxLen) {
+        ox *= maxLen / len;
+        oy *= maxLen / len;
+      }
+      r.ox = ox;
+      r.oy = oy;
+      const l = byEl.get(r.el);
+      if (l) {
+        l.ox = ox;
+        l.oy = oy;
+      }
+      const n = Math.min(12, Math.ceil(Math.min(len, maxLen)));
+      if (n < 1) {
+        r.el.style.transform = r.prevTransform;
+        r.el.style.boxShadow = r.prevShadow;
+        continue;
+      }
+      let walls = '';
+      for (let i = 1; i <= n; i++) {
+        walls += `${((-ox * i) / n).toFixed(2)}px ${((-oy * i) / n).toFixed(2)}px 0 0 ${r.wall}`;
+        if (i < n) walls += ', ';
+      }
+      r.el.style.transition = 'none';
+      r.el.style.transform = `translate(${ox.toFixed(2)}px, ${oy.toFixed(2)}px)`;
+      r.el.style.boxShadow = r.base + walls;
+    }
+  }
+
+  private restoreRaised(): void {
+    if (this.raisedDone) return;
+    this.raisedDone = true;
+    for (const r of this.raised) {
+      r.el.style.transform = r.prevTransform;
+      r.el.style.boxShadow = r.prevShadow;
+      r.el.style.transition = r.prevTransition;
+    }
+    for (const l of this.lightables) {
+      l.ox = 0;
+      l.oy = 0;
+    }
+    this.raised = [];
+  }
+
   // ------------------------------------------------------------------ overlays
 
   private scanLightables(): void {
@@ -740,6 +905,8 @@ export class IntroEngine {
         r: Math.min(parseFloat(cs.borderTopLeftRadius) || 4, r.w / 2, r.h / 2),
         glow: glow.replace(/,/g, ' '),
         start: T_LIGHT0 + order * LIGHT_SPAN + (Math.random() - 0.5) * 0.05,
+        ox: 0,
+        oy: 0,
       });
     }
     this.lightables = out;
@@ -785,7 +952,7 @@ export class IntroEngine {
       if (p <= 0) continue;
       ctx.globalAlpha = easeOutCubic(p);
       ctx.beginPath();
-      ctx.roundRect(l.x, l.y, l.w, l.h, l.r);
+      ctx.roundRect(l.x + l.ox, l.y + l.oy, l.w, l.h, l.r);
       ctx.fill();
     }
     // Gehäuse selbst wird mit der Hintergrundbeleuchtung heller
@@ -832,7 +999,7 @@ export class IntroEngine {
       ctx.shadowBlur = 26 * q;
       ctx.fillStyle = `rgba(${l.glow.split(/\s+/).join(',')},${(0.32 * a).toFixed(3)})`;
       ctx.beginPath();
-      ctx.roundRect(l.x, l.y, l.w, l.h, l.r);
+      ctx.roundRect(l.x + l.ox, l.y + l.oy, l.w, l.h, l.r);
       ctx.fill();
     }
     ctx.shadowBlur = 0;
@@ -880,7 +1047,7 @@ export class IntroEngine {
       this.dust.push({
         p: new THREE.Vector3(
           this.rest.x + x * 0.98,
-          0.04 + Math.random() * 0.1,
+          this.tableY(this.rest.z + z * 0.98) + 0.04 + Math.random() * 0.1,
           this.rest.z + z * 0.98,
         ),
         v: new THREE.Vector3(
@@ -922,7 +1089,8 @@ export class IntroEngine {
       d.v.multiplyScalar(drag);
       d.v.y -= dt * d.grav;
       d.p.addScaledVector(d.v, dt);
-      if (d.p.y < 0.02) d.p.y = 0.02;
+      const floor = this.tableY(d.p.z) + 0.02;
+      if (d.p.y < floor) d.p.y = floor;
       const v = this.v3.copy(d.p).applyMatrix4(cam.matrixWorldInverse);
       const depth = -v.z;
       if (depth < 0.2) continue;
@@ -940,6 +1108,11 @@ export class IntroEngine {
     }
     ctx.globalAlpha = 1;
     this.dust = alive;
+  }
+
+  /** Tischhöhe (gekippt) an Tiefe z, im Rahmen der Geräteoberseite */
+  private tableY(z: number): number {
+    return -(this.rest.z + this.DH / 2 - z) * Math.tan(SLOPE);
   }
 
   private faceQuad(): [number, number][] {
@@ -974,6 +1147,7 @@ export class IntroEngine {
     if (c) c.style.transition = 'opacity 0.3s ease';
     setTimeout(() => {
       if (this.disposed) return;
+      this.restoreRaised();
       this.device.style.transform = '';
       this.shade.style.opacity = '0';
       this.glow.style.opacity = '0';
@@ -989,6 +1163,7 @@ export class IntroEngine {
 
   private handover(): void {
     this.finishing = true;
+    this.restoreRaised();
     this.device.style.transform = '';
     setTimeout(() => this.finishNow(), 120);
   }
@@ -1005,6 +1180,7 @@ export class IntroEngine {
     cancelAnimationFrame(this.raf);
     window.removeEventListener('keydown', this.onKey, true);
     window.removeEventListener('resize', this.onResize);
+    this.restoreRaised();
     const ds = this.device.style;
     ds.transform = '';
     ds.transformOrigin = '';
@@ -1116,6 +1292,42 @@ function roundedSlab(
   geo.rotateX(-Math.PI / 2);
   geo.computeVertexNormals();
   return geo;
+}
+
+/**
+ * Formt eine Platte (Oberkante y=0, Unterkante y=-hMax) zum Keil: Höhe vorne (z=+d/2) hFront, hinten
+ * hMax, dazwischen linear. Flanken rücken nach unten hin um bis zu `taper` nach innen.
+ */
+function wedgeBody(
+  geo: THREE.BufferGeometry,
+  hMax: number,
+  d: number,
+  hFront: number,
+  hw: number,
+  hd: number,
+  taper: number,
+): void {
+  const pos = geo.attributes['position'] as THREE.BufferAttribute;
+  for (let i = 0; i < pos.count; i++) {
+    const z = pos.getZ(i);
+    const hz = hFront + (hMax - hFront) * THREE.MathUtils.clamp((d / 2 - z) / d, 0, 1);
+    const y = pos.getY(i) * (hz / hMax);
+    const t = THREE.MathUtils.clamp(-y / hz, 0, 1);
+    pos.setY(i, y);
+    pos.setX(i, pos.getX(i) * (1 - (taper / hw) * t));
+    pos.setZ(i, z * (1 - (taper / hd) * t));
+  }
+  pos.needsUpdate = true;
+  geo.computeVertexNormals();
+  geo.computeBoundingBox();
+}
+
+/** Flankenfarbe einer Taste: Grundfarbe deutlich abgedunkelt (Seitenwand im Schatten) */
+function wallColor(bg: string): string {
+  const m = bg.match(/rgba?\(([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?/);
+  if (!m || (m[4] !== undefined && parseFloat(m[4]) < 0.3)) return 'rgb(24 21 17)';
+  const d = (v: string) => Math.round(parseFloat(v) * 0.42);
+  return `rgb(${d(m[1])} ${d(m[2])} ${d(m[3])})`;
 }
 
 function rand(seed: number): () => number {

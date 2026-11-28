@@ -541,7 +541,8 @@ export class SoundCardComponent {
         firedByLongPress = true;
         this.voiceControl.blockTouchScroll = true;
         this.handleClick();
-        gesture = this.voiceControl.beginGesture(s.hash, s.name, x0, y0);
+        // langer Druck = klare Absicht → XY-Pad sofort
+        gesture = this.voiceControl.beginGesture(s.hash, s.name, x0, y0, 0);
         navigator.vibrate?.(12);
       }, LONG_PRESS_MS);
     }

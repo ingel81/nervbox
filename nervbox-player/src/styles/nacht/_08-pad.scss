@@ -544,3 +544,11 @@
     letter-spacing: 0;
   }
 }
+/* Live-Geste (Pad halten + ziehen): nichts darunter hovern, Zeiger als Greifhand */
+body.nk-live-drag {
+  cursor: grabbing;
+  user-select: none;
+}
+body.nk-live-drag * {
+  pointer-events: none !important;
+}
