@@ -47,6 +47,7 @@ import { AchievementService } from './core/services/achievement.service';
 import { ConfigService } from './core/services/config.service';
 import { HotkeyService } from './core/services/hotkey.service';
 import { DeckViewService } from './core/services/deck-view.service';
+import { AppUpdateService } from './core/services/app-update.service';
 import { Sound } from './core/models';
 
 @Component({
@@ -306,6 +307,7 @@ export class App implements OnInit {
   private readonly router = inject(Router);
   private readonly hotkeys = inject(HotkeyService);
   private readonly deckView = inject(DeckViewService);
+  private readonly appUpdate = inject(AppUpdateService);
 
   readonly isDevRoute = signal(window.location.pathname.startsWith('/dev/'));
 
@@ -339,6 +341,7 @@ export class App implements OnInit {
   );
 
   constructor() {
+    this.appUpdate.init();
     // Auswahlmodus gibt es nur auf Desktop: beim Wechsel auf Mobilbreite ausschalten
     effect(() => {
       if (this.isMobile() && this.selectionService.selectionMode()) {
