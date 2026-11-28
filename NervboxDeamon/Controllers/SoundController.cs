@@ -66,16 +66,17 @@ namespace NervboxDeamon.Controllers
     [HttpGet]
     [Route("{soundId}/play")]
     [Microsoft.AspNetCore.Authorization.Authorize]
-    public IActionResult PlaySound(string soundId)
+    public IActionResult PlaySound(string soundId, [FromQuery] string effect = null)
     {
       try
       {
-        var result = this.SoundService.PlaySound(soundId, this.UserId);
+        // effect (optional): pitch-up | pitch-down | reverse | echo | reverb | telephone
+        var result = this.SoundService.PlaySound(soundId, this.UserId, effect);
         if (!result.Success)
         {
           return BadRequest(new { Error = result.Error });
         }
-        return Ok(new { CreditsRemaining = result.CreditsRemaining });
+        return Ok(new { CreditsRemaining = result.CreditsRemaining, VoiceId = result.VoiceId });
       }
       catch (Exception ex)
       {

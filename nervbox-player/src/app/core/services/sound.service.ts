@@ -5,9 +5,14 @@ import { Sound, SoundUpdateRequest, Tag, TopSound, TopUser } from '../models';
 import { CreditService } from './credit.service';
 import { ConfigService } from './config.service';
 import { LoudnessService } from './loudness.service';
+import { AudioEngineService } from './audio-engine.service';
+import { VoiceControlService } from './voice-control.service';
+import { SoundEffectId } from '../audio/sound-fx';
 
 interface PlaySoundResponse {
   creditsRemaining: number;
+  /** Stimmen-ID (Stopp/Live-Steuerung), fehlt bei alten Backends */
+  voiceId?: number;
 }
 
 @Injectable({
@@ -18,6 +23,8 @@ export class SoundService {
   private readonly creditService = inject(CreditService);
   private readonly configService = inject(ConfigService);
   private readonly loudness = inject(LoudnessService);
+  private readonly engine = inject(AudioEngineService);
+  private readonly voiceControl = inject(VoiceControlService);
 
   // State
   readonly sounds = signal<Sound[]>([]);
@@ -42,18 +49,33 @@ export class SoundService {
     );
   }
 
-  playSound(hash: string): Observable<PlaySoundResponse> {
-    return this.api.get<PlaySoundResponse>(`/sound/${hash}/play`).pipe(
+  /**
+   * Spielt einen Sound (Pi oder – im Browser-Modus – hier im Browser über die Web-Audio-Kette).
+   * effect: optionaler Ein-Klick-Effekt; ohne Angabe greift ein per Pad-Menü „scharf
+   * geschalteter“ Effekt (VoiceControlService.armEffect).
+   */
+  playSound(hash: string, effect?: SoundEffectId | null): Observable<PlaySoundResponse> {
+    const fx = effect ?? this.voiceControl.takeArmedEffect(hash);
+    const browser = this.configService.isBrowserPlayback();
+    if (browser) {
+      // noch im Klick: AudioContext freischalten, Datei parallel zur Anfrage laden
+      this.engine.unlock();
+      this.engine.prefetch(hash, fx === 'reverse');
+    }
+    const query = fx ? `?effect=${encodeURIComponent(fx)}` : '';
+    return this.api.get<PlaySoundResponse>(`/sound/${hash}/play${query}`).pipe(
       tap((response) => {
         if (response?.creditsRemaining !== undefined) {
           this.creditService.updateCreditsFromPlayResponse(response.creditsRemaining);
         }
+        const voiceId = response?.voiceId ?? this.engine.nextLocalId();
 
         // In Browser playback mode, also play the sound locally in the browser
         // (the server only logs usage and deducts credits, doesn't play locally)
-        if (this.configService.isBrowserPlayback()) {
-          this.playInBrowser(hash);
+        if (browser) {
+          void this.engine.play({ voiceId, hash, gain: this.loudness.gain(hash), effect: fx });
         }
+        this.voiceControl.registerOwnPlay(hash, voiceId);
       }),
     );
   }

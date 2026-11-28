@@ -19,6 +19,7 @@ using System.Net;
 using System.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
 using NervboxDeamon.Services.Interfaces;
+using NervboxDeamon.Services.Audio;
 
 namespace NervboxDeamon.Services
 {
@@ -27,8 +28,10 @@ namespace NervboxDeamon.Services
     public bool Success { get; set; }
     public string Error { get; set; }
     public int? CreditsRemaining { get; set; }
+    /// <summary>Id of the started voice (stop / live control / soundEnded)</summary>
+    public int? VoiceId { get; set; }
 
-    public static PlaySoundResult Ok(int creditsRemaining) => new PlaySoundResult { Success = true, CreditsRemaining = creditsRemaining };
+    public static PlaySoundResult Ok(int creditsRemaining, int voiceId) => new PlaySoundResult { Success = true, CreditsRemaining = creditsRemaining, VoiceId = voiceId };
     public static PlaySoundResult Fail(string error) => new PlaySoundResult { Success = false, Error = error };
   }
 
@@ -37,6 +40,8 @@ namespace NervboxDeamon.Services
     void Init();
     void Shutdown();
     PlaySoundResult PlaySound(string soundId, int userId);
+    /// <summary>Play with an optional one-click effect ("pitch-up", "echo", ... see FxParams.Parse).</summary>
+    PlaySoundResult PlaySound(string soundId, int userId, string effect);
     void KillAll();
     /// <summary>Play an arbitrary audio file on the server speakers (Local mode only).</summary>
     bool PlayFile(string filePath);
@@ -90,6 +95,7 @@ namespace NervboxDeamon.Services
     private IAchievementService AchievementService { get; set; }
     private ILoudnessService Loudness { get; set; }
     private IMixerService Mixer { get; set; }
+    private IVoiceService Voices { get; set; }
 
     //member
     public ConcurrentDictionary<int, User> UserLookup { private set; get; } = new ConcurrentDictionary<int, User>();
@@ -188,6 +194,7 @@ namespace NervboxDeamon.Services
       AchievementService = serviceProvider.GetRequiredService<IAchievementService>();
       Loudness = serviceProvider.GetRequiredService<ILoudnessService>();
       Mixer = serviceProvider.GetRequiredService<IMixerService>();
+      Voices = serviceProvider.GetRequiredService<IVoiceService>();
 
       var appSettingsSection = Configuration.GetSection("AppSettings");
       appSettings = appSettingsSection.Get<AppSettings>();
@@ -356,7 +363,9 @@ namespace NervboxDeamon.Services
       }
     }
 
-    public PlaySoundResult PlaySound(string soundId, int userId)
+    public PlaySoundResult PlaySound(string soundId, int userId) => PlaySound(soundId, userId, null);
+
+    public PlaySoundResult PlaySound(string soundId, int userId, string effectName)
     {
       if (!this.Sounds.TryGetValue(soundId, out var sound))
       {
@@ -383,13 +392,40 @@ namespace NervboxDeamon.Services
 
       var creditsRemaining = CreditService.GetUserCredits(userId);
 
+      var browser = appSettings.PlaybackMode == PlaybackMode.Browser;
+      var onMixer = !browser && appSettings.SSH?.Enabled != true && (appSettings.LocalPlayer ?? "mpg123") == "mixer";
+      // effects need a DSP: the box mixer or the browser engine (plain mpg123/SSH plays them dry)
+      var effect = browser || onMixer ? FxParams.Parse(effectName) : SoundEffect.None;
+      var tailMs = (int)(FxParams.TailSec(effect) * 1000 * 0.8);
+      var voice = new VoiceInfo
+      {
+        Id = Voices.NextId(),
+        UserId = userId,
+        SoundHash = sound.Hash,
+        Effect = effect,
+        StartedAt = DateTime.UtcNow,
+        ExpectedMs = (int)(sound.DurationMs / FxParams.EffectRate(effect)) + tailMs,
+        OnMixer = onMixer,
+        InBrowser = browser
+      };
+      Voices.Register(voice);
+
       // Play the sound asynchronously
       new Task(() =>
       {
+        // announce first: a voice that fails at once must not end before it started on the clients
+        AnnounceSoundPlayed(sound, userId, voice);
+
         // In Browser mode, skip local playback - the client will stream the audio
-        if (appSettings.PlaybackMode == PlaybackMode.Browser)
+        if (browser)
         {
           Logger.LogDebug($"Browser playback mode - skipping local playback for: {sound.FileName}");
+        }
+        else if (onMixer)
+        {
+          var localPath = Path.Combine(SoundDirectory.FullName, sound.FileName);
+          var ok = Mixer.Play(new MixerPlayRequest { VoiceId = voice.Id, FilePath = localPath, Gain = Loudness.GetGain(sound.Hash), Effect = effect });
+          if (!ok) Voices.End(voice.Id, "error");
         }
         else if (appSettings.SSH?.Enabled == true)
         {
@@ -417,26 +453,6 @@ namespace NervboxDeamon.Services
 
         this.Usages.Enqueue(usage);
 
-        if (!UserLookup.ContainsKey(userId))
-        {
-          InitUserLookup();
-        }
-
-        User initiator = UserLookup[userId];
-
-        // Use full name if available, otherwise fall back to username
-        var displayName = !string.IsNullOrWhiteSpace($"{initiator.FirstName}{initiator.LastName}")
-          ? $"{initiator.FirstName} {initiator.LastName}".Trim()
-          : initiator.Username;
-
-        this.SoundHub.Clients.All.SendAsync("soundPlayed", new
-        {
-          Initiator = new { Name = displayName, Id = initiator.Id },
-          Time = DateTime.UtcNow,
-          SoundHash = sound.Hash,
-          FileName = sound.FileName
-        });
-
         // Check sound play achievements
         try
         {
@@ -456,7 +472,38 @@ namespace NervboxDeamon.Services
 
       }).Start();
 
-      return PlaySoundResult.Ok(creditsRemaining);
+      return PlaySoundResult.Ok(creditsRemaining, voice.Id);
+    }
+
+    /// <summary>
+    /// "soundPlayed": unchanged fields plus voiceId, effect, durationMs (expected incl. effect speed/tail)
+    /// and stoppable (single-voice stop / live control available).
+    /// </summary>
+    private void AnnounceSoundPlayed(Sound sound, int userId, VoiceInfo voice)
+    {
+      if (!UserLookup.ContainsKey(userId))
+      {
+        InitUserLookup();
+      }
+
+      User initiator = UserLookup[userId];
+
+      // Use full name if available, otherwise fall back to username
+      var displayName = !string.IsNullOrWhiteSpace($"{initiator.FirstName}{initiator.LastName}")
+        ? $"{initiator.FirstName} {initiator.LastName}".Trim()
+        : initiator.Username;
+
+      this.SoundHub.Clients.All.SendAsync("soundPlayed", new
+      {
+        Initiator = new { Name = displayName, Id = initiator.Id },
+        Time = DateTime.UtcNow,
+        SoundHash = sound.Hash,
+        FileName = sound.FileName,
+        VoiceId = voice.Id,
+        Effect = FxParams.Name(voice.Effect),
+        DurationMs = voice.ExpectedMs,
+        Stoppable = voice.Controllable
+      });
     }
 
     public bool PlayFile(string filePath)
@@ -474,12 +521,12 @@ namespace NervboxDeamon.Services
       try
       {
         var player = appSettings.LocalPlayer ?? "mpg123";
-        if (player == "mixer" && !filePath.EndsWith(".wav", StringComparison.OrdinalIgnoreCase))
+        if (player == "mixer")
         {
+          // MP3 via mpg123, WAV (TTS) parsed + resampled in the mixer
           Mixer.Play(filePath, gain);
           return;
         }
-        if (player == "mixer") player = "mpg123";
         if (filePath.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) && player == "mpg123")
         {
           player = "aplay"; // mpg123 cannot decode WAV
@@ -529,6 +576,8 @@ namespace NervboxDeamon.Services
         Mixer?.StopAll();
         KillLocalPlayers();
       }
+      // browser-played and untracked voices end for all clients (mixer voices via the mixer event)
+      Voices?.EndAll();
     }
 
     private void KillLocalPlayers()

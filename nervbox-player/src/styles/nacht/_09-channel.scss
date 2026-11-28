@@ -142,3 +142,86 @@
   color: var(--nk-iv-2);
   white-space: nowrap;
 }
+
+/* Stopp-Taste je Kanal (eigener Sound oder Admin) – kleine rote Gummitaste im Kopf */
+.nk-channel__stop {
+  flex-shrink: 0;
+  width: 18px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  background: linear-gradient(180deg, #3a1714, #2a100e);
+  color: var(--nk-danger-text);
+  font: 700 9px/1 var(--nk-font-ui);
+  box-shadow:
+    inset 0 0 0 1px rgb(var(--nk-danger-rgb) / 0.55),
+    0 1px 0 rgb(0 0 0 / 0.6);
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+.nk-channel__stop:hover,
+.nk-channel__stop:focus-visible {
+  background: linear-gradient(180deg, var(--nk-danger-hot), var(--nk-danger));
+  color: #fff;
+  outline: none;
+  box-shadow:
+    inset 0 0 0 1px var(--nk-danger-edge),
+    0 0 8px rgb(var(--nk-danger-rgb) / 0.55);
+}
+.nk-channel__fx {
+  flex-shrink: 0;
+  padding: 0 3px;
+  border-radius: 2px;
+  font: 600 8.5px/12px var(--nk-font-mono);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--nk-iv-2);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+}
+
+/* Summen-Pegel (waagerechte LED-Kette) + Limiter-LED */
+.nk-vu {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.nk-vu__bar {
+  display: flex;
+  gap: 1.5px;
+}
+.nk-vu__seg {
+  width: 4px;
+  height: 9px;
+  border-radius: 1px;
+  background: #0a0908;
+  box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.1);
+}
+.nk-vu__seg--g {
+  --nk-seg: var(--nk-vu-g);
+}
+.nk-vu__seg--y {
+  --nk-seg: var(--nk-vu-y);
+}
+.nk-vu__seg--r {
+  --nk-seg: var(--nk-vu-r);
+}
+.nk-vu__seg--g,
+.nk-vu__seg--y,
+.nk-vu__seg--r {
+  background: var(--nk-seg);
+  box-shadow: 0 0 4px var(--nk-seg);
+}
+.nk-vu__lim {
+  font: 600 8px/1 var(--nk-font-mono);
+  letter-spacing: 0.5px;
+  color: var(--nk-iv-3);
+}
+.nk-vu__lim--on {
+  color: var(--nk-vu-y);
+  text-shadow: 0 0 6px rgb(242 210 75 / 0.7);
+}

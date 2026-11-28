@@ -33,10 +33,11 @@ namespace NervboxDeamon.Controllers
     /// <summary>
     /// POST /api/mixer/bench?voices=16&amp;seconds=10&amp;device=null - load test with a separate mixer
     /// instance (default ALSA "null" device = inaudible): plays N random sounds at once and reports
-    /// process CPU, underruns and mix time.
+    /// process CPU, underruns and mix time. effect = pitch-up|…|telephone, or "mixed" (all effects in
+    /// rotation + live control) to measure the per-voice DSP cost.
     /// </summary>
     [HttpPost("bench")]
-    public async Task<IActionResult> Bench([FromQuery] int voices = 16, [FromQuery] int seconds = 10, [FromQuery] string device = "null")
+    public async Task<IActionResult> Bench([FromQuery] int voices = 16, [FromQuery] int seconds = 10, [FromQuery] string device = "null", [FromQuery] string effect = null)
     {
       voices = Math.Clamp(voices, 1, 32);
       seconds = Math.Clamp(seconds, 2, 30);
@@ -49,7 +50,15 @@ namespace NervboxDeamon.Controllers
       var cpu0 = proc.TotalProcessorTime;
       var sys0 = ReadProcStat();
       var sw = Stopwatch.StartNew();
-      foreach (var f in files) mixer.Play(f.FullName, 0.8);
+      var rotation = new[] { "reverb", "echo", "telephone", "pitch-up", "pitch-down", "reverse", null };
+      int n = 0;
+      foreach (var f in files)
+      {
+        var fx = effect == "mixed" ? rotation[n % rotation.Length] : effect;
+        int id = 1_000_000 + n++;
+        mixer.Play(new MixerPlayRequest { VoiceId = id, FilePath = f.FullName, Gain = 0.8, Effect = Services.Audio.FxParams.Parse(fx) });
+        if (effect == "mixed") mixer.SetLive(id, 1.2, n % 2 == 0 ? -0.4 : 0.4, 0.5);
+      }
       await Task.Delay(TimeSpan.FromSeconds(seconds));
       var stats = mixer.GetStats();
       proc.Refresh();
@@ -61,6 +70,7 @@ namespace NervboxDeamon.Controllers
       {
         Files = files.Count,
         Device = device,
+        Effect = effect,
         Seconds = seconds,
         BackendCpuPercentOfOneCore = Math.Round(cpu, 1),
         SystemCpuPercentAllCores = sysPct,

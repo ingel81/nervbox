@@ -25,6 +25,7 @@ import { ChatSidebarComponent } from './components/chat/chat-sidebar.component';
 import { SoundUploadDialogComponent } from './components/sound-upload-dialog/sound-upload-dialog.component';
 import { AchievementToastComponent } from './components/shared/achievement-toast/achievement-toast.component';
 import { ChannelStripComponent } from './components/channels/channel-strip.component';
+import { LiveHudComponent } from './components/sound-grid/live-hud.component';
 import {
   MobileBarComponent,
   MobileAction,
@@ -61,6 +62,7 @@ import { Sound } from './core/models';
     ChatSidebarComponent,
     AchievementToastComponent,
     ChannelStripComponent,
+    LiveHudComponent,
     MobileBarComponent,
   ],
   template: `
@@ -182,6 +184,7 @@ import { Sound } from './core/models';
           }
         </div>
       </div>
+      <app-live-hud />
 
       <app-achievement-toast />
     }

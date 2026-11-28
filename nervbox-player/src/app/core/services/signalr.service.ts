@@ -1,4 +1,5 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, effect, inject, signal, untracked } from '@angular/core';
+import { Subject } from 'rxjs';
 import * as signalR from '@microsoft/signalr';
 import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
@@ -22,6 +23,27 @@ export interface SoundPlayedEvent {
   fileName: string;
   initiator: { name: string; id: number };
   time: string;
+  /** Stimmen-ID (Stopp, Live-Steuerung, soundEnded) – fehlt bei alten Backends */
+  voiceId?: number;
+  /** Ein-Klick-Effekt oder null */
+  effect?: string | null;
+  /** Erwartete Dauer inkl. Effekt-Tempo/-Ausklang */
+  durationMs?: number;
+  /** Einzeln stoppbar / live steuerbar */
+  stoppable?: boolean;
+}
+
+export interface SoundEndedEvent {
+  voiceId: number;
+  reason: 'end' | 'stopped' | 'error';
+}
+
+/** Pegel des Pi-Mixers (~12×/s, nur solange etwas läuft) */
+export interface MixLevelEvent {
+  peak: number;
+  rms: number;
+  limiterDb: number;
+  voices: { id: number; peak: number }[];
 }
 
 export interface CreditUpdateEvent {
@@ -50,6 +72,33 @@ export class SignalRService {
   readonly chatConnected = signal(false);
   readonly soundConnected = signal(false);
   readonly rateLimitMessage = signal<string | null>(null);
+  /** Ende einer Stimme (natürlich, gestoppt, Fehler) – verlustfrei als Strom */
+  readonly soundEnded$ = new Subject<SoundEndedEvent>();
+  readonly mixLevel = signal<MixLevelEvent | null>(null);
+
+  constructor() {
+    // Sound-Hub mit dem aktuellen Login verbinden (Live-Steuerung/Ende-Meldung prüfen den Absender)
+    let lastUser: number | null | undefined;
+    effect(() => {
+      const id = this.auth.currentUser()?.id ?? null;
+      if (lastUser !== undefined && id !== lastUser && this.soundConnection) {
+        untracked(() => void this.reconnectSound());
+      }
+      lastUser = id;
+    });
+  }
+
+  private async reconnectSound(): Promise<void> {
+    const old = this.soundConnection;
+    this.soundConnection = null;
+    this.soundConnected.set(false);
+    try {
+      await old?.stop();
+    } catch {
+      // egal
+    }
+    await this.connectSound();
+  }
 
   async connectChat(): Promise<void> {
     if (this.chatConnection) return;
@@ -95,12 +144,22 @@ export class SignalRService {
     const baseUrl = environment.apiUrl.replace('/api', '');
 
     this.soundConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`${baseUrl}/ws/soundHub`)
+      .withUrl(`${baseUrl}/ws/soundHub`, {
+        accessTokenFactory: () => this.auth.getToken() || '',
+      })
       .withAutomaticReconnect()
       .build();
 
     this.soundConnection.on('soundPlayed', (event: SoundPlayedEvent) => {
       this.soundEvents.update((events) => [event, ...events].slice(0, 10));
+    });
+
+    this.soundConnection.on('soundEnded', (event: SoundEndedEvent) => {
+      this.soundEnded$.next(event);
+    });
+
+    this.soundConnection.on('mixLevel', (event: MixLevelEvent) => {
+      this.mixLevel.set(event);
     });
 
     this.soundConnection.on('creditUpdate', (event: CreditUpdateEvent) => {
@@ -157,6 +216,22 @@ export class SignalRService {
       console.error('Failed to send GIF:', err);
       throw err;
     }
+  }
+
+  /** Live-Steuerung einer Pi-Mixer-Stimme (nur Initiator; Backend prüft) */
+  modulateVoice(voiceId: number, rate: number, filter: number, wobble: number): void {
+    if (this.soundConnection?.state !== signalR.HubConnectionState.Connected) return;
+    this.soundConnection
+      .invoke('ModulateVoice', voiceId, rate, filter, wobble)
+      .catch((err) => console.warn('ModulateVoice failed:', err));
+  }
+
+  /** Browser-Modus: eigene Stimme ist natürlich zu Ende */
+  reportVoiceEnded(voiceId: number): void {
+    if (this.soundConnection?.state !== signalR.HubConnectionState.Connected) return;
+    this.soundConnection
+      .invoke('ReportVoiceEnded', voiceId)
+      .catch((err) => console.warn('ReportVoiceEnded failed:', err));
   }
 
   setInitialMessages(messages: ChatMessage[]): void {

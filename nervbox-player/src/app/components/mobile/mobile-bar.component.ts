@@ -97,6 +97,16 @@ interface MenuItem {
                   : 'nk-avatar nk-avatar--xs nk-avatar--other'
               "
               >{{ initials(c.userName) }}</span>{{ c.name }}
+            @if (nowPlaying.canStop(c)) {
+              <button
+                type="button"
+                class="mb-chan__stop"
+                [attr.aria-label]="c.name + ' stoppen'"
+                (click)="nowPlaying.stop(c)"
+              >
+                ■
+              </button>
+            }
           </span>
         } @empty {
           <span class="mb-idle">kein Signal</span>
@@ -263,6 +273,18 @@ interface MenuItem {
       background: var(--nk-other-deep);
       color: var(--nk-other-mid);
       box-shadow: inset 0 0 0 1px rgb(111 203 255 / 0.55);
+    }
+    .mb-chan__stop {
+      width: 20px;
+      height: 18px;
+      margin-left: 2px;
+      padding: 0;
+      border: 0;
+      border-radius: 9px;
+      background: rgb(var(--nk-danger-rgb) / 0.25);
+      color: var(--nk-danger-text);
+      font: 700 9px/1 var(--nk-font-ui);
+      box-shadow: inset 0 0 0 1px rgb(var(--nk-danger-rgb) / 0.6);
     }
     .mb-idle {
       font: 500 11px var(--nk-font-mono);

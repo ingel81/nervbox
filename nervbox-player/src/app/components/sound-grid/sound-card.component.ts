@@ -17,6 +17,8 @@ import { tagToneStyle } from '../../shared/tag-tone';
 import { LoudnessService } from '../../core/services/loudness.service';
 import { HOTKEY_DIGITS, HotkeyService } from '../../core/services/hotkey.service';
 import { SoundService } from '../../core/services/sound.service';
+import { LiveGesture, VoiceControlService } from '../../core/services/voice-control.service';
+import { SOUND_EFFECTS, SoundEffectId } from '../../core/audio/sound-fx';
 
 export type PadVariant = 'normal' | 'wide' | 'xl';
 
@@ -44,6 +46,7 @@ const NEW_MS = 7 * 24 * 60 * 60 * 1000;
       [class]="padClass()"
       [style]="padStyle()"
       (pointerdown)="onPointerDown($event)"
+      (contextmenu)="onContextMenu($event)"
       (click)="onPadClick($event)"
       (keydown.enter)="onPadKey($event)"
       (keydown.space)="onPadKey($event)"
@@ -188,6 +191,10 @@ const NEW_MS = 7 * 24 * 60 * 60 * 1000;
           <span>Auf Nervbox abspielen</span>
         </button>
       }
+      <button mat-menu-item [matMenuTriggerFor]="fxMenu" [disabled]="!sound().enabled">
+        <mat-icon>auto_fix_high</mat-icon>
+        <span>Mit Effekt abspielen</span>
+      </button>
       <button mat-menu-item (click)="playInBrowser()">
         <mat-icon>headphones</mat-icon>
         <span>Im Browser anhören</span>
@@ -225,6 +232,18 @@ const NEW_MS = 7 * 24 * 60 * 60 * 1000;
       }
     </mat-menu>
 
+    <mat-menu #fxMenu="matMenu" class="fx-menu">
+      @for (fx of effects; track fx.id) {
+        <button mat-menu-item (click)="playWithEffect(fx.id)">
+          <mat-icon>{{ fx.icon }}</mat-icon>
+          <span class="fx-menu__row">
+            <span>{{ fx.label }}</span>
+            <span class="fx-menu__hint">{{ fx.hint }}</span>
+          </span>
+        </button>
+      }
+    </mat-menu>
+
     <mat-menu #keyMenu="matMenu" class="hk-menu">
       @for (digit of digits; track digit) {
         <button
@@ -248,6 +267,19 @@ const NEW_MS = 7 * 24 * 60 * 60 * 1000;
     }
     :host > div {
       height: 100%;
+      /* Halten + Ziehen = Live-Steuerung: kein Markieren, kein iOS-Kontextmenü */
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+    .fx-menu__row {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .fx-menu__hint {
+      font-size: 12px;
+      opacity: 0.6;
     }
     .nk-pad__author-av {
       flex-shrink: 0;
@@ -285,8 +317,10 @@ export class SoundCardComponent {
   private readonly loudness = inject(LoudnessService);
   private readonly hotkeys = inject(HotkeyService);
   private readonly soundService = inject(SoundService);
+  private readonly voiceControl = inject(VoiceControlService);
 
   readonly digits = HOTKEY_DIGITS;
+  readonly effects = SOUND_EFFECTS;
 
   readonly sound = input.required<Sound>();
   readonly tagColors = input<Record<string, string>>({});
@@ -421,17 +455,105 @@ export class SoundCardComponent {
   /** Time of the last mouse press that triggered the pad; the click that follows it is ignored. */
   private firedOnPointerDownAt = 0;
 
+  /** Touch: Zeitpunkt, an dem ein langer Druck den Sound gestartet hat (folgender Klick = ignorieren) */
+  private firedOnLongPressAt = 0;
+  /** Druck (Maus oder Finger) läuft gerade auf diesem Pad */
+  private pressActive = false;
+
   /**
    * Mouse: trigger immediately on press (feels like a real pad). Touch/pen keep tap-on-release,
-   * otherwise every scroll gesture over the grid would fire sounds.
+   * otherwise every scroll gesture over the grid would fire sounds – but a finger held still for
+   * 300 ms starts the sound too and switches to live control (drag = modulate, no scrolling).
+   * While the button/finger stays down, dragging modulates the started voice (VoiceControlService).
    */
   onPointerDown(event: PointerEvent): void {
-    if (event.pointerType !== 'mouse' || event.button !== 0) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
     const target = event.target as Element | null;
     if (target?.closest('button, a, [role="menuitem"], .avatar-container.clickable')) return;
-    this.firedOnPointerDownAt = 0;
-    this.handleClick();
-    this.firedOnPointerDownAt = Date.now();
+    if (event.pointerType === 'mouse') {
+      this.firedOnPointerDownAt = 0;
+      this.handleClick();
+      this.firedOnPointerDownAt = Date.now();
+      if (this.canGoLive()) this.trackPress(event, true);
+      return;
+    }
+    if (this.canGoLive()) this.trackPress(event, false);
+  }
+
+  /** Live-Steuerung nur für eingeloggte Nutzer auf aktiven Pads außerhalb des Auswahlmodus */
+  private canGoLive(): boolean {
+    return this.sound().enabled && !this.selectionMode() && this.auth.isLoggedIn();
+  }
+
+  /**
+   * Verfolgt einen Druck über Fenster-Listener (die Karte kann während des Ziehens neu erzeugt
+   * werden). started=false (Touch): erst nach 300 ms Stillhalten starten Sound und Live-Geste.
+   */
+  private trackPress(down: PointerEvent, started: boolean): void {
+    const id = down.pointerId;
+    const x0 = down.clientX;
+    const y0 = down.clientY;
+    const s = this.sound();
+    let gesture: LiveGesture | null = started
+      ? this.voiceControl.beginGesture(s.hash, s.name, x0, y0)
+      : null;
+    let longPress: ReturnType<typeof setTimeout> | null = null;
+    let firedByLongPress = false;
+    this.pressActive = true;
+
+    const cleanup = (): void => {
+      window.removeEventListener('pointermove', move, true);
+      window.removeEventListener('pointerup', up, true);
+      window.removeEventListener('pointercancel', up, true);
+      if (longPress) clearTimeout(longPress);
+      gesture?.end();
+      gesture = null;
+      this.voiceControl.blockTouchScroll = false;
+      this.pressActive = false;
+      // der Klick nach dem Loslassen darf den Sound nicht nochmal starten
+      if (firedByLongPress) this.firedOnLongPressAt = Date.now();
+    };
+    const move = (e: PointerEvent): void => {
+      if (e.pointerId !== id) return;
+      if (!gesture) {
+        // Touch vor Ablauf des langen Drucks bewegt → normales Scrollen, kein Live
+        if (Math.hypot(e.clientX - x0, e.clientY - y0) > 10) cleanup();
+        return;
+      }
+      gesture.move(e.clientX, e.clientY, e.timeStamp || performance.now());
+      if (gesture.active()) e.preventDefault();
+    };
+    const up = (e: PointerEvent): void => {
+      if (e.pointerId === id) cleanup();
+    };
+    window.addEventListener('pointermove', move, true);
+    window.addEventListener('pointerup', up, true);
+    window.addEventListener('pointercancel', up, true);
+
+    if (!started) {
+      longPress = setTimeout(() => {
+        longPress = null;
+        if (!this.canGoLive()) return cleanup();
+        this.firedOnLongPressAt = Date.now();
+        firedByLongPress = true;
+        this.voiceControl.blockTouchScroll = true;
+        this.handleClick();
+        gesture = this.voiceControl.beginGesture(s.hash, s.name, x0, y0);
+        navigator.vibrate?.(12);
+      }, 300);
+    }
+  }
+
+  /** Langer Druck per Finger öffnet sonst das Kontextmenü des Browsers */
+  onContextMenu(event: Event): void {
+    if (this.pressActive || Date.now() - this.firedOnLongPressAt < 500) event.preventDefault();
+  }
+
+  /** Pad-Menü „Mit Effekt abspielen“ */
+  playWithEffect(effect: SoundEffectId): void {
+    if (!this.sound().enabled) return;
+    this.voiceControl.armEffect(this.sound().hash, effect);
+    this.playClick.emit(this.sound());
   }
 
   /**
@@ -442,6 +564,11 @@ export class SoundCardComponent {
   onPadClick(event: MouseEvent): void {
     const pointerType = (event as PointerEvent).pointerType;
     if (pointerType === 'mouse') return;
+    // Finger lange gedrückt: Sound lief schon beim Ablauf des langen Drucks los
+    if (this.firedOnLongPressAt && Date.now() - this.firedOnLongPressAt < 500) {
+      this.firedOnLongPressAt = 0;
+      return;
+    }
     // Browsers without PointerEvent clicks: fall back to the time guard
     if (
       pointerType === undefined &&
