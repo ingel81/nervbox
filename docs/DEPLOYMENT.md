@@ -79,6 +79,25 @@ sudo systemctl start nervbox
 
 Rollback der App: `sudo systemctl stop nervbox && cp -a $B/nervbox-app/. /opt/nervbox/ && sudo systemctl start nervbox`
 
+**Wann ein Backup nötig ist (Regel seit 2026-11-28):** nur wenn ein Schritt die Datenbank verändern kann –
+Backend-Deploys mit neuen EF-Migrationen (`Startup.cs` ruft `Database.Migrate()` bei **jedem** Start auf),
+direkte DB-Eingriffe, die Wirtschafts-Umstellung. Reine Frontend-Deploys (Player/Mixer) brauchen keins.
+Einen alten DB-Stand am Ende „einfach zurückspielen“ ist **kein** Ersatz: das verwirft alles seitdem
+(Chats, Plays, Einstellungen).
+
+Schnelles DB-Backup ohne Service-Stopp (SQLite-Online-Backup, WAL-sicher):
+```bash
+B=/opt/backup-$(date +%Y%m%d)/pre-<anlass>; sudo mkdir -p $B && sudo chown user:user $B
+sqlite3 /opt/nervbox-data/nervbox.db ".backup '$B/nervbox.db'" && sqlite3 $B/nervbox.db "PRAGMA integrity_check;"
+```
+
+### Nach dem Deploy: neue Version im Browser
+
+Der Player ist eine PWA mit Angular-Service-Worker (cacht nur die App-Hülle; `/api`, `/ws`, `/mixer` und
+Sounddateien nie). Offene Browser bekommen nach einem Deploy die Meldung **„Neue Version der Nervbox
+verfügbar“** mit „Neu laden“ (`AppUpdateService`: prüft beim Start, alle 5 min und beim Zurückkehren in
+den Tab). Kein Strg+F5 nötig.
+
 ## Konfiguration
 
 `deploy.conf` (kopieren von `deploy.conf.example`):
@@ -142,7 +161,9 @@ ervbox-dev{backend,player,mixer}.log`
 | Pfad | Inhalt |
 |------|--------|
 | `/opt/nervbox/` | Anwendung (wird bei jedem Deploy überschrieben) |
-| `/opt/nervbox-data/` | Persistente Daten (DB + Sounds) |
+| `/opt/nervbox-data/` | Persistente Daten (DB, Sounds, Avatare, `loudness.json` = gemessene Lautheit je Sound) |
+| `/etc/systemd/system/nervbox.service.d/mixer.conf` | Schaltet den Software-Mixer ein (`AppSettings__LocalPlayer=mixer`). Zurück auf mpg123 einzeln: Datei löschen, `sudo systemctl daemon-reload && sudo systemctl restart nervbox` |
+| `nervbox-tts` (systemd) | Piper-Sprachausgabe auf `127.0.0.1:5002`, Setup in `pi-setup/tts/` (nur Admin-Test) |
 | `/var/log/nervbox/` | Log-Dateien |
 | `/etc/letsencrypt/` | SSL-Zertifikate |
 

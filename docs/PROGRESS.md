@@ -1,6 +1,6 @@
 # nervbox - Projektstatus
 
-**Stand:** 2026-11-26
+**Stand:** 2026-11-28
 
 ---
 
@@ -9,7 +9,7 @@
 **nervbox** ist ein Soundboard-System für Raspberry Pi mit Web-Interface. Es besteht aus:
 
 - **Backend** (.NET 11, SQLite, SignalR) - Sound-Wiedergabe auf Pi, API, Auth
-- **Player** (Angular 21) - Web-UI zum Sounds abspielen, Chat, Stats
+- **Player** (Angular 22) - Web-UI zum Sounds abspielen, Chat, Stats
 - **Mixer** (Angular 22) - Audio-Editor zum Erstellen von Remixes
 
 ---
@@ -135,7 +135,63 @@ ervbox`)
 #### Offen
 - [x] Alles aktualisiert (2026-11-26): .NET 8 → 11, EF Core 11, Angular 21/20 → 22 (Player + Mixer), Mixer auf esbuild-Builder, Pi-OS full-upgrade, SSH.NET 2026
 - [x] TLS-Zertifikat erneuert (2026-11-26), automatische Erneuerung via certbot dns-cloudflare
-- [ ] `SSH.NET` 2023.0.0 updaten (NU1903, 2 High-Severity-Advisories)
+- [x] `SSH.NET` auf 2026.0.1 aktualisiert
+
+---
+
+### Phase 9: Nervbox 2026 – „Nachtschicht“ (Branch `2026`, 26.–28.11.2026)
+
+Jubiläumsedition „30 Jahre CABD“. Alles auf Branch `2026` (gepusht nach `origin/2026`, **Merge nach
+`master` erst nach der LAN**), live auf dem Pi. Letzter Stand: `6881a3b`.
+
+#### Oberfläche (Player)
+- **Nachtschicht-Redesign** (`644d894`): Gerät um 3 Uhr nachts – Deck mit LCD, Tag-Schiene, Pad-Platte,
+  Bondrucker-Chat, Kanalzüge; Nacht-Kit `src/styles/nacht/` (`nk-*`), alle Dialoge neu, Mobil-Leiste ≤ 768 px.
+  Details: [nervbox-player/CLAUDE.md](../nervbox-player/CLAUDE.md).
+- **NowPlaying**: laufende Sounds auf Pads und Kanälen (grün = eigene, eisblau = fremde), echte Zählung,
+  bis 32 Stimmen; Zufall, Nochmal, NEU-Etikett.
+- **Schnelltasten 1–9** (`a1f8048`): Pad-Menü „Auf Taste legen“, pro Benutzer im Browser (localStorage).
+- **Pads** lösen mit der Maus beim Drücken aus, Touch beim Loslassen; ruhiges Scrollen am Handy.
+- **Live-Steuerung**: Pad halten (160 ms) und ziehen – X = Tempo/Tonhöhe, Y = Filter, Schütteln = Wobble.
+- **3D-Intro** bei jedem Laden: Gerät fällt auf den Schreibtisch, synthetischer Aufprall-Sound, nahtloser
+  Übergang in die echte Oberfläche. **2D/3D-Umschalter** (Deck-Taste „3D“, nur Desktop) mit Maus-Parallaxe.
+  - **Einschalt-Taste** (`6881a3b`): sperrt der Browser Ton ohne Klick, wartet „NERVBOX EINSCHALTEN“ –
+    so kommt der Aufprall-Sound sicher.
+  - Safari/iOS (WebKit): flaches Einblenden, keine 3D-Ansicht (Projektion weicht dort ab; erst auf echtem
+    Apple-Gerät prüfen). Schwache Geräte / kein WebGL: flach. `prefers-reduced-motion`: kein Intro.
+  - Willkommens-Tour startet erst nach dem Intro.
+- **Update-Hinweis** (`02eafd0`): nach einem Deploy „Neue Version verfügbar → Neu laden“.
+- **Avatar-Kürzel** nur aus dem Benutzernamen (`shared/user-initials.ts`): überall gleich, echte Namen bleiben verborgen.
+- **Toolbar** passt von 1024 bis 1440 px (Logo verschwindet unter 1240 px).
+- Spielhalle: gemeinsamer Spielrahmen, alle Spiele passen in den Bildschirm, Escape fragt nach;
+  neu: **Hotdog-Greifer, Rubbellos, Roulette** (serverseitig entschieden) und **LAN-Pong** (Mehrspieler über SignalR).
+- PWA (installierbar, Favicon), Lazy Loading (Startbundle 2,24 → 1,12 MB).
+
+#### Audio (Backend + Browser)
+- **Software-Mixer** (`LocalPlayer=mixer`, auf dem Pi aktiv): eine aplay-Ausgabe statt 8-Stimmen-Grenze,
+  Limiter, Stopp pro Sound, echte Pegel; Effekte pro Klick (Pitch, Rückwärts, Echo, Hall, Telefon) – gleich
+  im Browser-Modus (Web Audio).
+- **Lautheits-Angleichung**: jeder Sound einmal gemessen (`loudness.json`), zu laute werden leiser
+  (Dateien bleiben unverändert); Admin-Menü an/aus.
+- **Sprachausgabe (Piper)**: nur Admin-Test, Dienst `nervbox-tts`.
+
+#### Backend / Sicherheit
+- Passwort-Hashes und IPs nicht mehr in `/api/users` und der Register-Antwort (`3b82b91`).
+- Kompression, Caching (Bundles immutable, index no-cache), Range-Requests für Sounds, SQLite WAL,
+  sauberer Shutdown ≤ 3 s, SignalR-WebSockets mit Token.
+- Guthaben-Änderungen serialisiert (keine Doppelbuchungen bei parallelen Käufen); Admin-Konto nicht in Ranglisten.
+
+#### Betrieb
+- DB-Backup nur bei Schritten, die die DB verändern können (siehe [DEPLOYMENT.md](DEPLOYMENT.md)).
+- Getestete Browser: Chrome, Firefox (Intro, 3D, Klicks ok), WebKit/Safari mit flachem Fallback.
+
+#### Offen
+- [ ] Wirtschafts-Umstellung Schekel → Holz („THE PURGE“) vor der LAN (26.12.): Umrechnung, Einkommen nur
+      online, Spielhalle beschleunigt, Ausdünnen der Credit-Buchungen – **vorher DB-Backup**.
+- [ ] Online-Anzeige und Countdown zur nächsten Auszahlung im LCD (Backend liefert die Daten noch nicht).
+- [ ] Safari/iPhone: 3D auf echtem Gerät prüfen, dann Fallback ggf. entfernen.
+- [ ] LAN 26.–30.12.: DNS-IP von `nervbox.sgeht.net` auf die Party-IP, danach zurück.
+- [ ] Nach der LAN: `2026` nach `master` mergen.
 
 ---
 
@@ -158,7 +214,7 @@ ervbox`)
 /home/joerg/projects/nervbox/
 ├── nervbox/                      # Haupt-Repository
 │   ├── NervboxDeamon/            # .NET 11 Backend
-│   ├── nervbox-player/           # Angular 21 Player UI
+│   ├── nervbox-player/           # Angular 22 Player UI
 │   ├── docs/                     # Diese Dokumentation
 │   ├── deploy.ps1                # Deployment Script (Windows)
 │   └── start-dev.ps1             # Dev Server Script (Windows)

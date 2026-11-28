@@ -147,6 +147,28 @@ Matrix die Identität → nahtloser Übergang in die flache Oberfläche.
 - Testen: localStorage `nervbox-intro-force=1` (Intro auch in Playwright), `nervbox-intro-debug-t=<s>`
   (Standbild), `nervbox-intro-disabled=1` bzw. `?nointro`.
 
+- **Intro-Ton / Einschalt-Taste** (`intro.component.ts`): Vor dem 3D-Intro prüft `IntroSound.canPlay()`,
+  ob der Browser Ton ohne Geste erlaubt. Wenn nicht, erscheint „NERVBOX EINSCHALTEN“ (Klick/Taste gibt
+  den Ton frei), währenddessen lädt `intro-engine` vor. Der Sound wird per `IntroOptions.sound` an die
+  Engine übergeben. Aufprall-Sound erst planen, wenn die Intro-Uhr läuft (`clockRunning`).
+- **Browser-Weichen** (`deck3d/deck-support.ts`): `isWebKitEngine()` (Safari/iOS) → flaches Intro und keine
+  3D-Taste (matrix3d-Projektion weicht in WebKit ab). `isWeakDevice()` / kein WebGL → flach.
+- Die Willkommens-Tour wartet, bis `html.nb-intro` weg ist (`waitForIntro()` in `welcome-tour.service.ts`).
+
+### Weitere Bausteine
+- **Neue Version nach Deploy** – `core/services/app-update.service.ts`: Service Worker (`ngsw`) liefert die
+  gecachte Hülle; der Dienst fragt `SwUpdate` (Start, alle 5 min, Tab-Fokus) und zeigt eine Snackbar
+  „Neu laden“. Im Dev-Server (`ng serve`) ist der Service Worker aus.
+- **Schnelltasten 1–9** – `core/services/hotkey.service.ts`: Pad-Menü „Auf Taste legen“, gespeichert pro
+  Benutzer in localStorage; ignoriert in Eingabefeldern, mit Modifikatoren, in Dialogen/Spielen, offenen Menüs.
+- **Avatar-Kürzel** – immer `userInitials(username)` aus `shared/user-initials.ts` (nie Vor-/Nachname).
+- **Audio im Browser** – `core/services/audio-engine.service.ts` (Web Audio, Effekte `core/audio/sound-fx.ts`); ohne
+  Web Audio bricht nichts ab (`AUDIO_CTOR`-Prüfung), der Klick geht trotzdem an den Server.
+- **Toolbar schmal** – Media-Queries in `toolbar.component.ts` (≤ 1420/1300/1240/1080 px); bei neuen
+  Deck-Tasten 1024–1440 px auf Überlauf prüfen.
+- **Dev-Server ist langsamer** als der Live-Build (Dev-Modus, Lazy-Chunks werden beim ersten Öffnen
+  übersetzt) – Ladezeiten von Dialogen immer gegen `https://nervbox.sgeht.net` beurteilen.
+
 ### Dialoge
 Wurzel `.nk-dlg`, darin `.nk-dialog__head` / `__body` / `__foot`; Felder `.nk-field` + `.nk-input`,
 Tasten `.nk-key` (`--accent`, `--ghost`, `--danger`, `--sm`, `--icon`). Breite bestimmt der Inhalt
