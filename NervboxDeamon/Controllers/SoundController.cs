@@ -93,7 +93,8 @@ namespace NervboxDeamon.Controllers
     {
       try
       {
-        return Ok(this.DbContext.SoundUsages.GroupBy(g => new { id = g.User.Id, name = g.User.Username }).Select(g => new
+        // the shared "admin" account and the system user stay out of rankings
+        return Ok(this.DbContext.SoundUsages.Where(u => u.User.Username != "admin" && u.User.Role != "system").GroupBy(g => new { id = g.User.Id, name = g.User.Username }).Select(g => new
         {
           PlayedById = g.Key.id,
           Name = g.Key.name,

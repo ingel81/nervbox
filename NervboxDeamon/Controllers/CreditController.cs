@@ -320,7 +320,7 @@ namespace NervboxDeamon.Controllers
             try
             {
                 var users = DbContext.Users
-                    .Where(u => u.IsActive && u.Id != UserId && u.Role != "system")
+                    .Where(u => u.IsActive && u.Id != UserId && u.Role != "system" && u.Username != "admin")
                     .OrderBy(u => u.Username)
                     .Select(u => new
                     {
