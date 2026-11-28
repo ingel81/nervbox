@@ -12,6 +12,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { LoudnessService } from '../../core/services/loudness.service';
 import { NowPlayingService } from '../../core/services/now-playing.service';
 import { ShopDialogComponent } from '../shop/shop-dialog.component';
+import { userInitials } from '../../shared/user-initials';
 
 export type MobileView = 'sounds' | 'chat';
 export type MobileAction =
@@ -433,11 +434,6 @@ export class MobileBarComponent {
   }
 
   initials(name: string): string {
-    return (
-      (name || '?')
-        .replace(/[^A-Za-zÄÖÜäöü0-9]/g, '')
-        .slice(0, 2)
-        .toUpperCase() || '?'
-    );
+    return userInitials(name);
   }
 }

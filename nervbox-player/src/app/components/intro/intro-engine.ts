@@ -86,6 +86,8 @@ export interface IntroCallbacks {
 export interface IntroOptions {
   /** nicht in die flache Oberfläche übergehen, sondern in der 3D-Ansicht stehen bleiben */
   endIn3d: boolean;
+  /** schon angelegter (ggf. per Einschalt-Taste freigegebener) Ton */
+  sound?: IntroSound | null;
 }
 
 export class IntroEngine {
@@ -149,7 +151,10 @@ export class IntroEngine {
     opts: IntroOptions = { endIn3d: false },
   ) {
     this.endIn3d = opts.endIn3d && !!cb.onHandover3d;
+    this.presetSound = opts.sound ?? null;
   }
+
+  private readonly presetSound: IntroSound | null;
 
   // ------------------------------------------------------------------ Aufbau
 
@@ -166,7 +171,7 @@ export class IntroEngine {
       return;
     }
     try {
-      this.sound = new IntroSound();
+      this.sound = this.presetSound ?? new IntroSound();
     } catch {
       this.sound = null;
     }

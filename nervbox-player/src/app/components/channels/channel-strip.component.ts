@@ -7,6 +7,7 @@ import {
   NowPlayingService,
   PlayingChannel,
 } from '../../core/services/now-playing.service';
+import { userInitials } from '../../shared/user-initials';
 
 interface ChannelView {
   n: number;
@@ -310,12 +311,7 @@ export class ChannelStripComponent {
   }
 
   private initials(name: string): string {
-    return (
-      (name || '?')
-        .replace(/[^A-Za-zÄÖÜäöü0-9]/g, '')
-        .slice(0, 2)
-        .toUpperCase() || '?'
-    );
+    return userInitials(name);
   }
 
   private fmt(ms: number): string {

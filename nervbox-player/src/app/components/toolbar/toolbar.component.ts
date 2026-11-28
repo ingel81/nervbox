@@ -17,6 +17,7 @@ import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component
 import { LcdGlyphComponent } from '../shared/lcd-glyph/lcd-glyph.component';
 import { ShekelPopoverComponent } from '../shared/shekel-popover/shekel-popover.component';
 import { ShopDialogComponent } from '../shop/shop-dialog.component';
+import { userInitials } from '../../shared/user-initials';
 
 export type SortOption =
   | 'name-asc'
@@ -919,20 +920,7 @@ export class ToolbarComponent {
 
   searchQuery = '';
 
-  readonly userInitials = computed(() => {
-    const user = this.auth.currentUser();
-    if (!user) return '?';
-    if (user.firstName && user.lastName) {
-      return (user.firstName[0] + user.lastName[0]).toUpperCase();
-    }
-    if (user.firstName) {
-      return user.firstName.substring(0, 2).toUpperCase();
-    }
-    if (user.username) {
-      return user.username.substring(0, 2).toUpperCase();
-    }
-    return '?';
-  });
+  readonly userInitials = computed(() => userInitials(this.auth.currentUser()?.username));
 
   // Inputs
   readonly currentSort = input<SortOption>('name-asc');

@@ -19,6 +19,7 @@ import { HOTKEY_DIGITS, HotkeyService } from '../../core/services/hotkey.service
 import { SoundService } from '../../core/services/sound.service';
 import { LiveGesture, VoiceControlService } from '../../core/services/voice-control.service';
 import { SOUND_EFFECTS, SoundEffectId } from '../../core/audio/sound-fx';
+import { userInitials } from '../../shared/user-initials';
 
 export type PadVariant = 'normal' | 'wide' | 'xl';
 
@@ -600,12 +601,7 @@ export class SoundCardComponent {
   }
 
   initials(name: string): string {
-    return (
-      (name || '?')
-        .replace(/[^A-Za-zÄÖÜäöü0-9]/g, '')
-        .slice(0, 2)
-        .toUpperCase() || '?'
-    );
+    return userInitials(name);
   }
 
   private formatDuration(ms: number): string {

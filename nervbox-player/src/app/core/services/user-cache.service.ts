@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { Observable, tap, of } from 'rxjs';
 import { ApiService } from './api.service';
 import { environment } from '../../../environments/environment';
+import { userInitials } from '../../shared/user-initials';
 
 export interface CachedUser {
   id: number;
@@ -38,16 +39,7 @@ export class UserCacheService {
     const user = this.getUser(userId);
     if (!user) return '?';
 
-    if (user.firstName && user.lastName) {
-      return (user.firstName[0] + user.lastName[0]).toUpperCase();
-    }
-    if (user.firstName) {
-      return user.firstName.substring(0, 2).toUpperCase();
-    }
-    if (user.username) {
-      return user.username.substring(0, 2).toUpperCase();
-    }
-    return '?';
+    return userInitials(user.username);
   }
 
   /**

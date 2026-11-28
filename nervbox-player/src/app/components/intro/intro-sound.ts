@@ -24,6 +24,32 @@ export class IntroSound {
     }
   }
 
+  /** Gibt es überhaupt Web Audio? */
+  get available(): boolean {
+    return !!this.ctx;
+  }
+
+  /**
+   * Darf der Ton ohne Nutzergeste starten (Autoplay-Regel des Browsers)?
+   * Wartet höchstens `ms` auf die Freigabe.
+   */
+  async canPlay(ms = 150): Promise<boolean> {
+    const ctx = this.ctx;
+    if (!ctx) return false;
+    if (ctx.state === 'running') return true;
+    const nav = navigator as Navigator & { getAutoplayPolicy?: (type: string) => string };
+    try {
+      if (nav.getAutoplayPolicy?.('audiocontext') === 'disallowed') return false;
+    } catch {
+      /* ältere Implementierung: einfach probieren */
+    }
+    await Promise.race([
+      ctx.resume().catch(() => undefined),
+      new Promise((r) => setTimeout(r, ms)),
+    ]);
+    return (ctx.state as AudioContextState) === 'running';
+  }
+
   get running(): boolean {
     return this.ctx?.state === 'running';
   }
