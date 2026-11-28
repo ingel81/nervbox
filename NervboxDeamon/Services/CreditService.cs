@@ -13,6 +13,13 @@ namespace NervboxDeamon.Services
 {
     public class CreditService : ICreditService, IDisposable
     {
+        /// <summary>
+        /// Serializes every read-modify-write of User.Credits. Without it, parallel requests (e.g. ten
+        /// scratch tickets at once) all read the same balance and the last SaveChanges wins = free money.
+        /// Monitor is re-entrant, so methods calling each other are fine.
+        /// </summary>
+        private static readonly object BalanceLock = new object();
+
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<CreditService> _logger;
         private readonly IHubContext<SoundHub> _soundHub;
@@ -86,6 +93,8 @@ namespace NervboxDeamon.Services
 
         public bool DeductCredits(int userId, int amount, CreditTransactionType type, string description, string relatedEntityId = null)
         {
+            lock (BalanceLock)
+            {
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
 
@@ -122,10 +131,13 @@ namespace NervboxDeamon.Services
             BroadcastCreditUpdate(userId, user.Credits);
 
             return true;
+            }
         }
 
         public void AddCredits(int userId, int amount, CreditTransactionType type, string description, string relatedEntityId = null)
         {
+            lock (BalanceLock)
+            {
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
 
@@ -138,8 +150,9 @@ namespace NervboxDeamon.Services
 
             var settings = GetSettings();
 
-            // For non-admins, cap at max credits (admins have no limit)
-            if (user.Role != "admin")
+            // For non-admins, cap at max credits (admins have no limit). Gamble wins and refunds are
+            // never capped: the stake was already deducted, capping would just destroy it.
+            if (user.Role != "admin" && type != CreditTransactionType.GambleWin)
             {
                 var newBalance = user.Credits + amount;
                 if (newBalance > settings.MaxCreditsUser)
@@ -191,6 +204,7 @@ namespace NervboxDeamon.Services
             catch (Exception ex)
             {
                 _logger.LogWarning($"Failed to check credit achievements: {ex.Message}");
+            }
             }
         }
 
@@ -245,6 +259,8 @@ namespace NervboxDeamon.Services
 
         public void GrantInitialCredits(int userId, bool isAdmin)
         {
+            lock (BalanceLock)
+            {
             var settings = GetSettings();
             var amount = isAdmin ? settings.InitialCreditsAdmin : settings.InitialCreditsUser;
 
@@ -268,10 +284,13 @@ namespace NervboxDeamon.Services
             db.SaveChanges();
 
             _logger.LogInformation($"Granted {amount} initial credits to user {userId}");
+            }
         }
 
         public void ProcessHourlyCredits()
         {
+            lock (BalanceLock)
+            {
             // Don't process if disposed
             if (_disposed)
             {
@@ -346,6 +365,7 @@ namespace NervboxDeamon.Services
             {
                 _logger.LogError(ex, "Error processing hourly credits");
             }
+            }
         }
 
         public void AdminGrantCredits(int userId, int amount, string reason)
@@ -355,6 +375,8 @@ namespace NervboxDeamon.Services
 
         public bool TryGrantHourlyCredits(int userId)
         {
+            lock (BalanceLock)
+            {
             var settings = GetSettings();
             if (!settings.HourlyCreditsEnabled)
             {
@@ -412,6 +434,7 @@ namespace NervboxDeamon.Services
             }
 
             return false;
+            }
         }
 
         private void BroadcastCreditUpdate(int userId, int newBalance)
@@ -486,6 +509,8 @@ namespace NervboxDeamon.Services
 
         public (bool won, int newBalance, string message) Gamble(int userId, int amount)
         {
+            lock (BalanceLock)
+            {
             if (amount <= 0)
             {
                 return (false, 0, "Einsatz muss größer als 0 sein");
@@ -584,10 +609,13 @@ namespace NervboxDeamon.Services
                 _logger.LogInformation($"User {userId} lost gambling: bet {amount}");
                 return (false, user.Credits, $"Pech gehabt! {amount} N$ verloren.");
             }
+            }
         }
 
         public (bool success, string message) TransferCredits(int fromUserId, int toUserId, int amount)
         {
+            lock (BalanceLock)
+            {
             if (amount <= 0)
             {
                 return (false, "Betrag muss größer als 0 sein");
@@ -698,10 +726,13 @@ namespace NervboxDeamon.Services
             }
 
             return (true, $"{amount} N$ an {toUser.Username} gesendet!");
+            }
         }
 
         public (int reward, int newBalance) ClaimMinigameReward(int userId, string gameName, int level)
         {
+            lock (BalanceLock)
+            {
             // Calculate reward based on game type
             int reward;
             if (gameName == "HotdogKatapult")
@@ -795,10 +826,13 @@ namespace NervboxDeamon.Services
 
             _logger.LogInformation($"User {userId} claimed minigame reward: {gameName} level {level}, +{actualReward} credits");
             return (actualReward, user.Credits);
+            }
         }
 
         public (int newBalance, string message) ProcessPlinko(int userId, int amount, decimal multiplier)
         {
+            lock (BalanceLock)
+            {
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
 
@@ -880,10 +914,13 @@ namespace NervboxDeamon.Services
 
             _logger.LogInformation($"User {userId} played Plinko: {amount} N$ × {multiplier}x = {winAmount} N$");
             return (user.Credits, message);
+            }
         }
 
         public (int[] symbols, int winAmount, int newBalance, string message) PlaySlotMachine(int userId, int betAmount)
         {
+            lock (BalanceLock)
+            {
             if (betAmount <= 0)
             {
                 return (new int[] { 0, 0, 0 }, 0, 0, "Einsatz muss größer als 0 sein");
@@ -1008,6 +1045,7 @@ namespace NervboxDeamon.Services
 
             _logger.LogInformation($"User {userId} played Slot Machine: {betAmount} N$ bet, {symbolDisplay}, {multiplier}x multiplier, {winAmount} N$ win");
             return (symbols, winAmount, user.Credits, winMessage);
+            }
         }
 
         private int GetWeightedSymbol()
@@ -1057,6 +1095,8 @@ namespace NervboxDeamon.Services
 
         public int ProcessShooterGameResult(int userId, string gameName, int balanceChange, int hits, int misses)
         {
+            lock (BalanceLock)
+            {
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<NervboxDBContext>();
 
@@ -1138,10 +1178,13 @@ namespace NervboxDeamon.Services
             });
 
             return user.Credits;
+            }
         }
 
         public (bool success, int newBalance, string message) SpendCredits(int userId, int amount, string reason)
         {
+            lock (BalanceLock)
+            {
             if (amount <= 0)
             {
                 return (false, 0, "Betrag muss größer als 0 sein");
@@ -1182,6 +1225,7 @@ namespace NervboxDeamon.Services
 
             _logger.LogInformation($"User {userId} spent {amount} credits: {reason}");
             return (true, user.Credits, $"{amount} N$ ausgegeben");
+            }
         }
 
         public void Dispose()
