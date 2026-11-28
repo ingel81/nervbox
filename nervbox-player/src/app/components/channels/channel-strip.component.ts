@@ -49,8 +49,15 @@ const VU_SEGS = 12;
     <footer class="nk-foot strip" aria-label="Läuft gerade">
       <div class="strip-count">
         <span class="nk-label">Kanäle · läuft</span>
-        <span class="nk-counter" [attr.aria-label]="busy() + ' von ' + total + ' Kanälen laufen'"
-          >{{ busy() }} / {{ total }}</span
+        <span
+          class="nk-counter"
+          [attr.aria-label]="busy() + ' Sounds laufen, ' + total + ' Kanäle sichtbar'"
+          [matTooltip]="
+            busy() > total
+              ? 'Es laufen ' + busy() + ' Sounds, unten sind die neuesten ' + total + ' zu sehen'
+              : ''
+          "
+          >{{ busy() }}</span
         >
         <span
           class="nk-vu"
@@ -201,9 +208,7 @@ export class ChannelStripComponent {
 
   readonly total = CHANNEL_COUNT;
   readonly isAdmin = computed(() => this.auth.currentUser()?.role === 'admin');
-  readonly busy = computed(() =>
-    Math.min(this.total, this.nowPlaying.channels().filter((c) => !c.endedAt).length),
-  );
+  readonly busy = this.nowPlaying.runningCount;
 
   /** Summenpegel −36…0 dBFS in 12 Segmenten (3 dB je Segment) */
   readonly masterSegs = computed(() => {

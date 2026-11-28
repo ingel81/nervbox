@@ -56,7 +56,10 @@ const MIN_VISIBLE_MS = 1200;
 const AFTER_END_MS = 350;
 /** Obergrenze, falls ein Sound keine Dauer hat */
 const FALLBACK_MS = 3000;
+/** sichtbare Kanalzüge unten */
 export const CHANNEL_COUNT = 8;
+/** gleichzeitige Stimmen des Pi-Mixers (MixerService.MaxVoices) – Obergrenze der Zählung */
+export const MAX_VOICES = 32;
 
 /**
  * Leitet aus den SignalR-Ereignissen ab, welche Sounds gerade laufen: „soundPlayed“ (Start, mit
@@ -85,6 +88,11 @@ export class NowPlayingService {
     const now = this.now();
     return this.channelsInternal().filter((c) => this.visible(c, now));
   });
+
+  /** Anzahl wirklich laufender Sounds (auch über die sichtbaren Kanalzüge hinaus) */
+  readonly runningCount = computed(
+    () => this.channels().filter((c) => !c.endedAt).length,
+  );
 
   /** Zustand je Sound-Hash für die Pads */
   readonly padStates = computed(() => {
@@ -218,7 +226,7 @@ export class NowPlayingService {
     if (own) this.lastOwnHash.set(ev.soundHash);
 
     this.channelsInternal.update((list) =>
-      [...this.prune(list), channel].slice(-CHANNEL_COUNT * 2),
+      [...this.prune(list), channel].slice(-(MAX_VOICES + CHANNEL_COUNT)),
     );
     this.startTimer();
   }

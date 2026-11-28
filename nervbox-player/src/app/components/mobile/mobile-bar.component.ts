@@ -10,7 +10,7 @@ import {
 import { MatDialog } from '@angular/material/dialog';
 import { AuthService } from '../../core/services/auth.service';
 import { LoudnessService } from '../../core/services/loudness.service';
-import { NowPlayingService, CHANNEL_COUNT } from '../../core/services/now-playing.service';
+import { NowPlayingService } from '../../core/services/now-playing.service';
 import { ShopDialogComponent } from '../shop/shop-dialog.component';
 
 export type MobileView = 'sounds' | 'chat';
@@ -86,7 +86,7 @@ interface MenuItem {
     }
 
     <div class="mb-live" [attr.aria-label]="'Läuft gerade: ' + channels().length + ' Sounds'">
-      <span class="nk-counter mb-count">{{ busy() }}/{{ total }}</span>
+      <span class="nk-counter mb-count">{{ busy() }}</span>
       <div class="mb-chans">
         @for (c of channels(); track c.id) {
           <span [class]="c.own ? 'mb-chan mb-chan--own' : 'mb-chan mb-chan--other'">
@@ -341,9 +341,8 @@ export class MobileBarComponent {
   readonly again = output<void>();
 
   readonly moreOpen = signal(false);
-  readonly total = CHANNEL_COUNT;
   readonly channels = this.nowPlaying.channels;
-  readonly busy = computed(() => Math.min(this.total, this.channels().length));
+  readonly busy = this.nowPlaying.runningCount;
   readonly isAdmin = computed(() => this.auth.currentUser()?.role === 'admin');
 
   private readonly I = {
