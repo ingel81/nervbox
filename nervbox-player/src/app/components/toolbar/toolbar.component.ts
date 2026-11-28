@@ -13,6 +13,7 @@ import { AvatarService } from '../../core/services/avatar.service';
 import { AchievementService } from '../../core/services/achievement.service';
 import { InventoryService } from '../../core/services/inventory.service';
 import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component';
+import { LcdGlyphComponent } from '../shared/lcd-glyph/lcd-glyph.component';
 import { ShekelPopoverComponent } from '../shared/shekel-popover/shekel-popover.component';
 import { ShopDialogComponent } from '../shop/shop-dialog.component';
 
@@ -66,6 +67,7 @@ const KNOB_ANGLE: Record<SortOption, number> = {
     MatTooltipModule,
     MatDividerModule,
     UserAvatarComponent,
+    LcdGlyphComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -221,11 +223,14 @@ const KNOB_ANGLE: Record<SortOption, number> = {
               (click)="openShekelPopover($event)"
             >
               <span class="nk-lcd__label">SCHEKEL (N$)</span>
-              <span class="nk-lcd__value">
-                <span class="nk-lcd__ghost" aria-hidden="true">{{
-                  ghost(creditService.creditsFormatted())
-                }}</span>
-                <span class="nk-lcd__digits">{{ creditService.creditsFormatted() }}</span>
+              <span class="nk-lcd__value nk-lcd__value--glyph">
+                <app-lcd-glyph kind="shekel" />
+                <span class="nk-lcd__num">
+                  <span class="nk-lcd__ghost" aria-hidden="true">{{
+                    ghost(creditService.creditsFormatted())
+                  }}</span>
+                  <span class="nk-lcd__digits">{{ creditService.creditsFormatted() }}</span>
+                </span>
               </span>
               <span class="nk-lcd__label">{{ creditService.costPerPlay() }} N$/SOUND</span>
             </button>
@@ -238,11 +243,14 @@ const KNOB_ANGLE: Record<SortOption, number> = {
               (click)="openShop()"
             >
               <span class="nk-lcd__label">HOLZ</span>
-              <span class="nk-lcd__value">
-                <span class="nk-lcd__ghost" aria-hidden="true">{{
-                  ghost('' + inventoryService.wood())
-                }}</span>
-                <span class="nk-lcd__digits">{{ inventoryService.wood() }}</span>
+              <span class="nk-lcd__value nk-lcd__value--glyph">
+                <app-lcd-glyph kind="wood" />
+                <span class="nk-lcd__num">
+                  <span class="nk-lcd__ghost" aria-hidden="true">{{
+                    ghost('' + inventoryService.wood())
+                  }}</span>
+                  <span class="nk-lcd__digits">{{ inventoryService.wood() }}</span>
+                </span>
               </span>
               <span class="nk-lcd__label">&nbsp;</span>
             </button>
@@ -650,7 +658,8 @@ const KNOB_ANGLE: Record<SortOption, number> = {
       }
     }
     @media (max-width: 1500px) {
-      .deck-income {
+      .deck-income,
+      .deck-lcd .nk-lcd__div:has(+ .deck-income) {
         display: none;
       }
       .deck-lcd {
@@ -710,6 +719,9 @@ const KNOB_ANGLE: Record<SortOption, number> = {
       .deck .deck-lcd .nk-lcd__value {
         font-size: 26px;
         line-height: 22px;
+        --nk-lcd-glyph-px: 1.5px;
+        --nk-lcd-glyph-gap: 4px;
+        --nk-lcd-glyph-shift: 0;
       }
       .deck .deck-lcd .nk-lcd__cell:first-child {
         min-width: 0;

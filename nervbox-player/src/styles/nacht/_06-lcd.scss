@@ -106,6 +106,33 @@
 .nk-lcd__digits {
   position: relative;
 }
+/* Wert mit Pixel-Symbol davor (Schekel-Münze, Holzscheit): Symbol + Ziffern nebeneinander */
+.nk-lcd__value--glyph {
+  display: flex;
+  align-items: center;
+  gap: var(--nk-lcd-glyph-gap, 6px);
+}
+.nk-lcd__num {
+  position: relative;
+}
+.nk-lcd__glyph-host {
+  display: block;
+  flex-shrink: 0;
+  line-height: 0;
+}
+/* Pixelraster wie das LCD: ganze Pixel je Zelle, damit es auch klein scharf bleibt */
+.nk-lcd__glyph {
+  display: block;
+  width: calc(var(--nk-glyph-cols) * var(--nk-lcd-glyph-px, 2px));
+  height: calc(10 * var(--nk-lcd-glyph-px, 2px));
+  margin-top: var(--nk-lcd-glyph-shift, -1px);
+}
+.nk-lcd__glyph-on {
+  fill: var(--nk-lcd-ink);
+}
+.nk-lcd__glyph-off {
+  fill: rgb(var(--nk-lcd-ink-rgb) / 0.08);
+} /* unbeleuchtete Pixel, wie die Geister-Ziffern */
 .nk-lcd__div {
   width: 1px;
   flex-shrink: 0;
