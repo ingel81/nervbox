@@ -33,6 +33,11 @@ namespace NervboxDeamon.Models.Settings
     public string AvatarPath { get; set; } = "avatars";
     public string LocalPlayer { get; set; } = "mpg123";
 
+    /// <summary>ALSA device for LocalPlayer = "mixer" (one shared output stream)</summary>
+    public string MixerDevice { get; set; } = "default";
+    /// <summary>ALSA buffer of the mixer stream in ms (latency vs. dropout safety)</summary>
+    public int MixerBufferMs { get; set; } = 60;
+
     /// <summary>
     /// How sounds should be played: "Local" (server plays via speakers) or "Browser" (client streams)
     /// Default: Local (backward compatible with Raspberry Pi deployment)

@@ -89,6 +89,7 @@ namespace NervboxDeamon.Services
     private ICreditService CreditService { get; set; }
     private IAchievementService AchievementService { get; set; }
     private ILoudnessService Loudness { get; set; }
+    private IMixerService Mixer { get; set; }
 
     //member
     public ConcurrentDictionary<int, User> UserLookup { private set; get; } = new ConcurrentDictionary<int, User>();
@@ -173,6 +174,7 @@ namespace NervboxDeamon.Services
       if (!keepRunning) return;
       keepRunning = false;
       Loudness?.Stop();
+      Mixer?.Shutdown();
       stopSignal.Set();
       LoggingThread?.Join(TimeSpan.FromSeconds(5));
     }
@@ -185,9 +187,11 @@ namespace NervboxDeamon.Services
       CreditService = serviceProvider.GetRequiredService<ICreditService>();
       AchievementService = serviceProvider.GetRequiredService<IAchievementService>();
       Loudness = serviceProvider.GetRequiredService<ILoudnessService>();
+      Mixer = serviceProvider.GetRequiredService<IMixerService>();
 
       var appSettingsSection = Configuration.GetSection("AppSettings");
       appSettings = appSettingsSection.Get<AppSettings>();
+      (Mixer as MixerService)?.Configure(appSettings.MixerDevice, appSettings.MixerBufferMs);
 
       if (Environment.EnvironmentName == "Development")
       {
@@ -470,6 +474,12 @@ namespace NervboxDeamon.Services
       try
       {
         var player = appSettings.LocalPlayer ?? "mpg123";
+        if (player == "mixer" && !filePath.EndsWith(".wav", StringComparison.OrdinalIgnoreCase))
+        {
+          Mixer.Play(filePath, gain);
+          return;
+        }
+        if (player == "mixer") player = "mpg123";
         if (filePath.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) && player == "mpg123")
         {
           player = "aplay"; // mpg123 cannot decode WAV
@@ -516,6 +526,7 @@ namespace NervboxDeamon.Services
       else
       {
         // Lokal
+        Mixer?.StopAll();
         KillLocalPlayers();
       }
     }
