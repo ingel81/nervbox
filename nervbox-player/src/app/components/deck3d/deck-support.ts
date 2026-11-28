@@ -21,3 +21,16 @@ export function isWeakDevice(): boolean {
   if (nav.deviceMemory !== undefined && nav.deviceMemory <= 2) return true;
   return /Linux (aarch64|armv7l|armv8)/i.test(nav.userAgent);
 }
+
+/**
+ * WebKit (Safari auf dem Mac, alle Browser auf iPhone/iPad): Die CSS-matrix3d-
+ * Projektion der echten Oberfläche lag im Test (WebKit) neben dem Gehäuse.
+ * Bis das auf echten Apple-Geräten geprüft ist, gibt es dort kein 3D.
+ */
+export function isWebKitEngine(): boolean {
+  const ua = navigator.userAgent;
+  const iOS =
+    /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  if (iOS) return true;
+  return /AppleWebKit/i.test(ua) && !/Chrome|Chromium|CriOS|Edg|OPR|Android/i.test(ua);
+}

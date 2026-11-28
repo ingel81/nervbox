@@ -1,4 +1,4 @@
-import { hasWebGL, isWeakDevice } from '../deck3d/deck-support';
+import { hasWebGL, isWeakDevice, isWebKitEngine } from '../deck3d/deck-support';
 
 /**
  * Intro "Drop": Beim Laden fällt das Nervbox-Gerät in 3D auf den Tisch und
@@ -36,6 +36,6 @@ export function decideIntroMode(): IntroMode {
     return 'none';
   }
   if (readStorage(INTRO_FORCE_KEY) === 'fade') return 'fade';
-  if (!hasWebGL() || isWeakDevice()) return 'fade';
+  if (!hasWebGL() || isWeakDevice() || isWebKitEngine()) return 'fade';
   return '3d';
 }

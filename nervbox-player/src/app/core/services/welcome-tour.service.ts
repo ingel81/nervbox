@@ -217,12 +217,23 @@ export class WelcomeTourService {
 
   // ============ USER TOUR ============
 
+  /** Verhindert Doppelstart, solange auf das Intro gewartet wird. */
+  private starting = false;
+
   async startUserTour(): Promise<void> {
     // Tour nur für eingeloggte User
     if (!this.auth.isLoggedIn()) return;
     if (this.userTourActive() || this.adminTourActive()) return;
     // Tour auf Mobile nicht starten - Tooltips werden von Dialogen verdeckt
     if (this.isMobile()) return;
+    if (this.starting) return;
+    this.starting = true;
+    try {
+      await waitForIntro();
+    } finally {
+      this.starting = false;
+    }
+    if (!this.auth.isLoggedIn() || this.userTourActive() || this.adminTourActive()) return;
 
     this.userTourActive.set(true);
     this.tour = await this.createTour();
@@ -479,6 +490,15 @@ export class WelcomeTourService {
     // Tour auf Mobile nicht starten - Tooltips werden von Dialogen verdeckt
     if (this.isMobile()) return;
 
+    if (this.starting) return;
+    this.starting = true;
+    try {
+      await waitForIntro();
+    } finally {
+      this.starting = false;
+    }
+    if (this.userTourActive() || this.adminTourActive()) return;
+
     // Check if admin menu button is visible
     const adminMenu = document.querySelector('[data-tour="admin-menu"]');
     if (!adminMenu) {
@@ -688,4 +708,23 @@ export class WelcomeTourService {
     localStorage.removeItem(this.getAdminStorageKey());
     this.adminTourCompleted.set(false);
   }
+}
+
+/**
+ * Wartet, bis das Lade-Intro (3D oder Fade) fertig bzw. übersprungen ist –
+ * erkennbar an der Klasse `nb-intro` am <html>. Danach kurz Luft lassen,
+ * damit die Oberfläche steht, bevor die Tour ihre Sprechblasen ausrichtet.
+ */
+function waitForIntro(): Promise<void> {
+  const root = document.documentElement;
+  if (!root.classList.contains('nb-intro')) return Promise.resolve();
+  return new Promise((resolve) => {
+    const obs = new MutationObserver(() => {
+      if (!root.classList.contains('nb-intro')) {
+        obs.disconnect();
+        setTimeout(resolve, 600);
+      }
+    });
+    obs.observe(root, { attributes: true, attributeFilter: ['class'] });
+  });
 }

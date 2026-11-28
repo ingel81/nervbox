@@ -2,7 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import type { DeckRelief } from '../../components/deck3d/deck-relief';
 import type { DeckScene } from '../../components/deck3d/deck-scene';
 import type { DeckViewEngine } from '../../components/deck3d/deck-view-engine';
-import { hasWebGL, isWeakDevice } from '../../components/deck3d/deck-support';
+import { hasWebGL, isWeakDevice, isWebKitEngine } from '../../components/deck3d/deck-support';
 
 /** localStorage: '1' = Gerät in 3D auf dem Tisch */
 const STORAGE_KEY = 'nervbox-view-3d';
@@ -23,7 +23,7 @@ function readStored(): string | null {
 @Injectable({ providedIn: 'root' })
 export class DeckViewService {
   private readonly desktop = window.matchMedia('(min-width: 769px) and (pointer: fine)');
-  private readonly capable = hasWebGL() && !isWeakDevice();
+  private readonly capable = hasWebGL() && !isWeakDevice() && !isWebKitEngine();
   /** Umschalter anbieten? */
   readonly available = signal(this.capable && this.desktop.matches);
   /** 3D-Ansicht eingeschaltet */

@@ -119,6 +119,7 @@ export class IntroEngine {
   private soundScheduled = false;
 
   private t = 0;
+  private clockRunning = false;
   private last = 0;
   private raf = 0;
   private finishing = false;
@@ -196,6 +197,7 @@ export class IntroEngine {
       requestAnimationFrame(() => {
         if (this.disposed || this.finishing) return;
         this.last = performance.now();
+        this.clockRunning = true;
         this.raf = requestAnimationFrame(this.frame);
       });
     });
@@ -291,7 +293,9 @@ export class IntroEngine {
   private update(dt: number): void {
     const t = this.t;
     const scene = this.scene;
-    if (this.sound && !this.soundScheduled && t >= -0.05) {
+    // Sound erst planen, wenn die Uhr wirklich läuft (sonst kommt der Aufprall
+    // um die Dauer des ersten Malens zu früh)
+    if (this.sound && this.clockRunning && !this.soundScheduled && t >= -0.05) {
       this.soundScheduled = true;
       this.sound.whoosh(T_IMPACT - t - 0.55, 0.55);
       this.sound.impact(T_IMPACT - t);

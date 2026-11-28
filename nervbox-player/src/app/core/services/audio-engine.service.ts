@@ -48,6 +48,13 @@ const BUFFER_CACHE = 40;
  * → Tremolo → Echo/Hall → Lautheits-Gain → Summen-Limiter (DynamicsCompressor) → Analyser → Ausgang.
  * Parameter: core/audio/sound-fx.ts (= Backend FxParams).
  */
+/** Web Audio inkl. altem Safari-Präfix; fehlt beides, bleibt die Wiedergabe stumm. */
+const AUDIO_CTOR: typeof AudioContext | undefined =
+  typeof window === 'undefined'
+    ? undefined
+    : (window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
+
 @Injectable({ providedIn: 'root' })
 export class AudioEngineService {
   private readonly api = inject(ApiService);
@@ -81,6 +88,7 @@ export class AudioEngineService {
 
   /** Im Klick-Handler aufrufen: AudioContext anlegen/fortsetzen (Autoplay-Regeln). */
   unlock(): void {
+    if (!AUDIO_CTOR) return;
     const ctx = this.ensureContext();
     if (ctx.state === 'suspended') void ctx.resume();
   }
@@ -100,6 +108,7 @@ export class AudioEngineService {
 
   /** Datei schon laden/decodieren, während die Play-Anfrage läuft */
   prefetch(hash: string, reverse = false): void {
+    if (!AUDIO_CTOR) return;
     void (reverse ? this.reversedBuffer(hash) : this.buffer(hash)).catch(() => undefined);
   }
 
@@ -109,6 +118,11 @@ export class AudioEngineService {
     gain: number;
     effect: SoundEffectId | null;
   }): Promise<void> {
+    if (!AUDIO_CTOR) {
+      // Browser ohne Web Audio: still bleiben statt den Klick abzubrechen
+      this.emitEnded(opts.voiceId, 'error');
+      return;
+    }
     const ctx = this.ensureContext();
     if (ctx.state === 'suspended') await ctx.resume().catch(() => undefined);
     let buffer: AudioBuffer;
@@ -155,7 +169,7 @@ export class AudioEngineService {
 
   private ensureContext(): AudioContext {
     if (this.ctx) return this.ctx;
-    const ctx = new AudioContext({ latencyHint: 'interactive' });
+    const ctx = new AUDIO_CTOR!({ latencyHint: 'interactive' });
     // Summen-Limiter: viele Stimmen werden leiser statt zu übersteuern (Backend: Limiter, -1 dBFS)
     const comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -3;

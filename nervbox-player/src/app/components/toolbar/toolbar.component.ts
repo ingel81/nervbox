@@ -733,6 +733,63 @@ const KNOB_ANGLE: Record<SortOption, number> = {
         margin-top: 0;
       }
     }
+    /* Schmale Desktops (1366/1280): alles passt aufs Deck, Avatar ragt nicht über */
+    @media (max-width: 1420px) {
+      .deck {
+        gap: 6px;
+      }
+      .deck-search {
+        width: 124px;
+      }
+      /* leeres Suchfeld: Löschen-Taste ausblenden, der Platz gehört dem Text */
+      .deck-search .nk-input__clear:disabled {
+        display: none;
+      }
+      .deck-sort {
+        min-width: 132px;
+      }
+      .deck-tools {
+        gap: 3px;
+      }
+      .deck-tools .nk-toolkey {
+        width: 41px;
+      }
+    }
+    @media (max-width: 1300px) {
+      .deck-search {
+        width: 108px;
+      }
+      .deck-sort {
+        min-width: 118px;
+      }
+      .deck-tools .nk-toolkey {
+        width: 38px;
+      }
+    }
+    /* Kleine Desktop-Fenster: Wortmarke weicht, Bedienung bleibt komplett */
+    @media (max-width: 1240px) {
+      .deck .nk-logo {
+        display: none;
+      }
+    }
+    @media (max-width: 1080px) {
+      .deck {
+        gap: 4px;
+      }
+      .deck-search {
+        width: 92px;
+      }
+      .deck-sort {
+        min-width: 104px;
+      }
+      .deck-tools .nk-toolkey {
+        width: 34px;
+      }
+      .deck-tools .nk-toolkey__label {
+        font-size: 8px;
+        letter-spacing: 0;
+      }
+    }
     @media (max-width: 768px) {
       .deck.deck {
         height: auto;
