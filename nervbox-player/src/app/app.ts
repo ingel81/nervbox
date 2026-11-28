@@ -32,6 +32,7 @@ import {
   MobileAction,
   MobileView,
 } from './components/mobile/mobile-bar.component';
+import { IntroComponent } from './components/intro/intro.component';
 import { NowPlayingService } from './core/services/now-playing.service';
 import { SoundService } from './core/services/sound.service';
 import { LoudnessService } from './core/services/loudness.service';
@@ -66,12 +67,14 @@ import { Sound } from './core/models';
     ChannelStripComponent,
     LiveHudComponent,
     MobileBarComponent,
+    IntroComponent,
   ],
   template: `
     <!-- Dev Routes (fullscreen) -->
     @if (isDevRoute()) {
       <router-outlet />
     } @else {
+      <app-intro />
       <div class="nk-desk app-desk">
         <div class="nk-device app-device">
           <span class="nk-lamp nk-lamp--top" aria-hidden="true"></span>
