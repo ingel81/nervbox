@@ -24,6 +24,8 @@ export type PadVariant = 'normal' | 'wide' | 'xl';
 
 /** Uploads jünger als 7 Tage bekommen das NEU-Etikett */
 const NEW_MS = 7 * 24 * 60 * 60 * 1000;
+/** Touch: so lange stillhalten, bis Sound + Live-Steuerung starten (kurzes Ablegen vorm Wischen soll nichts auslösen) */
+const LONG_PRESS_MS = 450;
 
 /**
  * Sound-Pad im Nachtschicht-Look (.nk-pad aus dem Nacht-Kit).
@@ -46,6 +48,7 @@ const NEW_MS = 7 * 24 * 60 * 60 * 1000;
       [class]="padClass()"
       [style]="padStyle()"
       (pointerdown)="onPointerDown($event)"
+      (touchmove)="onTouchMove($event)"
       (contextmenu)="onContextMenu($event)"
       (click)="onPadClick($event)"
       (keydown.enter)="onPadKey($event)"
@@ -463,7 +466,7 @@ export class SoundCardComponent {
   /**
    * Mouse: trigger immediately on press (feels like a real pad). Touch/pen keep tap-on-release,
    * otherwise every scroll gesture over the grid would fire sounds – but a finger held still for
-   * 300 ms starts the sound too and switches to live control (drag = modulate, no scrolling).
+   * LONG_PRESS_MS starts the sound too and switches to live control (drag = modulate, no scrolling).
    * While the button/finger stays down, dragging modulates the started voice (VoiceControlService).
    */
   onPointerDown(event: PointerEvent): void {
@@ -487,7 +490,7 @@ export class SoundCardComponent {
 
   /**
    * Verfolgt einen Druck über Fenster-Listener (die Karte kann während des Ziehens neu erzeugt
-   * werden). started=false (Touch): erst nach 300 ms Stillhalten starten Sound und Live-Geste.
+   * werden). started=false (Touch): erst nach LONG_PRESS_MS Stillhalten starten Sound und Live-Geste.
    */
   private trackPress(down: PointerEvent, started: boolean): void {
     const id = down.pointerId;
@@ -540,8 +543,13 @@ export class SoundCardComponent {
         this.handleClick();
         gesture = this.voiceControl.beginGesture(s.hash, s.name, x0, y0);
         navigator.vibrate?.(12);
-      }, 300);
+      }, LONG_PRESS_MS);
     }
+  }
+
+  /** Live-Geste per Finger läuft: Seite nicht scrollen */
+  onTouchMove(event: TouchEvent): void {
+    if (this.voiceControl.blockTouchScroll && event.cancelable) event.preventDefault();
   }
 
   /** Langer Druck per Finger öffnet sonst das Kontextmenü des Browsers */

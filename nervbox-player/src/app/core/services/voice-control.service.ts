@@ -60,19 +60,12 @@ export class VoiceControlService {
   readonly hud = signal<LiveHudState | null>(null);
 
   /**
-   * Touch-Live-Geste aktiv: Scrollen unterdrücken. Ein einziger nicht-passiver touchmove-Listener
-   * am Dokument (muss schon beim touchstart existieren, sonst darf er nicht mehr abbrechen).
+   * Touch-Live-Geste aktiv: Scrollen unterdrücken. Das Pad hat dafür einen eigenen nicht-passiven
+   * touchmove-Listener – bewusst NICHT am Dokument, sonst wartet jedes Scrollen auf den Hauptthread.
    */
   blockTouchScroll = false;
 
   constructor() {
-    document.addEventListener(
-      'touchmove',
-      (e) => {
-        if (this.blockTouchScroll && e.cancelable) e.preventDefault();
-      },
-      { passive: false },
-    );
     this.signalR.soundEnded$.subscribe((ev) => {
       this.markEnded(ev.voiceId);
       // Browser-Modus: Admin/anderer Tab hat gestoppt → hier hörbare Stimme anhalten

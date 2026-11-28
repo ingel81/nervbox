@@ -72,8 +72,8 @@ import { SoundCardComponent } from './sound-card.component';
           <cdk-virtual-scroll-viewport
             class="grid-viewport"
             [itemSize]="rowHeight"
-            [minBufferPx]="400"
-            [maxBufferPx]="800"
+            [minBufferPx]="800"
+            [maxBufferPx]="1600"
           >
             <div
               *cdkVirtualFor="let row of rows(); let r = index; trackBy: trackRow"
@@ -123,6 +123,8 @@ import { SoundCardComponent } from './sound-card.component';
       overflow-y: auto;
       overflow-x: hidden;
       padding: 14px 10px 14px 16px;
+      /* Handy: kein Pull-to-Refresh/Weiterreichen ans Dokument am Rand */
+      overscroll-behavior: contain;
     }
 
     .grid-featured {
