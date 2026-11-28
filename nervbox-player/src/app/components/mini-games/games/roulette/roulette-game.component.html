@@ -1,0 +1,233 @@
+<app-game-frame
+  #root
+  [title]="info.title"
+  [icon]="info.icon"
+  [accent]="info.accent"
+  [year]="info.year"
+  [stats]="stats()"
+  hint="ESC = Beenden? · Rechtsklick nimmt Chips zurück"
+  (closed)="exitGame()"
+>
+  <div class="rl" [class.rl--vertical]="vertical()">
+    <!-- Kessel -->
+    <section class="rl-wheel" aria-label="Roulettekessel">
+      <div class="rl-wheel__box" #wheelBox>
+        <canvas #wheelCanvas class="rl-wheel__canvas" aria-hidden="true"></canvas>
+        @if (celebrate() !== 'none' && lastResult(); as r) {
+          <div class="rl-burst" [class.rl-burst--big]="celebrate() === 'big'" aria-live="polite">
+            <span class="rl-burst__kick">{{
+              celebrate() === 'big' ? 'VOLLTREFFER' : 'GEWINN'
+            }}</span>
+            <span class="rl-burst__amt">+{{ r.net }} N$</span>
+          </div>
+        }
+      </div>
+
+      <!-- Ergebnis-LCD -->
+      <div class="nk-lcd rl-lcd">
+        <div class="nk-lcd__glass rl-lcd__glass">
+          @if (lastResult() && resultShown()) {
+            @let r = lastResult()!;
+            <span class="rl-lcd__num" [class]="'rl-lcd__num rl-lcd__num--' + r.color">{{
+              r.number
+            }}</span>
+            <span class="rl-lcd__mid">
+              <span class="nk-lcd__label">{{ colorWord(r.color) }} · ♪ SOUND</span>
+              <span class="rl-lcd__sound">{{ soundName(r.number) || '—' }}</span>
+            </span>
+            <span class="nk-lcd__div" aria-hidden="true"></span>
+            <span class="rl-lcd__right">
+              <span class="nk-lcd__label">{{ r.payout > 0 ? 'AUSZAHLUNG' : 'VERLOREN' }}</span>
+              <span class="rl-lcd__val" [class.rl-lcd__val--neg]="r.net < 0">{{
+                r.payout > 0 ? r.payout : -r.totalBet
+              }}</span>
+            </span>
+          } @else if (phase() === 'spinning') {
+            <span class="rl-lcd__mid">
+              <span class="nk-lcd__label">KUGEL LÄUFT</span>
+              <span class="rl-lcd__sound rl-blink">RIEN NE VA PLUS</span>
+            </span>
+          } @else {
+            <span class="rl-lcd__mid">
+              <span class="nk-lcd__label">FAITES VOS JEUX</span>
+              <span class="rl-lcd__sound">JEDES FACH = EIN SOUND</span>
+            </span>
+          }
+        </div>
+      </div>
+
+      <!-- Verlauf + heiss/kalt -->
+      <div class="nk-lcd rl-hist">
+        <div class="nk-lcd__glass rl-hist__glass">
+          <span class="nk-lcd__label rl-hist__label">LETZTE</span>
+          <span class="rl-hist__row">
+            @for (n of recent(); track $index) {
+              <span
+                [class]="'rl-hist__n rl-hist__n--' + (n === 0 ? 'green' : colorOf(n))"
+                [class.rl-hist__n--first]="$first"
+                >{{ n }}</span
+              >
+            } @empty {
+              <span class="rl-hist__empty">-- -- -- --</span>
+            }
+          </span>
+        </div>
+      </div>
+      @if (hotCold(); as hc) {
+        <div class="rl-hc">
+          <span class="rl-hc__grp">
+            <span class="nk-led nk-led--dot nk-led--danger" aria-hidden="true"></span>
+            <span class="rl-hc__lbl">HEISS</span>
+            @for (n of hc.hot; track n) {
+              <span [class]="'rl-hc__n rl-hc__n--' + colorOf(n)">{{ n }}</span>
+            }
+          </span>
+          <span class="rl-hc__grp">
+            <span class="nk-led nk-led--dot nk-led--other" aria-hidden="true"></span>
+            <span class="rl-hc__lbl">KALT</span>
+            @for (n of hc.cold; track n) {
+              <span [class]="'rl-hc__n rl-hc__n--' + colorOf(n)">{{ n }}</span>
+            }
+          </span>
+          <span class="rl-hc__spins">{{ hc.spins }} Drehs</span>
+        </div>
+      }
+    </section>
+
+    <!-- Tableau -->
+    <section class="rl-table" aria-label="Spieltisch">
+      <div class="rl-tray">
+        <span class="rl-tray__lbl">CHIP</span>
+        <div class="rl-tray__chips" role="radiogroup" aria-label="Chipwert">
+          @for (v of chips; track v) {
+            <button
+              type="button"
+              role="radio"
+              [attr.aria-checked]="selectedChip() === v"
+              [class]="'rl-chip rl-chip--' + chipTone(v)"
+              [class.rl-chip--sel]="selectedChip() === v"
+              (click)="selectChip(v)"
+            >
+              {{ v }}
+            </button>
+          }
+        </div>
+        <span class="rl-tray__info">
+          @if (infoLine(); as i) {
+            <span class="rl-tray__title">{{ i.title }}</span>
+            <span class="rl-tray__sub">{{ i.sub }}</span>
+          } @else if (message()) {
+            <span class="rl-tray__msg">{{ message() }}</span>
+          } @else {
+            <span class="rl-tray__title">Tischlimit {{ maxTotal }} N$</span>
+            <span class="rl-tray__sub">Plein 35:1 · Dutzend/Kolonne 2:1 · Einfache 1:1</span>
+          }
+        </span>
+      </div>
+
+      <div
+        class="rl-felt"
+        [class.rl-felt--locked]="phase() === 'spinning'"
+        (mouseleave)="hovered.set(null)"
+      >
+        @for (c of cells; track c.key) {
+          <button
+            type="button"
+            [class]="'rl-cell rl-cell--' + c.color + ' rl-cell--' + c.type"
+            [class.rl-cell--vt]="c.vertText && vertical()"
+            [class.rl-cell--win]="isWinningCell(c)"
+            [class.rl-cell--won]="wonKeys().has(c.key)"
+            [style]="cellStyle(c)"
+            [attr.aria-label]="cellAria(c)"
+            [title]="
+              c.type === 'straight' && soundName(c.value)
+                ? c.label + ' · ' + soundName(c.value)
+                : ''
+            "
+            (click)="place(c, $event)"
+            (contextmenu)="removeFrom(c, $event)"
+            (mouseenter)="hovered.set(c)"
+            (focus)="hovered.set(c)"
+            (blur)="hovered.set(null)"
+          >
+            <span class="rl-cell__lbl">{{ c.label }}</span>
+            @if (c.type === 'straight' && !vertical()) {
+              <span class="rl-cell__snd">{{ soundName(c.value) }}</span>
+            }
+            @if (chipsOn(c.key); as amt) {
+              <span [class]="'rl-chip rl-chip--on rl-chip--' + chipTone(amt)">{{ amt }}</span>
+            }
+          </button>
+        }
+      </div>
+
+      <div class="rl-actions">
+        <button
+          type="button"
+          class="nk-key nk-key--sm"
+          [disabled]="phase() !== 'idle' || !totalBet()"
+          (click)="undo()"
+        >
+          <mat-icon>undo</mat-icon>Zurück
+        </button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm"
+          [disabled]="phase() !== 'idle' || !totalBet()"
+          (click)="clearBets()"
+        >
+          <mat-icon>delete_sweep</mat-icon>Löschen
+        </button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm"
+          [disabled]="phase() !== 'idle' || !hasLastBets()"
+          (click)="repeatLast()"
+        >
+          <mat-icon>replay</mat-icon>Wiederholen
+        </button>
+        <button
+          type="button"
+          class="nk-key nk-key--sm"
+          [disabled]="phase() !== 'idle' || !totalBet()"
+          (click)="doubleBets()"
+        >
+          ×2
+        </button>
+        <span class="rl-actions__sum">
+          <span class="rl-actions__lbl">EINSATZ</span>
+          <span class="rl-actions__val" [class.rl-actions__val--max]="totalBet() >= maxTotal"
+            >{{ totalBet() }}<small>/{{ maxTotal }}</small></span
+          >
+        </span>
+        <button
+          type="button"
+          class="nk-key nk-key--accent nk-key--lg rl-spin"
+          [disabled]="!canSpin()"
+          (click)="spin()"
+        >
+          <mat-icon>{{ phase() === 'spinning' ? 'hourglass_top' : 'autorenew' }}</mat-icon>
+          {{ phase() === 'spinning' ? 'LÄUFT …' : 'DREHEN' }}
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <button
+    gfKeys
+    type="button"
+    class="nk-key nk-key--sm"
+    [class.nk-key--on]="soundOn()"
+    [attr.aria-pressed]="soundOn()"
+    (click)="toggleSound()"
+  >
+    <mat-icon>{{ soundOn() ? 'volume_up' : 'volume_off' }}</mat-icon>Ton
+  </button>
+
+  <app-game-exit-confirm
+    [hint]="exitHint()"
+    (opened)="pauseWheel()"
+    (resumed)="resumeWheel()"
+    (exit)="exitGame()"
+  />
+</app-game-frame>

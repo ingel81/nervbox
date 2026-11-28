@@ -149,6 +149,8 @@ namespace NervboxDeamon
       services.AddSingleton<IAchievementService, AchievementService>();
       services.AddSingleton<IVoteService, VoteService>();
       services.AddSingleton<IShopService, ShopService>();
+      services.AddSingleton<PongService>();
+      services.AddHostedService(sp => sp.GetRequiredService<PongService>());
       services.Configure<IISServerOptions>(options =>
       {
         options.AllowSynchronousIO = true;
@@ -237,6 +239,7 @@ namespace NervboxDeamon
         endpoints.MapHub<SoundHub>("/ws/soundHub");
         endpoints.MapHub<SshHub>("/ws/sshHub");
         endpoints.MapHub<ChatHub>("/ws/chatHub");
+        endpoints.MapHub<PongHub>("/ws/pongHub");
         endpoints.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
       });
 

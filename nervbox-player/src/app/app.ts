@@ -24,6 +24,7 @@ import type { DeleteSoundDialogData } from './components/admin/delete-sound-dial
 import { ChatSidebarComponent } from './components/chat/chat-sidebar.component';
 import { SoundUploadDialogComponent } from './components/sound-upload-dialog/sound-upload-dialog.component';
 import { AchievementToastComponent } from './components/shared/achievement-toast/achievement-toast.component';
+import { PongInviteToastComponent } from './components/mini-games/games/pong/pong-invite-toast.component';
 import { ChannelStripComponent } from './components/channels/channel-strip.component';
 import { LiveHudComponent } from './components/sound-grid/live-hud.component';
 import {
@@ -61,6 +62,7 @@ import { Sound } from './core/models';
     TagFilterComponent,
     ChatSidebarComponent,
     AchievementToastComponent,
+    PongInviteToastComponent,
     ChannelStripComponent,
     LiveHudComponent,
     MobileBarComponent,
@@ -187,6 +189,7 @@ import { Sound } from './core/models';
       <app-live-hud />
 
       <app-achievement-toast />
+      <app-pong-invite-toast />
     }
   `,
   styles: `

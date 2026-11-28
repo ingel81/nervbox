@@ -279,6 +279,50 @@ export class GameSelectionDialogComponent {
       isNew: true,
     },
     {
+      key: 'roulette',
+      kind: 'CASINO · NEU',
+      title: 'ROULETTE',
+      text: 'Jedes Fach ein Sound!',
+      pay: '1:1 - 35:1',
+      color: GAME_INFO.roulette.accent,
+      icon: GAME_INFO.roulette.icon,
+      year: GAME_INFO.roulette.year,
+      isNew: true,
+    },
+    {
+      key: 'pong',
+      kind: 'MULTIPLAYER · NEU',
+      title: 'LAN-PONG',
+      text: 'Fordere die Party heraus!',
+      pay: 'Einsatz: Pot',
+      color: GAME_INFO.pong.accent,
+      icon: GAME_INFO.pong.icon,
+      year: GAME_INFO.pong.year,
+      isNew: true,
+    },
+    {
+      key: 'scratch',
+      kind: 'CASINO · NEU',
+      title: 'RUBBELLOS',
+      text: 'Nervbox-Zentralbank: rubbeln & hoffen!',
+      pay: 'bis 25.000 N$',
+      color: GAME_INFO.scratch.accent,
+      icon: GAME_INFO.scratch.icon,
+      year: GAME_INFO.scratch.year,
+      isNew: true,
+    },
+    {
+      key: 'claw',
+      kind: 'CASINO · NEU',
+      title: 'HOTDOG-GREIFER',
+      text: 'Fisch die Wurst aus dem Topf!',
+      pay: '0,3x - 10x',
+      color: GAME_INFO.claw.accent,
+      icon: GAME_INFO.claw.icon,
+      year: GAME_INFO.claw.year,
+      isNew: true,
+    },
+    {
       key: '',
       kind: 'COMING SOON',
       title: 'Mary Haze – The Game',
@@ -333,6 +377,14 @@ export class GameSelectionDialogComponent {
         return void this.startWeinfestShooter();
       case 'sandwich':
         return void this.startSandwichmaster();
+      case 'roulette':
+        return void this.startRoulette();
+      case 'pong':
+        return void this.startPong();
+      case 'scratch':
+        return void this.startScratch();
+      case 'claw':
+        return void this.startClaw();
     }
   }
 
@@ -340,6 +392,11 @@ export class GameSelectionDialogComponent {
   private readonly auth = inject(AuthService);
 
   readonly isAdmin = computed(() => this.auth.currentUser()?.role === 'admin');
+
+  async startPong(): Promise<void> {
+    const { openPongGame } = await import('./games/pong/pong-invite-toast.component');
+    await openPongGame(this.dialog);
+  }
 
   async startArkanoid(): Promise<void> {
     const { ArkanoidGameComponent } = await import('./games/arkanoid/arkanoid-game.component');
@@ -420,6 +477,42 @@ export class GameSelectionDialogComponent {
     this.dialog.open(SandwichmasterGameComponent, {
       width: '95vw',
       maxWidth: '850px',
+      height: 'auto',
+      maxHeight: '95dvh',
+      panelClass: ['dark-dialog', 'game-dialog'],
+      disableClose: true,
+    });
+  }
+
+  async startRoulette(): Promise<void> {
+    const { RouletteGameComponent } = await import('./games/roulette/roulette-game.component');
+    this.dialog.open(RouletteGameComponent, {
+      width: '95vw',
+      maxWidth: '1240px',
+      height: 'auto',
+      maxHeight: '95dvh',
+      panelClass: ['dark-dialog', 'game-dialog'],
+      disableClose: true,
+    });
+  }
+
+  async startScratch(): Promise<void> {
+    const { ScratchGameComponent } = await import('./games/scratch/scratch-game.component');
+    this.dialog.open(ScratchGameComponent, {
+      width: '95vw',
+      maxWidth: '980px',
+      height: 'auto',
+      maxHeight: '95dvh',
+      panelClass: ['dark-dialog', 'game-dialog'],
+      disableClose: true,
+    });
+  }
+
+  async startClaw(): Promise<void> {
+    const { ClawGameComponent } = await import('./games/claw/claw-game.component');
+    this.dialog.open(ClawGameComponent, {
+      width: '95vw',
+      maxWidth: '820px',
       height: 'auto',
       maxHeight: '95dvh',
       panelClass: ['dark-dialog', 'game-dialog'],
