@@ -10,6 +10,7 @@ import { FavoritesService } from '../../core/services/favorites.service';
 import { CreditService } from '../../core/services/credit.service';
 import { LoudnessService } from '../../core/services/loudness.service';
 import { AvatarService } from '../../core/services/avatar.service';
+import { DeckViewService } from '../../core/services/deck-view.service';
 import { AchievementService } from '../../core/services/achievement.service';
 import { InventoryService } from '../../core/services/inventory.service';
 import { UserAvatarComponent } from '../shared/user-avatar/user-avatar.component';
@@ -453,6 +454,41 @@ const KNOB_ANGLE: Record<SortOption, number> = {
           <span class="nk-toolkey__label">Chat</span>
         </div>
 
+        @if (deckView.available()) {
+          <div class="nk-toolkey">
+            <span
+              [class]="deckView.is3d() ? 'nk-led nk-led--own' : 'nk-led'"
+              aria-hidden="true"
+            ></span>
+            <button
+              type="button"
+              data-tour="view3d"
+              [class]="deckView.is3d() ? 'nk-key nk-key--icon nk-key--on' : 'nk-key nk-key--icon'"
+              [attr.aria-pressed]="deckView.is3d()"
+              aria-label="3D-Ansicht"
+              [matTooltip]="
+                deckView.is3d() ? 'Zurück zur flachen Ansicht' : '3D-Ansicht: Gerät auf dem Tisch'
+              "
+              (click)="deckView.toggle()"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"></path>
+                <path d="M4 7.5l8 4.5 8-4.5M12 12v9"></path>
+              </svg>
+            </button>
+            <span class="nk-toolkey__label">3D</span>
+          </div>
+        }
+
         @if (auth.currentUser()?.role === 'admin') {
           <div class="nk-toolkey">
             <span class="nk-led" aria-hidden="true"></span>
@@ -666,7 +702,22 @@ const KNOB_ANGLE: Record<SortOption, number> = {
         width: auto;
       }
     }
+    /* Platz für die 3D-Taste: Werkzeugtasten und Abstände etwas enger */
+    @media (max-width: 1600px) {
+      .deck {
+        gap: 8px;
+      }
+      .deck-tools .nk-toolkey {
+        width: 46px;
+      }
+      .deck-search {
+        width: 164px;
+      }
+    }
     @media (max-width: 1400px) {
+      .deck-search {
+        width: 144px;
+      }
       .deck-random .nk-label,
       .sort-container .nk-label,
       .search-container .nk-label {
@@ -787,6 +838,7 @@ const KNOB_ANGLE: Record<SortOption, number> = {
 })
 export class ToolbarComponent {
   readonly auth = inject(AuthService);
+  readonly deckView = inject(DeckViewService);
   readonly favorites = inject(FavoritesService);
   readonly creditService = inject(CreditService);
   readonly loudness = inject(LoudnessService);

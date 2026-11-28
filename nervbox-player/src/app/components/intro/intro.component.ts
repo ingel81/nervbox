@@ -7,6 +7,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { DeckViewService } from '../../core/services/deck-view.service';
 import { decideIntroMode, IntroMode } from './intro.config';
 
 /** Wie lange das 3D-Modul maximal laden darf, bevor wir nur noch faden. */
@@ -17,6 +18,7 @@ const FADE_MS = 450;
  * Lade-Intro: Das Gerät fällt in 3D auf den Tisch und wird nahtlos zur echten
  * Oberfläche. Die App lädt währenddessen normal dahinter (das Intro bewegt nur
  * das echte `.app-device` per CSS-Transform). Ein Klick/Tap/Taste überspringt.
+ * Ist die 3D-Ansicht eingeschaltet, bleibt das Gerät am Ende schräg auf dem Tisch stehen.
  */
 @Component({
   selector: 'app-intro',
@@ -73,13 +75,18 @@ const FADE_MS = 450;
 })
 export class IntroComponent {
   private readonly destroyRef = inject(DestroyRef);
+  private readonly deckView = inject(DeckViewService);
   private readonly mode: IntroMode = decideIntroMode();
   readonly curtain = signal(this.mode !== 'none');
   readonly fading = signal(false);
   private stopEngine: (() => void) | null = null;
 
   constructor() {
-    if (this.mode === 'none') return;
+    if (this.mode === 'none') {
+      // kein Intro: gespeicherte 3D-Ansicht direkt herstellen
+      afterNextRender(() => this.deckView.restore());
+      return;
+    }
     const root = document.documentElement.classList;
     root.add('nb-intro', 'nb-intro-wait');
     afterNextRender(() => void this.start());
@@ -104,14 +111,22 @@ export class IntroComponent {
             setTimeout(() => rej(new Error('timeout')), ENGINE_LOAD_TIMEOUT_MS),
           ),
         ]);
-        const engine = new mod.IntroEngine(device, {
-          onStarted: () => this.curtain.set(false),
-          onDone: () => {
-            this.stopEngine = null;
-            this.curtain.set(false);
-            this.cleanupClasses();
+        const endIn3d = this.deckView.wants3d();
+        this.deckView.setIntroRunning(true, endIn3d);
+        const engine = new mod.IntroEngine(
+          device,
+          {
+            onStarted: () => this.curtain.set(false),
+            onDone: () => {
+              this.stopEngine = null;
+              this.curtain.set(false);
+              this.cleanupClasses();
+              this.deckView.setIntroRunning(false);
+            },
+            onHandover3d: (scene, relief) => void this.deckView.adopt(scene, relief),
           },
-        });
+          { endIn3d },
+        );
         this.stopEngine = () => engine.dispose();
         engine.start();
         return;
@@ -135,6 +150,7 @@ export class IntroComponent {
         setTimeout(() => {
           this.curtain.set(false);
           this.cleanupClasses();
+          this.deckView.restore();
         }, FADE_MS + 50);
       });
     });

@@ -1,49 +1,47 @@
 import * as THREE from 'three';
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { IntroSound } from './intro-sound';
+import { DeckRelief } from '../deck3d/deck-relief';
+import { DeckScene, LampInfo, LocalPoint, OrbitPose, lerpPose } from '../deck3d/deck-scene';
+import { makeDustSprite } from '../deck3d/deck-textures';
+import {
+  clamp01,
+  easeInOutCubic,
+  easeInOutSine,
+  easeOutCubic,
+  easeOutQuart,
+  lerp,
+  rand,
+  seg,
+} from '../deck3d/deck-util';
 
 /**
- * 3D-Intro "Drop".
+ * 3D-Intro „Drop“: Das Gerät fällt aus dem Dunkel auf den Tisch, schaltet sich ein, die Kamera
+ * umkreist es flach und steigt dann senkrecht darüber – dort geht die 3D-Szene nahtlos in die
+ * echte Oberfläche über (siehe {@link DeckScene}: die Oberseite ist von Anfang an das echte DOM).
  *
- * Prinzip für die nahtlose Übergabe: Die Oberseite des Geräts ist KEINE Textur,
- * sondern das echte `.app-device`-DOM-Element. Es wird jedes Frame per
- * CSS `matrix3d` exakt auf die Oberseite des three.js-Gehäuses projiziert
- * (gleiche Kamera). three.js rendert dahinter Raum, Tisch, Gehäuse, Licht und
- * Schatten; Staub liegt in einem 2D-Canvas darüber. Am Ende blickt die Kamera
- * senkrecht von oben mit exakt passender Brennweite – die Matrix wird zur
- * Identität, der 3D-Hintergrund blendet aus und übrig bleibt die echte UI.
+ * Dieses Modul enthält nur den Ablauf (Zeitplan, Flugbahn, Kamera, Einschalt-Licht, Staub, Ton);
+ * Szene und Tasten-Relief teilt es sich mit der 3D-Ansicht (components/deck3d).
  */
 
-/** Pixel pro Welteinheit (DOM-px ↔ three.js). */
-const S = 100;
-
 // Zeitplan (Sekunden)
-const T_FLY0 = 0;
 const T_IMPACT = 2.0; // langsamer Anflug: das 3D soll man wahrnehmen
-const T_LIGHT0 = 2.14;
-const LIGHT_SPAN = 0.78;
+const T_LIGHT0 = 2.2;
+const LIGHT_SPAN = 0.85;
 const LIGHT_RAMP = 0.16;
-const T_CAM0 = 2.3;
-const T_CAM1 = 4.2;
-const T_SHADE0 = 3.3;
-const T_SHADE1 = 4.12;
-const T_XFADE0 = 4.12;
-const T_XFADE1 = 4.56;
+const T_CAM0 = 2.8; // bis hier flache Fahrt ums Gerät, dann Aufstieg
+const T_CAM1 = 5.05;
+const T_SHADE0 = 3.9;
+const T_SHADE1 = 4.9;
+const T_RAISE0 = 4.1;
+const T_RAISE1 = 4.92;
+const T_XFADE0 = 4.95;
+const T_XFADE1 = 5.4;
+/** Ende, wenn das Intro in der 3D-Ansicht stehen bleibt */
+const T_END_3D = T_CAM1 + 0.1;
 
-const FOV0 = 36;
-const FOV1 = 13;
-const POLAR0 = THREE.MathUtils.degToRad(57);
-const AZ0 = -0.32;
-
-/** Neigung der Oberseite (hinten höher) */
-const SLOPE = THREE.MathUtils.degToRad(9);
-/** Höhe der herausstehenden Pads/Tasten in DOM-px (bei 1400 px Gerätebreite) */
-const RAISE_PX = 11;
-const T_RAISE0 = 3.3;
-const T_RAISE1 = 4.08;
-
-const BG = 0x050403;
-const LAMP_COLOR = 0xffd6a0;
+const FOV0 = 34;
+const POLAR0 = THREE.MathUtils.degToRad(61);
+const AZ0 = -0.4;
 
 interface Lightable {
   el: HTMLElement;
@@ -52,24 +50,10 @@ interface Lightable {
   w: number;
   h: number;
   r: number;
-  glow: string; // "r g b"
+  /** sichtbarer Ausschnitt (Scroll-Container), sonst null */
+  clip: { x: number; y: number; w: number; h: number } | null;
+  glow: string; // "r,g,b"
   start: number;
-  /** aktuelle Verschiebung der herausstehenden Oberseite (px) */
-  ox: number;
-  oy: number;
-}
-
-interface Raised {
-  el: HTMLElement;
-  cx: number;
-  cy: number;
-  wall: string;
-  base: string;
-  prevTransform: string;
-  prevShadow: string;
-  prevTransition: string;
-  ox: number;
-  oy: number;
 }
 
 interface Dust {
@@ -83,35 +67,36 @@ interface Dust {
   grav: number;
 }
 
+/** Staubkorn, das im Lichtkegel der Lampe schwebt */
+interface Mote {
+  p: THREE.Vector3;
+  v: THREE.Vector3;
+  size: number;
+  a: number;
+  ph: number;
+}
+
 export interface IntroCallbacks {
   onStarted: () => void;
   onDone: () => void;
+  /** Intro endet in der 3D-Ansicht: Szene und Relief gehen an die Ansicht über */
+  onHandover3d?: (scene: DeckScene, relief: DeckRelief) => void;
 }
 
-const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
-const seg = (t: number, a: number, b: number) => clamp01((t - a) / (b - a));
-const easeOutCubic = (x: number) => 1 - Math.pow(1 - x, 3);
-const easeOutQuart = (x: number) => 1 - Math.pow(1 - x, 4);
-const easeInOutCubic = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
-const easeInOutSine = (x: number) => -(Math.cos(Math.PI * x) - 1) / 2;
-const lerp = THREE.MathUtils.lerp;
+export interface IntroOptions {
+  /** nicht in die flache Oberfläche übergehen, sondern in der 3D-Ansicht stehen bleiben */
+  endIn3d: boolean;
+}
 
 export class IntroEngine {
   private readonly vw = window.innerWidth;
   private readonly vh = window.innerHeight;
-  private readonly rect: DOMRect;
-  private readonly radiusPx: number;
+  private readonly small = this.vw < 700;
+  private readonly endIn3d: boolean;
 
-  private renderer!: THREE.WebGLRenderer;
-  private scene = new THREE.Scene();
-  private camera = new THREE.PerspectiveCamera(FOV0, 1, 0.1, 400);
-  private deviceGroup = new THREE.Group();
-  private spot!: THREE.SpotLight;
-  private spotBase = 1;
-  private cone!: THREE.Mesh;
-  private coneMat!: THREE.ShaderMaterial;
-  private pmrem?: THREE.PMREMGenerator;
-  private disposables: { dispose: () => void }[] = [];
+  private scene!: DeckScene;
+  private relief!: DeckRelief;
+  private poseEnd!: OrbitPose;
 
   private shade!: HTMLCanvasElement;
   private glow!: HTMLCanvasElement;
@@ -121,45 +106,27 @@ export class IntroEngine {
   private glowCtx!: CanvasRenderingContext2D;
   private dustCtx!: CanvasRenderingContext2D;
   private dustSprite!: HTMLCanvasElement;
-  private readonly q: number; // Auflösung der Overlay-Canvases
+  private readonly q = this.small ? 0.6 : 0.5; // Auflösung der Licht-Overlays
   private readonly dpr = Math.min(window.devicePixelRatio || 1, 2);
 
   private lightables: Lightable[] = [];
   private lastLightScan = -1;
   private dust: Dust[] = [];
-  private dustSpawned = false;
+  private motes: Mote[] = [];
   private impactDone = false;
 
   private sound: IntroSound | null = null;
   private soundScheduled = false;
 
-  // Geometrie (Welt)
-  private readonly DW: number;
-  private readonly DH: number;
-  private readonly TH: number;
-  /** Gehäusehöhe vorne / hinten (Keil) */
-  private readonly HF: number;
-  private readonly HB: number;
-  private readonly topY: number;
-  /** gekippte Umgebung (Tisch, Licht) – Drehpunkt an der Gerätevorderkante auf Tischhöhe */
-  private readonly env = new THREE.Group();
-  private readonly envInner = new THREE.Group();
-  /** herausstehende Bedienelemente (CSS-Extrusion) */
-  private raised: Raised[] = [];
-  private raisedDone = false;
-  private readonly rest = new THREE.Vector3();
-  private readonly viewH: number;
-
   private t = 0;
   private last = 0;
   private raf = 0;
   private finishing = false;
+  private handedOver = false;
   private disposed = false;
 
-  private readonly tmpM = new THREE.Matrix4();
-  private readonly mA = new THREE.Matrix4();
-  private readonly mV = new THREE.Matrix4();
-  private readonly mT = new THREE.Matrix4();
+  private readonly cam: LocalPoint = { u: 0, v: 0, n: 0 };
+  private readonly lamp: LampInfo = { u: 0, v: 0, n: 0, au: 0, av: 0, radius: 1, cos: 1 };
   private readonly v3 = new THREE.Vector3();
 
   private readonly onKey = (e: KeyboardEvent) => {
@@ -178,37 +145,20 @@ export class IntroEngine {
   constructor(
     private readonly device: HTMLElement,
     private readonly cb: IntroCallbacks,
+    opts: IntroOptions = { endIn3d: false },
   ) {
-    this.rect = device.getBoundingClientRect();
-    this.radiusPx = parseFloat(getComputedStyle(device).borderTopLeftRadius) || 0;
-    this.q = this.vw < 700 ? 0.6 : 0.5;
-    this.DW = this.rect.width / S;
-    this.DH = this.rect.height / S;
-    // Massives Keilgehäuse wie eine echte Groovebox: vorne HF hoch, hinten HB (Oberseite um SLOPE
-    // geneigt). Die Szene rechnet im Rahmen der Oberseite; stattdessen ist der Tisch gekippt –
-    // so blickt die Kamera am Ende senkrecht auf die Oberseite und die Übergabe bleibt nahtlos.
-    this.HF = THREE.MathUtils.clamp(Math.min(this.DW, this.DH) * 0.16, 0.8, 1.9);
-    this.HB = this.HF + this.DH * Math.tan(SLOPE);
-    this.TH = this.HF;
-    const feet = 0.06;
-    this.topY = feet + this.HF;
-    this.viewH = this.vh / S;
-    // Ruheposition: Gerätemitte so, dass es am Ende exakt auf seinem DOM-Platz liegt
-    this.rest.set(
-      (this.rect.left + this.rect.width / 2 - this.vw / 2) / S,
-      this.topY,
-      (this.rect.top + this.rect.height / 2 - this.vh / 2) / S,
-    );
+    this.endIn3d = opts.endIn3d && !!cb.onHandover3d;
   }
 
-  // ------------------------------------------------------------------ setup
+  // ------------------------------------------------------------------ Aufbau
 
   start(): void {
     try {
-      this.buildRenderer();
-      this.buildScene();
+      this.scene = new DeckScene(this.device, this.small);
+      this.relief = new DeckRelief(this.device);
+      this.poseEnd = this.endIn3d ? this.scene.viewPose() : this.scene.topPose();
       this.buildOverlays();
-      this.collectRaised();
+      this.spawnMotes();
     } catch (err) {
       console.warn('[Intro] Setup fehlgeschlagen:', err);
       this.finishNow();
@@ -223,10 +173,9 @@ export class IntroEngine {
     window.addEventListener('keydown', this.onKey, true);
     window.addEventListener('resize', this.onResize);
 
-    // Erstes Frame vorbereiten (Shader kompilieren), dann sichtbar schalten
+    // Erstes Bild vorbereiten (Shader kompilieren), dann sichtbar schalten
     this.update(0);
-    this.renderer.compile(this.scene, this.camera);
-    this.renderer.render(this.scene, this.camera);
+    this.scene.warmUp();
     document.documentElement.classList.remove('nb-intro-wait');
     this.cb.onStarted();
 
@@ -238,7 +187,7 @@ export class IntroEngine {
         this.t += dt;
         this.update(dt);
       }
-      this.renderer.render(this.scene, this.camera);
+      this.scene.render();
       return;
     }
 
@@ -252,270 +201,8 @@ export class IntroEngine {
     });
   }
 
-  private buildRenderer(): void {
-    const r = new THREE.WebGLRenderer({
-      antialias: true,
-      powerPreference: 'high-performance',
-    });
-    r.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.vw < 700 ? 1.5 : 2));
-    r.setSize(this.vw, this.vh, false);
-    r.outputColorSpace = THREE.SRGBColorSpace;
-    r.toneMapping = THREE.ACESFilmicToneMapping;
-    r.toneMappingExposure = 1.05;
-    r.shadowMap.enabled = true;
-    r.shadowMap.type = THREE.PCFShadowMap;
-    r.setClearColor(BG, 1);
-    const c = r.domElement;
-    Object.assign(c.style, {
-      position: 'fixed',
-      inset: '0',
-      width: '100vw',
-      height: '100vh',
-      zIndex: '0',
-      pointerEvents: 'none',
-      transition: 'opacity 0.44s ease',
-    } as Partial<CSSStyleDeclaration>);
-    c.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(c);
-    this.renderer = r;
-    this.camera.aspect = this.vw / this.vh;
-  }
-
-  private buildScene(): void {
-    const scene = this.scene;
-    scene.background = new THREE.Color(BG);
-
-    // Dezente Umgebungsreflexe (dunkler Raum)
-    this.pmrem = new THREE.PMREMGenerator(this.renderer);
-    const room = new RoomEnvironment();
-    const envTex = this.pmrem.fromScene(room, 0.04).texture;
-    room.traverse((o) => {
-      const m = o as THREE.Mesh;
-      m.geometry?.dispose();
-      (m.material as THREE.Material | undefined)?.dispose?.();
-    });
-    scene.environment = envTex;
-    scene.environmentIntensity = 0.1;
-    this.disposables.push(envTex);
-
-    // Umgebung kippen: Drehpunkt = Vorderkante des Geräts auf Tischhöhe
-    const pivot = new THREE.Vector3(this.rest.x, 0, this.rest.z + this.DH / 2);
-    this.env.position.copy(pivot);
-    this.env.rotation.x = -SLOPE;
-    this.envInner.position.copy(pivot).negate();
-    this.env.add(this.envInner);
-    scene.add(this.env);
-
-    // Spot (warme Schreibtischlampe, oben vorne links)
-    const spot = new THREE.SpotLight(LAMP_COLOR, 0, 0, 0.6, 0.62, 1.6);
-    const span = Math.max(this.DW, this.DH);
-    spot.position.set(
-      this.rest.x - span * 0.3,
-      this.topY + 11 + span * 0.6,
-      this.rest.z + span * 0.08 + 1.5,
-    );
-    spot.target.position.set(this.rest.x + 0.2, 0, this.rest.z - 0.3);
-    const dist = spot.position.distanceTo(spot.target.position);
-    spot.angle = Math.min(1.0, Math.atan((span * 0.5 + 1.6) / dist));
-    this.spotBase = 2.6 * Math.pow(dist, 1.6);
-    spot.castShadow = true;
-    spot.shadow.mapSize.set(this.vw < 700 ? 1024 : 2048, this.vw < 700 ? 1024 : 2048);
-    spot.shadow.radius = 5;
-    spot.shadow.blurSamples = 16;
-    spot.shadow.bias = -0.0005;
-    spot.shadow.normalBias = 0.02;
-    spot.shadow.camera.near = Math.max(1, dist - span - 8);
-    spot.shadow.camera.far = dist + span + 8;
-    this.envInner.add(spot, spot.target);
-    this.spot = spot;
-
-    // Kühles Gegenlicht für Konturen
-    const rim = new THREE.DirectionalLight(0xa9b0bd, 0.14);
-    rim.position.set(this.rest.x + 6, this.topY + 5, this.rest.z - 12);
-    rim.target.position.copy(this.rest);
-    this.envInner.add(rim, rim.target);
-    this.envInner.add(new THREE.HemisphereLight(0x3a3026, 0x080605, 0.08));
-
-    this.buildTable();
-    this.buildDevice();
-    this.buildCone(spot, dist);
-  }
-
-  private buildTable(): void {
-    const tex = new THREE.CanvasTexture(makeWoodCanvas());
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(5, 5);
-    tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
-    const rough = new THREE.CanvasTexture(makeNoiseCanvas(256, 150, 230));
-    rough.wrapS = rough.wrapT = THREE.RepeatWrapping;
-    rough.repeat.set(14, 14);
-    const mat = new THREE.MeshPhysicalMaterial({
-      map: tex,
-      roughnessMap: rough,
-      roughness: 0.78,
-      clearcoat: 0.3,
-      clearcoatRoughness: 0.42,
-    });
-    const geo = new THREE.PlaneGeometry(90, 90);
-    const table = new THREE.Mesh(geo, mat);
-    table.rotation.x = -Math.PI / 2;
-    table.position.set(this.rest.x, 0, this.rest.z);
-    table.receiveShadow = true;
-    this.envInner.add(table);
-    this.disposables.push(tex, rough, mat, geo);
-  }
-
-  private buildDevice(): void {
-    const g = this.deviceGroup;
-    const W = this.DW;
-    const H = this.DH;
-    const R = Math.max(0.025, Math.min(this.radiusPx / S, W / 2 - 0.01, H / 2 - 0.01));
-    const bevel = Math.min(0.045, R * 0.8);
-    // Oberschale gerade (deckt exakt die DOM-Fläche), darunter der Keil-Korpus: vorne HF, hinten HB
-    // hoch, Flanken leicht nach innen geneigt (von oben verdeckt → Übergang nahtlos).
-    const upperH = Math.min(0.42, this.HF * 0.3);
-    const taper = Math.min(0.22, this.HF * 0.12);
-
-    const grain = new THREE.CanvasTexture(makeNoiseCanvas(256, 90, 170));
-    grain.wrapS = grain.wrapT = THREE.RepeatWrapping;
-    grain.repeat.set(1.6, 1.6);
-    this.disposables.push(grain);
-
-    // Oberschale: Putty-Kunststoff wie --nk-chassis
-    const upperMat = new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color('#5a5244'),
-      roughness: 0.58,
-      roughnessMap: grain,
-      bumpMap: grain,
-      bumpScale: 0.35,
-      clearcoat: 0.35,
-      clearcoatRoughness: 0.5,
-      sheen: 0.25,
-      sheenColor: new THREE.Color('#d8c6a2'),
-    });
-    const upperGeo = roundedSlab(W, H, R, upperH, bevel);
-    upperGeo.computeBoundingBox();
-    upperGeo.translate(0, -upperGeo.boundingBox!.max.y, 0);
-    const upper = new THREE.Mesh(upperGeo, upperMat);
-    upper.castShadow = true;
-    upper.receiveShadow = true;
-    g.add(upper);
-
-    // Korpus: dunklerer Kunststoff, minimal eingerückt (Gehäusefuge), Keilform
-    const inset = 0.035;
-    const lowerMat = new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color('#3d362c'),
-      roughness: 0.72,
-      roughnessMap: grain,
-      bumpMap: grain,
-      bumpScale: 0.25,
-      clearcoat: 0.15,
-      clearcoatRoughness: 0.6,
-    });
-    const bodyMax = this.HB - upperH;
-    const lowerGeo = roundedSlab(
-      W - inset * 2,
-      H - inset * 2,
-      Math.max(0.02, R - inset),
-      bodyMax,
-      Math.min(0.05, bevel),
-    );
-    lowerGeo.computeBoundingBox();
-    lowerGeo.translate(0, -lowerGeo.boundingBox!.max.y, 0);
-    wedgeBody(
-      lowerGeo,
-      bodyMax,
-      H,
-      this.HF - upperH,
-      (W - inset * 2) / 2,
-      (H - inset * 2) / 2,
-      taper,
-    );
-    lowerGeo.translate(0, -upperH + 0.004, 0);
-    const lower = new THREE.Mesh(lowerGeo, lowerMat);
-    lower.castShadow = true;
-    lower.receiveShadow = true;
-    g.add(lower);
-
-    // Gummifüße
-    const footMat = new THREE.MeshStandardMaterial({ color: 0x0b0a09, roughness: 0.95 });
-    const footGeo = new THREE.CylinderGeometry(0.16, 0.18, 0.07, 20);
-    const fx = W / 2 - taper - Math.min(0.45, W * 0.1);
-    const fz = H / 2 - taper - Math.min(0.45, H * 0.07);
-    const tanS = Math.tan(SLOPE);
-    for (const [sx, sz] of [
-      [-1, -1],
-      [1, -1],
-      [-1, 1],
-      [1, 1],
-    ]) {
-      const f = new THREE.Mesh(footGeo, footMat);
-      // Unterseite ist schräg (Keil): Fuß sitzt auf ihr, parallel zum Tisch
-      const z = sz * fz;
-      f.position.set(sx * fx, -(this.HF + (H / 2 - z) * tanS) - 0.03, z);
-      f.rotation.x = -SLOPE;
-      f.castShadow = true;
-      g.add(f);
-    }
-    this.disposables.push(upperMat, upperGeo, lowerMat, lowerGeo, footMat, footGeo);
-    this.scene.add(g);
-  }
-
-  /** Feiner, additiver Lichtkegel (Staub in der Luft). */
-  private buildCone(spot: THREE.SpotLight, dist: number): void {
-    const radius = Math.tan(spot.angle) * dist;
-    const geo = new THREE.ConeGeometry(radius, dist, 64, 1, true);
-    geo.translate(0, -dist / 2, 0); // Spitze im Ursprung
-    this.coneMat = new THREE.ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-      blending: THREE.AdditiveBlending,
-      uniforms: {
-        uI: { value: 0 },
-        uLen: { value: dist },
-        uColor: { value: new THREE.Color(LAMP_COLOR) },
-      },
-      vertexShader: /* glsl */ `
-        varying float vY;
-        varying vec3 vN;
-        varying vec3 vView;
-        void main() {
-          vY = -position.y;
-          vec4 wp = modelMatrix * vec4(position, 1.0);
-          vN = normalize(mat3(modelMatrix) * normal);
-          vView = normalize(cameraPosition - wp.xyz);
-          gl_Position = projectionMatrix * viewMatrix * wp;
-        }
-      `,
-      fragmentShader: /* glsl */ `
-        uniform float uI;
-        uniform float uLen;
-        uniform vec3 uColor;
-        varying float vY;
-        varying vec3 vN;
-        varying vec3 vView;
-        void main() {
-          float along = clamp(vY / uLen, 0.0, 1.0);
-          float edge = pow(abs(dot(normalize(vN), normalize(vView))), 1.6);
-          float fade = smoothstep(0.0, 0.18, along) * (1.0 - smoothstep(0.55, 1.0, along));
-          float a = uI * edge * fade * 0.05;
-          gl_FragColor = vec4(uColor * a, a);
-        }
-      `,
-    });
-    const cone = new THREE.Mesh(geo, this.coneMat);
-    cone.position.copy(spot.position);
-    const dir = new THREE.Vector3().subVectors(spot.target.position, spot.position).normalize();
-    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir);
-    cone.renderOrder = 5;
-    this.envInner.add(cone);
-    this.cone = cone;
-    this.disposables.push(geo, this.coneMat);
-  }
-
   private buildOverlays(): void {
+    const { width, height } = this.scene.rect;
     const mk = (w: number, h: number) => {
       const c = document.createElement('canvas');
       c.width = Math.max(2, Math.round(w));
@@ -523,25 +210,25 @@ export class IntroEngine {
       c.setAttribute('aria-hidden', 'true');
       return c;
     };
-    const devStyle = (c: HTMLCanvasElement, blend: string) =>
+    const devStyle = (c: HTMLCanvasElement, blend: string, z: number) =>
       Object.assign(c.style, {
         position: 'absolute',
         left: '0',
         top: '0',
-        width: `${this.rect.width}px`,
-        height: `${this.rect.height}px`,
-        zIndex: '60',
+        width: `${width}px`,
+        height: `${height}px`,
+        zIndex: String(z),
         pointerEvents: 'none',
         borderRadius: 'inherit',
         mixBlendMode: blend,
       } as Partial<CSSStyleDeclaration>);
 
-    const w = this.rect.width * this.q;
-    const h = this.rect.height * this.q;
+    const w = width * this.q;
+    const h = height * this.q;
     this.shade = mk(w, h);
-    devStyle(this.shade, 'normal');
+    devStyle(this.shade, 'normal', 60);
     this.glow = mk(w, h);
-    devStyle(this.glow, 'screen');
+    devStyle(this.glow, 'screen', 61);
     this.device.appendChild(this.shade);
     this.device.appendChild(this.glow);
     this.shadeCtx = this.shade.getContext('2d')!;
@@ -577,12 +264,9 @@ export class IntroEngine {
       this.skip();
     });
     document.body.appendChild(this.catcher);
-
-    this.device.style.transformOrigin = '0 0';
-    this.device.style.willChange = 'transform';
   }
 
-  // ------------------------------------------------------------------ loop
+  // ------------------------------------------------------------------ Schleife
 
   private readonly frame = (now: number) => {
     if (this.disposed) return;
@@ -590,49 +274,68 @@ export class IntroEngine {
     this.last = now;
     this.t += dt;
     this.update(dt);
-    this.renderer.render(this.scene, this.camera);
-    if (this.t >= T_XFADE1 + 0.05 && !this.finishing) {
-      this.handover();
-      return;
+    this.scene.render();
+    if (!this.finishing) {
+      if (this.endIn3d && this.t >= T_END_3D) {
+        this.handover3d();
+        return;
+      }
+      if (!this.endIn3d && this.t >= T_XFADE1 + 0.05) {
+        this.handover();
+        return;
+      }
     }
     this.raf = requestAnimationFrame(this.frame);
   };
 
   private update(dt: number): void {
     const t = this.t;
-    if (this.sound && !this.soundScheduled && t >= T_FLY0 - 0.05) {
+    const scene = this.scene;
+    if (this.sound && !this.soundScheduled && t >= -0.05) {
       this.soundScheduled = true;
       this.sound.whoosh(T_IMPACT - t - 0.55, 0.55);
       this.sound.impact(T_IMPACT - t);
     }
 
     const lamp = this.lampLevel(t);
-    this.spot.intensity = this.spotBase * lamp;
-    this.coneMat.uniforms['uI'].value = lamp * (1 - seg(t, T_CAM0 + 0.2, T_SHADE1 - 0.2));
+    scene.setLamp(lamp, lamp * (1 - seg(t, T_CAM0 + 0.3, T_SHADE1 - 0.2)));
+    scene.setPower(easeInOutSine(seg(t, T_LIGHT0 - 0.05, T_LIGHT0 + 0.35)));
 
     this.updateDevice(t);
     // Schatten: je höher das Gerät, desto weicher und blasser
-    const hAbove = Math.max(0, this.deviceGroup.position.y - this.rest.y);
-    const near = clamp01(1 - hAbove / 3.5);
-    this.spot.shadow.intensity = 0.3 + 0.7 * near * near;
-    this.spot.shadow.radius = 3 + 9 * (1 - near);
+    const hAbove = Math.max(0, scene.deviceGroup.position.y - scene.rest.y);
+    scene.setShadowNear(clamp01(1 - hAbove / 3.5));
     this.updateCamera(t);
-    this.deviceGroup.updateMatrixWorld(true);
-    this.camera.updateMatrixWorld(true);
-    this.applyCssMatrix();
-    this.updateRaised(t);
+    scene.applyCssMatrix();
+
+    // Tasten-Relief: sinkt vor der Übergabe auf 0 (in der 3D-Ansicht bleibt es stehen)
+    scene.cameraLocal(this.cam);
+    scene.lampLocal(this.lamp);
+    const k = this.endIn3d ? 1 : 1 - easeInOutSine(seg(t, T_RAISE0, T_RAISE1));
+    this.relief.setView({
+      cu: this.cam.u,
+      cv: this.cam.v,
+      cn: this.cam.n,
+      lu: this.lamp.u,
+      lv: this.lamp.v,
+      ln: this.lamp.n,
+      k,
+      sheen: clamp01(lamp) * clamp01(this.lamp.cos * 1.3),
+    });
 
     if (!this.impactDone && t >= T_IMPACT) {
       this.impactDone = true;
       this.spawnDust();
+      this.kickMotes();
     }
     this.drawShade(t, lamp);
-    this.drawGlow(t, lamp);
-    this.updateDust(dt);
+    this.drawGlow(t);
+    this.updateDust(dt, lamp);
 
     // Übergabe: 3D-Hintergrund blendet aus, echter Schreibtisch erscheint
-    if (t >= T_XFADE0 && this.renderer.domElement.style.opacity !== '0') {
-      this.renderer.domElement.style.opacity = '0';
+    if (!this.endIn3d && t >= T_XFADE0 && scene.canvas.style.opacity !== '0') {
+      scene.canvas.style.transition = scene.canvas.style.transition || 'opacity 0.44s ease';
+      scene.canvas.style.opacity = '0';
       const root = document.documentElement.classList;
       root.add('nb-intro-handover');
       root.remove('nb-intro');
@@ -654,26 +357,25 @@ export class IntroEngine {
   }
 
   private updateDevice(t: number): void {
-    const g = this.deviceGroup;
-    const span = Math.max(this.DW, this.DH);
+    const scene = this.scene;
+    const g = scene.deviceGroup;
+    const rest = scene.rest;
+    const span = Math.max(scene.DW, scene.DH);
     if (t < T_IMPACT) {
-      const u = seg(t, T_FLY0, T_IMPACT);
+      const u = seg(t, 0, T_IMPACT);
       const hz = easeOutQuart(u);
-      const off =
-        this.vw < this.vh
-          ? new THREE.Vector3(span * 0.12 + 0.8, 0, -(span * 0.5 + 3))
-          : new THREE.Vector3(span * 0.45 + 3.5, 0, -(span * 0.45 + 3));
+      const portrait = this.vw < this.vh;
+      const offX = portrait ? span * 0.12 + 0.8 : span * 0.45 + 3.5;
+      const offZ = portrait ? -(span * 0.5 + 3) : -(span * 0.45 + 3);
       // Hoch hinten oben starten (außerhalb des Bilds), dann Bogen + freier Fall
-      const fall = (span * 0.05 + 1.9) * (1 - u * u) + (span * 0.5 + 7) * Math.pow(1 - u, 4);
-      g.position.set(
-        this.rest.x + off.x * (1 - hz),
-        this.rest.y + fall,
-        this.rest.z + off.z * (1 - hz),
-      );
+      // (zum Schluss beschleunigt: das Gerät setzt nicht auf, es schlägt auf)
+      const fall =
+        (span * 0.06 + 2.1) * (1 - Math.pow(u, 3.4)) + (span * 0.5 + 7) * Math.pow(1 - u, 4);
+      g.position.set(rest.x + offX * (1 - hz), rest.y + fall, rest.z + offZ * (1 - hz));
       const r = easeOutCubic(u);
       g.rotation.set(
         lerp(0.42, 0.012, r), // Oberseite zur Kamera geneigt
-        lerp(this.vw < this.vh ? 1.3 : 2.35, 0, r),
+        lerp(portrait ? 1.3 : 2.35, 0, r),
         lerp(-0.3, 0.035, easeOutCubic(Math.min(1, u * 1.1))),
         'XZY',
       );
@@ -681,210 +383,92 @@ export class IntroEngine {
       // Aufprall: kurzer Hüpfer, Kippeln, Setzen
       const k = t - T_IMPACT;
       const bounce = 0.075 * Math.exp(-k * 10) * Math.abs(Math.sin(k * 24));
-      g.position.set(this.rest.x, this.rest.y + bounce, this.rest.z);
+      g.position.set(rest.x, rest.y + bounce, rest.z);
       const damp = Math.exp(-k * 11);
       g.rotation.set(0.012 * damp * Math.cos(k * 31), 0, 0.035 * damp * Math.cos(k * 27), 'XZY');
     }
   }
 
   private updateCamera(t: number): void {
-    const cam = this.camera;
+    const scene = this.scene;
+    const cam = scene.camera;
+    const portrait = this.vw < this.vh;
     const p = easeInOutCubic(seg(t, T_CAM0, T_CAM1));
     const pPolar = easeInOutSine(seg(t, T_CAM0, T_CAM1 - 0.08));
-    const fov = lerp(FOV0, FOV1, p);
-    const polar = lerp(POLAR0, 0, pPolar);
-    const az = lerp(AZ0, 0, easeInOutSine(seg(t, 0, T_CAM1 - 0.1)));
-    // Leichter Push-in während des Anflugs, dann Dolly-Zoom auf exakte Rahmung
-    const portrait = this.vw < this.vh;
-    const kStart = lerp(
-      portrait ? 2.5 : 1.85,
-      portrait ? 1.65 : 1.4,
-      easeOutCubic(seg(t, 0, T_CAM0)),
+    // Flache, nahe Einstellung: leichter Push-in beim Anflug, langsame Fahrt ums Gerät
+    const push = lerp(
+      portrait ? 2.5 : 1.7,
+      portrait ? 1.65 : 1.2,
+      easeOutCubic(seg(t, 0, T_CAM0 + 0.2)),
     );
-    const k = lerp(kStart, 1, p);
-    const dist = (this.viewH / 2 / Math.tan(THREE.MathUtils.degToRad(fov / 2))) * k;
-    const tx = lerp(this.rest.x * 0.9, 0, p);
-    const tz = lerp(this.rest.z + this.DH * 0.04, 0, p);
-
-    cam.fov = fov;
-    cam.position.set(
-      tx + dist * Math.sin(polar) * Math.sin(az),
-      this.topY + dist * Math.cos(polar),
-      tz + dist * Math.sin(polar) * Math.cos(az),
-    );
-    cam.rotation.set(-(Math.PI / 2 - polar), az, 0, 'YXZ');
+    const hero: OrbitPose = {
+      fov: FOV0,
+      polar: lerp(POLAR0 + 0.04, POLAR0 - 0.07, easeInOutSine(seg(t, 0.3, T_CAM0 + 0.7))),
+      az: lerp(AZ0, AZ0 * 0.3, easeInOutSine(seg(t, 0.2, T_CAM0 + 0.6))),
+      hh: (scene.viewH / 2) * push,
+      tx: scene.rest.x * 0.9,
+      // Querformat: die Kamera schwenkt mit dem fallenden Gerät nach unten
+      tz:
+        scene.rest.z +
+        scene.DH *
+          (portrait ? 0.04 : lerp(-0.14, 0.2, easeInOutSine(seg(t, 0.1, T_IMPACT + 0.25)))),
+    };
+    const pose = lerpPose(hero, this.poseEnd, p, pPolar);
+    scene.setPose(pose);
 
     // Kamerawackler beim Aufprall
     if (t > T_IMPACT && t < T_IMPACT + 0.6) {
       const k2 = t - T_IMPACT;
+      const dist = pose.hh / Math.tan(THREE.MathUtils.degToRad(pose.fov / 2));
       const amp = 0.11 * Math.exp(-k2 * 11) * (dist / 12);
       cam.position.x += amp * Math.sin(k2 * 71);
       cam.position.y += amp * 1.4 * Math.sin(k2 * 93 + 1.3);
       cam.position.z += amp * 0.6 * Math.sin(k2 * 57 + 0.4);
       cam.rotation.z += 0.012 * Math.exp(-k2 * 11) * Math.sin(k2 * 63);
     }
-    cam.updateProjectionMatrix();
   }
 
-  /** DOM-Oberseite exakt auf die Gehäuseoberseite projizieren. */
-  private applyCssMatrix(): void {
-    const { width: w, height: h, left, top } = this.rect;
-    // px (u, v, zCss) → lokale Gerätekoordinaten (Ursprung: Mitte Oberseite)
-    this.mA.set(1 / S, 0, 0, -w / (2 * S), 0, 0, 1 / S, 0, 0, 1 / S, 0, -h / (2 * S), 0, 0, 0, 1);
-    // Clip → Bildschirm-px, relativ zur Layout-Position des Elements
-    this.mV.set(
-      this.vw / 2,
-      0,
-      0,
-      this.vw / 2,
-      0,
-      -this.vh / 2,
-      0,
-      this.vh / 2,
-      0,
-      0,
-      1,
-      0,
-      0,
-      0,
-      0,
-      1,
-    );
-    this.mT.makeTranslation(-left, -top, 0);
-    const m = this.tmpM
-      .copy(this.mT)
-      .multiply(this.mV)
-      .multiply(this.camera.projectionMatrix)
-      .multiply(this.camera.matrixWorldInverse)
-      .multiply(this.deviceGroup.matrixWorld)
-      .multiply(this.mA);
-    const e = m.elements;
-    // Normieren (w-Skalierung ist frei), hält Werte handlich
-    const s = 1 / e[15];
-    let css = 'matrix3d(';
-    for (let i = 0; i < 16; i++) {
-      css += (e[i] * s).toFixed(i === 3 || i === 7 || i === 11 ? 9 : 6);
-      css += i < 15 ? ',' : ')';
-    }
-    this.device.style.transform = css;
-  }
+  // ------------------------------------------------------------------ Licht-Overlays
 
-  // ------------------------------------------------------------------ raised keys
-
-  /**
-   * Pads und Tasten stehen physisch heraus: Die (flach projizierte) DOM-Ebene kann keine echte
-   * Tiefe, deshalb wird jede Oberseite dorthin verschoben, wo die um RAISE_PX angehobene Fläche aus
-   * Kamerasicht läge, und die Flanken werden als Box-Shadow-Stapel bis zur Grundfläche gezogen.
-   * Zur Übergabe (Kamera senkrecht von oben) sinkt die Höhe auf 0 → exakt die echte UI.
-   */
-  private collectRaised(): void {
-    const W = this.rect.width;
-    const H = this.rect.height;
-    const els = Array.from(this.device.querySelectorAll<HTMLElement>('.nk-pad, .nk-key'));
-    for (const el of els) {
-      const r = localRect(el, this.device);
-      if (!r || r.w < 8 || r.h < 8) continue;
-      if (r.x > W || r.y > H || r.x + r.w < 0 || r.y + r.h < 0) continue;
-      const cs = getComputedStyle(el);
-      this.raised.push({
-        el,
-        cx: r.x + r.w / 2,
-        cy: r.y + r.h / 2,
-        wall: wallColor(cs.backgroundColor),
-        base: cs.boxShadow && cs.boxShadow !== 'none' ? cs.boxShadow + ', ' : '',
-        prevTransform: el.style.transform,
-        prevShadow: el.style.boxShadow,
-        prevTransition: el.style.transition,
-        ox: 0,
-        oy: 0,
-      });
-    }
-  }
-
-  private updateRaised(t: number): void {
-    if (this.raisedDone || !this.raised.length) return;
-    const k = 1 - easeInOutSine(seg(t, T_RAISE0, T_RAISE1));
-    if (k <= 0) {
-      this.restoreRaised();
-      return;
-    }
-    const h = RAISE_PX * Math.max(0.5, this.rect.width / 1400) * k;
-    // Kamera im Rahmen der Oberseite, in DOM-px (u nach rechts, v nach unten, n = Höhe)
-    const c = this.v3
-      .copy(this.camera.position)
-      .applyMatrix4(this.tmpM.copy(this.deviceGroup.matrixWorld).invert());
-    const cu = c.x * S + this.rect.width / 2;
-    const cv = c.z * S + this.rect.height / 2;
-    const cn = c.y * S;
-    const visible = cn > h * 2;
-    const f = visible ? h / (cn - h) : 0;
-    const maxLen = h * 2.6;
-    const byEl = new Map(this.lightables.map((l) => [l.el, l]));
-    for (const r of this.raised) {
-      let ox = (r.cx - cu) * f;
-      let oy = (r.cy - cv) * f;
-      const len = Math.hypot(ox, oy);
-      if (len > maxLen) {
-        ox *= maxLen / len;
-        oy *= maxLen / len;
-      }
-      r.ox = ox;
-      r.oy = oy;
-      const l = byEl.get(r.el);
-      if (l) {
-        l.ox = ox;
-        l.oy = oy;
-      }
-      const n = Math.min(12, Math.ceil(Math.min(len, maxLen)));
-      if (n < 1) {
-        r.el.style.transform = r.prevTransform;
-        r.el.style.boxShadow = r.prevShadow;
-        continue;
-      }
-      let walls = '';
-      for (let i = 1; i <= n; i++) {
-        walls += `${((-ox * i) / n).toFixed(2)}px ${((-oy * i) / n).toFixed(2)}px 0 0 ${r.wall}`;
-        if (i < n) walls += ', ';
-      }
-      r.el.style.transition = 'none';
-      r.el.style.transform = `translate(${ox.toFixed(2)}px, ${oy.toFixed(2)}px)`;
-      r.el.style.boxShadow = r.base + walls;
-    }
-  }
-
-  private restoreRaised(): void {
-    if (this.raisedDone) return;
-    this.raisedDone = true;
-    for (const r of this.raised) {
-      r.el.style.transform = r.prevTransform;
-      r.el.style.boxShadow = r.prevShadow;
-      r.el.style.transition = r.prevTransition;
-    }
-    for (const l of this.lightables) {
-      l.ox = 0;
-      l.oy = 0;
-    }
-    this.raised = [];
-  }
-
-  // ------------------------------------------------------------------ overlays
-
+  /** Elemente, die beim Einschalten nacheinander aufleuchten (Lage im unverzerrten Layout). */
   private scanLightables(): void {
     const sel =
       '.nk-pad, .nk-key, .nk-lcd, .nk-counter, .nk-tag, .nk-channel, .nk-logo, .nk-input, .nk-tabs__tab, .nk-printer, .avatar-initials';
-    const els = Array.from(this.device.querySelectorAll<HTMLElement>(sel));
-    const W = this.rect.width;
-    const H = this.rect.height;
+    const dev = this.device;
+    const els = Array.from(dev.querySelectorAll<HTMLElement>(sel));
+    const { width: W, height: H } = this.scene.rect;
     const known = new Map(this.lightables.map((l) => [l.el, l]));
     const out: Lightable[] = [];
+    const prevT = dev.style.transform;
+    dev.style.transform = 'none';
+    const dr = dev.getBoundingClientRect();
+    const clips = new Map<Element, DOMRect>();
     for (const el of els) {
       if (el === this.shade || el === this.glow) continue;
-      const r = localRect(el, this.device);
-      if (!r || r.w < 6 || r.h < 6) continue;
-      if (r.x > W || r.y > H || r.x + r.w < 0 || r.y + r.h < 0) continue;
+      const b = el.getBoundingClientRect();
+      if (b.width < 6 || b.height < 6) continue;
+      const off = this.relief.offsetOf(el);
+      const x = b.left - dr.left - (off?.ox ?? 0);
+      const y = b.top - dr.top - (off?.oy ?? 0);
+      if (x > W || y > H || x + b.width < 0 || y + b.height < 0) continue;
+      let clip: Lightable['clip'] = null;
+      const sc = el.parentElement?.closest('.grid-scroll, .chat-scroll, .nk-rail');
+      if (sc) {
+        let cr = clips.get(sc);
+        if (!cr) {
+          cr = sc.getBoundingClientRect();
+          clips.set(sc, cr);
+        }
+        if (b.bottom < cr.top || b.top > cr.bottom || b.right < cr.left || b.left > cr.right) {
+          continue;
+        }
+        clip = { x: cr.left - dr.left, y: cr.top - dr.top, w: cr.width, h: cr.height };
+      }
+      const r = { x, y, w: b.width, h: b.height };
       const prev = known.get(el);
       if (prev) {
         Object.assign(prev, r);
+        prev.clip = clip;
         out.push(prev);
         continue;
       }
@@ -899,24 +483,52 @@ export class IntroEngine {
       const cx = r.x + r.w / 2;
       const cy = r.y + r.h / 2;
       const order = (cx / W) * 0.55 + (cy / H) * 0.45;
+      const rawRad = cs.borderTopLeftRadius;
+      const rad = rawRad.includes('%')
+        ? (Math.min(r.w, r.h) * (parseFloat(rawRad) || 0)) / 100
+        : parseFloat(rawRad) || 4;
       out.push({
         el,
         ...r,
-        r: Math.min(parseFloat(cs.borderTopLeftRadius) || 4, r.w / 2, r.h / 2),
-        glow: glow.replace(/,/g, ' '),
+        clip,
+        r: Math.min(rad, r.w / 2, r.h / 2),
+        glow: glow.replace(/,/g, ' ').split(/\s+/).join(','),
         start: T_LIGHT0 + order * LIGHT_SPAN + (Math.random() - 0.5) * 0.05,
-        ox: 0,
-        oy: 0,
       });
     }
+    dev.style.transform = prevT;
     this.lightables = out;
   }
 
-  private drawShade(t: number, lamp: number): void {
+  /** Pfad eines (ggf. angehobenen und beschnittenen) Elements */
+  private lightPath(ctx: CanvasRenderingContext2D, l: Lightable): void {
+    const off = this.relief.offsetOf(l.el);
+    let x = l.x + (off?.ox ?? 0);
+    let y = l.y + (off?.oy ?? 0);
+    let w = l.w;
+    let h = l.h;
+    let r = l.r;
+    const c = l.clip;
+    if (c) {
+      const x1 = Math.min(x + w, c.x + c.w);
+      const y1 = Math.min(y + h, c.y + c.h);
+      const nx = Math.max(x, c.x);
+      const ny = Math.max(y, c.y);
+      if (nx !== x || ny !== y || x1 !== x + w || y1 !== y + h) r = Math.min(r, 2);
+      x = nx;
+      y = ny;
+      w = Math.max(0, x1 - nx);
+      h = Math.max(0, y1 - ny);
+    }
+    ctx.beginPath();
+    if (w > 0 && h > 0) ctx.roundRect(x, y, w, h, Math.min(r, w / 2, h / 2));
+  }
+
+  /** Ausgeschaltetes Gerät im Licht der Lampe; eingeschaltete Elemente stanzen das „Aus“ weg. */
+  private drawShade(t: number, lampLevel: number): void {
     const ctx = this.shadeCtx;
     const q = this.q;
-    const W = this.rect.width;
-    const H = this.rect.height;
+    const { width: W, height: H } = this.scene.rect;
     const fadeOut = easeInOutSine(seg(t, T_SHADE0, T_SHADE1));
     this.shade.style.opacity = String(1 - fadeOut);
     this.glow.style.opacity = String(1 - fadeOut);
@@ -931,16 +543,16 @@ export class IntroEngine {
     ctx.globalCompositeOperation = 'source-over';
     ctx.clearRect(0, 0, W, H);
 
-    // Ausgeschaltetes Gerät im Spotlicht: Hotspot oben links (Lampe)
-    const base = 0.66;
-    const lit = clamp01(lamp);
-    const cx = W * 0.3;
-    const cy = H * 0.28;
-    const rad = Math.hypot(W, H) * 0.85;
-    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
-    const inner = 1 - (1 - base * 0.82) * lit;
-    const outer = 1 - (1 - Math.min(0.96, base * 1.12)) * lit;
+    // Lichtfleck der Lampe dort, wo ihre Achse die Oberseite trifft – dreht sich das Gerät im
+    // Flug von der Lampe weg, wird die Oberseite dunkel wie das 3D-Gehäuse
+    const lamp = this.lamp;
+    const lit = clamp01(lampLevel) * clamp01(lamp.cos * 1.25);
+    const rad = Math.max(lamp.radius * 1.2, Math.hypot(W, H) * 0.5);
+    const grad = ctx.createRadialGradient(lamp.au, lamp.av, 0, lamp.au, lamp.av, rad);
+    const inner = 1 - (1 - 0.5) * lit;
+    const outer = 1 - (1 - 0.86) * lit;
     grad.addColorStop(0, `rgba(3,2,1,${inner.toFixed(3)})`);
+    grad.addColorStop(0.6, `rgba(3,2,1,${lerp(inner, outer, 0.55).toFixed(3)})`);
     grad.addColorStop(1, `rgba(3,2,1,${outer.toFixed(3)})`);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
@@ -951,8 +563,7 @@ export class IntroEngine {
       const p = seg(t, l.start, l.start + LIGHT_RAMP);
       if (p <= 0) continue;
       ctx.globalAlpha = easeOutCubic(p);
-      ctx.beginPath();
-      ctx.roundRect(l.x + l.ox, l.y + l.oy, l.w, l.h, l.r);
+      this.lightPath(ctx, l);
       ctx.fill();
     }
     // Gehäuse selbst wird mit der Hintergrundbeleuchtung heller
@@ -965,55 +576,72 @@ export class IntroEngine {
     ctx.globalCompositeOperation = 'source-over';
   }
 
-  private drawGlow(t: number, lamp: number): void {
+  /** Aufleuchten: kurzer Überstrahler in Pad-Farbe (Bloom-Ersatz) */
+  private drawGlow(t: number): void {
     const ctx = this.glowCtx;
     const q = this.q;
-    const W = this.rect.width;
-    const H = this.rect.height;
+    const { width: W, height: H } = this.scene.rect;
     ctx.setTransform(q, 0, 0, q, 0, 0);
     ctx.clearRect(0, 0, W, H);
     if (t >= T_SHADE1) return;
-
-    // Klarlack-Reflex des Spots wandert über die Oberfläche
-    const sheenA = 0.13 * lamp * (1 - seg(t, T_CAM0, T_SHADE0 + 0.2));
-    if (sheenA > 0.002) {
-      const yaw = this.deviceGroup.rotation.y;
-      const pos = 0.25 + yaw * 0.28 + this.deviceGroup.rotation.x * 0.6;
-      const x0 = W * (pos - 0.35);
-      const lg = ctx.createLinearGradient(x0, 0, x0 + W * 0.7, H * 0.55);
-      lg.addColorStop(0, 'rgba(255,230,190,0)');
-      lg.addColorStop(0.45, `rgba(255,232,196,${sheenA.toFixed(3)})`);
-      lg.addColorStop(0.55, `rgba(255,232,196,${(sheenA * 0.9).toFixed(3)})`);
-      lg.addColorStop(1, 'rgba(255,230,190,0)');
-      ctx.fillStyle = lg;
-      ctx.fillRect(0, 0, W, H);
-    }
-
-    // Aufleuchten: kurzer Überstrahler in Pad-Farbe (Bloom-Ersatz)
     for (const l of this.lightables) {
       const k = t - l.start;
       if (k <= 0 || k > 0.75) continue;
       const a = k < 0.07 ? k / 0.07 : Math.exp(-(k - 0.07) * 5.2);
       if (a < 0.01) continue;
-      ctx.shadowColor = `rgba(${l.glow.split(/\s+/).join(',')},${(0.9 * a).toFixed(3)})`;
+      ctx.shadowColor = `rgba(${l.glow},${(0.9 * a).toFixed(3)})`;
       ctx.shadowBlur = 26 * q;
-      ctx.fillStyle = `rgba(${l.glow.split(/\s+/).join(',')},${(0.32 * a).toFixed(3)})`;
-      ctx.beginPath();
-      ctx.roundRect(l.x + l.ox, l.y + l.oy, l.w, l.h, l.r);
+      ctx.fillStyle = `rgba(${l.glow},${(0.32 * a).toFixed(3)})`;
+      this.lightPath(ctx, l);
       ctx.fill();
     }
     ctx.shadowBlur = 0;
     ctx.shadowColor = 'transparent';
   }
 
-  // ------------------------------------------------------------------ dust
+  // ------------------------------------------------------------------ Staub
+
+  /** Staubkörner, die im Lichtkegel schweben */
+  private spawnMotes(): void {
+    const scene = this.scene;
+    const rnd = rand(41);
+    const span = Math.max(scene.DW, scene.DH);
+    const n = this.small ? 30 : 70;
+    for (let i = 0; i < n; i++) {
+      this.motes.push({
+        p: new THREE.Vector3(
+          scene.rest.x + (rnd() - 0.5) * span * 1.5,
+          scene.topY + 0.4 + rnd() * span * 0.55,
+          scene.rest.z + (rnd() - 0.35) * span * 1.3,
+        ),
+        v: new THREE.Vector3((rnd() - 0.5) * 0.12, (rnd() - 0.6) * 0.07, (rnd() - 0.5) * 0.12),
+        size: 0.012 + rnd() * 0.022,
+        a: 0.25 + rnd() * 0.55,
+        ph: rnd() * 6.28,
+      });
+    }
+  }
+
+  /** Aufprall: Luftstoß wirbelt die schwebenden Körner auf */
+  private kickMotes(): void {
+    const rest = this.scene.rest;
+    for (const m of this.motes) {
+      const dx = m.p.x - rest.x;
+      const dz = m.p.z - rest.z;
+      const d = Math.hypot(dx, dz) + 0.5;
+      const f = 2.4 / (1 + d * 0.25);
+      m.v.x += (dx / d) * f * 0.5;
+      m.v.z += (dz / d) * f * 0.5;
+      m.v.y += f * 0.45;
+    }
+  }
 
   private spawnDust(): void {
-    if (this.dustSpawned) return;
-    this.dustSpawned = true;
-    const W = this.DW;
-    const H = this.DH;
-    const n = this.vw < 700 ? 70 : 120;
+    const scene = this.scene;
+    const W = scene.DW;
+    const H = scene.DH;
+    const rest = scene.rest;
+    const n = this.small ? 70 : 130;
     for (let i = 0; i < n; i++) {
       // Punkt auf dem Umfang
       const per = 2 * (W + H);
@@ -1046,9 +674,9 @@ export class IntroEngine {
       const speed = puff ? 0.5 + Math.random() * 1.5 : 1.4 + Math.random() * 2.6;
       this.dust.push({
         p: new THREE.Vector3(
-          this.rest.x + x * 0.98,
-          this.tableY(this.rest.z + z * 0.98) + 0.04 + Math.random() * 0.1,
-          this.rest.z + z * 0.98,
+          rest.x + x * 0.98,
+          scene.tableY(rest.z + z * 0.98) + 0.04 + Math.random() * 0.1,
+          rest.z + z * 0.98,
         ),
         v: new THREE.Vector3(
           nx * speed + (Math.random() - 0.5) * 0.7,
@@ -1065,21 +693,54 @@ export class IntroEngine {
     }
   }
 
-  private updateDust(dt: number): void {
+  private updateDust(dt: number, lampLevel: number): void {
     const ctx = this.dustCtx;
     const c = this.dustCanvas;
+    const scene = this.scene;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, c.width, c.height);
-    if (!this.dust.length) return;
-
-    // Projizierte Oberseite (für Verdeckung)
-    const quad = this.faceQuad();
-    const cam = this.camera;
+    const cam = scene.camera;
     const tanH = Math.tan(THREE.MathUtils.degToRad(cam.fov / 2));
     const pxPerUnitAt1 = this.vh / 2 / tanH;
     const fade = 1 - seg(this.t, T_SHADE0, T_XFADE0);
+    if (fade <= 0) return;
     ctx.globalCompositeOperation = 'source-over';
+    const v = this.v3;
 
+    // Schwebende Körner im Lichtkegel
+    const moteFade = fade * clamp01(lampLevel) * (1 - seg(this.t, T_CAM0 + 0.5, T_SHADE1));
+    if (moteFade > 0.01) {
+      ctx.fillStyle = 'rgb(255,226,178)';
+      const drag = Math.exp(-dt * 1.6);
+      for (const m of this.motes) {
+        m.v.x = m.v.x * drag + Math.sin(this.t * 0.7 + m.ph) * 0.004;
+        m.v.z = m.v.z * drag + Math.cos(this.t * 0.6 + m.ph) * 0.004;
+        m.v.y = m.v.y * drag - 0.004;
+        m.p.addScaledVector(m.v, dt);
+        // Helligkeit: nur innerhalb des Lichtkegels
+        v.copy(m.p).sub(scene.lampPos);
+        const len = v.length();
+        const cos = len > 0 ? v.dot(scene.lampDir) / len : 0;
+        const inCone = clamp01((cos - scene.lampCos) / ((1 - scene.lampCos) * 0.45));
+        if (inCone <= 0) continue;
+        v.copy(m.p).applyMatrix4(cam.matrixWorldInverse);
+        const depth = -v.z;
+        if (depth < 0.5) continue;
+        v.copy(m.p).project(cam);
+        const sx = ((v.x + 1) / 2) * this.vw;
+        const sy = ((1 - v.y) / 2) * this.vh;
+        const r = Math.max(0.55, (m.size * pxPerUnitAt1) / depth) * this.dpr;
+        ctx.globalAlpha = m.a * inCone * moteFade * 0.55;
+        ctx.beginPath();
+        ctx.arc(sx * this.dpr, sy * this.dpr, r, 0, 6.2832);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    if (!this.dust.length) return;
+    // Projizierte Oberseite (für Verdeckung)
+    const quad = scene.faceQuad();
     const alive: Dust[] = [];
     for (const d of this.dust) {
       d.age += dt;
@@ -1089,15 +750,15 @@ export class IntroEngine {
       d.v.multiplyScalar(drag);
       d.v.y -= dt * d.grav;
       d.p.addScaledVector(d.v, dt);
-      const floor = this.tableY(d.p.z) + 0.02;
+      const floor = scene.tableY(d.p.z) + 0.02;
       if (d.p.y < floor) d.p.y = floor;
-      const v = this.v3.copy(d.p).applyMatrix4(cam.matrixWorldInverse);
+      v.copy(d.p).applyMatrix4(cam.matrixWorldInverse);
       const depth = -v.z;
       if (depth < 0.2) continue;
       v.copy(d.p).project(cam);
       const sx = ((v.x + 1) / 2) * this.vw;
       const sy = ((1 - v.y) / 2) * this.vh;
-      if (d.p.y < this.topY - 0.02 && pointInQuad(sx, sy, quad)) continue;
+      if (d.p.y < scene.topY - 0.02 && pointInQuad(sx, sy, quad)) continue;
       const k = d.age / d.life;
       const size = (d.size + d.grow * easeOutCubic(k)) * (pxPerUnitAt1 / depth);
       const a = d.a * (k < 0.12 ? k / 0.12 : 1 - (k - 0.12) / 0.88) * fade;
@@ -1110,62 +771,61 @@ export class IntroEngine {
     this.dust = alive;
   }
 
-  /** Tischhöhe (gekippt) an Tiefe z, im Rahmen der Geräteoberseite */
-  private tableY(z: number): number {
-    return -(this.rest.z + this.DH / 2 - z) * Math.tan(SLOPE);
-  }
-
-  private faceQuad(): [number, number][] {
-    const out: [number, number][] = [];
-    const hw = this.DW / 2;
-    const hh = this.DH / 2;
-    for (const [x, z] of [
-      [-hw, -hh],
-      [hw, -hh],
-      [hw, hh],
-      [-hw, hh],
-    ]) {
-      const v = this.v3
-        .set(x, 0, z)
-        .applyMatrix4(this.deviceGroup.matrixWorld)
-        .project(this.camera);
-      out.push([((v.x + 1) / 2) * this.vw, ((1 - v.y) / 2) * this.vh]);
-    }
-    return out;
-  }
-
-  // ------------------------------------------------------------------ end
+  // ------------------------------------------------------------------ Ende
 
   skip(): void {
     if (this.finishing || this.disposed) return;
     this.finishing = true;
     cancelAnimationFrame(this.raf);
     // Sofort in Endlage, Overlays weich weg
-    this.device.style.transition = 'opacity 0.18s ease';
-    this.device.style.opacity = '0';
-    const c = this.renderer?.domElement;
-    if (c) c.style.transition = 'opacity 0.3s ease';
+    const ds = this.device.style;
+    ds.transition = 'opacity 0.18s ease';
+    ds.opacity = '0';
+    const c = this.scene?.canvas;
+    if (c && !this.endIn3d) c.style.transition = 'opacity 0.3s ease';
     setTimeout(() => {
       if (this.disposed) return;
-      this.restoreRaised();
-      this.device.style.transform = '';
+      // Endzustand herstellen (Lampe an, Gerät an, Kamera in Endlage)
+      this.dust = [];
+      this.motes = [];
+      this.t = T_XFADE1 + 1;
+      this.update(0);
+      this.scene.render();
       this.shade.style.opacity = '0';
       this.glow.style.opacity = '0';
       this.dustCanvas.style.opacity = '0';
-      if (c) c.style.opacity = '0';
-      const root = document.documentElement.classList;
-      root.add('nb-intro-handover');
-      root.remove('nb-intro');
-      this.device.style.opacity = '1';
+      if (this.endIn3d) {
+        ds.opacity = '1';
+        setTimeout(() => this.handover3d(), 200);
+        return;
+      }
+      this.relief.flatten();
+      this.scene.clearCssMatrix();
+      ds.opacity = '1';
       setTimeout(() => this.finishNow(), 460);
     }, 180);
   }
 
+  /** Normale Übergabe: Kamera steht senkrecht, Matrix ist die Identität → Transform entfernen. */
   private handover(): void {
     this.finishing = true;
-    this.restoreRaised();
-    this.device.style.transform = '';
+    this.relief.flatten();
+    this.scene.clearCssMatrix();
     setTimeout(() => this.finishNow(), 120);
+  }
+
+  /** Das Intro bleibt in der Schrägansicht stehen: Szene und Relief an die 3D-Ansicht übergeben. */
+  private handover3d(): void {
+    if (this.disposed) return;
+    this.finishing = true;
+    this.handedOver = true;
+    const scene = this.scene;
+    const relief = this.relief;
+    this.device.style.transition = '';
+    this.device.style.opacity = '';
+    this.dispose();
+    this.cb.onHandover3d?.(scene, relief);
+    this.cb.onDone();
   }
 
   private finishNow(): void {
@@ -1180,31 +840,27 @@ export class IntroEngine {
     cancelAnimationFrame(this.raf);
     window.removeEventListener('keydown', this.onKey, true);
     window.removeEventListener('resize', this.onResize);
-    this.restoreRaised();
-    const ds = this.device.style;
-    ds.transform = '';
-    ds.transformOrigin = '';
-    ds.willChange = '';
-    ds.transition = '';
-    ds.opacity = '';
-    ds.visibility = '';
     this.shade?.remove();
     this.glow?.remove();
     this.dustCanvas?.remove();
     this.catcher?.remove();
-    for (const d of this.disposables) d.dispose();
-    this.pmrem?.dispose();
-    if (this.renderer) {
-      this.renderer.dispose();
-      this.renderer.forceContextLoss();
-      this.renderer.domElement.remove();
+    if (!this.handedOver) {
+      this.relief?.dispose();
+      this.scene?.dispose();
+      const ds = this.device.style;
+      ds.transform = '';
+      ds.transformOrigin = '';
+      ds.willChange = '';
+      ds.transition = '';
+      ds.opacity = '';
+      ds.visibility = '';
     }
     this.sound?.dispose();
     this.sound = null;
   }
 }
 
-// ---------------------------------------------------------------- helpers
+// ---------------------------------------------------------------- Helfer
 
 function readDebugT(): string | null {
   try {
@@ -1212,40 +868,6 @@ function readDebugT(): string | null {
   } catch {
     return null;
   }
-}
-
-/** Layout-Rechteck relativ zum Gerät – unabhängig vom aktuellen 3D-Transform. */
-function localRect(
-  el: HTMLElement,
-  root: HTMLElement,
-): { x: number; y: number; w: number; h: number } | null {
-  let x = 0;
-  let y = 0;
-  let e: HTMLElement | null = el;
-  while (e && e !== root) {
-    x += e.offsetLeft;
-    y += e.offsetTop;
-    const parent = e.offsetParent as HTMLElement | null;
-    if (!parent) return null;
-    // Scroll-Container zwischen e und parent berücksichtigen
-    let s: HTMLElement | null = e.parentElement;
-    while (s && s !== parent) {
-      x -= s.scrollLeft;
-      y -= s.scrollTop;
-      s = s.parentElement;
-    }
-    if (parent !== root) {
-      x -= parent.scrollLeft;
-      y -= parent.scrollTop;
-      x += parent.clientLeft;
-      y += parent.clientTop;
-    }
-    e = parent;
-  }
-  if (e !== root) return null;
-  x += root.clientLeft;
-  y += root.clientTop;
-  return { x, y, w: el.offsetWidth, h: el.offsetHeight };
 }
 
 function pointInQuad(x: number, y: number, q: [number, number][]): boolean {
@@ -1256,172 +878,4 @@ function pointInQuad(x: number, y: number, q: [number, number][]): boolean {
     if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
   }
   return inside;
-}
-
-/** Abgerundete Platte mit weicher Oberkante (ExtrudeGeometry, flach gelegt). */
-function roundedSlab(
-  w: number,
-  h: number,
-  r: number,
-  depth: number,
-  bevel: number,
-): THREE.ExtrudeGeometry {
-  const iw = w - bevel * 2;
-  const ih = h - bevel * 2;
-  const ir = Math.max(0.001, Math.min(r - bevel, iw / 2, ih / 2));
-  const x = -iw / 2;
-  const y = -ih / 2;
-  const s = new THREE.Shape();
-  s.moveTo(x + ir, y);
-  s.lineTo(x + iw - ir, y);
-  s.quadraticCurveTo(x + iw, y, x + iw, y + ir);
-  s.lineTo(x + iw, y + ih - ir);
-  s.quadraticCurveTo(x + iw, y + ih, x + iw - ir, y + ih);
-  s.lineTo(x + ir, y + ih);
-  s.quadraticCurveTo(x, y + ih, x, y + ih - ir);
-  s.lineTo(x, y + ir);
-  s.quadraticCurveTo(x, y, x + ir, y);
-  const geo = new THREE.ExtrudeGeometry(s, {
-    depth: Math.max(0.01, depth - bevel * 2),
-    bevelEnabled: true,
-    bevelThickness: bevel,
-    bevelSize: bevel,
-    bevelSegments: 4,
-    curveSegments: 10,
-  });
-  geo.rotateX(-Math.PI / 2);
-  geo.computeVertexNormals();
-  return geo;
-}
-
-/**
- * Formt eine Platte (Oberkante y=0, Unterkante y=-hMax) zum Keil: Höhe vorne (z=+d/2) hFront, hinten
- * hMax, dazwischen linear. Flanken rücken nach unten hin um bis zu `taper` nach innen.
- */
-function wedgeBody(
-  geo: THREE.BufferGeometry,
-  hMax: number,
-  d: number,
-  hFront: number,
-  hw: number,
-  hd: number,
-  taper: number,
-): void {
-  const pos = geo.attributes['position'] as THREE.BufferAttribute;
-  for (let i = 0; i < pos.count; i++) {
-    const z = pos.getZ(i);
-    const hz = hFront + (hMax - hFront) * THREE.MathUtils.clamp((d / 2 - z) / d, 0, 1);
-    const y = pos.getY(i) * (hz / hMax);
-    const t = THREE.MathUtils.clamp(-y / hz, 0, 1);
-    pos.setY(i, y);
-    pos.setX(i, pos.getX(i) * (1 - (taper / hw) * t));
-    pos.setZ(i, z * (1 - (taper / hd) * t));
-  }
-  pos.needsUpdate = true;
-  geo.computeVertexNormals();
-  geo.computeBoundingBox();
-}
-
-/** Flankenfarbe einer Taste: Grundfarbe deutlich abgedunkelt (Seitenwand im Schatten) */
-function wallColor(bg: string): string {
-  const m = bg.match(/rgba?\(([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?/);
-  if (!m || (m[4] !== undefined && parseFloat(m[4]) < 0.3)) return 'rgb(24 21 17)';
-  const d = (v: string) => Math.round(parseFloat(v) * 0.42);
-  return `rgb(${d(m[1])} ${d(m[2])} ${d(m[3])})`;
-}
-
-function rand(seed: number): () => number {
-  let s = seed >>> 0;
-  return () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 4294967296;
-  };
-}
-
-/** Dunkles Nussbaum-Furnier, prozedural. */
-function makeWoodCanvas(): HTMLCanvasElement {
-  const size = 1024;
-  const c = document.createElement('canvas');
-  c.width = c.height = size;
-  const ctx = c.getContext('2d')!;
-  const rnd = rand(7);
-  ctx.fillStyle = '#3b2716';
-  ctx.fillRect(0, 0, size, size);
-  // Bretter mit leicht unterschiedlichem Ton
-  const boards = 4;
-  for (let b = 0; b < boards; b++) {
-    const tone = 0.82 + rnd() * 0.3;
-    ctx.fillStyle = `rgba(${Math.round(70 * tone)},${Math.round(46 * tone)},${Math.round(27 * tone)},1)`;
-    ctx.fillRect(0, (b * size) / boards, size, size / boards);
-  }
-  // Maserung
-  for (let i = 0; i < 520; i++) {
-    const y0 = rnd() * size;
-    const amp = 3 + rnd() * 14;
-    const freq = 0.002 + rnd() * 0.006;
-    const ph = rnd() * 10;
-    const dark = rnd() < 0.7;
-    ctx.strokeStyle = dark
-      ? `rgba(18,10,4,${(0.08 + rnd() * 0.22).toFixed(3)})`
-      : `rgba(140,96,58,${(0.04 + rnd() * 0.08).toFixed(3)})`;
-    ctx.lineWidth = 0.6 + rnd() * 2.2;
-    ctx.beginPath();
-    for (let x = 0; x <= size; x += 16) {
-      const y = y0 + Math.sin(x * freq + ph) * amp + Math.sin(x * freq * 3.1 + ph) * amp * 0.25;
-      if (x === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-  }
-  // Fugen
-  ctx.fillStyle = 'rgba(8,5,2,0.7)';
-  for (let b = 1; b < boards; b++) ctx.fillRect(0, (b * size) / boards - 1, size, 2);
-  // Gebrauchsspuren
-  for (let i = 0; i < 60; i++) {
-    ctx.strokeStyle = `rgba(170,130,90,${(0.03 + rnd() * 0.05).toFixed(3)})`;
-    ctx.lineWidth = 0.5;
-    ctx.beginPath();
-    const x = rnd() * size;
-    const y = rnd() * size;
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + (rnd() - 0.5) * 120, y + (rnd() - 0.5) * 30);
-    ctx.stroke();
-  }
-  return c;
-}
-
-function makeNoiseCanvas(size: number, lo: number, hi: number): HTMLCanvasElement {
-  const c = document.createElement('canvas');
-  c.width = c.height = size;
-  const ctx = c.getContext('2d')!;
-  const img = ctx.createImageData(size, size);
-  const rnd = rand(13);
-  for (let i = 0; i < size * size; i++) {
-    const v = lo + (hi - lo) * rnd();
-    img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = v;
-    img.data[i * 4 + 3] = 255;
-  }
-  ctx.putImageData(img, 0, 0);
-  return c;
-}
-
-function makeDustSprite(): HTMLCanvasElement {
-  const size = 128;
-  const c = document.createElement('canvas');
-  c.width = c.height = size;
-  const ctx = c.getContext('2d')!;
-  const rnd = rand(3);
-  // Mehrere weiche Kleckse = wolkige Form
-  for (let i = 0; i < 7; i++) {
-    const x = size / 2 + (rnd() - 0.5) * size * 0.3;
-    const y = size / 2 + (rnd() - 0.5) * size * 0.3;
-    const r = size * (0.22 + rnd() * 0.2);
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, 'rgba(176,160,138,0.45)');
-    g.addColorStop(0.6, 'rgba(150,136,116,0.16)');
-    g.addColorStop(1, 'rgba(140,126,106,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, size, size);
-  }
-  return c;
 }

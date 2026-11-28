@@ -71,6 +71,8 @@ src/app/
 │   ├── avatar-upload-dialog/     # Avatar upload
 │   ├── chat/                     # Chat component
 │   ├── chat-widget/              # Chat overlay widget
+│   ├── deck3d/                   # 3D-Szene, Tasten-Relief, 3D-Ansicht (three.js)
+│   ├── intro/                    # Lade-Intro (nutzt deck3d)
 │   ├── mini-games/               # Minispiele
 │   ├── now-playing/              # Live playback indicator
 │   ├── shared/                   # Shared components
@@ -126,6 +128,24 @@ Barlow Condensed (UI), IBM Plex Mono (Meta), VT323 (LCD), Courier Prime (Chat-Bo
 (`chat-sidebar`), Kanalzüge (`channels/channel-strip`). ≤ 768 px: `mobile/mobile-bar` (Laufend-Leiste +
 Tastenreihe Sounds/Chat/Spielhalle/Shop/Mehr).
 `core/services/now-playing.service.ts` leitet aus SignalR `soundPlayed` ab, was gerade läuft (Pads + Kanäle).
+
+### 3D: Intro und 3D-Ansicht (`components/deck3d`, `components/intro`)
+Die Oberseite des Geräts ist immer das echte `.app-device`-DOM: Es wird per CSS `matrix3d` exakt auf ein
+three.js-Gehäuse projiziert (three.js-Canvas liegt dahinter). Blickt die Kamera senkrecht von oben, ist die
+Matrix die Identität → nahtloser Übergang in die flache Oberfläche.
+- `deck-scene.ts` – gemeinsame Szene (Tisch, Lampe, Kamera-Posen, `applyCssMatrix`, `unproject`).
+- `deck-housing.ts` / `deck-textures.ts` – Gehäuse und Texturen, alles prozedural (keine Assets).
+- `deck-relief.ts` – Tasten stehen heraus: Oberseiten per `translate` (Parallaxe aus der Kameraposition),
+  Flanken/Schächte/Schatten auf einem 2D-Canvas über dem DOM (in Scroll-Containern ein mitscrollendes).
+  CSS dazu: `styles/nacht/_20-view3d.scss`. Neue Bedienelement-Klassen dort in `classify()` eintragen.
+- `intro/intro-engine.ts` – nur der Ablauf des Lade-Intros (Zeitplan oben in der Datei).
+- `deck-view-engine.ts` + `core/services/deck-view.service.ts` – Umschalter 2D/3D (Deck-Taste „3D“, nur
+  Desktop; localStorage `nervbox-view-3d`). Rendert nur bei Änderungen, keine Dauerschleife.
+- `deck-layout-shim.ts` – das virtuelle Scrollen (CDK) misst per `getBoundingClientRect`; unter der
+  Projektion bekommen Scroll-Container/Viewport ihr unverzerrtes Rechteck.
+- Zeigerkoordinaten mit Layoutmaßen verrechnen → `DeckViewService.unproject()` (siehe Chat-Griff in `app.ts`).
+- Testen: localStorage `nervbox-intro-force=1` (Intro auch in Playwright), `nervbox-intro-debug-t=<s>`
+  (Standbild), `nervbox-intro-disabled=1` bzw. `?nointro`.
 
 ### Dialoge
 Wurzel `.nk-dlg`, darin `.nk-dialog__head` / `__body` / `__foot`; Felder `.nk-field` + `.nk-input`,

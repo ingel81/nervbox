@@ -1,3 +1,5 @@
+import { hasWebGL, isWeakDevice } from '../deck3d/deck-support';
+
 /**
  * Intro "Drop": Beim Laden fällt das Nervbox-Gerät in 3D auf den Tisch und
  * übergibt nahtlos an die echte Oberfläche.
@@ -20,23 +22,6 @@ function readStorage(key: string): string | null {
   } catch {
     return null;
   }
-}
-
-function hasWebGL(): boolean {
-  try {
-    const c = document.createElement('canvas');
-    return !!(c.getContext('webgl2') || c.getContext('webgl'));
-  } catch {
-    return false;
-  }
-}
-
-/** Schwache Geräte (und die Pi-Kiste) bekommen nur einen kurzen 2D-Fade. */
-function isWeakDevice(): boolean {
-  const nav = navigator as Navigator & { deviceMemory?: number };
-  if ((nav.hardwareConcurrency ?? 4) <= 2) return true;
-  if (nav.deviceMemory !== undefined && nav.deviceMemory <= 2) return true;
-  return /Linux (aarch64|armv7l|armv8)/i.test(nav.userAgent);
 }
 
 export function decideIntroMode(): IntroMode {

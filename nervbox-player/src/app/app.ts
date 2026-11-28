@@ -46,6 +46,7 @@ import { AvatarService } from './core/services/avatar.service';
 import { AchievementService } from './core/services/achievement.service';
 import { ConfigService } from './core/services/config.service';
 import { HotkeyService } from './core/services/hotkey.service';
+import { DeckViewService } from './core/services/deck-view.service';
 import { Sound } from './core/models';
 
 @Component({
@@ -304,6 +305,7 @@ export class App implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
   private readonly hotkeys = inject(HotkeyService);
+  private readonly deckView = inject(DeckViewService);
 
   readonly isDevRoute = signal(window.location.pathname.startsWith('/dev/'));
 
@@ -831,11 +833,11 @@ export class App implements OnInit {
     this.isResizing = true;
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
+    const grab = this.grabOffset(event.clientX, event.clientY);
 
     const onMouseMove = (e: MouseEvent) => {
       if (!this.isResizing) return;
-      const newWidth = window.innerWidth - e.clientX;
-      this.updateChatWidth(newWidth);
+      this.updateChatWidth(this.chatWidthAt(e.clientX, e.clientY) + grab);
     };
 
     const onMouseUp = () => {
@@ -853,11 +855,13 @@ export class App implements OnInit {
   startResizeTouch(event: TouchEvent): void {
     event.preventDefault();
     this.isResizing = true;
+    const first = event.touches[0];
+    const grab = first ? this.grabOffset(first.clientX, first.clientY) : 0;
 
     const onTouchMove = (e: TouchEvent) => {
       if (!this.isResizing || !e.touches[0]) return;
-      const newWidth = window.innerWidth - e.touches[0].clientX;
-      this.updateChatWidth(newWidth);
+      const t = e.touches[0];
+      this.updateChatWidth(this.chatWidthAt(t.clientX, t.clientY) + grab);
     };
 
     const onTouchEnd = () => {
@@ -868,6 +872,16 @@ export class App implements OnInit {
 
     document.addEventListener('touchmove', onTouchMove);
     document.addEventListener('touchend', onTouchEnd);
+  }
+
+  /** Chatbreite, bei der die Chatkante am Zeiger läge (3D-Ansicht: auf das Layout zurückgerechnet) */
+  private chatWidthAt(clientX: number, clientY: number): number {
+    return window.innerWidth - this.deckView.unproject(clientX, clientY).x;
+  }
+
+  /** Abstand zwischen Zeiger und Chatkante beim Greifen – der Griff bleibt unter dem Zeiger */
+  private grabOffset(clientX: number, clientY: number): number {
+    return this.chatWidth() - this.chatWidthAt(clientX, clientY);
   }
 
   private updateChatWidth(width: number): void {
